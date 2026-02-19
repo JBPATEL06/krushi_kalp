@@ -1,0 +1,142 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
+
+class AdminNotificationService {
+  final SupabaseClient _supabase = Supabase.instance.client;
+
+  // Send a broadcast notification to ALL users
+  Future<void> sendBroadcast({
+    required String title,
+    required String body,
+  }) async {
+    try {
+      // 1. Insert into Database (Record Keeping)
+      final record = await _supabase
+          .from('notifications')
+          .insert({
+            'user_id': null, // Indicates Broadcast
+            'title': title,
+            'message': body,
+            'type': 'broadcast',
+            'is_read': false,
+            'created_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .select()
+          .single();
+
+      // 2. Call Edge Function (The Actual Push)
+      await _callEdgeFunction(
+          title: title,
+          body: body,
+          topic: 'all_users', // Broadcast Topic
+          data: {
+            'type': 'broadcast',
+            'notification_id': record['id'].toString(),
+          });
+    } catch (e) {
+      debugPrint("Failed to send broadcast: $e");
+      // throw Exception("Failed to send broadcast: $e");
+    }
+  }
+
+  // Send a notification to a SPECIFIC user
+  Future<void> sendToUser({
+    required String userId,
+    required String title,
+    required String body,
+  }) async {
+    try {
+      // 1. Get User's Token (Optional - Function can do it if logic moved, but we pass it for now)
+      // Actually, to keep function stateless, we pass token if we have it.
+      final userData = await _supabase
+          .from('users')
+          .select('fcm_token')
+          .eq('id', userId)
+          .maybeSingle();
+
+      final String? token = userData?['fcm_token'];
+
+      // 2. Insert into Database
+      final record = await _supabase
+          .from('notifications')
+          .insert({
+            'user_id': userId,
+            'title': title,
+            'message': body,
+            'type': 'personal',
+            'is_read': false,
+            'created_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .select()
+          .single();
+
+      // 3. Call Edge Function
+      if (token != null) {
+        await _callEdgeFunction(title: title, body: body, token: token, data: {
+          'type': 'personal', // Important for routing
+          'notification_id': record['id'].toString(),
+        });
+      } else {
+        debugPrint(
+            "User $userId has no FCM Token. Saved to DB but Push Skipped.");
+      }
+    } catch (e) {
+      debugPrint("Failed to send to user: $e");
+    }
+  }
+
+  // Send to Generic Topic (e.g. Admin Updates)
+  Future<void> sendToTopic({
+    required String topic,
+    required String title,
+    required String body,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      await _callEdgeFunction(
+        title: title,
+        body: body,
+        topic: topic,
+        data: data,
+      );
+    } catch (e) {
+      debugPrint("Failed to send to topic $topic: $e");
+    }
+  }
+
+  Future<void> _callEdgeFunction({
+    required String title,
+    required String body,
+    String? token,
+    String? topic,
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      final session = _supabase.auth.currentSession;
+      if (session == null) {
+        debugPrint("FCM Error: No Active Session to invoke Edge Function");
+        return;
+      }
+
+      final response = await _supabase.functions.invoke(
+        'send-fcm',
+        headers: {
+          'Authorization': 'Bearer ${session.accessToken}',
+        },
+        body: {
+          'title': title,
+          'body': body,
+          if (token != null) 'token': token,
+          if (topic != null) 'topic': topic,
+          if (data != null) 'data': data,
+        },
+      );
+
+      debugPrint("FCM Edge Function invoked. Status: ${response.status}");
+    } catch (e) {
+      debugPrint("Error invoking FCM Edge Function: $e");
+      // Optional: Check if token is expired and force refresh?
+      // _supabase.auth.refreshSession();
+    }
+  }
+}

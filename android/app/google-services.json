@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "295803900120",
+    "project_id": "krushi-kalp",
+    "storage_bucket": "krushi-kalp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:295803900120:android:5165bd25b4b42457bbc7ad",
+        "android_client_info": {
+          "package_name": "com.krushikalp.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "295803900120-3kai1ugvshtjvfbmtm146llq7i745697.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.krushikalp.app",
+            "certificate_hash": "3b154c79b13cb41a846becb7d2ae9a8f1cc2eb99"
+          }
+        },
+        {
+          "client_id": "295803900120-a057vbrairfuud0l4fpu4hfoidis102t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.krushikalp.app",
+            "certificate_hash": "073a75037c587f2037e2f3cb9f4d817d3afbbf9d"
+          }
+        },
+        {
+          "client_id": "295803900120-5lqevo86ug6v8ef8el4vosmstjjo4rn0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXvR8kaug9nDZMp3Z6JoLhlCiOX56cCYw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "295803900120-5lqevo86ug6v8ef8el4vosmstjjo4rn0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
