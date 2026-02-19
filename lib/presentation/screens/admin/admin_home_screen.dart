@@ -5,9 +5,9 @@ import '../../../../utils/network_utils.dart'; // Import NetworkUtils
 import 'admin_offer_list_screen.dart';
 import 'admin_chat_list_screen.dart';
 import 'admin_profile_screen.dart';
-import 'revenue_details_screen.dart';
 import 'resources/admin_resources_dashboard.dart';
 import 'admin_store_screen.dart';
+import 'admin_reviews_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -179,23 +179,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   Expanded(
                     child: _buildQuickActionCard(
                       context,
-                      title: 'Revenue',
-                      icon: Icons.attach_money,
-                      color: Colors.green,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const RevenueDetailsScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildQuickActionCard(
-                      context,
                       title: 'Resources',
                       icon: Icons.library_books,
                       color: Colors.deepPurple,
@@ -205,6 +188,23 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           MaterialPageRoute(
                             builder: (context) =>
                                 const AdminResourcesDashboard(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildQuickActionCard(
+                      context,
+                      title: 'Reviews',
+                      icon: Icons.rate_review,
+                      color: Colors.orange,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminReviewsScreen(),
                           ),
                         );
                       },

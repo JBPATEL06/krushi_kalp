@@ -4,6 +4,7 @@ import '../../../../domain/models/offer.dart';
 import '../../../widgets/common/universal_item_card.dart';
 import '../../../../utils/price_calculator.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../data/services/review_service.dart'; // NEW
 
 class StoreGrid extends StatelessWidget {
   final List<MockTest> tests;
@@ -85,28 +86,45 @@ class StoreGrid extends StatelessWidget {
     final isInCart = cartItemIds?.contains(test.id) ?? false;
     final isPurchased = purchasedTestIds?.contains(test.id) ?? false; // NEW
 
-    return UniversalItemCard(
-      title: test.title,
-      subtitle: '${test.totalQuestions} Qs • ${test.totalMarks} Marks',
-      time: test.time,
-      price: displayPrice,
-      originalPrice: mrp,
-      discountTag: discountTag,
-      coverUrl: test.signedUrl,
-      actionLabel: displayPrice == 0 ? 'Claim' : 'Buy Now',
-      isActionEnabled: true,
-      isInCart: isInCart,
-      isPurchased: isPurchased, // NEW
-      onActionTap: () {
-        if (displayPrice == 0) {
-          onBuyTap(test); // Claim (handled in StoreScreen)
-        } else {
-          onBuyTap(
-              test); // Buy Now (StoreScreen handles _buyNow with DirectCheckout)
+    return FutureBuilder<Map<String, dynamic>>(
+      future: ReviewService.getRatingStats(test.id, 'test'),
+      builder: (context, snapshot) {
+        double? rating;
+        int? count;
+        if (snapshot.hasData) {
+          rating = snapshot.data!['average'] as double;
+          count = snapshot.data!['count'] as int;
+          if (count == 0) {
+            rating = null;
+            count = null;
+          }
         }
+
+        return UniversalItemCard(
+          title: test.title,
+          subtitle: '${test.totalQuestions} Qs • ${test.totalMarks} Marks',
+          time: test.time,
+          price: displayPrice,
+          originalPrice: mrp,
+          discountTag: discountTag,
+          coverUrl: test.signedUrl,
+          actionLabel: displayPrice == 0 ? 'Claim' : 'Buy Now',
+          isActionEnabled: true,
+          isInCart: isInCart,
+          isPurchased: isPurchased,
+          rating: rating, // NEW
+          reviewCount: count, // NEW
+          onActionTap: () {
+            if (displayPrice == 0) {
+              onBuyTap(test);
+            } else {
+              onBuyTap(test);
+            }
+          },
+          onCartTap: () => onCartTap(test),
+          onTap: () => onTap(test),
+        );
       },
-      onCartTap: () => onCartTap(test), // Add to Cart
-      onTap: () => onTap(test),
     );
   }
 }

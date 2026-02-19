@@ -22,6 +22,11 @@ class UniversalItemCard extends StatelessWidget {
   final bool isPurchased;
   final bool hideTags;
   final Widget? trailing;
+
+  // Rating
+  final double? rating;
+  final int? reviewCount;
+
   final String? heroTag;
   final Widget? customAction;
 
@@ -44,6 +49,8 @@ class UniversalItemCard extends StatelessWidget {
     this.isPurchased = false, // Default false
     this.hideTags = false, // NEW: Option to hide status tags
     this.trailing, // NEW: Optional trailing widget
+    this.rating,
+    this.reviewCount,
     this.heroTag, // NEW
     this.customAction, // NEW
   });
@@ -209,7 +216,7 @@ class UniversalItemCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
           child: SizedBox(
-            height: 135,
+            height: 155, // Increased from 135 to prevent overflow
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -217,7 +224,7 @@ class UniversalItemCard extends StatelessWidget {
                 Hero(
                   tag: heroTag ?? 'item_${title}_$price',
                   child: AspectRatio(
-                    aspectRatio: 0.8,
+                    aspectRatio: 0.75, // Adjusted for taller card
                     child: ClipRRect(
                       borderRadius: const BorderRadius.horizontal(
                           left: Radius.circular(AppSpacing.radiusXl)),
@@ -278,7 +285,8 @@ class UniversalItemCard extends StatelessWidget {
                 // 2. Content (Right)
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
+                    padding:
+                        const EdgeInsets.all(AppSpacing.sm), // Reduced padding
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -336,6 +344,39 @@ class UniversalItemCard extends StatelessWidget {
                                 ),
                               ],
                             ],
+                          ),
+
+                        const SizedBox(height: 8),
+
+                        // Rating Row (Play Store Style)
+                        if (rating != null && rating! > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              children: [
+                                Text(
+                                  rating!.toStringAsFixed(1),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.neutral700,
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
+                                const Icon(Icons.star_rounded,
+                                    size: 14, color: Color(0xFFFFC107)),
+                                if (reviewCount != null) ...[
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '($reviewCount)',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.neutral500,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
 
                         // Price & Action

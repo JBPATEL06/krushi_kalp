@@ -2,26 +2,32 @@ import 'package:flutter/material.dart';
 import '../../domain/models/resource.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+
 import 'package:provider/provider.dart';
-import '../providers/cart_provider.dart';
 import '../providers/resource_provider.dart';
-import '../providers/offer_provider.dart'; // NEW
-import '../../utils/price_calculator.dart'; // NEW
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../data/services/download_service.dart';
-import '../widgets/common/download_progress_dialog.dart';
 import 'pdf_viewer_screen.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+
+import '../../data/services/review_service.dart';
+import '../../domain/models/review.dart';
+import '../widgets/reviews/review_card.dart';
+import '../widgets/reviews/review_dialog.dart';
+import '../widgets/reviews/rate_stars.dart';
+import 'reviews/all_reviews_screen.dart'; // NEW
 
 class ResourceDetailScreen extends StatefulWidget {
   final Resource resource;
-  final String? heroTag; // NEW
+  final bool isPurchased;
+  final String? heroTag;
 
   const ResourceDetailScreen({
-    super.key,
     required this.resource,
+    this.isPurchased = false,
     this.heroTag,
   });
 
@@ -30,16 +36,169 @@ class ResourceDetailScreen extends StatefulWidget {
 }
 
 class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
-  bool _isLoading = false;
+  // Reviews State
+  bool _isLoadingReviews = true;
+  List<Review> _reviews = [];
+  Review? _userReview;
+  Map<String, dynamic> _ratingStats = {'average': 0.0, 'count': 0};
+  bool _isDownloading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReviews();
+  }
+
+  Future<void> _loadReviews() async {
+    if (!mounted) return;
+    setState(() => _isLoadingReviews = true);
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      final futures = <Future>[
+        ReviewService.getReviewsForItem(widget.resource.id, 'resource'),
+        ReviewService.getRatingStats(widget.resource.id, 'resource'),
+      ];
+
+      if (user != null) {
+        futures.add(ReviewService.getUserReview(
+            user.id, widget.resource.id, 'resource'));
+      }
+
+      final results = await Future.wait(futures);
+
+      if (mounted) {
+        setState(() {
+          _reviews = results[0] as List<Review>;
+          _ratingStats = results[1] as Map<String, dynamic>;
+          if (results.length > 2) {
+            _userReview = results[2] as Review?;
+          } else {
+            _userReview = null;
+          }
+          _isLoadingReviews = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading reviews: $e");
+      if (mounted) setState(() => _isLoadingReviews = false);
+    }
+  }
+
+  void _showReviewDialog() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login to review')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => ReviewDialog(
+        title: widget.resource.title,
+        initialRating: _userReview?.rating,
+        initialReview: _userReview?.reviewText,
+        isEdit: _userReview != null,
+        lastEditedAt: _userReview?.updatedAt,
+        onSubmit: (rating, text) async {
+          try {
+            await ReviewService.submitReview(
+              userId: user.id,
+              itemId: widget.resource.id,
+              itemType: 'resource',
+              rating: rating,
+              reviewText: text,
+            );
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Review submitted successfully!')),
+              );
+              _loadReviews(); // Refresh list
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to submit: $e')),
+              );
+            }
+          }
+        },
+        onDelete: () async {
+          if (_userReview == null) return;
+          try {
+            await ReviewService.deleteReview(_userReview!.id);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Review deleted successfully')),
+              );
+              _loadReviews(); // Refresh
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to delete: $e')),
+              );
+            }
+          }
+        },
+      ),
+    );
+  }
+
+  Future<void> _openPdf() async {
+    if (widget.resource.fileUrl == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("PDF URL is missing")),
+      );
+      return;
+    }
+
+    setState(() => _isDownloading = true);
+    try {
+      final url = widget.resource.fileUrl!;
+      final filename = url.split('/').last;
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/$filename');
+
+      if (!await file.exists()) {
+        final response = await http.get(Uri.parse(url));
+        await file.writeAsBytes(response.bodyBytes);
+      }
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PdfViewerScreen(
+              file: file,
+              title: widget.resource.title,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error downloading PDF: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error opening PDF: $e")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isDownloading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final resource = widget.resource;
+    // Check purchase status from provider (real-time)
     final isPurchased = context
         .watch<ResourceProvider>()
         .purchasedResourceIds
-        .contains(resource.id);
-    final isInCart = context.watch<CartProvider>().isItemInCart(resource.id);
+        .contains(widget.resource.id);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -48,291 +207,378 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. Image
-            Hero(
-              tag: widget.heroTag ?? 'resource_image_${resource.id}',
-              child: Container(
-                height: 200,
-                width: double.infinity,
-                child: resource.thumbnailUrl != null &&
-                        resource.thumbnailUrl!.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: resource.thumbnailUrl!,
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            // refresh
+            await _loadReviews();
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 1. HEADER IMAGE
+                if (widget.resource.thumbnailUrl != null &&
+                    widget.resource.thumbnailUrl!.isNotEmpty)
+                  Hero(
+                    tag: widget.heroTag ??
+                        'resource_image_${widget.resource.id}',
+                    child: SizedBox(
+                      height: 250,
+                      width: double.infinity,
+                      child: CachedNetworkImage(
+                        imageUrl: widget.resource.thumbnailUrl!,
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(
-                          color: AppColors.neutral50,
-                          child: const Center(
-                            child:
-                                Icon(Icons.image, color: AppColors.neutral400),
-                          ),
+                          color: AppColors.neutral200,
+                          child:
+                              const Center(child: CircularProgressIndicator()),
                         ),
                         errorWidget: (context, url, error) => Container(
-                          color: AppColors.neutral100,
+                          color: AppColors.neutral200,
                           child: const Icon(Icons.broken_image,
-                              color: AppColors.neutral400),
+                              size: 40, color: AppColors.neutral400),
                         ),
-                        imageBuilder: (context, imageProvider) => Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius:
-                                BorderRadius.circular(AppSpacing.radiusXl),
-                            image: DecorationImage(
-                              image: imageProvider,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Container(
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    height: 200,
+                    width: double.infinity,
+                    color: AppColors.neutral200,
+                    child: const Icon(Icons.menu_book,
+                        size: 64, color: AppColors.neutral400),
+                  ),
+
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    children: [
+                      // 2. TITLE & TYPE CARD
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AppSpacing.lg),
                         decoration: BoxDecoration(
                           color: AppColors.surface,
                           borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusXl),
+                              BorderRadius.circular(AppSpacing.radiusLg),
                         ),
-                        child: const Center(
-                          child: Icon(Icons.description,
-                              size: 64, color: AppColors.neutral300),
+                        child: Column(
+                          children: [
+                            Text(
+                              widget.resource.title,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              widget.resource.type.name.toUpperCase(),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.0,
+                                  ),
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+
+                            // 3. PRICE / STATUS
+                            if (widget.resource.price > 0 && !isPurchased) ...[
+                              Text(
+                                '₹${widget.resource.price.toStringAsFixed(0)}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                    ),
+                              ),
+                            ] else if (isPurchased) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.success.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: AppColors.success),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.check_circle,
+                                        size: 16, color: AppColors.success),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      "Purchased",
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.success,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ] else ...[
+                              Text(
+                                'Free',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.success,
+                                    ),
+                              ),
+                            ],
+
+                            const SizedBox(height: AppSpacing.md),
+                            // Rating Summary
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                RateStars(
+                                  rating: (_ratingStats['average'] as num)
+                                      .toDouble(),
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${_ratingStats['average']} (${_ratingStats['count']} reviews)',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
 
-            // 2. Title & Price
-            Text(
-              resource.title,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              resource.category ?? resource.type.name.toUpperCase(),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
+                      const SizedBox(height: AppSpacing.md),
 
-            // 3. Price
-            if (!isPurchased)
-              Row(
-                children: [
-                  Text(
-                    resource.price == 0
-                        ? 'Free'
-                        : '₹${resource.price.toStringAsFixed(0)}',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                      // 4. DESCRIPTION CARD
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius:
+                              BorderRadius.circular(AppSpacing.radiusLg),
                         ),
-                  ),
-                ],
-              ),
-            const SizedBox(height: AppSpacing.xl),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "About this Resource",
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              (widget.resource.description ?? "").isEmpty
+                                  ? "No description available."
+                                  : widget.resource.description!,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: AppColors.textSecondary,
+                                    height: 1.5,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
 
-            // 4. Description
-            if (resource.description != null) ...[
-              Text(
-                'Description',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                resource.description!,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.textSecondary,
-                      height: 1.5,
-                    ),
-              ),
-            ],
-          ],
-        ),
-      ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: ElevatedButton(
-            onPressed:
-                isPurchased ? _downloadOrOpen : (isInCart ? null : _addToCart),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isPurchased
-                  ? AppColors.secondary
-                  : (resource.price == 0
-                      ? AppColors.success
-                      : AppColors.primary),
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-              ),
-            ),
-            child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
-                  )
-                : Text(
-                    isPurchased
-                        ? 'Download'
-                        : (resource.price == 0
-                            ? 'Claim Now'
-                            : (isInCart ? 'In Cart' : 'Add to Cart')),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                      const SizedBox(height: AppSpacing.md),
+
+                      // 5. ACTION BUTTON (View PDF / Buy)
+                      if (isPurchased || widget.resource.price == 0)
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            onPressed: _isDownloading
+                                ? null
+                                : () {
+                                    if (widget.resource.type.name
+                                            .toLowerCase() ==
+                                        'pdf') {
+                                      _openPdf();
+                                    } else {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                "Opening this resource type is not supported yet.")),
+                                      );
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppSpacing.radiusMd),
+                              ),
+                            ),
+                            icon: _isDownloading
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                        color: Colors.white, strokeWidth: 2))
+                                : const Icon(Icons.visibility),
+                            label: Text(_isDownloading
+                                ? "Downloading..."
+                                : "View Resource"),
+                          ),
+                        ),
+
+                      const SizedBox(height: AppSpacing.md),
+
+                      // 6. REVIEWS SECTION CARD
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius:
+                              BorderRadius.circular(AppSpacing.radiusLg),
+                        ),
+                        child: _buildReviewsSection(isPurchased),
+                      ),
+
+                      const SizedBox(height: 60), // Bottom padding
+                    ],
                   ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Future<void> _downloadOrOpen() async {
-    final filename =
-        'resource_${widget.resource.id}_${widget.resource.title.replaceAll(" ", "_")}';
+  Widget _buildReviewsSection(bool isPurchased) {
+    // Check if current user is logged in
+    final user = Supabase.instance.client.auth.currentUser;
+    // Allow review if purchased OR if it's free
+    final canReview =
+        user != null && (isPurchased || widget.resource.price == 0);
 
-    // Check if already downloaded
-    final isDownloaded = await DownloadService().isFileDownloaded(filename);
+    // Filter for positive reviews (4 or 5 stars)
+    final positiveReviews = _reviews.where((r) => r.rating >= 4).toList();
+    final displayedReviews = positiveReviews.take(3).toList();
+    // Show "View All" if there are ANY reviews not currently displayed
+    final hasMoreReviews = _reviews.length > displayedReviews.length;
 
-    if (isDownloaded) {
-      // Open file directly
-      final path = await DownloadService().getLocalPath(filename);
-      if (await File(path).exists()) {
-        _openFile(File(path));
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('File not found. Please download again.')),
-          );
-        }
-      }
-    } else {
-      // Check file URL
-      if (widget.resource.fileUrl == null || widget.resource.fileUrl!.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('File URL not available')),
-          );
-        }
-        return;
-      }
-
-      // Show download progress dialog
-      if (!mounted) return;
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => DownloadProgressDialog(
-          url: widget.resource.fileUrl!,
-          filename: filename,
-          displayName: widget.resource.title,
-          onComplete: (path) {
-            // Open file after download
-            _openFile(File(path));
-          },
-          onError: () {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Download failed. Please try again.')),
-              );
-            }
-          },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Reviews",
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+            ),
+            if (canReview)
+              TextButton(
+                onPressed: _showReviewDialog,
+                style: TextButton.styleFrom(
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  padding: EdgeInsets.zero,
+                ),
+                child: Text(
+                    _userReview != null ? "Edit Review" : "Write a Review"),
+              ),
+          ],
         ),
-      );
-    }
-  }
+        const SizedBox(height: AppSpacing.md),
 
-  void _openFile(File file) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PdfViewerScreen(
-          file: file,
-          title: widget.resource.title,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _addToCart() async {
-    setState(() => _isLoading = true);
-    try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Please login to purchase.')));
-        }
-        return;
-      }
-
-      if (widget.resource.price == 0) {
-        // Claim Logic
-        await context
-            .read<ResourceProvider>()
-            .claimResource(widget.resource.id, user.id);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Claimed ${widget.resource.title} successfully!'),
-            backgroundColor: AppColors.success,
-          ));
-        }
-      } else {
-        double finalPrice = widget.resource.price;
-        try {
-          final activeOffers = context.read<OfferProvider>().activeOffers;
-          if (activeOffers.isNotEmpty) {
-            final priceData = PriceCalculator.calculateDisplayPrice(
-              basePrice: widget.resource.price,
-              activeOffers: activeOffers,
-              resourceId: widget.resource.id,
+        // Reviews List
+        if (_isLoadingReviews)
+          const Center(child: CircularProgressIndicator())
+        else if (_reviews.isEmpty)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Text(
+                "No reviews yet. Be the first to review!",
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+          )
+        else if (displayedReviews.isEmpty)
+          hasMoreReviews
+              ? const SizedBox.shrink()
+              : const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Text(
+                      "No positive reviews to display.",
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ),
+                )
+        else
+          ...displayedReviews.map((review) {
+            final isOwnReview = user != null && review.userId == user.id;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: ReviewCard(
+                review: review,
+                isOwnReview: isOwnReview,
+                onEdit: isOwnReview ? _showReviewDialog : null,
+              ),
             );
-            finalPrice = priceData['finalPrice'];
-          }
-        } catch (_) {}
+          }),
 
-        await context.read<CartProvider>().addToCart(
-            resourceId: widget.resource.id,
-            price: finalPrice,
-            authUserId: user.id);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('Added ${widget.resource.title} to Cart')));
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+        if (!(_isLoadingReviews) &&
+            (_reviews.isNotEmpty) &&
+            (hasMoreReviews || displayedReviews.isEmpty))
+          Center(
+            child: TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AllReviewsScreen(
+                      itemId: widget.resource.id,
+                      itemType: 'resource',
+                      itemTitle: widget.resource.title,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.arrow_forward, size: 16),
+              label: const Text("View All Reviews"),
+            ),
+          ),
+      ],
+    );
   }
 }

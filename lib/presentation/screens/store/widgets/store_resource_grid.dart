@@ -4,6 +4,7 @@ import '../../../../domain/models/offer.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../widgets/common/universal_item_card.dart';
 import '../../../../utils/price_calculator.dart';
+import '../../../../data/services/review_service.dart'; // NEW
 
 class StoreResourceGrid extends StatelessWidget {
   final List<Resource> resources;
@@ -103,35 +104,55 @@ class StoreResourceGrid extends StatelessWidget {
             }
 
             return Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                child: UniversalItemCard(
-                  title: resource.title,
-                  subtitle: subtitle,
-                  price: displayPrice,
-                  originalPrice: mrp,
-                  discountTag: discountTag,
-                  coverUrl: resource.thumbnailUrl,
-                  actionLabel: isPurchased
-                      ? 'Download'
-                      : (displayPrice == 0 ? 'Claim' : 'Buy Now'),
-                  isActionEnabled: true,
-                  isInCart: isInCart,
-                  isPurchased: isPurchased, // NEW
-                  hideTags: isPurchased, // Hide purchased tag for cleaner look
-                  onActionTap: () {
-                    if (isPurchased) {
-                      // Trigger Open/Download
-                      onBuyTap(resource);
-                    } else if (displayPrice == 0) {
-                      onBuyTap(resource); // Claim
-                    } else {
-                      onBuyTap(resource); // Buy Now
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: FutureBuilder<Map<String, dynamic>>(
+                future: ReviewService.getRatingStats(resource.id, 'resource'),
+                builder: (context, snapshot) {
+                  double? rating;
+                  int? count;
+                  if (snapshot.hasData) {
+                    rating = snapshot.data!['average'] as double;
+                    count = snapshot.data!['count'] as int;
+                    if (count == 0) {
+                      rating = null;
+                      count = null;
                     }
-                  },
-                  onCartTap: () => onCartTap(resource), // Add to Cart
-                  onTap: () => onTap(resource), // Open Detail
-                  heroTag: 'store_resource_${resource.id}', // Unique Tag
-                ));
+                  }
+
+                  return UniversalItemCard(
+                    title: resource.title,
+                    subtitle: subtitle,
+                    price: displayPrice,
+                    originalPrice: mrp,
+                    discountTag: discountTag,
+                    coverUrl: resource.thumbnailUrl,
+                    actionLabel: isPurchased
+                        ? 'Download'
+                        : (displayPrice == 0 ? 'Claim' : 'Buy Now'),
+                    isActionEnabled: true,
+                    isInCart: isInCart,
+                    isPurchased: isPurchased, // NEW
+                    hideTags:
+                        isPurchased, // Hide purchased tag for cleaner look
+                    rating: rating, // NEW
+                    reviewCount: count, // NEW
+                    onActionTap: () {
+                      if (isPurchased) {
+                        // Trigger Open/Download
+                        onBuyTap(resource);
+                      } else if (displayPrice == 0) {
+                        onBuyTap(resource); // Claim
+                      } else {
+                        onBuyTap(resource); // Buy Now
+                      }
+                    },
+                    onCartTap: () => onCartTap(resource), // Add to Cart
+                    onTap: () => onTap(resource), // Open Detail
+                    heroTag: 'store_resource_${resource.id}', // Unique Tag
+                  );
+                },
+              ),
+            );
           },
           childCount: resources.length,
         ),

@@ -9,6 +9,8 @@ import '../../data/services/translation_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '../../data/services/review_service.dart'; // NEW
+import '../widgets/reviews/review_dialog.dart'; // NEW
 
 class TestResultScreen extends StatefulWidget {
   final String testId;
@@ -430,6 +432,16 @@ class _TestResultScreenState extends State<TestResultScreen>
 
                     const SizedBox(height: AppSpacing.lg),
 
+                    // Rating Button (only if online)
+                    if (!_isOffline)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg),
+                        child: _buildRatingSection(),
+                      ),
+
+                    const SizedBox(height: AppSpacing.lg),
+
                     // Analysis Button
                     if (widget.questions != null &&
                         widget.selectedAnswers != null)
@@ -560,6 +572,135 @@ class _TestResultScreenState extends State<TestResultScreen>
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  // --- RATING SECTION ---
+  bool _hasRated = false;
+  bool _isLoadingRating = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _checkExistingRating();
+  }
+
+  Future<void> _checkExistingRating() async {
+    // Only check once
+    if (!_isLoadingRating) return;
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      if (mounted) setState(() => _isLoadingRating = false);
+      return;
+    }
+
+    try {
+      // Assuming testId is numeric ID in string format. If GUID, this works too.
+      // But ReviewService expects int for ID.
+      // Let's try to parse widget.testId. If it fails, we skip rating (legacy IDs).
+      int? tId = int.tryParse(widget.testId);
+      if (tId != null) {
+        final review = await ReviewService.getUserReview(user.id, tId, 'test');
+        if (mounted) {
+          setState(() {
+            _hasRated = review != null;
+            _isLoadingRating = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _isLoadingRating = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingRating = false);
+    }
+  }
+
+  Widget _buildRatingSection() {
+    if (_isLoadingRating) return const SizedBox.shrink();
+    if (_hasRated) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.success.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.check_circle_outline,
+                color: AppColors.success, size: 20),
+            SizedBox(width: AppSpacing.sm),
+            Text(
+              "Thanks for your feedback!",
+              style: TextStyle(
+                  color: AppColors.success, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton.icon(
+        onPressed: () => _showRatingDialog(),
+        icon: const Icon(Icons.star_rate_rounded, color: Color(0xFFFFC107)),
+        label: const Text(
+          'Rate this Test',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          backgroundColor: const Color(0xFFFFC107).withValues(alpha: 0.1),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+        ),
+      ),
+    );
+  }
+
+  void _showRatingDialog() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    int? tId = int.tryParse(widget.testId);
+    if (tId == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => ReviewDialog(
+        title: widget.testTitle,
+        onSubmit: (rating, review) async {
+          try {
+            await ReviewService.submitReview(
+              userId: user.id,
+              itemId: tId,
+              itemType: 'test',
+              rating: rating,
+              reviewText: review,
+            );
+
+            if (mounted) {
+              setState(() => _hasRated = true);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Thank you for your review!')),
+              );
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to submit: $e')),
+              );
+            }
+          }
+        },
       ),
     );
   }
