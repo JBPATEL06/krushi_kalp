@@ -45,16 +45,14 @@ class ReviewCard extends StatelessWidget {
                 backgroundImage: review.userAvatarUrl != null
                     ? NetworkImage(review.userAvatarUrl!)
                     : null,
-                child: review.userAvatarUrl == null
-                    ? Text(
-                        (review.userName ?? 'U')[0].toUpperCase(),
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      )
-                    : null,
+                child: Text(
+                  review.userName[0].toUpperCase(),
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
               ),
               const SizedBox(width: AppSpacing.sm),
               // Name & Date
@@ -63,7 +61,7 @@ class ReviewCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      review.userName ?? 'User',
+                      review.userName,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,

@@ -10,6 +10,7 @@ import '../../data/services/auth_service.dart';
 import '../../data/services/translation_service.dart';
 import '../widgets/common/network_error_state.dart';
 import 'test_result_screen.dart';
+import 'main_screen.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 
@@ -312,7 +313,11 @@ class _ExamScreenState extends State<ExamScreen> {
         if (didPop) return;
         final shouldExit = await _showExitConfirmation();
         if (shouldExit && context.mounted) {
-          Navigator.of(context).pop();
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const MainScreen()),
+            (route) => false,
+          );
         }
       },
       child: Scaffold(
@@ -328,7 +333,11 @@ class _ExamScreenState extends State<ExamScreen> {
             onPressed: () async {
               final shouldExit = await _showExitConfirmation();
               if (shouldExit && context.mounted) {
-                Navigator.of(context).pop();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MainScreen()),
+                  (route) => false,
+                );
               }
             },
           ),

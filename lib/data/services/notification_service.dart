@@ -363,7 +363,8 @@ class NotificationService {
       'General Notifications',
       importance: Importance.high,
       priority: Priority.high,
-      color: const Color(0xFF4CAF50), // Green for notification icon background
+      color: Colors
+          .white, // White background (standard Android uses system, this tints small icon usually)
     );
     const details = NotificationDetails(android: androidDetails);
     await _notificationsPlugin.show(id, title, body, details);

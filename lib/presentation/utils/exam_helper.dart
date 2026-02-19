@@ -160,7 +160,7 @@ class ExamHelper {
       // START EXAM IMMEDIATELY
       final path = await downloadService.getLocalPath(filename);
       if (!context.mounted) return;
-      _navigateToExam(context, test, selectedLanguage ?? 'en', File(path));
+      _navigateToExam(context, test, selectedLanguage, File(path));
     } else {
       // PROMPT DOWNLOAD
       if (!context.mounted) return;
@@ -179,6 +179,7 @@ class ExamHelper {
               onPressed: () async {
                 Navigator.pop(ctx); // Close prompt
 
+                // Start Download
                 if (test.contentUrl == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_chat_ui/flutter_chat_ui.dart'
+    show Chat, DefaultChatTheme;
+import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:krushi_kalp/core/theme/app_colors.dart';
 import 'package:krushi_kalp/data/services/chat_service.dart';
 import 'package:krushi_kalp/domain/models/message.dart';
 import 'package:krushi_kalp/data/services/notification_service.dart';
-import '../../widgets/common/network_error_state.dart';
+import 'package:krushi_kalp/presentation/widgets/common/network_error_state.dart';
+import 'package:krushi_kalp/presentation/utils/chat_mapper.dart';
+import 'package:krushi_kalp/presentation/widgets/chat/chat_input.dart';
 
 class AdminChatDetailScreen extends StatefulWidget {
   final String userId;
@@ -19,228 +25,157 @@ class AdminChatDetailScreen extends StatefulWidget {
 }
 
 class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
-  final TextEditingController _controller = TextEditingController();
   final ChatService _chatService = ChatService();
-  double _lastKeyboardHeight = 0;
+  final types.User _adminUser = const types.User(id: 'admin');
 
   @override
   void initState() {
     super.initState();
-    // Suppress notifications for this user while chatting
     NotificationService.currentChatUserId = widget.userId;
   }
 
   @override
   void dispose() {
     NotificationService.currentChatUserId = null;
-    _controller.dispose();
     super.dispose();
   }
 
-  void _sendMessage() async {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
-
-    _controller.clear();
+  void _handleSendPressed(types.PartialText message) async {
     try {
-      await _chatService.sendMessageAsAdmin(text, widget.userId);
+      await _chatService.sendMessageAsAdmin(message.text, widget.userId);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _clearConversation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear Conversation?'),
+        content: const Text(
+            'This will delete ALL messages in this chat permanently.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Clear All',
+                style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _chatService.deleteConversation(widget.userId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Chat cleared')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  void _handleMessageLongPress(
+      BuildContext context, types.Message message) async {
+    // Admin can delete ALL messages (their own AND user's)
+    // Removed: if (message.author.id != _adminUser.id) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Message?'),
+        content: const Text('Are you sure you want to delete this message?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child:
+                const Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _chatService.deleteMessage(message.id);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting message: $e')),
+          );
+        }
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-    if (bottomPadding > _lastKeyboardHeight) {
-      _lastKeyboardHeight = bottomPadding;
-    }
-    // Snap to the known max height if keyboard is opening (height > 0)
-    final effectivePadding =
-        (bottomPadding > 0) ? _lastKeyboardHeight : bottomPadding;
-
     return Scaffold(
-      resizeToAvoidBottomInset: false, // Instant keyboard
       appBar: AppBar(
         title: Text(widget.userName),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Clear Conversation?'),
-                  content: const Text(
-                      'This will delete ALL messages in this chat permanently.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () async {
-                        if (!context.mounted) return;
-                        Navigator.pop(ctx);
-                        try {
-                          await _chatService.deleteConversation(widget.userId);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Chat cleared')),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error: $e')),
-                            );
-                          }
-                        }
-                      },
-                      child: const Text('Clear All',
-                          style: TextStyle(color: Colors.red)),
-                    ),
-                  ],
-                ),
-              );
-            },
+            icon: const Icon(Icons.delete_sweep, color: AppColors.error),
+            onPressed: _clearConversation,
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<List<Message>>(
-              stream: _chatService.getAdminMessagesStream(widget.userId),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return NetworkErrorState(
-                    message: isNetworkError(snapshot.error)
-                        ? 'Unable to load messages.'
-                        : 'Error: ${snapshot.error}',
-                    onRetry: () => setState(() {}),
-                  );
-                }
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+      body: StreamBuilder<List<Message>>(
+        stream: _chatService.getAdminMessagesStream(widget.userId),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return NetworkErrorState(
+              message: 'Error loading messages',
+              onRetry: () => setState(() {}),
+            );
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-                final messages = snapshot.data!;
-                // Reverse the list locally so Index 0 is the NEWEST message (Bottom)
-                final reversedMessages = messages.reversed.toList();
+          var messages = ChatMapper.mapToUI(snapshot.data!,
+              otherUserName: widget.userName);
+          messages = messages.reversed.toList();
 
-                return ListView.builder(
-                  reverse: true, // Start from bottom
-                  padding: const EdgeInsets.all(16),
-                  itemCount: reversedMessages.length,
-                  itemBuilder: (context, index) {
-                    final msg = reversedMessages[index];
-                    // IMPORTANT: In Admin View, "Me" is the Admin (isFromAdmin == true)
-                    final isMe = msg.isFromAdmin;
-
-                    return Align(
-                      alignment:
-                          isMe ? Alignment.centerRight : Alignment.centerLeft,
-                      child: GestureDetector(
-                        onLongPress: () {
-                          // Admin can delete *any* message
-                          showDialog(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Delete Message?'),
-                              content: const Text(
-                                  'This will remove the message for everyone.'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx),
-                                  child: const Text('Cancel'),
-                                ),
-                                TextButton(
-                                  onPressed: () async {
-                                    if (!context.mounted) return;
-                                    Navigator.pop(ctx);
-
-                                    try {
-                                      await _chatService.deleteMessage(msg.id);
-                                    } catch (e) {
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(content: Text('Error: $e')),
-                                        );
-                                      }
-                                    }
-                                  },
-                                  child: const Text('Delete',
-                                      style: TextStyle(color: Colors.red)),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                          decoration: BoxDecoration(
-                            // Admin (Me) = Indigo, User = Grey
-                            color: isMe
-                                ? Theme.of(context).primaryColor
-                                : Colors.grey[300],
-                            borderRadius: BorderRadius.circular(20).copyWith(
-                              bottomRight:
-                                  isMe ? const Radius.circular(0) : null,
-                              bottomLeft:
-                                  !isMe ? const Radius.circular(0) : null,
-                            ),
-                          ),
-                          constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.75,
-                          ),
-                          child: Text(
-                            msg.message,
-                            style: TextStyle(
-                              color: isMe ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
+          return Chat(
+            messages: messages,
+            onSendPressed: _handleSendPressed,
+            onMessageLongPress: _handleMessageLongPress,
+            user: _adminUser,
+            customBottomWidget: ChatInput(
+              onSendPressed: (text) =>
+                  _handleSendPressed(types.PartialText(text: text)),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.only(bottom: effectivePadding),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              color: Colors.white,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      autocorrect: true,
-                      decoration: const InputDecoration(
-                        hintText: 'Reply as Admin...',
-                        border: OutlineInputBorder(),
-                      ),
-                      onSubmitted: (_) => _sendMessage(),
-                    ),
-                  ),
-                  IconButton(
-                    icon:
-                        Icon(Icons.send, color: Theme.of(context).primaryColor),
-                    onPressed: _sendMessage,
-                  ),
-                ],
-              ),
+            theme: const DefaultChatTheme(
+              primaryColor: AppColors.primary,
+              secondaryColor: AppColors.neutral200, // User messages bubbles
+              inputBackgroundColor: AppColors.neutral50,
+              backgroundColor: AppColors.background,
             ),
-          ),
-        ],
+            showUserAvatars: true,
+            showUserNames: false, // Name is in AppBar
+          );
+        },
       ),
     );
   }

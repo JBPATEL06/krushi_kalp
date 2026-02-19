@@ -12,7 +12,7 @@ import 'my_resources_screen.dart';
 import '../providers/resource_provider.dart';
 import '../providers/auth_provider.dart';
 import 'free_content_screen.dart'; // NEW
-import 'package:cached_network_image/cached_network_image.dart'; // NEW
+// import 'package:cached_network_image/cached_network_image.dart'; // REMOVED: Using local banner
 import 'cart_screen.dart';
 import 'score_screen.dart';
 import 'package:share_plus/share_plus.dart';
@@ -28,9 +28,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _userName = 'Aspirant';
-  int _currentBannerIndex = 0; // NEW
-  List<HomeBanner> _banners = [];
-  bool _isLoadingBanners = true;
+  // String _currentBannerIndex = 0; // REMOVED: Static Banner
+  // List<HomeBanner> _banners = []; // REMOVED
+  // bool _isLoadingBanners = true; // REMOVED
 
   String _userEmail = '';
 
@@ -38,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadUserData();
-    _loadBanners();
+    // _loadBanners(); // REMOVED
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TestProvider>().fetchTests();
       final user = context.read<AuthProvider>().currentUser;
@@ -48,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  /*
   Future<void> _loadBanners() async {
     if (!mounted) return;
     setState(() => _isLoadingBanners = true);
@@ -66,6 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
+  */
 
   Future<void> _loadUserData() async {
     try {
@@ -136,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onRefresh: () async {
               await Future.wait([
                 _loadUserData(),
-                _loadBanners(),
+                // _loadBanners(), // REMOVED
                 provider.fetchTests(forceRefresh: true),
                 context.read<ResourceProvider>().fetchPurchasedResources(
                     context.read<AuthProvider>().currentUser?.id ?? ''),
@@ -334,135 +336,36 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBannerCarousel() {
-    if (_isLoadingBanners) {
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        height: 160,
-        decoration: BoxDecoration(
-          color: AppColors.neutral100,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        ),
-        child: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    if (_banners.isEmpty) {
-      // Fallback Static Banner if no banners from API
-      // Safer to rely on local asset or simple container if network fails
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        height: 160,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.school,
-                size: 48, color: AppColors.primary.withOpacity(0.5)),
-            const SizedBox(height: 8),
-            Text(
-              "Welcome to Krushi Kalp",
-              style: TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Using PageView for simplicity as per original code structure, but making it safe
-    return Column(
-      children: [
-        SizedBox(
-            height: 160,
-            child: PageView.builder(
-              controller: PageController(viewportFraction: 0.9),
-              itemCount: _banners.length,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentBannerIndex = index;
-                });
-              },
-              itemBuilder: (context, index) {
-                final banner = _banners[index];
-                return GestureDetector(
-                  onTap: () {
-                    // Handle action
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                      color: AppColors.neutral100, // Placeholder color
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                      child: CachedNetworkImage(
-                        imageUrl: banner.imageUrl,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                        placeholder: (context, url) => Container(
-                          color: AppColors.neutral100,
-                          child: const Center(
-                            child: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) {
-                          debugPrint(
-                              'Failed to load banner image: $url, Error: $error');
-                          return Container(
-                            color: AppColors.neutral200,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.broken_image,
-                                    color: AppColors.neutral400),
-                                Text('Image Error',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
-                                            color: AppColors.neutral500)),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                );
-              },
-            )),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: _banners.asMap().entries.map((entry) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      height: 180, // Slightly increased height for better visibility
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        child: Image.asset(
+          'assets/images/homeBanner.png',
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint('Error loading home banner: $error');
             return Container(
-              width: 8.0,
-              height: 8.0,
-              margin:
-                  const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: (Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : AppColors.primary)
-                    .withOpacity(_currentBannerIndex == entry.key ? 0.9 : 0.4),
+              color: AppColors.primary.withOpacity(0.1),
+              child: const Center(
+                child: Icon(Icons.broken_image, color: AppColors.neutral400),
               ),
             );
-          }).toList(),
+          },
         ),
-      ],
+      ),
     );
   }
 

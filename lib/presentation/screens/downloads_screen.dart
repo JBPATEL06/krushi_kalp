@@ -541,24 +541,6 @@ class _DownloadsScreenState extends State<DownloadsScreen>
     );
   }
 
-  String _getMonthName(int month) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
-    ];
-    return months[month - 1];
-  }
-
   Future<void> _confirmDelete(dynamic item, String filename) async {
     final title = item is Resource
         ? item.title

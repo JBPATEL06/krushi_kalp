@@ -58,7 +58,10 @@ class FCMService {
           debugPrint(
               'Message also contained a notification: ${message.notification}');
           // Show Local Notification
-          _showForegroundNotification(message);
+          // CRITICAL FIX: Commenting this out to preventing DUPLICATE notifications.
+          // NotificationService already listens to Supabase Realtime in the foreground
+          // and shows local notifications.
+          // _showForegroundNotification(message);
         }
       });
 
@@ -135,6 +138,7 @@ class FCMService {
     }
   }
 
+  // ignore: unused_element
   Future<void> _showForegroundNotification(RemoteMessage message) async {
     // 0. Suppress if Chat is OPEN
     // Access current chat user ID (set in ChatScreen/AdminChatDetailScreen)
