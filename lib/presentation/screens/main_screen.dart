@@ -133,9 +133,16 @@ class _MainScreenState extends State<MainScreen> {
                       if (navProvider.selectedIndex < 4)
                         const VerticalDivider(thickness: 1, width: 1),
                       Expanded(
-                        child: IndexedStack(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          switchInCurve: Curves.easeOut,
+                          switchOutCurve: Curves.easeIn,
+                          child: IndexedStack(
+                            key: ValueKey<int>(navProvider.selectedIndex),
                             index: navProvider.selectedIndex,
-                            children: _screens),
+                            children: _screens,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -143,74 +150,97 @@ class _MainScreenState extends State<MainScreen> {
               } else {
                 // Mobile
                 return Scaffold(
-                  body: IndexedStack(
-                      index: navProvider.selectedIndex, children: _screens),
+                  body: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: IndexedStack(
+                      key: ValueKey<int>(navProvider.selectedIndex),
+                      index: navProvider.selectedIndex,
+                      children: _screens,
+                    ),
+                  ),
                   bottomNavigationBar: navProvider.selectedIndex >= 4
                       ? null
-                      : NavigationBarTheme(
-                          data: NavigationBarThemeData(
-                            backgroundColor: Colors.white,
-                            indicatorColor: AppColors.primary.withOpacity(0.1),
-                            labelBehavior:
-                                NavigationDestinationLabelBehavior.alwaysShow,
-                            labelTextStyle:
-                                WidgetStateProperty.resolveWith((states) {
-                              if (states.contains(WidgetState.selected)) {
-                                return const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
-                                );
-                              }
-                              return const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textSecondary,
-                              );
-                            }),
-                            iconTheme:
-                                WidgetStateProperty.resolveWith((states) {
-                              if (states.contains(WidgetState.selected)) {
-                                return const IconThemeData(
-                                  size: 24,
-                                  color: AppColors.primary,
-                                );
-                              }
-                              return const IconThemeData(
-                                size: 24,
-                                color: AppColors.textSecondary,
-                              );
-                            }),
-                          ),
-                          child: NavigationBar(
-                            height: 65,
-                            backgroundColor: Colors.white,
-                            shadowColor: Colors.transparent,
-                            surfaceTintColor: Colors.white,
-                            selectedIndex: navProvider.selectedIndex,
-                            onDestinationSelected: navProvider.setIndex,
-                            destinations: const [
-                              NavigationDestination(
-                                icon: Icon(Icons.home_outlined),
-                                selectedIcon: Icon(Icons.home_rounded),
-                                label: 'Home',
-                              ),
-                              NavigationDestination(
-                                icon: Icon(Icons.quiz_outlined),
-                                selectedIcon: Icon(Icons.quiz_rounded),
-                                label: 'Mock Tests',
-                              ),
-                              NavigationDestination(
-                                icon: Icon(Icons.storefront_outlined),
-                                selectedIcon: Icon(Icons.storefront_rounded),
-                                label: 'Store',
-                              ),
-                              NavigationDestination(
-                                icon: Icon(Icons.download_outlined),
-                                selectedIcon: Icon(Icons.download_rounded),
-                                label: 'Downloads',
+                      : Container(
+                          decoration: BoxDecoration(
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 20,
+                                offset: const Offset(0, -5),
                               ),
                             ],
+                          ),
+                          child: NavigationBarTheme(
+                            data: NavigationBarThemeData(
+                              backgroundColor: Colors.white,
+                              indicatorColor: Colors.transparent, // Clean look
+                              labelBehavior:
+                                  NavigationDestinationLabelBehavior.alwaysShow,
+                              labelTextStyle:
+                                  WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) {
+                                  return const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  );
+                                }
+                                return const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textSecondary,
+                                );
+                              }),
+                              iconTheme:
+                                  WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) {
+                                  return const IconThemeData(
+                                    size: 26,
+                                    color: AppColors.primary,
+                                  );
+                                }
+                                return const IconThemeData(
+                                  size: 24,
+                                  color: AppColors.textSecondary,
+                                );
+                              }),
+                            ),
+                            child: NavigationBar(
+                              height: 70,
+                              backgroundColor: Colors.white,
+                              shadowColor: Colors.transparent,
+                              surfaceTintColor: Colors.white,
+                              selectedIndex: navProvider.selectedIndex,
+                              onDestinationSelected: navProvider.setIndex,
+                              destinations: const [
+                                NavigationDestination(
+                                  icon: Icon(Icons.home_outlined),
+                                  selectedIcon:
+                                      Icon(Icons.home_rounded, size: 28),
+                                  label: 'Home',
+                                ),
+                                NavigationDestination(
+                                  icon: Icon(Icons.quiz_outlined),
+                                  selectedIcon:
+                                      Icon(Icons.quiz_rounded, size: 28),
+                                  label: 'Tests',
+                                ),
+                                NavigationDestination(
+                                  icon: Icon(Icons.storefront_outlined),
+                                  selectedIcon:
+                                      Icon(Icons.storefront_rounded, size: 28),
+                                  label: 'Store',
+                                ),
+                                NavigationDestination(
+                                  icon: Icon(Icons.download_outlined),
+                                  selectedIcon:
+                                      Icon(Icons.download_rounded, size: 28),
+                                  label: 'Downloads',
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                 );

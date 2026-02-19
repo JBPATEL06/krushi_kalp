@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../../data/services/admin_service.dart';
-import '../../../../utils/network_utils.dart'; // Import NetworkUtils
+import 'package:krushi_kalp/data/services/admin_service.dart';
+import 'package:krushi_kalp/utils/network_utils.dart';
+import 'package:krushi_kalp/core/theme/app_colors.dart';
+import 'package:krushi_kalp/core/theme/app_spacing.dart';
+import 'package:krushi_kalp/presentation/widgets/common/modern_card.dart';
 
 import 'admin_offer_list_screen.dart';
 import 'admin_chat_list_screen.dart';
@@ -17,10 +20,9 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
-  // Streams to control refreshing
   late Stream<List<Map<String, dynamic>>> _topTestsStream;
   late Stream<List<Map<String, dynamic>>> _topUsersStream;
-  Key _refreshKey = UniqueKey(); // Force rebuild if needed
+  Key _refreshKey = UniqueKey();
 
   @override
   void initState() {
@@ -34,7 +36,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Future<void> _onRefresh() async {
-    // Artificial delay to show the spinner (streams update real-time anyway, but this forces a re-subscription/check)
     await Future.delayed(const Duration(milliseconds: 800));
     if (mounted) {
       setState(() {
@@ -44,50 +45,37 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     }
   }
 
-  Widget _buildQuickActionCard(BuildContext context,
-      {required String title,
-      required IconData icon,
-      required Color color,
-      required VoidCallback onTap}) {
-    return InkWell(
+  Widget _buildDashboardCard(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return ModernCard(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        height: 100,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.3), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.08),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: color.withOpacity(0.8),
-              ),
-            ),
-          ],
-        ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -95,22 +83,27 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AdminProfileScreen()),
-              );
-            },
-            icon: const Icon(Icons.person)),
-        title: const Text('Admin Dashboard',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminProfileScreen()),
+            );
+          },
+          icon: const Icon(Icons.person, color: AppColors.textPrimary),
+        ),
+        title: Text(
+          'Admin Dashboard',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+        ),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
         actions: [
           IconButton(
             onPressed: () {
@@ -120,35 +113,36 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               );
             },
             icon: const Icon(Icons.chat_bubble_outline_rounded,
-                color: Colors.black),
+                color: AppColors.textPrimary),
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: _onRefresh,
+        color: AppColors.primary,
         child: SingleChildScrollView(
           key: _refreshKey,
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Management',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF64748B)),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textSecondary,
+                    ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Row(
                 children: [
                   Expanded(
-                    child: _buildQuickActionCard(
+                    child: _buildDashboardCard(
                       context,
                       title: 'Manage Store',
                       icon: Icons.storefront_rounded,
-                      color: Colors.blue,
+                      color: AppColors.info,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -158,13 +152,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       },
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
-                    child: _buildQuickActionCard(
+                    child: _buildDashboardCard(
                       context,
                       title: 'Manage Offers',
                       icon: Icons.local_offer_rounded,
-                      color: Colors.purple,
+                      color: Colors.purple, // Kept distinct color
                       onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -173,15 +167,15 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16), // Added space for the new row
+              const SizedBox(height: AppSpacing.md),
               Row(
                 children: [
                   Expanded(
-                    child: _buildQuickActionCard(
+                    child: _buildDashboardCard(
                       context,
                       title: 'Resources',
                       icon: Icons.library_books,
-                      color: Colors.deepPurple,
+                      color: Colors.deepPurple, // Kept distinct color
                       onTap: () {
                         Navigator.push(
                           context,
@@ -193,13 +187,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       },
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
-                    child: _buildQuickActionCard(
+                    child: _buildDashboardCard(
                       context,
                       title: 'Reviews',
                       icon: Icons.rate_review,
-                      color: Colors.orange,
+                      color: AppColors.warning,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -212,14 +206,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
 
               // Top Tests Stream
-              const Text(
+              Text(
                 'Top Performing Mock Tests',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               StreamBuilder<List<Map<String, dynamic>>>(
                 stream: _topTestsStream,
                 builder: (context, snapshot) {
@@ -230,7 +227,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     if (!NetworkUtils.isNetworkError(snapshot.error)) {
                       debugPrint("Stream Error (Tests): ${snapshot.error}");
                     }
-                    // Graceful Fallback
                     return _buildErrorState("Unable to load tests.");
                   }
                   final tests = snapshot.data ?? [];
@@ -238,14 +234,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 },
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
 
               // Top Users Stream
-              const Text(
+              Text(
                 'Top Performing Users',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               StreamBuilder<List<Map<String, dynamic>>>(
                 stream: _topUsersStream,
                 builder: (context, snapshot) {
@@ -262,6 +261,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   return _buildTopUsersList(users);
                 },
               ),
+              const SizedBox(height: AppSpacing.xxl),
             ],
           ),
         ),
@@ -270,21 +270,15 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Widget _buildErrorState(String message) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.red[50], // Light red background
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.red.withOpacity(0.2)),
-      ),
+    return ModernCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Center(
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline_rounded, color: Colors.red[300]),
-            const SizedBox(width: 8),
-            Text(message, style: TextStyle(color: Colors.red[800])),
+            const Icon(Icons.error_outline_rounded, color: AppColors.error),
+            const SizedBox(width: AppSpacing.sm),
+            Text(message, style: const TextStyle(color: AppColors.error)),
           ],
         ),
       ),
@@ -293,21 +287,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   Widget _buildTopTestsList(List<Map<String, dynamic>> tests) {
     if (tests.isEmpty) {
-      return Container(
+      return const ModernCard(
         height: 150,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.withOpacity(0.2)),
-        ),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.bar_chart_rounded, size: 40, color: Colors.grey[300]),
-              const SizedBox(height: 8),
-              Text('No data yet', style: TextStyle(color: Colors.grey[400])),
+              Icon(Icons.bar_chart_rounded,
+                  size: 40, color: AppColors.neutral300),
+              SizedBox(height: AppSpacing.sm),
+              Text('No data yet',
+                  style: TextStyle(color: AppColors.neutral400)),
             ],
           ),
         ),
@@ -319,73 +309,51 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: tests.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 16),
+        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
         itemBuilder: (context, index) {
           final test = tests[index];
           return Container(
             width: 180,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border:
-                  Border.all(color: Colors.blue.withOpacity(0.6), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.blue.withOpacity(0.08),
-                    blurRadius: 15,
-                    offset: const Offset(0, 8)),
-              ],
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              border: Border.all(color: AppColors.neutral200),
+              boxShadow: AppShadows.soft,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   flex: 3,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(18)),
-                    ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(AppSpacing.radiusLg)),
                     child: test['image_url'] != null
-                        ? ClipRRect(
-                            borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(18)),
-                            child: Image.network(
-                              test['image_url'],
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                // Fallback icon on error
-                                return Center(
+                        ? Image.network(
+                            test['image_url'],
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: AppColors.neutral100,
+                                child: const Center(
                                     child: Icon(Icons.broken_image_rounded,
-                                        color: Colors.blue[300], size: 40));
-                              },
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Center(
-                                  child: CircularProgressIndicator(
-                                    value: loadingProgress.expectedTotalBytes !=
-                                            null
-                                        ? loadingProgress
-                                                .cumulativeBytesLoaded /
-                                            loadingProgress.expectedTotalBytes!
-                                        : null,
-                                    strokeWidth: 2,
-                                  ),
-                                );
-                              },
-                            ),
+                                        color: AppColors.neutral400)),
+                              );
+                            },
                           )
-                        : Center(
-                            child: Icon(Icons.book,
-                                color: Colors.blue[300], size: 40)),
+                        : Container(
+                            color: AppColors.neutral100,
+                            child: const Center(
+                                child: Icon(Icons.book,
+                                    color: AppColors.primary, size: 40)),
+                          ),
                   ),
                 ),
                 Expanded(
                   flex: 2,
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -394,25 +362,35 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           test['title'] ?? 'Untitled',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: Color(0xFF1E293B),
-                              height: 1.2),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
                         ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('${test['sales'] ?? 0} Sold',
-                                style: TextStyle(
-                                    color: Colors.blue[800],
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700)),
-                            Text('₹${test['price'] ?? 0}',
-                                style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600)),
+                            Text(
+                              '${test['sales'] ?? 0} Sold',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            Text(
+                              '₹${test['price'] ?? 0}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: AppColors.textSecondary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
                           ],
                         ),
                       ],
@@ -429,17 +407,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   Widget _buildTopUsersList(List<Map<String, dynamic>> users) {
     if (users.isEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.withOpacity(0.2)),
+      return ModernCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Center(
+          child: Text(
+            'No active users found.',
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: AppColors.textSecondary),
+          ),
         ),
-        child: const Center(
-            child: Text('No active users found.',
-                style: TextStyle(color: Colors.grey))),
       );
     }
 
@@ -449,7 +427,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: displayUsers.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (context, index) {
         final user = displayUsers[index];
         final totalMax = user['totalMax'] as double;
@@ -459,46 +437,42 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ? (user['username'] as String)[0].toUpperCase()
             : '?';
 
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.blue.withOpacity(0.6), width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.blue.withOpacity(0.08),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5)),
-            ],
-          ),
+        return ModernCard(
+          padding: EdgeInsets.zero,
           child: ListTile(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             leading: CircleAvatar(
-              radius: 24,
-              backgroundColor: Colors.blue[50],
-              child: Text(firstChar,
-                  style: TextStyle(
-                      color: Colors.blue[800],
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18)),
-            ),
-            title: Text(user['username'],
+              radius: 20,
+              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+              child: Text(
+                firstChar,
                 style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            title: Text(
+              user['username'],
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Color(0xFF1E293B))),
+                    color: AppColors.textPrimary,
+                  ),
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('${percentage.toStringAsFixed(0)}%',
-                    style: const TextStyle(
+                Text(
+                  '${percentage.toStringAsFixed(0)}%',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w900,
-                        fontSize: 18,
-                        color: Color(0xFF0F172A))),
-                const SizedBox(width: 4),
-                Icon(Icons.emoji_events_rounded,
-                    size: 18, color: Colors.amber[600]),
+                        color: AppColors.textPrimary,
+                      ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                const Icon(Icons.emoji_events_rounded,
+                    size: 18, color: AppColors.warning),
               ],
             ),
           ),

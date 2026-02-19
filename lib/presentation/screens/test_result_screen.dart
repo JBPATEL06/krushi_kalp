@@ -11,6 +11,7 @@ import '../../core/theme/app_spacing.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../data/services/review_service.dart'; // NEW
 import '../widgets/reviews/review_dialog.dart'; // NEW
+import 'main_screen.dart';
 
 class TestResultScreen extends StatefulWidget {
   final String testId;
@@ -253,8 +254,12 @@ class _TestResultScreenState extends State<TestResultScreen>
               elevation: 0,
               leading: IconButton(
                 icon: const Icon(Icons.close, color: AppColors.textPrimary),
-                onPressed: () =>
-                    Navigator.of(context).popUntil((route) => route.isFirst),
+                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (context) => const MainScreen(),
+                  ),
+                  (route) => false,
+                ),
               ),
             ),
             body: SafeArea(
@@ -498,8 +503,12 @@ class _TestResultScreenState extends State<TestResultScreen>
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () {
-                            Navigator.of(context)
-                                .popUntil((route) => route.isFirst);
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (context) => const MainScreen(),
+                              ),
+                              (route) => false,
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor:

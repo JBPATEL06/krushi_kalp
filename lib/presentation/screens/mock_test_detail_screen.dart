@@ -9,13 +9,14 @@ import 'package:provider/provider.dart';
 import '../providers/test_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_animate/flutter_animate.dart'; // NEW
 
 import '../../data/services/review_service.dart';
 import '../../domain/models/review.dart';
 import '../widgets/reviews/review_card.dart';
 import '../widgets/reviews/review_dialog.dart';
 import '../widgets/reviews/rate_stars.dart';
-import 'reviews/all_reviews_screen.dart'; // NEW
+import 'reviews/all_reviews_screen.dart';
 
 class MockTestDetailScreen extends StatefulWidget {
   final MockTest test;
@@ -38,11 +39,8 @@ class MockTestDetailScreen extends StatefulWidget {
 class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
   bool _isLoadingReviews = true;
   List<Review> _reviews = [];
-  Review? _userReview; // NEW: Track current user's review
+  Review? _userReview;
   Map<String, dynamic> _ratingStats = {'average': 0.0, 'count': 0};
-
-  // For now we show all, or maybe limit? Let's show all for V1 but maybe just first 5
-  // If many, we'd need a "See All" screen. For now, let's show up to 5.
 
   @override
   void initState() {
@@ -95,19 +93,14 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
       return;
     }
 
-    // Check if user already reviewed to pre-fill?
-    // ReviewService.getUserReview would be good here but we can also just let the dialog handle fresh input
-    // or we could check local list if we have current user's review.
-
-    // Simple V1: Open dialog, if they submit, it upserts.
     showDialog(
       context: context,
       builder: (context) => ReviewDialog(
         title: widget.test.title,
-        initialRating: _userReview?.rating, // NEW
-        initialReview: _userReview?.reviewText, // NEW
-        isEdit: _userReview != null, // NEW
-        lastEditedAt: _userReview?.updatedAt, // NEW
+        initialRating: _userReview?.rating,
+        initialReview: _userReview?.reviewText,
+        isEdit: _userReview != null,
+        lastEditedAt: _userReview?.updatedAt,
         onSubmit: (rating, text) async {
           try {
             await ReviewService.submitReview(
@@ -122,7 +115,7 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Review submitted successfully!')),
               );
-              _loadReviews(); // Refresh list
+              _loadReviews();
             }
           } catch (e) {
             if (mounted) {
@@ -140,7 +133,7 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Review deleted successfully')),
               );
-              _loadReviews(); // Refresh
+              _loadReviews();
             }
           } catch (e) {
             if (mounted) {
@@ -156,7 +149,6 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // AUTO-DETECT PURCHASE STATUS
     final provider = context.watch<TestProvider>();
     final isActuallyPurchased = widget.isPurchased ||
         provider.purchasedTests.any((t) => t.id == widget.test.id);
@@ -168,26 +160,24 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
         backgroundColor: AppColors.surface,
         elevation: 0,
         centerTitle: false,
-        automaticallyImplyLeading: false, // Hide default back arrow
+        automaticallyImplyLeading: false,
         leading: IconButton(
           icon: const Icon(Icons.close, color: AppColors.textPrimary, size: 24),
-          onPressed: () => Navigator.of(context).pop(), // Dispose/close page
+          onPressed: () => Navigator.of(context).pop(),
         ),
         foregroundColor: AppColors.textPrimary,
       ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            // Trigger provider refresh to check purchase status
             await context.read<TestProvider>().fetchPurchasedStatus();
-            await _loadReviews(); // Also refresh reviews
+            await _loadReviews();
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // COVER IMAGE
                 if (widget.test.signedUrl != null &&
                     widget.test.signedUrl!.isNotEmpty)
                   Hero(
@@ -220,13 +210,11 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                     child: const Icon(Icons.image,
                         size: 64, color: AppColors.neutral400),
                   ),
-
                 Padding(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // TITLE & PRICE CARD
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         decoration: BoxDecoration(
@@ -271,7 +259,6 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  // Only show price if NOT purchased
                                   if (!isActuallyPurchased) ...[
                                     if (hasOffer &&
                                         displayMrp > displayPrice) ...[
@@ -362,7 +349,6 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                 ],
                               ),
                               const SizedBox(height: AppSpacing.md),
-                              // Rating Summary in Header
                               Row(
                                 children: [
                                   RateStars(
@@ -384,10 +370,7 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                           );
                         }),
                       ),
-
                       const SizedBox(height: AppSpacing.md),
-
-                      // KEY DETAILS CARD
                       Container(
                         padding:
                             const EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -419,10 +402,7 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                           ],
                         ),
                       ),
-
                       const SizedBox(height: AppSpacing.md),
-
-                      // DESCRIPTION CARD
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         decoration: BoxDecoration(
@@ -459,10 +439,7 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                           ],
                         ),
                       ),
-
                       const SizedBox(height: AppSpacing.md),
-
-                      // ADDITIONAL INFO CARD
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         decoration: BoxDecoration(
@@ -515,10 +492,7 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                           ],
                         ),
                       ),
-
                       const SizedBox(height: AppSpacing.md),
-
-                      // REVIEWS SECTION CARD
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         decoration: BoxDecoration(
@@ -528,12 +502,14 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                         ),
                         child: _buildReviewsSection(isActuallyPurchased),
                       ),
-
-                      const SizedBox(height: 60), // Bottom padding
+                      const SizedBox(height: 60),
                     ],
                   ),
                 ),
-              ],
+              ]
+                  .animate(interval: 50.ms)
+                  .fadeIn(duration: 400.ms)
+                  .slideY(begin: 0.1, end: 0),
             ),
           ),
         ),

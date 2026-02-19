@@ -44,3 +44,55 @@ class AppColors {
   static const Color textSecondary = neutral600;
   static const Color textDisabled = neutral400;
 }
+
+class AppGradients {
+  static const LinearGradient primary = LinearGradient(
+    colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient success = LinearGradient(
+    colors: [Color(0xFF34D399), Color(0xFF10B981)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient dark = LinearGradient(
+    colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient glass = LinearGradient(
+    colors: [Colors.white24, Colors.white10],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}
+
+class AppShadows {
+  static final List<BoxShadow> soft = [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.05),
+      blurRadius: 10,
+      offset: const Offset(0, 4),
+    ),
+  ];
+
+  static final List<BoxShadow> medium = [
+    BoxShadow(
+      color: Colors.black.withOpacity(0.08),
+      blurRadius: 15,
+      offset: const Offset(0, 6),
+    ),
+  ];
+
+  static final List<BoxShadow> floating = [
+    BoxShadow(
+      color: AppColors.primary.withOpacity(0.2),
+      blurRadius: 20,
+      offset: const Offset(0, 10),
+    ),
+  ];
+}

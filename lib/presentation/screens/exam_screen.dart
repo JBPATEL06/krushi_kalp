@@ -306,264 +306,287 @@ class _ExamScreenState extends State<ExamScreen> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(widget.test.title,
-            style: Theme.of(context).textTheme.titleLarge),
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        actions: [
-          if (widget.test.durationMinutes != null)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: Text(
-                  _formatTime(_remainingSeconds),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: _remainingSeconds < 60
-                            ? AppColors.error
-                            : AppColors.textPrimary,
-                      ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldExit = await _showExitConfirmation();
+        if (shouldExit && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: Text(widget.test.title,
+              style: Theme.of(context).textTheme.titleLarge),
+          backgroundColor: AppColors.surface,
+          foregroundColor: AppColors.textPrimary,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () async {
+              final shouldExit = await _showExitConfirmation();
+              if (shouldExit && context.mounted) {
+                Navigator.of(context).pop();
+              }
+            },
+          ),
+          actions: [
+            if (widget.test.durationMinutes != null)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: Text(
+                    _formatTime(_remainingSeconds),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: _remainingSeconds < 60
+                              ? AppColors.error
+                              : AppColors.textPrimary,
+                        ),
+                  ),
                 ),
               ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // Progress Bar
+            LinearProgressIndicator(
+              value: _questions.isEmpty
+                  ? 0
+                  : (_currentQuestionIndex + 1) / _questions.length,
+              backgroundColor: AppColors.neutral200,
+              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+              minHeight: 4,
             ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Progress Bar
-          LinearProgressIndicator(
-            value: _questions.isEmpty
-                ? 0
-                : (_currentQuestionIndex + 1) / _questions.length,
-            backgroundColor: AppColors.neutral200,
-            valueColor: const AlwaysStoppedAnimation(AppColors.primary),
-            minHeight: 4,
-          ),
 
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Question ${_currentQuestionIndex + 1}/${_questions.length}",
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
-                      ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _remainingSeconds < 60
-                        ? AppColors.error.withValues(alpha: 0.1)
-                        : AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Question ${_currentQuestionIndex + 1}/${_questions.length}",
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.timer_outlined,
-                        size: 16,
-                        color: _remainingSeconds < 60
-                            ? AppColors.error
-                            : AppColors.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _formatTime(_remainingSeconds),
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _remainingSeconds < 60
+                          ? AppColors.error.withValues(alpha: 0.1)
+                          : AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.timer_outlined,
+                          size: 16,
                           color: _remainingSeconds < 60
                               ? AppColors.error
                               : AppColors.primary,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _questions.length,
-              itemBuilder: (context, index) {
-                // Check if translation is needed and available
-                Question displayQuestion = _questions[index];
-                if (_shouldTranslate) {
-                  if (_translatedQuestions.containsKey(index)) {
-                    displayQuestion = _translatedQuestions[index]!;
-                  } else {
-                    // If current question is NOT ready, force translate immediately
-                    if (!_pendingTranslations.contains(index)) {
-                      _translateBuffer(index);
-                    }
-
-                    return TranslationLoadingWidget(
-                      onTimeout: () {
-                        // User chose to skip translation for this question
-                        setState(() {
-                          _translatedQuestions[index] =
-                              _questions[index]; // Use original
-                        });
-                      },
-                    );
-                  }
-                }
-
-                return _buildQuestionCard(displayQuestion, index);
-              },
-            ),
-          ),
-
-          // Pagination
-          if (_questions.isNotEmpty)
-            Container(
-              height: 50,
-              margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: ListView.separated(
-                controller: _scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                scrollDirection: Axis.horizontal,
-                itemCount: _questions.length,
-                separatorBuilder: (_, __) =>
-                    const SizedBox(width: AppSpacing.sm),
-                itemBuilder: (context, index) {
-                  final isCurrent = index == _currentQuestionIndex;
-                  final isAnswered = _selectedAnswers.containsKey(index);
-
-                  return GestureDetector(
-                    onTap: () => _changePage(index),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: isCurrent
-                            ? AppColors.primary
-                            : (isAnswered
-                                ? AppColors.primary.withValues(alpha: 0.1)
-                                : AppColors.surface),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: isCurrent
-                              ? AppColors.primary
-                              : AppColors.neutral300,
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatTime(_remainingSeconds),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: _remainingSeconds < 60
+                                ? AppColors.error
+                                : AppColors.primary,
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        '${index + 1}',
-                        style: TextStyle(
-                          color: isCurrent
-                              ? AppColors.onPrimary
-                              : AppColors.textPrimary,
-                          fontWeight:
-                              isCurrent ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
+                      ],
                     ),
-                  );
+                  ),
+                ],
+              ),
+            ),
+
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _questions.length,
+                itemBuilder: (context, index) {
+                  // Check if translation is needed and available
+                  Question displayQuestion = _questions[index];
+                  if (_shouldTranslate) {
+                    if (_translatedQuestions.containsKey(index)) {
+                      displayQuestion = _translatedQuestions[index]!;
+                    } else {
+                      // If current question is NOT ready, force translate immediately
+                      if (!_pendingTranslations.contains(index)) {
+                        _translateBuffer(index);
+                      }
+
+                      return TranslationLoadingWidget(
+                        onTimeout: () {
+                          // User chose to skip translation for this question
+                          setState(() {
+                            _translatedQuestions[index] =
+                                _questions[index]; // Use original
+                          });
+                        },
+                      );
+                    }
+                  }
+
+                  return _buildQuestionCard(displayQuestion, index);
                 },
               ),
             ),
 
-          // Bottom Buttons
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              boxShadow: [
-                BoxShadow(
-                    blurRadius: 5, color: Colors.black.withValues(alpha: 0.1)),
-              ],
-            ),
-            child: Row(
-              children: [
-                // Previous Button
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _currentQuestionIndex > 0
-                        ? () => _changePage(_currentQuestionIndex - 1)
-                        : null,
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppSpacing.md),
-                      ),
-                      side: const BorderSide(color: AppColors.neutral300),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.arrow_back,
-                            size: 18, color: AppColors.textPrimary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Previous',
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelLarge
-                              ?.copyWith(color: AppColors.textPrimary),
+            // Pagination
+            if (_questions.isNotEmpty)
+              Container(
+                height: 50,
+                margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: ListView.separated(
+                  controller: _scrollController,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _questions.length,
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(width: AppSpacing.sm),
+                  itemBuilder: (context, index) {
+                    final isCurrent = index == _currentQuestionIndex;
+                    final isAnswered = _selectedAnswers.containsKey(index);
+
+                    return GestureDetector(
+                      onTap: () => _changePage(index),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isCurrent
+                              ? AppColors.primary
+                              : (isAnswered
+                                  ? AppColors.primary.withValues(alpha: 0.1)
+                                  : AppColors.surface),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isCurrent
+                                ? AppColors.primary
+                                : AppColors.neutral300,
+                          ),
                         ),
-                      ],
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            color: isCurrent
+                                ? AppColors.onPrimary
+                                : AppColors.textPrimary,
+                            fontWeight:
+                                isCurrent ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+            // Bottom Buttons
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                boxShadow: [
+                  BoxShadow(
+                      blurRadius: 5,
+                      color: Colors.black.withValues(alpha: 0.1)),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // Previous Button
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _currentQuestionIndex > 0
+                          ? () => _changePage(_currentQuestionIndex - 1)
+                          : null,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSpacing.md),
+                        ),
+                        side: const BorderSide(color: AppColors.neutral300),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.arrow_back,
+                              size: 18, color: AppColors.textPrimary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Previous',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(color: AppColors.textPrimary),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                // Next Button
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (_currentQuestionIndex < _questions.length - 1) {
-                        _changePage(_currentQuestionIndex + 1);
-                      } else {
-                        _showSubmitDialog();
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppSpacing.md),
+                  const SizedBox(width: AppSpacing.md),
+                  // Next Button
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (_currentQuestionIndex < _questions.length - 1) {
+                          _changePage(_currentQuestionIndex + 1);
+                        } else {
+                          _showSubmitDialog();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSpacing.md),
+                        ),
+                        elevation: 0,
                       ),
-                      elevation: 0,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _currentQuestionIndex < _questions.length - 1
-                              ? 'Next Question'
-                              : 'Submit Test',
-                          style:
-                              Theme.of(context).textTheme.labelLarge?.copyWith(
-                                    color: AppColors.onPrimary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Icon(
-                          Icons.arrow_forward,
-                          size: 18,
-                          color: AppColors.onPrimary,
-                        ),
-                      ],
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _currentQuestionIndex < _questions.length - 1
+                                ? 'Next Question'
+                                : 'Submit Test',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(
+                                  color: AppColors.onPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(
+                            Icons.arrow_forward,
+                            size: 18,
+                            color: AppColors.onPrimary,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -677,6 +700,34 @@ class _ExamScreenState extends State<ExamScreen> {
         ],
       ),
     );
+  }
+
+  Future<bool> _showExitConfirmation() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Exit Exam?'),
+            content: const Text(
+                'Are you sure you want to exit? Your progress will be lost and the exam will not be submitted.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text(
+                  'Exit',
+                  style: TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   void _showSubmitDialog() {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
+import 'package:flutter_animate/flutter_animate.dart'; // NEW
 import '../../domain/models/resource.dart';
 import '../providers/resource_provider.dart';
 import '../providers/auth_provider.dart';
@@ -9,13 +10,12 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../data/services/download_service.dart';
 import '../widgets/common/download_progress_dialog.dart';
-import '../widgets/common/download_action_button.dart'; // NEW
+import '../widgets/common/download_action_button.dart';
 import 'pdf_viewer_screen.dart';
 
 class MyResourcesScreen extends StatefulWidget {
   final String title;
-  final String
-      category; // 'E-Books', 'Study Materials', 'PYQs', 'Current Affairs'
+  final String category;
 
   const MyResourcesScreen({
     super.key,
@@ -31,7 +31,7 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  String _sortOption = 'Newest'; // 'Newest', 'Oldest', 'A-Z'
+  String _sortOption = 'Newest';
 
   @override
   void initState() {
@@ -54,7 +54,6 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
     setState(() => _isLoading = true);
     final user = context.read<AuthProvider>().currentUser;
     if (user != null) {
-      // Ensure we have the latest purchased data
       await context.read<ResourceProvider>().fetchPurchasedResources(user.id);
     }
     if (mounted) {
@@ -76,19 +75,16 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
       allResources = [];
     }
 
-    // specific filtering: only purchased items
     var filtered = allResources
         .where((r) => provider.purchasedResourceIds.contains(r.id))
         .toList();
 
-    // 1. Search Filter
     if (_searchQuery.isNotEmpty) {
       filtered = filtered
           .where((r) => r.title.toLowerCase().contains(_searchQuery))
           .toList();
     }
 
-    // 2. Sort
     if (_sortOption == 'Newest') {
       filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     } else if (_sortOption == 'Oldest') {
@@ -135,7 +131,6 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
                         subtitle: resource.description,
                         price: resource.price,
                         coverUrl: resource.thumbnailUrl,
-                        // Use DownloadActionButton for intelligent status
                         customAction: DownloadActionButton(
                           filename:
                               'resource_${resource.id}_${resource.title.replaceAll(" ", "_")}',
@@ -143,10 +138,13 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
                           startLabel: "Open",
                           onAction: () => _openResource(resource),
                         ),
-                        isPurchased: true, // Use premium purchased layout
+                        isPurchased: true,
                         onTap: () => _openResource(resource),
                       ),
-                    );
+                    )
+                        .animate(delay: (index < 5 ? index * 100 : 0).ms)
+                        .fadeIn(duration: 400.ms)
+                        .slideY(begin: 0.1, end: 0);
                   },
                   childCount: resources.length,
                 ),

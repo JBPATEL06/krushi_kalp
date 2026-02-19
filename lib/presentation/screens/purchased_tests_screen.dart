@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart'; // NEW
 import '../../domain/models/mock_test.dart';
 import '../providers/auth_provider.dart';
 import '../providers/test_provider.dart';
@@ -53,17 +54,13 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
   List<MockTest> _getFilteredData(List<MockTest> tests) {
     var filtered = List<MockTest>.from(tests);
 
-    // 1. Search
     if (_searchQuery.isNotEmpty) {
       filtered = filtered
           .where((t) => t.title.toLowerCase().contains(_searchQuery))
           .toList();
     }
 
-    // 2. Sort
-    // Assuming createdAt exists, otherwise fallback to ID or Title
     if (_sortOption == 'Newest') {
-      // If createdAt is missing, use ID as proxy for newness (usually works for DBs)
       filtered.sort((a, b) => b.id.compareTo(a.id));
     } else if (_sortOption == 'Oldest') {
       filtered.sort((a, b) => a.id.compareTo(b.id));
@@ -112,7 +109,6 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
                           subtitle: 'Mock Test • ${item.totalQuestions} Qs',
                           price: -1,
                           coverUrl: item.signedUrl,
-                          // Use DownloadActionButton for intelligent status
                           customAction: DownloadActionButton(
                             filename: 'mock_test_${item.id}.json',
                             url: item.contentUrl,
@@ -124,7 +120,7 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
                                       content: Text(
                                           "Error: Content not found for '${item.title}'")),
                                 );
-                                return; // implicitly returns Future<void>
+                                return;
                               }
                               await ExamHelper.startExam(context, item);
                             },
@@ -144,7 +140,10 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
                             );
                           },
                         ),
-                      );
+                      )
+                          .animate(delay: (index < 5 ? index * 100 : 0).ms)
+                          .fadeIn(duration: 400.ms)
+                          .slideY(begin: 0.1, end: 0);
                     },
                     childCount: filteredTests.length,
                   ),

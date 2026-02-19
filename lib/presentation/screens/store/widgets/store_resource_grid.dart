@@ -4,7 +4,8 @@ import '../../../../domain/models/offer.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../widgets/common/universal_item_card.dart';
 import '../../../../utils/price_calculator.dart';
-import '../../../../data/services/review_service.dart'; // NEW
+import '../../../../data/services/review_service.dart';
+import 'package:flutter_animate/flutter_animate.dart'; // NEW
 
 class StoreResourceGrid extends StatelessWidget {
   final List<Resource> resources;
@@ -47,7 +48,7 @@ class StoreResourceGrid extends StatelessWidget {
           (context, index) {
             final resource = resources[index];
             final isInCart = cartItemIds.contains(resource.id);
-            final isPurchased = purchasedIds.contains(resource.id); // NEW
+            final isPurchased = purchasedIds.contains(resource.id);
 
             // Filter offers to only include 'Sale' offers (Auto-apply)
             final saleOffers = activeOffers?.where((o) => o.isSale).toList();
@@ -58,14 +59,6 @@ class StoreResourceGrid extends StatelessWidget {
             String? discountTag = resource.discount;
 
             // 2. If no direct discount, check for Coupons/Offers (PriceCalculator)
-            // Only apply offer if there's no direct "fake price" set on the resource,
-            // OR if valid offer provides BETTER price?
-            // For now, let's assume resource.mrp/discount takes precedence for "visuals",
-            // but PriceCalculator handles the actual "Sale" logic if we want to support coupons on resources too.
-            // A simple approach:
-            // If resource has MRP, show it.
-            // If activeOffers exist, they might override price.
-
             if (activeOffers != null && activeOffers!.isNotEmpty) {
               final priceData = PriceCalculator.calculateDisplayPrice(
                 basePrice: resource.price,
@@ -88,8 +81,6 @@ class StoreResourceGrid extends StatelessWidget {
               }
             } else {
               // No offers, just use Resource fields.
-              // If MRP is missing but we have price, MRP = null (no strikethrough).
-              // Calculate tag if missing
               if (discountTag == null && mrp != null && mrp > displayPrice) {
                 final off = ((mrp - displayPrice) / mrp * 100).round();
                 if (off > 0) discountTag = '$off% OFF';
@@ -131,11 +122,11 @@ class StoreResourceGrid extends StatelessWidget {
                         : (displayPrice == 0 ? 'Claim' : 'Buy Now'),
                     isActionEnabled: true,
                     isInCart: isInCart,
-                    isPurchased: isPurchased, // NEW
+                    isPurchased: isPurchased,
                     hideTags:
                         isPurchased, // Hide purchased tag for cleaner look
-                    rating: rating, // NEW
-                    reviewCount: count, // NEW
+                    rating: rating,
+                    reviewCount: count,
                     onActionTap: () {
                       if (isPurchased) {
                         // Trigger Open/Download
@@ -152,7 +143,10 @@ class StoreResourceGrid extends StatelessWidget {
                   );
                 },
               ),
-            );
+            )
+                .animate()
+                .fadeIn(duration: 400.ms)
+                .slideY(begin: 0.1, end: 0); // Animate
           },
           childCount: resources.length,
         ),

@@ -17,6 +17,7 @@ import 'cart_screen.dart';
 import 'score_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import '../widgets/common/category_card.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -157,10 +158,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.neutral900,
                               ),
-                    ),
+                    )
+                        .animate()
+                        .fadeIn(duration: 600.ms)
+                        .slideX(begin: -0.2), // Animate Greeting
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  _buildBannerCarousel(),
+                  _buildBannerCarousel()
+                      .animate()
+                      .fadeIn(duration: 800.ms, delay: 200.ms)
+                      .scale(begin: const Offset(0.95, 0.95)), // Animate Banner
                   const SizedBox(height: AppSpacing.lg),
                   _buildCategoryGrid(),
                   const SizedBox(height: AppSpacing.xl),
@@ -604,7 +611,10 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             },
           ),
-        ],
+        ]
+            .animate(interval: 100.ms)
+            .fadeIn(duration: 500.ms)
+            .slideY(begin: 0.2, end: 0), // Staggered Animation
       ),
     );
   }

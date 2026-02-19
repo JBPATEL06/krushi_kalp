@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart'; // NEW
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../providers/test_provider.dart';
@@ -319,14 +320,20 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
             const SizedBox(height: AppSpacing.md),
         itemBuilder: (context, index) {
           final item = items[index];
+          Widget card;
 
           if (item is MockTest) {
-            return _buildTestCard(item, index);
+            card = _buildTestCard(item, index);
           } else if (item is Resource) {
-            return _buildResourceCard(item, index);
+            card = _buildResourceCard(item, index);
+          } else {
+            return const SizedBox.shrink();
           }
 
-          return const SizedBox.shrink();
+          return card
+              .animate(delay: (index < 5 ? index * 100 : 0).ms)
+              .fadeIn(duration: 400.ms)
+              .slideY(begin: 0.1, end: 0);
         },
       ),
     );

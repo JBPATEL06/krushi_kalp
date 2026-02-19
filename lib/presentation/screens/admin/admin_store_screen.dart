@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'resources/admin_mock_test_list.dart'; // Import the new component
+import 'package:krushi_kalp/core/theme/app_colors.dart';
+import 'resources/admin_mock_test_list.dart';
 
 class AdminStoreScreen extends StatelessWidget {
   const AdminStoreScreen({super.key});
@@ -7,17 +8,23 @@ class AdminStoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Manage Store',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+        title: Text(
+          'Manage Store',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+        ),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         elevation: 0,
         automaticallyImplyLeading: false,
-        leading:
-            null, // Removed explicit leading/close button for Tab integration
+        leading: null,
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
-      body: const AdminMockTestList(), // Default: Show all tests
+      body: const AdminMockTestList(),
     );
   }
 }

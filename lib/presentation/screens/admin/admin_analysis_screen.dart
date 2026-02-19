@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/admin_provider.dart';
-import '../../../data/services/admin_service.dart';
-import '../../widgets/common/network_error_state.dart';
+import 'package:krushi_kalp/presentation/providers/admin_provider.dart';
+import 'package:krushi_kalp/data/services/admin_service.dart';
+import 'package:krushi_kalp/presentation/widgets/common/network_error_state.dart';
+import 'package:krushi_kalp/core/theme/app_colors.dart';
+import 'package:krushi_kalp/core/theme/app_spacing.dart';
+import 'package:krushi_kalp/presentation/widgets/common/modern_card.dart';
 import 'admin_offer_list_screen.dart';
 import 'admin_store_screen.dart';
 import 'revenue_details_screen.dart';
-import '../../../../core/theme/app_colors.dart';
 
 class AdminAnalysisScreen extends StatefulWidget {
   const AdminAnalysisScreen({super.key});
@@ -19,10 +21,18 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Analytics'),
-        // Refresh button is no longer needed for Realtime, but keeping it as a "Reconnect" or just removing it.
-        // Let's remove it to imply "It's always up to date".
+        title: Text(
+          'Analytics',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+        ),
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
       body: StreamBuilder<Map<String, dynamic>>(
         stream: AdminService.streamDashboardStats(),
@@ -52,35 +62,36 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
               };
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Overview (Realtime)',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
+                  crossAxisSpacing: AppSpacing.md,
+                  mainAxisSpacing: AppSpacing.md,
                   childAspectRatio: 1.1,
                   children: [
                     _buildStatCard(
+                      context,
                       'Total Users',
                       '${stats['totalUsers']}',
                       Icons.people,
-                      Colors.blue,
+                      AppColors.info,
                       onTap: () => context.read<AdminProvider>().setNavIndex(2),
                     ),
                     _buildStatCard(
+                      context,
                       'Revenue',
                       '₹${(stats['revenue'] as double).toStringAsFixed(2)}',
                       Icons.currency_rupee_rounded,
@@ -92,6 +103,7 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
                       ),
                     ),
                     _buildStatCard(
+                      context,
                       'Mock Tests',
                       '${stats['totalTests']}',
                       Icons.quiz_rounded,
@@ -103,12 +115,14 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
                       ),
                     ),
                     _buildStatCard(
+                      context,
                       'Test Sales',
                       '${stats['testSales']}',
                       Icons.shopping_cart_checkout_rounded,
-                      Colors.green,
+                      AppColors.success,
                     ),
                     _buildStatCard(
+                      context,
                       'Active Offers',
                       '${stats['activeOffers']}',
                       Icons.local_offer_rounded,
@@ -131,61 +145,48 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color,
-      {VoidCallback? onTap}) {
-    return InkWell(
+  Widget _buildStatCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+    Color color, {
+    VoidCallback? onTap,
+  }) {
+    return ModernCard(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              shape: BoxShape.circle,
             ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 1,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-                letterSpacing: 0.2,
-              ),
-            ),
-          ],
-        ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.5,
+                ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0.2,
+                ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

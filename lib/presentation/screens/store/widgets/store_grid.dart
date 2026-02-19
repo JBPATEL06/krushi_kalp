@@ -4,13 +4,14 @@ import '../../../../domain/models/offer.dart';
 import '../../../widgets/common/universal_item_card.dart';
 import '../../../../utils/price_calculator.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../data/services/review_service.dart'; // NEW
+import '../../../../data/services/review_service.dart';
+import 'package:flutter_animate/flutter_animate.dart'; // NEW
 
 class StoreGrid extends StatelessWidget {
   final List<MockTest> tests;
   final List<Offer>? activeOffers;
   final Set<int>? cartItemIds;
-  final Set<int>? purchasedTestIds; // NEW
+  final Set<int>? purchasedTestIds;
   final Function(MockTest) onBuyTap;
   final Function(MockTest) onCartTap;
   final Function(MockTest) onTap;
@@ -23,7 +24,7 @@ class StoreGrid extends StatelessWidget {
     required this.tests,
     this.activeOffers,
     this.cartItemIds,
-    this.purchasedTestIds, // NEW
+    this.purchasedTestIds,
     required this.onBuyTap,
     required this.onCartTap,
     required this.onTap,
@@ -51,7 +52,10 @@ class StoreGrid extends StatelessWidget {
             return Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.lg),
               child: _buildCard(tests[index]),
-            );
+            )
+                .animate()
+                .fadeIn(duration: 400.ms)
+                .slideY(begin: 0.1, end: 0); // Animate
           },
           childCount: tests.length,
         ),
@@ -84,7 +88,7 @@ class StoreGrid extends StatelessWidget {
     }
 
     final isInCart = cartItemIds?.contains(test.id) ?? false;
-    final isPurchased = purchasedTestIds?.contains(test.id) ?? false; // NEW
+    final isPurchased = purchasedTestIds?.contains(test.id) ?? false;
 
     return FutureBuilder<Map<String, dynamic>>(
       future: ReviewService.getRatingStats(test.id, 'test'),
@@ -112,8 +116,8 @@ class StoreGrid extends StatelessWidget {
           isActionEnabled: true,
           isInCart: isInCart,
           isPurchased: isPurchased,
-          rating: rating, // NEW
-          reviewCount: count, // NEW
+          rating: rating,
+          reviewCount: count,
           onActionTap: () {
             if (displayPrice == 0) {
               onBuyTap(test);

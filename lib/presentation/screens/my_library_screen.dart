@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart'; // NEW
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../providers/auth_provider.dart';
@@ -22,8 +23,8 @@ class MyLibraryScreen extends StatefulWidget {
 class _MyLibraryScreenState extends State<MyLibraryScreen> {
   bool _isLoading = true;
   String _searchQuery = '';
-  String _selectedSort = 'Newest'; // Newest, Oldest, A-Z
-  String _selectedFilter = 'All'; // All, Tests, Resources (or specific types)
+  String _selectedSort = 'Newest';
+  String _selectedFilter = 'All';
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -61,7 +62,6 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
 
     final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
     if (user != null) {
-      // Fetch both tests and resources
       await Future.wait([
         context.read<TestProvider>().fetchUserTests(user.id),
         context.read<ResourceProvider>().fetchPurchasedResources(user.id),
@@ -190,14 +190,12 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
   }
 
   Widget _buildContentList() {
-    // 1. Gather Data
     final testProvider = context.watch<TestProvider>();
     final resourceProvider = context.watch<ResourceProvider>();
 
     final tests = testProvider.userTests;
     final resources = resourceProvider.purchasedResources;
 
-    // 2. Combine & Filter by Type
     List<dynamic> items = [];
 
     switch (_selectedFilter) {
@@ -225,7 +223,6 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
         break;
     }
 
-    // 3. Search Filter
     if (_searchQuery.isNotEmpty) {
       items = items.where((item) {
         final title = (item is MockTest
@@ -236,29 +233,18 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
       }).toList();
     }
 
-    // 4. Sort
     items.sort((a, b) {
-      // Common properties extraction
       String titleA = '';
       String titleB = '';
-      DateTime?
-          dateA; // We might not have purchase date easily, use item ID as proxy for "Newest" if ID is auto-increment/sequential, or just assume fetch order?
-      // MockTest has 'created_at' usually? Resource?
-      // Actually, userTests usually come ordered by purchase or creation.
-      // Let's check models. MockTest has id. Resource has id.
-      // Assuming higher ID = Newer as a proxy if date missing.
-
       int idA = 0;
       int idB = 0;
 
       if (a is MockTest) {
         titleA = a.title;
         idA = a.id;
-        // dateA = a.createdAt; // If available
       } else if (a is Resource) {
         titleA = a.title;
         idA = a.id;
-        // dateA = a.createdAt;
       }
 
       if (b is MockTest) {
@@ -271,9 +257,9 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
 
       switch (_selectedSort) {
         case 'Newest':
-          return idB.compareTo(idA); // Higher ID first
+          return idB.compareTo(idA);
         case 'Oldest':
-          return idA.compareTo(idB); // Lower ID first
+          return idA.compareTo(idB);
         case 'A-Z':
           return titleA.compareTo(titleB);
         case 'Z-A':
@@ -295,8 +281,10 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
         separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
         itemBuilder: (context, index) {
           final item = items[index];
+          Widget card = const SizedBox();
+
           if (item is MockTest) {
-            return UniversalItemCard(
+            card = UniversalItemCard(
               title: item.title,
               subtitle: 'Mock Test • ${item.totalQuestions} Qs',
               time: item.time,
@@ -319,7 +307,7 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
               },
             );
           } else if (item is Resource) {
-            return UniversalItemCard(
+            card = UniversalItemCard(
               title: item.title,
               subtitle: item.type.name.toUpperCase(),
               price: -1,
@@ -343,7 +331,10 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
               },
             );
           }
-          return const SizedBox();
+          return card
+              .animate(delay: (index < 5 ? index * 100 : 0).ms)
+              .fadeIn(duration: 400.ms)
+              .slideY(begin: 0.1, end: 0);
         },
       ),
     );

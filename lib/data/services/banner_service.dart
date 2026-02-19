@@ -8,7 +8,7 @@ class BannerService {
   static Future<List<HomeBanner>> fetchActiveBanners() async {
     try {
       final response = await _supabase
-          .from('banners')
+          .from('banner')
           .select()
           .eq('is_active', true)
           .order('priority', ascending: false);
@@ -27,7 +27,7 @@ class BannerService {
 
   static Stream<List<HomeBanner>> streamBanners() {
     return _supabase
-        .from('banners')
+        .from('banner')
         .stream(primaryKey: ['id'])
         .eq('is_active', true)
         .order('priority', ascending: false)
