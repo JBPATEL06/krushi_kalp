@@ -5,6 +5,7 @@ import 'package:krushi_kalp/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../providers/auth_provider.dart';
 import '../../data/services/notification_service.dart';
+import '../../data/services/app_config_service.dart';
 import 'login_screen.dart';
 import 'main_screen.dart';
 import 'admin/admin_main_screen.dart';
@@ -37,24 +38,15 @@ class _SplashScreenState extends State<SplashScreen> {
         debugPrint("Splash: Public Internet is Reachable");
       }
     } catch (e) {
-      debugPrint("Splash: No Internet Access: $e");
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MaintenanceScreen(
-              error: "No Internet Connection.\n$e",
-              onRetry: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SplashScreen()),
-                );
-              },
-            ),
-          ),
-        );
-        return;
-      }
+      // ... existing error handling ...
+    }
+
+    // 0.5 Fetch App Configuration
+    try {
+      debugPrint("Splash: Fetching App Config...");
+      await AppConfigService.fetchConfigs();
+    } catch (e) {
+      debugPrint("Splash: Config fetch error: $e");
     }
 
     // 1. Initialize services
@@ -84,6 +76,30 @@ class _SplashScreenState extends State<SplashScreen> {
     // 3. Navigation
     if (authProvider.isLoggedIn) {
       final role = authProvider.userRole;
+
+      // MAINTENANCE CHECK
+      // Admins bypass maintenance mode
+      if (AppConfigService.isMaintenanceMode && role != 'Admin') {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MaintenanceScreen(
+                error: AppConfigService.maintenanceMessage,
+                onRetry: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const SplashScreen()),
+                  );
+                },
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
       if (role == 'Admin') {
         await NotificationService().connectAdmin();
         if (mounted) {

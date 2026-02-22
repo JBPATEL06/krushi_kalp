@@ -13,6 +13,8 @@ import '../widgets/common/network_error_state.dart';
 import 'purchased_tests_screen.dart';
 import 'mock_test_upload_screen.dart';
 import '../../data/services/chat_service.dart';
+import '../../data/services/app_config_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -105,6 +107,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SnackBar(
               content: Text('Failed to update language: $e'),
               backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _launchUrl(String url) async {
+    if (url.isEmpty) return;
+    final uri = Uri.parse(url);
+    try {
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        throw 'Could not launch $url';
+      }
+    } catch (e) {
+      debugPrint('Error launching URL: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open link: $e')),
         );
       }
     }
@@ -280,6 +299,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       );
                     },
                   ),
+
+                  SizedBox(height: context.h(24)),
+
+                  // About & Support Section
+                  const Divider(),
+                  Padding(
+                      padding: EdgeInsets.all(context.w(8.0)),
+                      child: Text("About App",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: context.sp(14)))),
+                  _buildProfileOption(
+                    context,
+                    icon: Icons.contact_support,
+                    title: 'Contact Us',
+                    onTap: () {
+                      _showContactOptions(context);
+                    },
+                  ),
+                  _buildProfileOption(
+                    context,
+                    icon: Icons.privacy_tip,
+                    title: 'Privacy Policy',
+                    onTap: () => _launchUrl(AppConfigService.privacyPolicyUrl),
+                  ),
+                  _buildProfileOption(
+                    context,
+                    icon: Icons.description,
+                    title: 'Terms & Conditions',
+                    onTap: () => _launchUrl(AppConfigService.termsUrl),
+                  ),
+
                   SizedBox(height: context.h(24)),
                   SizedBox(
                     width: double.infinity,
@@ -483,5 +534,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
     }
+  }
+
+  void _showContactOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Contact Us",
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.email, color: Colors.blue),
+              title: const Text("Email Support"),
+              onTap: () {
+                Navigator.pop(context);
+                final email = AppConfigService.email;
+                _launchUrl("mailto:$email");
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.chat, color: Colors.green),
+              title: const Text("WhatsApp"),
+              onTap: () {
+                Navigator.pop(context);
+                final phone = AppConfigService.whatsappNumber
+                    .replaceAll(RegExp(r'[^\d+]'), '');
+                _launchUrl("https://wa.me/$phone");
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.send, color: Colors.blueAccent),
+              title: const Text("Telegram"),
+              onTap: () {
+                Navigator.pop(context);
+                final username =
+                    AppConfigService.telegramUsername.replaceAll('@', '');
+                _launchUrl("https://t.me/$username");
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

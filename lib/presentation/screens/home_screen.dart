@@ -4,15 +4,15 @@ import '../providers/test_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/services/banner_service.dart';
 import '../../domain/models/home_banner.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../providers/navigation_provider.dart';
-import 'login_screen.dart'; // Needed for Logout navigation
+import 'login_screen.dart';
 import 'my_resources_screen.dart';
 import '../providers/resource_provider.dart';
 import '../providers/auth_provider.dart';
-import 'free_content_screen.dart'; // NEW
-// import 'package:cached_network_image/cached_network_image.dart'; // REMOVED: Using local banner
+import 'free_content_screen.dart';
 import 'cart_screen.dart';
 import 'score_screen.dart';
 import 'package:share_plus/share_plus.dart';
@@ -28,10 +28,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _userName = 'Aspirant';
-  // String _currentBannerIndex = 0; // REMOVED: Static Banner
-  // List<HomeBanner> _banners = []; // REMOVED
-  // bool _isLoadingBanners = true; // REMOVED
-
   String _userEmail = '';
 
   @override
@@ -138,7 +134,6 @@ class _HomeScreenState extends State<HomeScreen> {
             onRefresh: () async {
               await Future.wait([
                 _loadUserData(),
-                // _loadBanners(), // REMOVED
                 provider.fetchTests(forceRefresh: true),
                 context.read<ResourceProvider>().fetchPurchasedResources(
                     context.read<AuthProvider>().currentUser?.id ?? ''),
@@ -336,9 +331,47 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBannerCarousel() {
+    return StreamBuilder<List<HomeBanner>>(
+      stream: BannerService.streamAllBanners(),
+      builder: (context, snapshot) {
+        // Loading → show shimmer placeholder (NOT static banner)
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildBannerShimmer();
+        }
+
+        final banners = snapshot.data ?? [];
+        final activeBanners = banners.where((b) => b.isActive).toList();
+
+        // Only show static banner when there are literally 0 active banners
+        if (activeBanners.isEmpty) {
+          return _buildStaticBanner();
+        }
+
+        // Hand off to isolated StatefulWidget so rebuilds don't reset the slider
+        return _BannerAutoSlider(banners: activeBanners);
+      },
+    );
+  }
+
+  // Shimmer-style loading placeholder shown ONLY while waiting for stream
+  Widget _buildBannerShimmer() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      height: 180, // Slightly increased height for better visibility
+      height: 180,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        color: AppColors.neutral200,
+      ),
+    )
+        .animate(onPlay: (c) => c.repeat())
+        .shimmer(duration: 1200.ms, color: AppColors.neutral100);
+  }
+
+  Widget _buildStaticBanner() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      height: 180,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -352,20 +385,23 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        child: Image.asset(
-          'assets/images/homeBanner.png',
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            debugPrint('Error loading home banner: $error');
-            return Container(
-              color: AppColors.primary.withOpacity(0.1),
-              child: const Center(
-                child: Icon(Icons.broken_image, color: AppColors.neutral400),
-              ),
-            );
-          },
-        ),
+        child: _buildStaticBannerImage(),
       ),
+    );
+  }
+
+  Widget _buildStaticBannerImage() {
+    return Image.asset(
+      'assets/images/homeBanner.png',
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          color: AppColors.primary.withOpacity(0.1),
+          child: const Center(
+            child: Icon(Icons.broken_image, color: AppColors.neutral400),
+          ),
+        );
+      },
     );
   }
 
@@ -519,6 +555,123 @@ class _HomeScreenState extends State<HomeScreen> {
             .fadeIn(duration: 500.ms)
             .slideY(begin: 0.2, end: 0), // Staggered Animation
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Isolated banner slider — owns PageController + Timer
+// so StreamBuilder rebuilds never reset position.
+// ─────────────────────────────────────────────────────────────────
+class _BannerAutoSlider extends StatefulWidget {
+  final List<HomeBanner> banners;
+
+  const _BannerAutoSlider({required this.banners});
+
+  @override
+  State<_BannerAutoSlider> createState() => _BannerAutoSliderState();
+}
+
+class _BannerAutoSliderState extends State<_BannerAutoSlider> {
+  late final PageController _controller;
+  int _current = 0;
+  late final List<HomeBanner> _banners;
+
+  @override
+  void initState() {
+    super.initState();
+    _banners = widget.banners;
+    _controller = PageController(viewportFraction: 0.92);
+    if (_banners.length > 1) _startAutoPlay();
+  }
+
+  void _startAutoPlay() {
+    Future.delayed(const Duration(seconds: 3), () {
+      if (!mounted) return;
+      final next = (_current + 1) % _banners.length;
+      _controller.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+      _startAutoPlay(); // schedule next
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 180,
+          child: PageView.builder(
+            controller: _controller,
+            itemCount: _banners.length,
+            onPageChanged: (i) => setState(() => _current = i),
+            itemBuilder: (context, index) {
+              final banner = _banners[index];
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                  child: CachedNetworkImage(
+                    imageUrl: banner.imageUrl,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    placeholder: (context, url) => Container(
+                      color: AppColors.neutral100,
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: AppColors.neutral200,
+                      child: const Center(
+                        child: Icon(Icons.broken_image,
+                            color: AppColors.neutral400, size: 40),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Dot indicators
+        if (_banners.length > 1)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: _banners.asMap().entries.map((entry) {
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: _current == entry.key ? 20 : 8,
+                height: 8,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: _current == entry.key
+                      ? AppColors.primary
+                      : AppColors.neutral300,
+                ),
+              );
+            }).toList(),
+          ),
+      ],
     );
   }
 }

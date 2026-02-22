@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../data/services/app_config_service.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/offer.dart';
 import '../../utils/price_calculator.dart';
@@ -38,6 +39,7 @@ class MockTestDetailScreen extends StatefulWidget {
 
 class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
   bool _isLoadingReviews = true;
+  bool _configLoaded = false;
   List<Review> _reviews = [];
   Review? _userReview;
   Map<String, dynamic> _ratingStats = {'average': 0.0, 'count': 0};
@@ -45,6 +47,13 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    // Fetch fresh configs every time this screen is opened
+    await AppConfigService.fetchConfigs();
+    if (mounted) setState(() => _configLoaded = true);
     _loadReviews();
   }
 
@@ -349,23 +358,26 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                 ],
                               ),
                               const SizedBox(height: AppSpacing.md),
-                              Row(
-                                children: [
-                                  RateStars(
-                                    rating: (_ratingStats['average'] as num)
-                                        .toDouble(),
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${_ratingStats['average']} (${_ratingStats['count']} reviews)',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.textSecondary,
+                              // Rating Summary — only visible if reviews are enabled
+                              if (_configLoaded &&
+                                  AppConfigService.areReviewsVisible)
+                                Row(
+                                  children: [
+                                    RateStars(
+                                      rating: (_ratingStats['average'] as num)
+                                          .toDouble(),
+                                      size: 18,
                                     ),
-                                  ),
-                                ],
-                              ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '${_ratingStats['average']} (${_ratingStats['count']} reviews)',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                             ],
                           );
                         }),
@@ -518,9 +530,20 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
   }
 
   Widget _buildReviewsSection(bool isPurchased) {
+    // Wait for config to be loaded before deciding visibility
+    if (!_configLoaded) return const SizedBox.shrink();
+
+    // Check if reviews are visible
+    if (!AppConfigService.areReviewsVisible) {
+      return const SizedBox.shrink();
+    }
+
     // Check if current user is logged in
     final user = Supabase.instance.client.auth.currentUser;
-    final canReview = user != null && isPurchased;
+    final canReview = (isPurchased || widget.test.price == 0) &&
+        _userReview == null &&
+        user != null &&
+        AppConfigService.canWriteReviews;
 
     // Filter for positive reviews (4 or 5 stars)
     final positiveReviews = _reviews.where((r) => r.rating >= 4).toList();

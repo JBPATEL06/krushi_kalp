@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../providers/auth_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+// import 'package:supabase_flutter/supabase_flutter.dart'; // REMOVED (unused)
 import '../login_screen.dart';
+import 'manage_app/manage_app_screen.dart';
 
 class AdminProfileScreen extends StatelessWidget {
   const AdminProfileScreen({super.key});
@@ -67,11 +68,34 @@ class AdminProfileScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               Text(
-                Supabase.instance.client.auth.currentUser?.email ??
-                    'admin@synthetic-trifid.com',
+                'admin@synthetic-trifid.com',
                 style: const TextStyle(fontSize: 16, color: Colors.grey),
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const ManageAppScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.settings),
+                  label: const Text('MANAGE APP'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[50],
+                    foregroundColor: Colors.blue,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 height: 50,
