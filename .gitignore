@@ -1,48 +1,74 @@
-# Miscellaneous
+# ─── Release APKs (use GitHub Releases for distribution) ─────────
+apk/
+*.apk
+*.aab
+
+# ─── Flutter / Dart ───────────────────────────────────────────────
 *.class
 *.log
 *.pyc
 *.swp
 .DS_Store
 .atom/
-.build/
 .buildlog/
-.history
+.history/
 .svn/
-.swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
+# Flutter tool-generated files
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
+
+# Build outputs (both projects)
+**/build/
 /build/
-/coverage/
 
-# Symbolication related
+# Coverage
+**/coverage/
+
+# ─── Environment / Secrets ────────────────────────────────────────
+*.env
+.env
+**/.env
+**/google-services.json
+**/GoogleService-Info.plist
+**/service-account.json
+**/firebase-service.json
+**/diff_log.txt
+temp_truth.ts
+test_deno.ts
+**/test_auth.js
+**/temp_old_fcm.dart
+
+# ─── Android signing keys ─────────────────────────────────────────
+*.keystore
+*.jks
+
+# ─── IDE ──────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# ─── Android build artifacts ──────────────────────────────────────
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+
+# ─── iOS ──────────────────────────────────────────────────────────
+**/ios/Pods/
+**/ios/.symlinks/
+
+# ─── Symbolication / Obfuscation ──────────────────────────────────
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# Environment Variables
-*.env
+# ─── Python scripts (temp tools) ──────────────────────────────────
+# Uncomment if you want to ignore fix_imports.py:
+# fix_imports.py

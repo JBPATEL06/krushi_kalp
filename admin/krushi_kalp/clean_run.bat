@@ -1,0 +1,6 @@
+@echo off
+echo Cleaning Flutter project...
+call flutter clean
+echo Getting packages...
+call flutter pub get
+pause
