@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../domain/models/mock_test.dart';
@@ -7,8 +8,9 @@ import '../../utils/price_calculator.dart';
 import '../../data/services/offer_service.dart';
 import '../../data/services/payment_service.dart';
 import '../../data/services/test_service.dart';
-import '../../domain/models/resource.dart'; // NEW
-import '../../data/services/resource_service.dart'; // NEW
+import '../../domain/models/resource.dart';
+import '../../data/services/resource_service.dart';
+import '../providers/navigation_provider.dart';
 import '../widgets/common/app_button.dart';
 
 class DirectCheckoutSheet extends StatefulWidget {
@@ -244,8 +246,10 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
 
         Navigator.pop(context); // Close sheet
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("Purchase Successful!"),
+            content: Text("Purchase Successful! 🎉"),
             backgroundColor: Colors.green));
+        // Navigate to Home tab
+        Provider.of<NavigationProvider>(context, listen: false).setIndex(0);
       }
     } catch (e) {
       if (mounted) {

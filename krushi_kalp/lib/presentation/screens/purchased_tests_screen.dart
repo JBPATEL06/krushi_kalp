@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_animate/flutter_animate.dart'; // NEW
 import '../../domain/models/mock_test.dart';
 import '../providers/test_provider.dart';
@@ -107,6 +108,8 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
                             filename: 'mock_test_${item.id}.json',
                             url: item.contentUrl,
                             startLabel: "Start",
+                            userId:
+                                Supabase.instance.client.auth.currentUser?.id,
                             onAction: () async {
                               if (item.contentUrl == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(

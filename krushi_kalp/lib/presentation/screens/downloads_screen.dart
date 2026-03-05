@@ -57,6 +57,12 @@ class _DownloadsScreenState extends State<DownloadsScreen>
     final resourceProvider = context.read<ResourceProvider>();
     final testProvider = context.read<TestProvider>();
 
+    // If purchased resources haven't been loaded yet, fetch them now
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (resourceProvider.purchasedResources.isEmpty && userId != null) {
+      await resourceProvider.fetchPurchasedResources(userId);
+    }
+
     final myResources = resourceProvider.purchasedResources;
     final myTests = testProvider.userTests;
     final purchasedResourceIds = resourceProvider.purchasedResourceIds;
@@ -64,12 +70,11 @@ class _DownloadsScreenState extends State<DownloadsScreen>
     _lastTestIds = myTests.map((t) => t.id).toSet();
     _lastResourceIds = purchasedResourceIds;
 
-    // Use current user's ID so we only see OUR downloads
-    final userId = Supabase.instance.client.auth.currentUser?.id;
     final downloadService = DownloadService();
 
-    final resourceChecks =
-        myResources.where((r) => r.fileUrl != null).map((r) async {
+    // Check ALL purchased resources (regardless of fileUrl — the file may
+    // have been downloaded in a previous session even if the URL changed)
+    final resourceChecks = myResources.map((r) async {
       final filename = 'resource_${r.id}.pdf';
       final exists =
           await downloadService.isFileDownloaded(filename, userId: userId);
@@ -92,6 +97,102 @@ class _DownloadsScreenState extends State<DownloadsScreen>
         _localStatus = newStatus;
         _isLoading = false;
       });
+    }
+  }
+
+  /// Opens a resource PDF after verifying ownership and purchase status.
+  Future<void> _openResourceSecurely(Resource resource) async {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid == null) return;
+
+    final filename = 'resource_${resource.id}.pdf';
+    final ds = DownloadService();
+
+    // 1. Ownership check — manifest must confirm this user downloaded the file
+    final owned = await ds.verifyOwnership(filename, userId: uid);
+    if (!owned) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Access denied: this file belongs to another account.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // 2. Purchase check — current user must have this resource purchased
+    final resourceProvider = context.read<ResourceProvider>();
+    if (!resourceProvider.purchasedResourceIds.contains(resource.id)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Access denied: you have not purchased this resource.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // 3. Open file
+    final path = await ds.getLocalPath(filename, userId: uid);
+    if (await File(path).exists() && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              PdfViewerScreen(file: File(path), title: resource.title),
+        ),
+      );
+    }
+  }
+
+  /// Starts a mock test after verifying ownership and purchase status.
+  Future<void> _startTestSecurely(MockTest test) async {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid == null) return;
+
+    final filename = 'mock_test_${test.id}.json';
+    final ds = DownloadService();
+
+    // 1. Ownership check
+    final owned = await ds.verifyOwnership(filename, userId: uid);
+    if (!owned) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Access denied: this file belongs to another account.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // 2. Purchase check — current user must have this test purchased
+    final testProvider = context.read<TestProvider>();
+    final isPurchased = testProvider.userTests.any((t) => t.id == test.id);
+    if (!isPurchased) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Access denied: you have not purchased this test.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    // 3. Start exam
+    if (mounted) {
+      await ExamHelper.startExam(context, test);
+      _checkDownloads();
     }
   }
 
@@ -252,22 +353,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () async {
-            final uid = Supabase.instance.client.auth.currentUser?.id;
-            final path =
-                await DownloadService().getLocalPath(filename, userId: uid);
-            if (await File(path).exists()) {
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PdfViewerScreen(
-                        file: File(path), title: resource.title),
-                  ),
-                );
-              }
-            }
-          },
+          onTap: () => _openResourceSecurely(resource),
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -361,23 +447,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
                     IconButton(
                       icon: const Icon(Icons.open_in_new_rounded,
                           color: AppColors.primary, size: 20),
-                      onPressed: () async {
-                        final uid =
-                            Supabase.instance.client.auth.currentUser?.id;
-                        final path = await DownloadService()
-                            .getLocalPath(filename, userId: uid);
-                        if (await File(path).exists()) {
-                          if (mounted) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => PdfViewerScreen(
-                                    file: File(path), title: resource.title),
-                              ),
-                            );
-                          }
-                        }
-                      },
+                      onPressed: () => _openResourceSecurely(resource),
                       tooltip: 'Open',
                       visualDensity: VisualDensity.compact,
                     ),
@@ -416,18 +486,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () async {
-            final uid = Supabase.instance.client.auth.currentUser?.id;
-            final path =
-                await DownloadService().getLocalPath(filename, userId: uid);
-            if (await File(path).exists()) {
-              if (mounted) {
-                await ExamHelper.startExam(context, test);
-                // Refresh list in case they finished it or something changed
-                _checkDownloads();
-              }
-            }
-          },
+          onTap: () => _startTestSecurely(test),
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -520,18 +579,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
                     IconButton(
                       icon: const Icon(Icons.play_circle_outline,
                           color: AppColors.primary, size: 24),
-                      onPressed: () async {
-                        final uid =
-                            Supabase.instance.client.auth.currentUser?.id;
-                        final path = await DownloadService()
-                            .getLocalPath(filename, userId: uid);
-                        if (await File(path).exists()) {
-                          if (mounted) {
-                            await ExamHelper.startExam(context, test);
-                            _checkDownloads();
-                          }
-                        }
-                      },
+                      onPressed: () => _startTestSecurely(test),
                       tooltip: 'Start Test',
                       visualDensity: VisualDensity.compact,
                     ),

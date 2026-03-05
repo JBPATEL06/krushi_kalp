@@ -1,10 +1,12 @@
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class EncryptionService {
-  // 32 chars key for AES-256
-  // 32 chars key for AES-256
-  static final _key = encrypt.Key.fromUtf8('my32lengthsupersecretnooneknows1');
+  // AES-256 key loaded from .env — never hardcoded in source
+  static final _key = encrypt.Key.fromUtf8(
+    dotenv.env['ENCRYPTION_KEY'] ?? 'FALLBACK_KEY_CHANGE_ME_32CHARS__',
+  );
   static final _encrypter = encrypt.Encrypter(encrypt.AES(_key));
 
   /// Encrypts plain text

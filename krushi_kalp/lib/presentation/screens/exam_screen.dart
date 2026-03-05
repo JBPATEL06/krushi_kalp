@@ -71,14 +71,11 @@ class _ExamScreenState extends State<ExamScreen> {
         questions = await TestService.fetchQuestions(widget.test.filePath);
       }
 
-      // Check User Language Preference
-      // If user selected 'gu', we enable translation ONLY if the test is NOT already Gujarati.
-      if (widget.examLanguage == 'gu' &&
-          !widget.test.language.toLowerCase().contains('gujarati')) {
+      // If user chose Gujarati, ALWAYS translate — regardless of what
+      // language the test metadata claims. Respect the user's explicit choice.
+      if (widget.examLanguage == 'gu') {
         _shouldTranslate = true;
       }
-
-      // Legacy check removed (we trust the passed parameter now)
 
       if (mounted) {
         setState(() {

@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../domain/models/mock_test.dart';
 import '../../../../domain/models/offer.dart';
 import '../../../widgets/common/universal_item_card.dart';
 import '../../../../utils/price_calculator.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../data/services/review_service.dart';
-import 'package:flutter_animate/flutter_animate.dart'; // NEW
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../../widgets/common/download_action_button.dart';
 import '../../../utils/exam_helper.dart';
 
-class StoreGrid extends StatelessWidget {
+class StoreGrid extends StatefulWidget {
   final List<MockTest> tests;
   final List<Offer>? activeOffers;
   final Set<int>? cartItemIds;
@@ -34,8 +35,50 @@ class StoreGrid extends StatelessWidget {
   });
 
   @override
+  State<StoreGrid> createState() => _StoreGridState();
+}
+
+class _StoreGridState extends State<StoreGrid> {
+  // Cache: testId -> {average: double, count: int}
+  final Map<int, Map<String, dynamic>> _ratingsCache = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAllRatings();
+  }
+
+  @override
+  void didUpdateWidget(StoreGrid oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Re-fetch only if the test list changed
+    if (oldWidget.tests != widget.tests) {
+      _fetchAllRatings();
+    }
+  }
+
+  Future<void> _fetchAllRatings() async {
+    // Only fetch IDs not already in cache
+    final uncachedIds = widget.tests
+        .map((t) => t.id)
+        .where((id) => !_ratingsCache.containsKey(id))
+        .toList();
+
+    if (uncachedIds.isEmpty) return;
+
+    try {
+      final bulk = await ReviewService.getBulkRatingStats(uncachedIds, 'test');
+      if (mounted) {
+        setState(() => _ratingsCache.addAll(bulk));
+      }
+    } catch (_) {
+      // Silently skip — cards will render without ratings
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (tests.isEmpty) {
+    if (widget.tests.isEmpty) {
       return const SliverFillRemaining(
         child: Center(
           child: Text(
@@ -53,23 +96,18 @@ class StoreGrid extends StatelessWidget {
           (context, index) {
             return Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-              child: _buildCard(context, tests[index]),
-            )
-                .animate()
-                .fadeIn(duration: 400.ms)
-                .slideY(begin: 0.1, end: 0); // Animate
+              child: _buildCard(context, widget.tests[index]),
+            ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
           },
-          childCount: tests.length,
+          childCount: widget.tests.length,
         ),
       ),
     );
   }
 
   Widget _buildCard(BuildContext context, MockTest test) {
-    // Filter offers to only include 'Sale' offers (Auto-apply)
-    final saleOffers = activeOffers?.where((o) => o.isSale).toList();
+    final saleOffers = widget.activeOffers?.where((o) => o.isSale).toList();
 
-    // Calculate Price using PriceCalculator
     final priceData = PriceCalculator.calculateDisplayPrice(
       basePrice: test.price,
       activeOffers: saleOffers,
@@ -89,67 +127,67 @@ class StoreGrid extends StatelessWidget {
       }
     }
 
-    final isInCart = cartItemIds?.contains(test.id) ?? false;
-    final isPurchased = purchasedTestIds?.contains(test.id) ?? false;
+    final isInCart = widget.cartItemIds?.contains(test.id) ?? false;
+    final isPurchased = widget.purchasedTestIds?.contains(test.id) ?? false;
 
-    return FutureBuilder<Map<String, dynamic>>(
-      future: ReviewService.getRatingStats(test.id, 'test'),
-      builder: (context, snapshot) {
-        double? rating;
-        int? count;
-        if (snapshot.hasData) {
-          rating = snapshot.data!['average'] as double;
-          count = snapshot.data!['count'] as int;
-          if (count == 0) {
-            rating = null;
-            count = null;
-          }
+    // Use cached ratings instead of FutureBuilder
+    final cachedRating = _ratingsCache[test.id];
+    double? rating;
+    int? count;
+    if (cachedRating != null) {
+      rating = cachedRating['average'] as double;
+      count = cachedRating['count'] as int;
+      if (count == 0) {
+        rating = null;
+        count = null;
+      }
+    }
+
+    return UniversalItemCard(
+      title: test.title,
+      subtitle: '${test.totalQuestions} Qs • ${test.totalMarks} Marks',
+      time: test.time,
+      price: displayPrice,
+      originalPrice: mrp,
+      discountTag: discountTag,
+      coverUrl: test.signedUrl,
+      actionLabel: displayPrice == 0 ? 'Claim' : 'Buy Now',
+      customAction: isPurchased
+          ? DownloadActionButton(
+              filename: 'mock_test_${test.id}.json',
+              url: test.contentUrl,
+              startLabel: "Start",
+              isFullWidth: false,
+              userId: Supabase.instance.client.auth.currentUser?.id,
+              onAction: () async {
+                if (test.contentUrl == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(
+                            "Error: Content not found for '${test.title}'")),
+                  );
+                  return;
+                }
+                await ExamHelper.startExam(context, test);
+              },
+            )
+          : null,
+      isActionEnabled: true,
+      isInCart: isInCart,
+      isPurchased: isPurchased,
+      rating: rating,
+      reviewCount: count,
+      onActionTap: () {
+        if (displayPrice == 0) {
+          onBuyTap(test);
+        } else {
+          onBuyTap(test);
         }
-
-        return UniversalItemCard(
-          title: test.title,
-          subtitle: '${test.totalQuestions} Qs • ${test.totalMarks} Marks',
-          time: test.time,
-          price: displayPrice,
-          originalPrice: mrp,
-          discountTag: discountTag,
-          coverUrl: test.signedUrl,
-          actionLabel: displayPrice == 0 ? 'Claim' : 'Buy Now',
-          customAction: isPurchased
-              ? DownloadActionButton(
-                  filename: 'mock_test_${test.id}.json',
-                  url: test.contentUrl,
-                  startLabel: "Start",
-                  isFullWidth: false,
-                  onAction: () async {
-                    if (test.contentUrl == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text(
-                                "Error: Content not found for '${test.title}'")),
-                      );
-                      return;
-                    }
-                    await ExamHelper.startExam(context, test);
-                  },
-                )
-              : null,
-          isActionEnabled: true,
-          isInCart: isInCart,
-          isPurchased: isPurchased,
-          rating: rating,
-          reviewCount: count,
-          onActionTap: () {
-            if (displayPrice == 0) {
-              onBuyTap(test);
-            } else {
-              onBuyTap(test);
-            }
-          },
-          onCartTap: () => onCartTap(test),
-          onTap: () => onTap(test),
-        );
       },
+      onCartTap: () => widget.onCartTap(test),
+      onTap: () => widget.onTap(test),
     );
   }
+
+  void onBuyTap(MockTest test) => widget.onBuyTap(test);
 }

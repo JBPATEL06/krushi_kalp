@@ -68,6 +68,7 @@ test_deno.ts
 # ─── Symbolication / Obfuscation ──────────────────────────────────
 app.*.symbols
 app.*.map.json
+**/debug-info/
 
 # ─── Python scripts (temp tools) ──────────────────────────────────
 # Uncomment if you want to ignore fix_imports.py:

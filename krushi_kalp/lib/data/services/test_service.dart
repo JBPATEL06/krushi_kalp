@@ -3,7 +3,8 @@ import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/question.dart';
-import 'cart_service.dart'; // NEW
+import '../../utils/retry_helper.dart';
+import 'cart_service.dart';
 
 class TestService {
   static final _supabase = Supabase.instance.client;
@@ -12,10 +13,10 @@ class TestService {
 
   static Future<List<MockTest>> fetchMockTests() async {
     try {
-      final response = await _supabase
+      final response = await RetryHelper.run(() => _supabase
           .from('mock_tests')
           .select()
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false));
 
       final List<dynamic> data = response;
       List<MockTest> tests = await compute(_parseMockTests, data);

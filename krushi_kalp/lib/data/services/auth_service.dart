@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart'; // For kIsWeb
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'package:google_sign_in/google_sign_in.dart'; // Standard import
 
@@ -24,9 +25,7 @@ class AuthService {
     // Note: You must configure SHA-1 in Google Cloud for Android to work.
     // 'serverClientId' is REQUIRED for Android to get the valid ID token (use your WEB Client ID here).
 
-    // TODO: Replace with your actual Google Web Client ID (from Google Cloud / Supabase Auth Settings)
-    const webClientId =
-        '166296830142-995b63cmv2i9s19dnnieonl6e05tj5kt.apps.googleusercontent.com';
+    final webClientId = dotenv.env['GOOGLE_WEB_CLIENT_ID'] ?? '';
 
     final GoogleSignIn googleSignIn = GoogleSignIn(
       // For WEB, we must explicitly pass 'clientId' and NOT 'serverClientId'

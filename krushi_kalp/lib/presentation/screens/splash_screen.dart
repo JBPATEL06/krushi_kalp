@@ -60,7 +60,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // so a slow network doesn't hang the app indefinitely.
     await Future.wait([
       AppConfigService.fetchConfigs().catchError((e) {
-        debugPrint("Splash: Config Config fetch error (non-fatal): $e");
+        debugPrint("Splash: Config fetch error (non-fatal): $e");
         return null;
       }),
       NotificationService().initialize().catchError((e) {
@@ -68,7 +68,7 @@ class _SplashScreenState extends State<SplashScreen> {
         return null;
       }),
     ]).timeout(
-      const Duration(seconds: 3),
+      const Duration(milliseconds: 1500), // Reduced from 3s
       onTimeout: () {
         debugPrint("Splash: Parallel init timed out — proceeding anyway.");
         return [];
@@ -110,10 +110,10 @@ class _SplashScreenState extends State<SplashScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     int attempts = 0;
-    while (!authProvider.isAuthCheckComplete && attempts < 20) {
+    while (!authProvider.isAuthCheckComplete && attempts < 10) {
       await Future.delayed(const Duration(milliseconds: 200));
       attempts++;
-      if (_disposed) return; // Stop if widget disposed
+      if (_disposed) return;
     }
 
     debugPrint(
@@ -186,8 +186,8 @@ class _SplashScreenState extends State<SplashScreen> {
           children: [
             Image.asset(
               'assets/images/playstore.png',
-              width: context.w(120),
-              height: context.h(120),
+              width: context.w(180),
+              height: context.h(180),
             ),
             SizedBox(height: context.h(24)),
             Text(

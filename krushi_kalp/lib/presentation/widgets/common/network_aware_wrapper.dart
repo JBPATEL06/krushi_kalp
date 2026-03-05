@@ -1,297 +1,459 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/network_provider.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../utils/navigator_key.dart';
 
-/// A global widget that displays a network error overlay when the device
-/// loses internet connectivity. Should be placed at the top of the widget tree.
-class NetworkAwareWrapper extends StatelessWidget {
+/// Route name used to identify the No-Internet gate on the navigator stack.
+const String _kNoInternetRoute = '/no-internet';
+
+/// Global network-aware wrapper.
+///
+/// Sits inside MaterialApp.builder so it has access to the navigator.
+/// When connectivity is lost → pushes [NoInternetScreen] on top of everything.
+/// When connectivity returns → pops [NoInternetScreen] automatically.
+/// Back-button on [NoInternetScreen] → exits the app.
+class NetworkAwareWrapper extends StatefulWidget {
   final Widget child;
 
-  const NetworkAwareWrapper({
-    super.key,
-    required this.child,
-  });
+  const NetworkAwareWrapper({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider<NetworkProvider>.value(
-      value: NetworkProvider(),
-      child: Consumer<NetworkProvider>(
-        builder: (context, networkProvider, _) {
-          return Column(
-            children: [
-              // Slim animated no-internet banner at top
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 350),
-                curve: Curves.easeInOut,
-                height: (!networkProvider.isConnected &&
-                        networkProvider.isInitialized)
-                    ? 36
-                    : 0,
-                color: const Color(0xFFD32F2F),
-                child: (!networkProvider.isConnected &&
-                        networkProvider.isInitialized)
-                    ? const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.wifi_off_rounded,
-                              size: 16, color: Colors.white),
-                          SizedBox(width: 8),
-                          Text(
-                            'No internet connection',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      )
-                    : null,
-              ),
-              Expanded(child: child),
-            ],
-          );
-        },
-      ),
-    );
-  }
+  State<NetworkAwareWrapper> createState() => _NetworkAwareWrapperState();
 }
 
-/// Full-screen overlay that appears when network is unavailable
-class NetworkErrorOverlay extends StatefulWidget {
-  const NetworkErrorOverlay({super.key});
-
-  @override
-  State<NetworkErrorOverlay> createState() => _NetworkErrorOverlayState();
-}
-
-class _NetworkErrorOverlayState extends State<NetworkErrorOverlay>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _slideAnimation;
-  bool _isRetrying = false;
+class _NetworkAwareWrapperState extends State<NetworkAwareWrapper> {
+  bool _isNoInternetVisible = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-    _slideAnimation = Tween<double>(begin: -50.0, end: 0.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
-    _controller.forward();
+    // Listen after the first frame so navigatorKey.currentState is ready.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final networkProvider = NetworkProvider();
+      networkProvider.addListener(_onConnectivityChanged);
+      // Check current state immediately
+      if (networkProvider.isInitialized && !networkProvider.isConnected) {
+        _showGate();
+      }
+    });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    NetworkProvider().removeListener(_onConnectivityChanged);
     super.dispose();
   }
 
-  Future<void> _retry() async {
-    if (_isRetrying) return;
+  void _onConnectivityChanged() {
+    final isConnected = NetworkProvider().isConnected;
+    if (!isConnected && !_isNoInternetVisible) {
+      _showGate();
+    } else if (isConnected && _isNoInternetVisible) {
+      _hideGate();
+    }
+  }
 
-    setState(() => _isRetrying = true);
-    await NetworkProvider().checkConnectivity();
-    if (mounted) {
-      setState(() => _isRetrying = false);
+  void _showGate() {
+    if (_isNoInternetVisible) return;
+    _isNoInternetVisible = true;
+
+    navigatorKey.currentState?.push(
+      PageRouteBuilder(
+        settings: const RouteSettings(name: _kNoInternetRoute),
+        pageBuilder: (_, __, ___) => const NoInternetScreen(),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(
+            opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 320),
+        barrierDismissible: false,
+      ),
+    );
+  }
+
+  void _hideGate() {
+    if (!_isNoInternetVisible) return;
+    _isNoInternetVisible = false;
+
+    // Pop only the NoInternet route — leave everything below intact.
+    final nav = navigatorKey.currentState;
+    if (nav != null && nav.canPop()) {
+      nav.popUntil((route) => route.settings.name != _kNoInternetRoute);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // Also provide NetworkProvider to the widget tree for other consumers.
+    return ChangeNotifierProvider<NetworkProvider>.value(
+      value: NetworkProvider(),
+      child: widget.child,
+    );
+  }
+}
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Opacity(
-          opacity: _fadeAnimation.value,
-          child: Container(
-            color: Colors.black.withValues(alpha: 0.85),
+// ═══════════════════════════════════════════════════════════════════════════
+//  Full-screen No Internet gate
+// ═══════════════════════════════════════════════════════════════════════════
+
+class NoInternetScreen extends StatefulWidget {
+  const NoInternetScreen({super.key});
+
+  @override
+  State<NoInternetScreen> createState() => _NoInternetScreenState();
+}
+
+class _NoInternetScreenState extends State<NoInternetScreen>
+    with TickerProviderStateMixin {
+  bool _isRetrying = false;
+
+  // Entrance
+  late final AnimationController _entranceCtrl;
+  late final Animation<double> _fade;
+  late final Animation<Offset> _slide;
+
+  // Icon pulse
+  late final AnimationController _pulseCtrl;
+  late final Animation<double> _pulse;
+
+  // Ripple waves
+  late final AnimationController _waveCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _entranceCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500));
+    _fade = CurvedAnimation(parent: _entranceCtrl, curve: Curves.easeOut);
+    _slide = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
+        .animate(
+            CurvedAnimation(parent: _entranceCtrl, curve: Curves.easeOutCubic));
+
+    _pulseCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 2000))
+      ..repeat(reverse: true);
+    _pulse = Tween<double>(begin: 0.95, end: 1.05)
+        .animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
+
+    _waveCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 2200))
+      ..repeat();
+
+    _entranceCtrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _entranceCtrl.dispose();
+    _pulseCtrl.dispose();
+    _waveCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _retry() async {
+    if (_isRetrying) return;
+    setState(() => _isRetrying = true);
+    await NetworkProvider().checkConnectivity();
+    if (mounted) setState(() => _isRetrying = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) SystemNavigator.pop();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: FadeTransition(
+          opacity: _fade,
+          child: SlideTransition(
+            position: _slide,
             child: SafeArea(
               child: Center(
-                child: Transform.translate(
-                  offset: Offset(0, _slideAnimation.value),
-                  child: child,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildIcon(),
+                      const SizedBox(height: 32),
+                      _buildText(),
+                      const SizedBox(height: 32),
+                      _buildRetryButton(),
+                      const SizedBox(height: 20),
+                      _buildExitButton(),
+                      const SizedBox(height: 28),
+                      _buildTipsCard(),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        );
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Icon with pulsing animation
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.colorScheme.error.withValues(alpha: 0.8),
-                    theme.colorScheme.error.withValues(alpha: 0.4),
-                  ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.error.withValues(alpha: 0.3),
-                    blurRadius: 30,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.wifi_off_rounded,
-                size: 48,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // Title
-            Text(
-              'No Internet Connection',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                letterSpacing: -0.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-
-            // Description
-            Text(
-              'Please check your network connection and try again.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.white.withValues(alpha: 0.7),
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 40),
-
-            // Retry button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _isRetrying ? null : _retry,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor:
-                      theme.colorScheme.primary.withValues(alpha: 0.5),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-                child: _isRetrying
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.refresh_rounded, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Retry Connection',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Tips section
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.lightbulb_outline_rounded,
-                        color: theme.colorScheme.secondary,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Troubleshooting Tips',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _buildTip('Check if Wi-Fi or mobile data is turned on'),
-                  _buildTip('Try switching between Wi-Fi and mobile data'),
-                  _buildTip('Move closer to your router'),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );
   }
 
-  Widget _buildTip(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildIcon() {
+    return SizedBox(
+      width: 160,
+      height: 160,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          Text(
-            '• ',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
-              fontSize: 14,
+          // 3 ripple rings
+          ...List.generate(3, (i) {
+            final delay = i * 0.28;
+            final waveScale = Tween<double>(begin: 1.0, end: 2.6).animate(
+              CurvedAnimation(
+                parent: _waveCtrl,
+                curve: Interval(delay.clamp(0, 1), 1.0, curve: Curves.easeOut),
+              ),
+            );
+            final waveOpacity = TweenSequence<double>([
+              TweenSequenceItem(
+                  tween: Tween(begin: 0.0, end: 0.35), weight: 15),
+              TweenSequenceItem(
+                  tween: Tween(begin: 0.35, end: 0.0), weight: 85),
+            ]).animate(CurvedAnimation(
+              parent: _waveCtrl,
+              curve: Interval(delay.clamp(0, 1), 1.0, curve: Curves.easeOut),
+            ));
+
+            return AnimatedBuilder(
+              animation: _waveCtrl,
+              builder: (_, __) => Transform.scale(
+                scale: waveScale.value,
+                child: Opacity(
+                  opacity: waveOpacity.value,
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.error,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+
+          // Centre bubble
+          ScaleTransition(
+            scale: _pulse,
+            child: Container(
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.error.withOpacity(0.22),
+                    blurRadius: 28,
+                    spreadRadius: 6,
+                  ),
+                ],
+              ),
+              child: Container(
+                margin: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppColors.error.withOpacity(0.18),
+                      AppColors.error.withOpacity(0.06),
+                    ],
+                  ),
+                ),
+                child: const Icon(
+                  Icons.wifi_off_rounded,
+                  size: 38,
+                  color: AppColors.error,
+                ),
+              ),
             ),
           ),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 13,
-                height: 1.4,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildText() {
+    return Column(
+      children: [
+        const Text(
+          'No Internet',
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            color: AppColors.neutral900,
+            letterSpacing: -0.6,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 10),
+        const Text(
+          'You are offline. Please restore your\nconnection to continue.',
+          style: TextStyle(
+            fontSize: 14.5,
+            color: AppColors.neutral500,
+            height: 1.6,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRetryButton() {
+    return AnimatedBuilder(
+      animation: _pulseCtrl,
+      builder: (_, child) {
+        final glow =
+            _isRetrying ? 0.0 : math.sin(_pulseCtrl.value * math.pi) * 0.14;
+        return Container(
+          width: double.infinity,
+          height: 52,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.26 + glow),
+                blurRadius: 18,
+                offset: const Offset(0, 7),
+              ),
+            ],
+          ),
+          child: ElevatedButton(
+            onPressed: _isRetrying ? null : _retry,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              ),
+            ),
+            child: _isRetrying
+                ? const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      ),
+                      SizedBox(width: 10),
+                      Text('Checking...',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 15)),
+                    ],
+                  )
+                : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.refresh_rounded, size: 20),
+                      SizedBox(width: 8),
+                      Text('Try Again',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 15)),
+                    ],
+                  ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildExitButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: OutlinedButton.icon(
+        onPressed: () => SystemNavigator.pop(),
+        icon: const Icon(Icons.exit_to_app_rounded,
+            size: 18, color: AppColors.neutral500),
+        label: const Text(
+          'Exit App',
+          style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: AppColors.neutral600),
+        ),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: AppColors.neutral200),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTipsCard() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.neutral100,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.lightbulb_outline_rounded,
+                  size: 15, color: AppColors.neutral500),
+              SizedBox(width: 6),
+              Text(
+                'Try these:',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.neutral700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...[
+            'Toggle airplane mode off and back on',
+            'Switch between Wi-Fi and mobile data',
+            'Move to an area with better signal',
+          ].map(
+            (tip) => Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 6),
+                    child: CircleAvatar(
+                        radius: 2.5, backgroundColor: AppColors.neutral400),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(tip,
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.neutral500,
+                            height: 1.4)),
+                  ),
+                ],
               ),
             ),
           ),

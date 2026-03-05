@@ -273,6 +273,7 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
   Future<void> _openResource(Resource resource) async {
     final filename = 'resource_${resource.id}.pdf';
     final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return;
 
     // Check if already downloaded
     final isDownloaded =
@@ -309,12 +310,16 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
       if (!mounted) return;
 
       // Directly download and open
-      _downloadAndOpen(resource, filename);
+      _downloadAndOpen(resource, filename, userId);
     }
   }
 
-  Future<void> _downloadAndOpen(Resource resource, String filename) async {
+  Future<void> _downloadAndOpen(
+      Resource resource, String filename, String userId) async {
     if (!mounted) return;
+
+    // Capture outer context for use inside onComplete
+    final outerContext = context;
 
     showDialog(
       context: context,
@@ -323,10 +328,12 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
         url: resource.fileUrl!,
         filename: filename,
         displayName: resource.title,
+        userId: userId, // ← REQUIRED for ownership manifest
         onComplete: (path) {
           // Open file after download
+          if (!outerContext.mounted) return;
           Navigator.push(
-            context,
+            outerContext,
             MaterialPageRoute(
               builder: (_) => PdfViewerScreen(
                 file: File(path),
@@ -337,7 +344,7 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
         },
         onError: () {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
+            ScaffoldMessenger.of(outerContext).showSnackBar(
               const SnackBar(
                   content: Text('Download failed. Please try again.')),
             );

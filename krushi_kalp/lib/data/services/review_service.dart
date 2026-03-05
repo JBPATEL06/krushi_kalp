@@ -130,6 +130,49 @@ class ReviewService {
     }
   }
 
+  /// Fetch rating stats for multiple items in a single DB round-trip.
+  /// Returns a map of itemId → {'average': double, 'count': int}
+  static Future<Map<int, Map<String, dynamic>>> getBulkRatingStats(
+    List<int> itemIds,
+    String itemType,
+  ) async {
+    if (itemIds.isEmpty) return {};
+    try {
+      final response = await _supabase
+          .from('reviews')
+          .select('item_id, rating')
+          .eq('item_type', itemType)
+          .inFilter('item_id', itemIds);
+
+      // Group ratings by itemId
+      final Map<int, List<double>> grouped = {};
+      for (final row in (response as List)) {
+        final id = row['item_id'] as int;
+        final rating = (row['rating'] as num).toDouble();
+        grouped.putIfAbsent(id, () => []).add(rating);
+      }
+
+      // Build result map for every requested itemId
+      final Map<int, Map<String, dynamic>> result = {};
+      for (final id in itemIds) {
+        final ratings = grouped[id] ?? [];
+        if (ratings.isEmpty) {
+          result[id] = {'average': 0.0, 'count': 0};
+        } else {
+          final avg = ratings.reduce((a, b) => a + b) / ratings.length;
+          result[id] = {
+            'average': double.parse(avg.toStringAsFixed(1)),
+            'count': ratings.length,
+          };
+        }
+      }
+      return result;
+    } catch (e) {
+      debugPrint('Error fetching bulk rating stats: $e');
+      return {};
+    }
+  }
+
   // --- ADMIN METHODS ---
 
   /// Fetch all reviews (paginated) for Admin Dashboard

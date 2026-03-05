@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
@@ -40,47 +41,187 @@ class DownloadService {
   factory DownloadService() => _instance;
   DownloadService._internal();
 
-  /// Returns the local path where a file should be stored.
-  /// If [userId] is provided, files are stored in a user-specific subdirectory
-  /// so that different accounts on the same device cannot access each other's downloads.
-  Future<String> getLocalPath(String filename, {String? userId}) async {
-    final directory = await getApplicationDocumentsDirectory();
-    // Sanitize filename to prevent directory traversal
-    final sanitizedFilename = filename.replaceAll(RegExp(r'[^\w\s\.-]'), '_');
-    if (userId != null && userId.isNotEmpty) {
-      // Sanitize userId to be safe as a directory name
-      final safeUserId = userId.replaceAll(RegExp(r'[^\w-]'), '_');
-      final userDir = Directory('${directory.path}/user_$safeUserId');
-      if (!await userDir.exists()) {
-        await userDir.create(recursive: true);
-      }
-      return '${userDir.path}/$sanitizedFilename';
+  // ── Internal helpers ───────────────────────────────────────────────────────
+
+  /// Returns the private, per-user storage directory.
+  /// [userId] is MANDATORY — throws [ArgumentError] if null/empty to prevent
+  /// silent fallback to a shared directory accessible by other accounts.
+  Future<Directory> _userDir(String userId) async {
+    if (userId.isEmpty) {
+      throw ArgumentError(
+          'userId must not be empty — refusing to use shared directory');
     }
-    return '${directory.path}/$sanitizedFilename';
+    final root = await getApplicationDocumentsDirectory();
+    final safeId = userId.replaceAll(RegExp(r'[^\w-]'), '_');
+    final dir = Directory('${root.path}/user_$safeId');
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
   }
 
-  /// Checks if a file exists locally for the given [userId].
+  /// Returns the absolute path for [filename] inside the user's directory.
+  /// Sanitises filename to prevent directory-traversal attacks.
+  Future<String> getLocalPath(String filename, {String? userId}) async {
+    if (userId == null || userId.isEmpty) {
+      throw ArgumentError(
+          'userId is required — always pass the authenticated user ID');
+    }
+    final sanitized = filename.replaceAll(RegExp(r'[^\w\s\.-]'), '_');
+    final dir = await _userDir(userId);
+    return '${dir.path}/$sanitized';
+  }
+
+  // ── Ownership Manifest ─────────────────────────────────────────────────────
+
+  /// The manifest is a JSON file stored inside the user's directory.
+  /// Format: { "filename": "userId", ... }
+  /// It records that THIS userId downloaded each file. On open, we verify
+  /// the requesting user is the owner.
+  Future<File> _manifestFile(String userId) async {
+    final dir = await _userDir(userId);
+    return File('${dir.path}/_manifest.json');
+  }
+
+  Future<Map<String, String>> _readManifest(String userId) async {
+    try {
+      final file = await _manifestFile(userId);
+      if (!await file.exists()) return {};
+      final raw = await file.readAsString();
+      final decoded = json.decode(raw) as Map<String, dynamic>;
+      return decoded.map((k, v) => MapEntry(k, v as String));
+    } catch (e) {
+      debugPrint('DownloadService: Error reading manifest: $e');
+      return {};
+    }
+  }
+
+  Future<void> _writeManifest(
+      String userId, Map<String, String> manifest) async {
+    try {
+      final file = await _manifestFile(userId);
+      await file.writeAsString(json.encode(manifest));
+    } catch (e) {
+      debugPrint('DownloadService: Error writing manifest: $e');
+    }
+  }
+
+  /// Records that [userId] owns [filename].
+  Future<void> _registerOwnership(String userId, String filename) async {
+    final manifest = await _readManifest(userId);
+    manifest[filename] = userId;
+    await _writeManifest(userId, manifest);
+  }
+
+  /// Returns true only if [userId] is the recorded owner of [filename].
+  /// Returns false if the file doesn't appear in the manifest (unregistered
+  /// legacy file) — callers should treat this as a security failure.
+  Future<bool> verifyOwnership(String filename,
+      {required String userId}) async {
+    if (userId.isEmpty) return false;
+    final sanitized = filename.replaceAll(RegExp(r'[^\w\s\.-]'), '_');
+    final manifest = await _readManifest(userId);
+    final owner = manifest[sanitized];
+    if (owner == null) {
+      // Legacy file with no manifest entry — default deny
+      debugPrint(
+          'DownloadService: No manifest entry for $sanitized — access denied');
+      return false;
+    }
+    final allowed = owner == userId;
+    if (!allowed) {
+      debugPrint(
+          'DownloadService: Ownership mismatch for $sanitized (owner=$owner, requester=$userId)');
+    }
+    return allowed;
+  }
+
+  /// Migrates files that were downloaded before the per-user directory system
+  /// was enforced. Old downloads lived in the root documents directory; new
+  /// ones live in user_{id}/. This method scans the root, finds any
+  /// resource_*.pdf or mock_test_*.json files, moves them into the user
+  /// directory, and registers ownership in the manifest.
+  ///
+  /// **Safe to call on every login** — skips files already in the user dir.
+  Future<void> migrateOldDownloads(String userId) async {
+    if (userId.isEmpty) return;
+    try {
+      final root = await getApplicationDocumentsDirectory();
+      final userDir = await _userDir(userId);
+
+      // Patterns that match downloaded content files
+      final pattern = RegExp(r'^(resource_\d+\.pdf|mock_test_\d+\.json)$');
+
+      final rootEntities = root.listSync(followLinks: false);
+      int migrated = 0;
+
+      for (final entity in rootEntities) {
+        if (entity is! File) continue;
+        final basename = entity.path.split(Platform.pathSeparator).last;
+        if (!pattern.hasMatch(basename)) continue;
+
+        final dest = File('${userDir.path}/$basename');
+        if (await dest.exists()) {
+          // Already migrated — delete the stale root copy
+          await entity.delete();
+          debugPrint('DownloadService: Removed stale root copy: $basename');
+          continue;
+        }
+
+        // Move: copy then delete original
+        await entity.copy(dest.path);
+        await entity.delete();
+        await _registerOwnership(userId, basename);
+        migrated++;
+        debugPrint('DownloadService: Migrated $basename → user dir');
+      }
+
+      if (migrated > 0) {
+        debugPrint(
+            'DownloadService: Migration complete — moved $migrated file(s) for $userId');
+      }
+    } catch (e) {
+      debugPrint('DownloadService: Migration error: $e');
+    }
+  }
+
+  // ── Public API ─────────────────────────────────────────────────────────────
+
+  /// Checks if a file exists locally for [userId].
   Future<bool> isFileDownloaded(String filename, {String? userId}) async {
     try {
+      if (userId == null || userId.isEmpty) return false;
       final path = await getLocalPath(filename, userId: userId);
       return File(path).exists();
     } catch (e) {
-      debugPrint("Error checking file existence: $e");
+      debugPrint('Error checking file existence: $e');
       return false;
     }
   }
 
-  /// Downloads a file with progress tracking via Stream
-  /// Returns a Stream of DownloadProgress events
+  /// Downloads a file with progress tracking via Stream.
+  /// Registers ownership in the manifest on success.
   Stream<DownloadProgress> downloadFileWithProgress(String url, String filename,
       {String? userId}) async* {
+    if (userId == null || userId.isEmpty) {
+      yield DownloadProgress(
+        bytesReceived: 0,
+        totalBytes: 0,
+        percentage: 0,
+        status: DownloadStatus.error,
+        errorMessage: 'Authentication required to download files',
+      );
+      return;
+    }
+
     try {
       final path = await getLocalPath(filename, userId: userId);
       final file = File(path);
 
-      // Check if file already exists
       if (await file.exists()) {
-        debugPrint("File already exists: $path");
+        debugPrint('File already exists: $path');
+        // Re-register ownership in case manifest was lost
+        await _registerOwnership(userId, filename);
         yield DownloadProgress(
           bytesReceived: 0,
           totalBytes: 0,
@@ -90,9 +231,7 @@ class DownloadService {
         return;
       }
 
-      debugPrint("Starting download: $url -> $path");
-
-      // Start download
+      debugPrint('Starting download: $url -> $path');
       final request = http.Request('GET', Uri.parse(url));
       final response = await http.Client().send(request);
 
@@ -102,7 +241,7 @@ class DownloadService {
           totalBytes: 0,
           percentage: 0.0,
           status: DownloadStatus.error,
-          errorMessage: "HTTP ${response.statusCode}",
+          errorMessage: 'HTTP ${response.statusCode}',
         );
         return;
       }
@@ -111,14 +250,11 @@ class DownloadService {
       var receivedBytes = 0;
       final sink = file.openWrite();
 
-      // Stream download progress
       await for (final chunk in response.stream) {
         sink.add(chunk);
         receivedBytes += chunk.length;
-
         final percentage =
             contentLength > 0 ? (receivedBytes / contentLength * 100) : 0.0;
-
         yield DownloadProgress(
           bytesReceived: receivedBytes,
           totalBytes: contentLength,
@@ -128,7 +264,10 @@ class DownloadService {
       }
 
       await sink.close();
-      debugPrint("Download complete: $path");
+      debugPrint('Download complete: $path');
+
+      // Register ownership after successful download
+      await _registerOwnership(userId, filename);
 
       yield DownloadProgress(
         bytesReceived: receivedBytes,
@@ -137,7 +276,7 @@ class DownloadService {
         status: DownloadStatus.completed,
       );
     } catch (e) {
-      debugPrint("Download error: $e");
+      debugPrint('Download error: $e');
       yield DownloadProgress(
         bytesReceived: 0,
         totalBytes: 0,
@@ -148,26 +287,29 @@ class DownloadService {
     }
   }
 
-  /// Downloads a file from [url] and saves it as [filename] in the user's folder.
-  /// Returns the path if successful, throws error otherwise.
+  /// Downloads a file from [url] and saves it to the user's directory.
+  /// Registers ownership on success.
   Future<String> downloadFile(String url, String filename,
       {Function(double)? onProgress, String? userId}) async {
+    if (userId == null || userId.isEmpty) {
+      throw ArgumentError('userId is required to download files');
+    }
     try {
       final path = await getLocalPath(filename, userId: userId);
       final file = File(path);
 
       if (await file.exists()) {
-        debugPrint("File already exists: $path");
+        debugPrint('File already exists: $path');
+        await _registerOwnership(userId, filename);
         return path;
       }
 
-      debugPrint("Starting download: $url -> $path");
+      debugPrint('Starting download: $url -> $path');
       final request = http.Request('GET', Uri.parse(url));
       final response = await http.Client().send(request);
 
       if (response.statusCode != 200) {
-        throw Exception(
-            "Download failed with status code: ${response.statusCode}");
+        throw Exception('Download failed with status: ${response.statusCode}');
       }
 
       final contentLength = response.contentLength ?? 0;
@@ -187,30 +329,39 @@ class DownloadService {
         },
         onError: (e) {
           sink.close();
-          throw e; // Re-throw to handle in UI
+          throw e;
         },
         cancelOnError: true,
       ).asFuture();
 
-      debugPrint("Download complete: $path");
+      debugPrint('Download complete: $path');
+      await _registerOwnership(userId, filename);
       return path;
     } catch (e) {
-      debugPrint("Download error: $e");
+      debugPrint('Download error: $e');
       rethrow;
     }
   }
 
-  /// Deletes a file from device storage
+  /// Deletes a file and removes its entry from the ownership manifest.
   Future<void> deleteFile(String filename, {String? userId}) async {
+    if (userId == null || userId.isEmpty) {
+      throw ArgumentError('userId is required to delete files');
+    }
     try {
       final path = await getLocalPath(filename, userId: userId);
       final file = File(path);
       if (await file.exists()) {
         await file.delete();
-        debugPrint("File deleted: $path");
+        debugPrint('File deleted: $path');
       }
+      // Remove from manifest
+      final manifest = await _readManifest(userId);
+      final sanitized = filename.replaceAll(RegExp(r'[^\w\s\.-]'), '_');
+      manifest.remove(sanitized);
+      await _writeManifest(userId, manifest);
     } catch (e) {
-      debugPrint("Error deleting file: $e");
+      debugPrint('Error deleting file: $e');
       rethrow;
     }
   }

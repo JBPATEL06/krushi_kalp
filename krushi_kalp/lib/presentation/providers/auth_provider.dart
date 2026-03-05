@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../utils/network_utils.dart'; // Import NetworkUtils
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../../utils/network_utils.dart';
 import '../utils/navigator_key.dart';
 import '../screens/login_screen.dart';
 import '../../data/services/fcm_service.dart';
 import '../../data/services/encryption_service.dart';
+import '../../data/services/download_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -20,8 +22,7 @@ class AuthProvider extends ChangeNotifier {
   RealtimeChannel? _sessionSubscription;
   bool _isExplicitLogin = false;
 
-  static const String _webClientId =
-      '295803900120-5lqevo86ug6v8ef8el4vosmstjjo4rn0.apps.googleusercontent.com';
+  static String get _webClientId => dotenv.env['GOOGLE_WEB_CLIENT_ID'] ?? '';
 
   User? get currentUser => _currentUser;
   String? get userRole => _userRole;
@@ -266,22 +267,14 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('AuthProvider: Error fetching role: $e');
       if (NetworkUtils.isNetworkError(e)) {
+        // Network is offline — DO NOT sign out.
+        // The user's local Supabase session is still valid; their role
+        // will be re-fetched next time connectivity returns and they log in.
+        // Signing out here was causing crashes when the no-internet gate
+        // and auth state changes collided.
         debugPrint(
-            'AuthProvider: Critical Network Error detected. Forcing Sign Out to prevent loop.');
-        // Force sign out locally to stop retry loops
-        _currentUser = null;
-        _userRole = null;
-        notifyListeners();
-        // Do not call signOut() as it might try to hit the server and fail again.
-        // warning: We might want _supabase.auth.signOut() to clear local storage?
-        // _supabase.auth.signOut(); // This is async and might throw.
-        // Let's rely on internal clear or just invalidating state.
-
-        // Actually, we should try to clear persistence.
-        try {
-          // ignore: await_only_futures
-          _supabase.auth.signOut(scope: SignOutScope.local);
-        } catch (_) {}
+            'AuthProvider: Network offline — retaining current auth state.');
+        return;
       }
     }
   }
@@ -445,11 +438,19 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('Error updating session ID: $e');
     }
 
-    // Capture FCM Token for the newly logged-in user to ensure background push notifications work.
+    // Capture FCM Token for the newly logged-in user
     try {
       await FCMService().initialize();
     } catch (e) {
       debugPrint("Error initializing FCM after login: $e");
+    }
+
+    // Migrate files downloaded before the per-user directory system was enforced.
+    // This is safe to call every login — it's a no-op if nothing needs moving.
+    try {
+      await DownloadService().migrateOldDownloads(user.id);
+    } catch (e) {
+      debugPrint('AuthProvider: Migration error (non-critical): $e');
     }
   }
 

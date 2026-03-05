@@ -296,11 +296,13 @@ class _CartScreenState extends State<CartScreen> {
         userId: user!.id,
       );
 
-      await _refreshCart();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("Purchase Complete!"),
+            content: Text("Purchase Complete! 🎉"),
             backgroundColor: Colors.green));
+        // Navigate to Home tab and pop the cart screen
+        Provider.of<NavigationProvider>(context, listen: false).setIndex(0);
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {

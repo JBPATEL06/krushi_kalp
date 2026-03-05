@@ -98,7 +98,7 @@ class AppConfigService {
       defaultValue: "App is under maintenance. Please try again later.");
 
   static String get whatsappNumber =>
-      getValue('contact_info', 'whatsapp', defaultValue: "+919876543210");
+      getValue('contact_info', 'whatsapp', defaultValue: "");
 
   static String get email =>
       getValue('contact_info', 'email', defaultValue: "support@krushikalp.com");
@@ -107,10 +107,10 @@ class AppConfigService {
       getValue('contact_info', 'telegram', defaultValue: "krushi_kalp");
 
   static String get privacyPolicyUrl => getValue('legal_urls', 'privacy_policy',
-      defaultValue: "https://www.google.com");
+      defaultValue: "https://krushikalp.netlify.app/privacy-policy");
 
   static String get termsUrl => getValue('legal_urls', 'terms_conditions',
-      defaultValue: "https://www.google.com");
+      defaultValue: "https://krushikalp.netlify.app/terms-and-conditions");
 
   // --- Banner Settings ---
 
