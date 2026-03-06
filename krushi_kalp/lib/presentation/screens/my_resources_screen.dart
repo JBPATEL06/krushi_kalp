@@ -6,8 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart'; // NEW
 import '../../domain/models/resource.dart';
 import '../providers/resource_provider.dart';
 import '../providers/auth_provider.dart';
-import '../widgets/common/universal_item_card.dart';
-import '../../core/theme/app_colors.dart';
+import '../widgets/common/download_item_card.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../data/services/download_service.dart';
 import '../widgets/common/download_progress_dialog.dart';
@@ -99,16 +98,17 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final provider = context.watch<ResourceProvider>();
     final resources = _getFilteredResources(provider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           _buildSliverAppBar(context),
           SliverToBoxAdapter(
-            child: _buildSearchAndFilterBar(),
+            child: _buildSearchAndFilterBar(theme),
           ),
           if (_isLoading)
             const SliverFillRemaining(
@@ -127,18 +127,18 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
                     final resource = resources[index];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                      child: UniversalItemCard(
+                      child: DownloadItemCard(
                         title: resource.title,
                         subtitle: resource.description,
-                        price: resource.price,
                         coverUrl: resource.thumbnailUrl,
+                        heroTag: 'resource_image_${resource.id}',
                         customAction: DownloadActionButton(
                           filename: 'resource_${resource.id}.pdf',
                           url: resource.fileUrl,
                           startLabel: "Open",
+                          isFullWidth: false,
                           onAction: () => _openResource(resource),
                         ),
-                        isPurchased: true,
                         onTap: () => _openResource(resource),
                       ),
                     )
@@ -156,21 +156,22 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
   }
 
   Widget _buildSliverAppBar(BuildContext context) {
+    final theme = Theme.of(context);
     return SliverAppBar(
       floating: false,
       pinned: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: theme.colorScheme.surface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       centerTitle: true,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: AppColors.neutral900),
+        icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
         onPressed: () => Navigator.pop(context),
       ),
       title: Text(
         widget.title,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
+        style: TextStyle(
+          color: theme.colorScheme.onSurface,
           fontWeight: FontWeight.bold,
           fontSize: 20,
         ),
@@ -178,7 +179,7 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
     );
   }
 
-  Widget _buildSearchAndFilterBar() {
+  Widget _buildSearchAndFilterBar(ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
@@ -190,9 +191,11 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
             controller: _searchController,
             decoration: InputDecoration(
               hintText: 'Search purchased items...',
-              prefixIcon: const Icon(Icons.search, color: AppColors.neutral500),
+              prefixIcon:
+                  Icon(Icons.search, color: theme.colorScheme.onSurfaceVariant),
               filled: true,
-              fillColor: AppColors.neutral100,
+              fillColor:
+                  theme.colorScheme.surfaceVariant.withValues(alpha: 0.5),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                 borderSide: BorderSide.none,
@@ -207,11 +210,11 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildFilterChip('Newest'),
+                _buildFilterChip(theme, 'Newest'),
                 const SizedBox(width: AppSpacing.sm),
-                _buildFilterChip('Oldest'),
+                _buildFilterChip(theme, 'Oldest'),
                 const SizedBox(width: AppSpacing.sm),
-                _buildFilterChip('A-Z'),
+                _buildFilterChip(theme, 'A-Z'),
               ],
             ),
           ),
@@ -220,7 +223,7 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label) {
+  Widget _buildFilterChip(ThemeData theme, String label) {
     final isSelected = _sortOption == label;
     return FilterChip(
       label: Text(label),
@@ -230,23 +233,28 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
           _sortOption = label;
         });
       },
-      selectedColor: AppColors.primary.withOpacity(0.1),
-      checkmarkColor: AppColors.primary,
-      backgroundColor: Colors.white,
+      selectedColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+      checkmarkColor: theme.colorScheme.primary,
+      backgroundColor: theme.colorScheme.surface,
       labelStyle: TextStyle(
-        color: isSelected ? AppColors.primary : AppColors.textSecondary,
+        color: isSelected
+            ? theme.colorScheme.primary
+            : theme.colorScheme.onSurfaceVariant,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         side: BorderSide(
-          color: isSelected ? AppColors.primary : AppColors.neutral200,
+          color: isSelected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.outlineVariant,
         ),
       ),
     );
   }
 
   Widget _buildEmptyState() {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -254,16 +262,16 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
           Icon(
             Icons.search_off_rounded,
             size: 64,
-            color: AppColors.neutral400,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
             _searchQuery.isNotEmpty
                 ? 'No matches found.'
                 : 'No purchased resources yet.',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../domain/models/mock_test.dart';
 import '../../../../domain/models/offer.dart';
-import '../../../widgets/common/universal_item_card.dart';
+import 'store_item_card.dart';
 import '../../../../utils/price_calculator.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../data/services/review_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../widgets/common/download_action_button.dart';
+import '../../../widgets/common/responsive_wrapper.dart';
 import '../../../utils/exam_helper.dart';
 
 class StoreGrid extends StatefulWidget {
@@ -90,12 +91,12 @@ class _StoreGridState extends State<StoreGrid> {
     }
 
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      padding: EdgeInsets.symmetric(horizontal: context.w(AppSpacing.lg)),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
           (context, index) {
             return Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+              padding: EdgeInsets.only(bottom: context.h(AppSpacing.lg)),
               child: _buildCard(context, widget.tests[index]),
             ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
           },
@@ -143,7 +144,7 @@ class _StoreGridState extends State<StoreGrid> {
       }
     }
 
-    return UniversalItemCard(
+    return StoreItemCard(
       title: test.title,
       subtitle: '${test.totalQuestions} Qs • ${test.totalMarks} Marks',
       time: test.time,
@@ -157,7 +158,7 @@ class _StoreGridState extends State<StoreGrid> {
               filename: 'mock_test_${test.id}.json',
               url: test.contentUrl,
               startLabel: "Start",
-              isFullWidth: false,
+              isFullWidth: true, // Needs to be full width in the vertical card
               userId: Supabase.instance.client.auth.currentUser?.id,
               onAction: () async {
                 if (test.contentUrl == null) {

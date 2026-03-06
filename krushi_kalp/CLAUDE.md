@@ -205,6 +205,11 @@ flutter clean && flutter pub get && flutter run
 3.  **Splash & Launch Polishing:** Sized native/flutter logos (180dp), added dark mode splash, and cut startup delays by 50%.
 4.  **Premium Dual-Theme:** Implemented Material 3 systems (Indigo+Saffron & Forest Sage) with `ThemeMode.system` auto-detection.
 5.  **Initialization Stability:** Moved all setup into `runZonedGuarded` to prevent Zone mismatch crashes.
+6.  **System-Wide SafeArea Audit:** Implemented `SafeArea` at the bottom of all interaction-heavy screens (`Exam`, `Chat`, `Cart`, `DirectCheckout`, `TestResult`) to prevent system navigation bar overlaps.
+7.  **Native PDF Theming:** Added automatic light/dark mode detection and a manual Night Mode toggle to the PDF viewers, leveraging `flutter_pdfview`'s native inversion logic.
+8.  **Timezone Compliance (UTC to Local):** Centralized UTC-to-Local conversion in the `TestResult` model. Improved time formatting with leading zeros for a consistent enterprise-grade feel.
+9.  **Icon Clarity standard:** Updated all profile and setting icons to use `theme.colorScheme.primary` tokens, ensuring high visibility and branding consistency in dark mode.
+10. **UI Polishing:** Resolved double-timer logic in `ExamScreen`, standardized button sizes in `TestResult`, and removed redundant AppBars to maximize content real estate.
 
 ---
 

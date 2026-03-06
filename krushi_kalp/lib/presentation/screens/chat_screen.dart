@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart'
     show Chat, DefaultChatTheme;
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:krushi_kalp/core/theme/app_colors.dart';
 import 'package:krushi_kalp/data/services/chat_service.dart';
 import 'package:krushi_kalp/data/services/auth_service.dart';
 import 'package:krushi_kalp/domain/models/message.dart';
@@ -65,8 +64,8 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child:
-                const Text('Clear', style: TextStyle(color: AppColors.error)),
+            child: Text('Clear',
+                style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
         ],
       ),
@@ -98,9 +97,10 @@ class _ChatScreenState extends State<ChatScreen> {
       if (difference.inMinutes >= 2) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('You can only unsend messages within 2 minutes.'),
-              backgroundColor: AppColors.warning,
+            SnackBar(
+              content:
+                  const Text('You can only unsend messages within 2 minutes.'),
+              backgroundColor: Theme.of(context).colorScheme.tertiary,
             ),
           );
         }
@@ -120,8 +120,8 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child:
-                const Text('Unsend', style: TextStyle(color: AppColors.error)),
+            child: Text('Unsend',
+                style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
         ],
       ),
@@ -142,20 +142,22 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     if (AuthService().currentUser == null) {
       return const Scaffold(body: Center(child: Text("Please login to chat.")));
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
+        title: Row(
           children: [
             CircleAvatar(
-              backgroundColor: AppColors.neutral100,
-              child: Icon(Icons.support_agent, color: AppColors.primary),
+              backgroundColor: theme.colorScheme.surfaceVariant,
+              child:
+                  Icon(Icons.support_agent, color: theme.colorScheme.primary),
             ),
-            SizedBox(width: 12),
-            Column(
+            const SizedBox(width: 12),
+            const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -211,15 +213,27 @@ class _ChatScreenState extends State<ChatScreen> {
             onMessageLongPress: _handleMessageLongPress,
             onMessageTap: _handleMessageTap,
             user: _user,
-            customBottomWidget: ChatInput(
-              onSendPressed: (text) =>
-                  _handleSendPressed(types.PartialText(text: text)),
+            customBottomWidget: SafeArea(
+              bottom: true,
+              child: ChatInput(
+                onSendPressed: (text) =>
+                    _handleSendPressed(types.PartialText(text: text)),
+              ),
             ),
-            theme: const DefaultChatTheme(
-              primaryColor: AppColors.primary,
-              secondaryColor: AppColors.neutral100,
-              inputBackgroundColor: AppColors.neutral50,
-              backgroundColor: AppColors.background,
+            theme: DefaultChatTheme(
+              primaryColor: theme.colorScheme.primary,
+              secondaryColor: theme.colorScheme.surfaceVariant,
+              inputBackgroundColor: theme.colorScheme.surface,
+              backgroundColor: theme.scaffoldBackgroundColor,
+              receivedMessageBodyTextStyle:
+                  theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ) ??
+                      const TextStyle(),
+              sentMessageBodyTextStyle: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onPrimary,
+                  ) ??
+                  const TextStyle(),
             ),
             showUserAvatars: true,
             showUserNames: true,

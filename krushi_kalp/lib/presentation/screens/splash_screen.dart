@@ -1,5 +1,3 @@
-import 'package:krushi_kalp/core/theme/app_colors.dart';
-
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/auth_provider.dart';
@@ -179,7 +177,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     debugPrint('SplashScreen: Building...');
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -193,12 +191,13 @@ class _SplashScreenState extends State<SplashScreen> {
             Text(
               'Krushi kalp',
               style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
             ),
             SizedBox(height: context.h(48)),
-            const CircularProgressIndicator(color: AppColors.primary),
+            CircularProgressIndicator(
+                color: Theme.of(context).colorScheme.primary),
           ],
         ),
       ),

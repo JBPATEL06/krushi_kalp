@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_radius.dart';
 
 enum AppButtonType { primary, secondary, outline, text }
 
@@ -33,9 +34,13 @@ class AppButton extends StatelessWidget {
         ? SizedBox(
             width: (height ?? 56) * 0.4, // Scale loader
             height: (height ?? 56) * 0.4,
-            child: const CircularProgressIndicator(
+            child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                type == AppButtonType.primary
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.primary,
+              ),
             ),
           )
         : Row(
@@ -57,13 +62,13 @@ class AppButton extends StatelessWidget {
             ],
           );
 
-    final borderRadius = BorderRadius.circular(16);
+    final borderRadius = BorderRadius.circular(AppRadius.lg);
     // If width is specified, don't force infinite width.
     final double minWidth = width != null ? 0.0 : double.infinity;
     // Use provided height or default 56
     final minimumSize = Size(minWidth, height ?? 56.0);
 
-    final themePrimary = Theme.of(context).primaryColor;
+    final theme = Theme.of(context);
 
     // 2. Button Variant
     switch (type) {
@@ -74,12 +79,12 @@ class AppButton extends StatelessWidget {
           child: ElevatedButton(
             onPressed: isLoading ? null : onPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: color ?? themePrimary,
-              foregroundColor: Colors.white,
+              backgroundColor: color ?? theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
               minimumSize: minimumSize,
               shape: RoundedRectangleBorder(borderRadius: borderRadius),
-              elevation: 4,
-              shadowColor: (color ?? themePrimary).withValues(alpha: 0.4),
+              elevation: 0,
+              shadowColor: Colors.transparent,
               padding: height != null
                   ? EdgeInsets.zero
                   : null, // Remove padding if fixed height
@@ -95,11 +100,11 @@ class AppButton extends StatelessWidget {
           child: ElevatedButton(
             onPressed: isLoading ? null : onPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: color ?? Colors.white,
-              foregroundColor: Colors.black87,
+              backgroundColor: color ?? theme.colorScheme.surfaceVariant,
+              foregroundColor: theme.colorScheme.onSurfaceVariant,
               minimumSize: minimumSize,
               shape: RoundedRectangleBorder(borderRadius: borderRadius),
-              elevation: 2,
+              elevation: 0,
               padding: height != null ? EdgeInsets.zero : null,
             ),
             child: isLoading
@@ -119,8 +124,9 @@ class AppButton extends StatelessWidget {
           child: OutlinedButton(
             onPressed: isLoading ? null : onPressed,
             style: OutlinedButton.styleFrom(
-              foregroundColor: color ?? themePrimary,
-              side: BorderSide(color: color ?? themePrimary, width: 1.5),
+              foregroundColor: color ?? theme.colorScheme.primary,
+              side: BorderSide(
+                  color: color ?? theme.colorScheme.primary, width: 1.5),
               minimumSize: minimumSize,
               shape: RoundedRectangleBorder(borderRadius: borderRadius),
               padding: height != null ? EdgeInsets.zero : null,
@@ -131,8 +137,8 @@ class AppButton extends StatelessWidget {
                     height: (height ?? 56) * 0.4,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(color ?? themePrimary),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                          color ?? theme.colorScheme.primary),
                     ),
                   )
                 : content,
@@ -146,7 +152,7 @@ class AppButton extends StatelessWidget {
             child: TextButton(
               onPressed: isLoading ? null : onPressed,
               style: TextButton.styleFrom(
-                foregroundColor: color ?? themePrimary,
+                foregroundColor: color ?? theme.colorScheme.primary,
                 shape: RoundedRectangleBorder(borderRadius: borderRadius),
                 minimumSize: minimumSize,
                 padding: height != null ? EdgeInsets.zero : null,

@@ -3,7 +3,6 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 
 /// PDF Viewer that streams from network URL (temporary cache, not saved permanently)
@@ -27,6 +26,16 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
   String? _errorMessage;
   int _totalPages = 0;
   int _currentPage = 0;
+  bool _isNightMode = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize night mode based on theme if not manually set
+    if (_totalPages == 0) {
+      _isNightMode = Theme.of(context).brightness == Brightness.dark;
+    }
+  }
 
   @override
   void initState() {
@@ -81,8 +90,10 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.neutral900,
+      backgroundColor: Colors
+          .black, // Dark background for PDF viewer is usually preferred regardless of theme
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,34 +107,47 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
             if (_totalPages > 0)
               Text(
                 'Page $_currentPage of $_totalPages',
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.textSecondary),
+                style: TextStyle(
+                    fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
               ),
           ],
         ),
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          IconButton(
+            icon: Icon(
+              _isNightMode ? Icons.dark_mode : Icons.light_mode,
+              color: _isNightMode ? Colors.amber : theme.colorScheme.primary,
+            ),
+            tooltip: 'Toggle Night Mode',
+            onPressed: () {
+              setState(() {
+                _isNightMode = !_isNightMode;
+              });
+            },
+          ),
           Container(
             margin: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md, vertical: AppSpacing.xs),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
             ),
             child: Row(
-              children: const [
-                Icon(Icons.cloud_outlined, size: 16, color: AppColors.primary),
-                SizedBox(width: 4),
+              children: [
+                Icon(Icons.cloud_outlined,
+                    size: 16, color: theme.colorScheme.primary),
+                const SizedBox(width: 4),
                 Text(
                   'Online',
                   style: TextStyle(
-                    color: AppColors.primary,
+                    color: theme.colorScheme.primary,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -138,17 +162,18 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
   }
 
   Widget _buildBody() {
+    final theme = Theme.of(context);
     if (_isLoading) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircularProgressIndicator(color: AppColors.primary),
+            CircularProgressIndicator(color: theme.colorScheme.primary),
             const SizedBox(height: AppSpacing.lg),
             Text(
               'Loading PDF...',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
             ),
           ],
@@ -163,12 +188,13 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 64, color: AppColors.error),
+              Icon(Icons.error_outline,
+                  size: 64, color: theme.colorScheme.error),
               const SizedBox(height: AppSpacing.lg),
               Text(
                 'Failed to load PDF',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.error,
+                      color: theme.colorScheme.error,
                       fontWeight: FontWeight.bold,
                     ),
               ),
@@ -177,7 +203,7 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
                 _errorMessage!,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
               ),
               const SizedBox(height: AppSpacing.xl),
@@ -186,7 +212,8 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Retry'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
                 ),
               ),
             ],
@@ -200,6 +227,7 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
     }
 
     return PDFView(
+      key: ValueKey(_isNightMode),
       filePath: _localPath!,
       enableSwipe: true,
       swipeHorizontal: false,
@@ -209,6 +237,7 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
       defaultPage: 0,
       fitPolicy: FitPolicy.WIDTH,
       preventLinkNavigation: false,
+      nightMode: _isNightMode,
       onRender: (pages) {
         if (mounted) {
           setState(() {

@@ -200,16 +200,16 @@ class TestProvider extends ChangeNotifier {
       temp.sort((a, b) {
         int cmp = a.finalPrice.compareTo(b.finalPrice);
         if (cmp != 0) return cmp;
-        return b.id.compareTo(a.id);
+        return b.createdAt.compareTo(a.createdAt);
       });
     } else if (sortOption == 'Price: High to Low') {
       temp.sort((a, b) {
         int cmp = b.finalPrice.compareTo(a.finalPrice);
         if (cmp != 0) return cmp;
-        return b.id.compareTo(a.id);
+        return b.createdAt.compareTo(a.createdAt);
       });
     } else {
-      temp.sort((a, b) => b.id.compareTo(a.id));
+      temp.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     }
 
     _allTests = temp;

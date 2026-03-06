@@ -13,7 +13,9 @@ import 'cart/widgets/cart_item_widget.dart';
 import 'cart/widgets/cart_order_summary.dart';
 import 'package:provider/provider.dart';
 import '../providers/navigation_provider.dart';
-import '../providers/cart_provider.dart'; // Fixed import
+import '../providers/cart_provider.dart';
+import '../../core/theme/app_spacing.dart';
+import '../widgets/common/responsive_wrapper.dart';
 // ... (imports remain)
 
 // ... (imports remain)
@@ -341,17 +343,27 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'My Cart',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+        title: Text(
+          'Shopping Cart',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+            fontSize: context.sp(20),
+          ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_rounded,
+              color: theme.colorScheme.onSurface, size: context.sp(24)),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _cartFuture,
@@ -399,15 +411,15 @@ class _CartScreenState extends State<CartScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'ITEMS (${cartItems.length})',
+                            'YOUR CURRICULUM (${cartItems.length} ITEMS)',
                             style: TextStyle(
-                              color: Colors.grey[600],
+                              color: theme.colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                              letterSpacing: 1.0,
+                              fontSize: context.sp(14),
+                              letterSpacing: 0.5,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: context.h(AppSpacing.lg)),
                           ...cartItems.map((item) => CartItemWidget(
                                 item: item,
                                 onRemove: () => _deleteItem(
@@ -417,92 +429,130 @@ class _CartScreenState extends State<CartScreen> {
                           const SizedBox(height: 24),
 
                           // --- COUPON INPUT SECTION ---
-                          // --- COUPON INPUT SECTION ---
-                          // --- COUPON INPUT SECTION ---
-                          Container(
-                            decoration: BoxDecoration(
-                              color: _appliedGlobalOffer != null
-                                  ? Colors.green.withValues(alpha: 0.08)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: _appliedGlobalOffer != null
-                                    ? Colors.green
-                                    : Colors.grey.shade300,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.03),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                )
-                              ],
+                          Text(
+                            'STUDENT DISCOUNT CODE',
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.bold,
+                              fontSize: context.sp(13),
                             ),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            child: TextField(
-                              controller: _couponController,
-                              enabled: !_isApplyingCoupon,
-                              readOnly: _appliedGlobalOffer != null,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: _appliedGlobalOffer != null
-                                    ? Colors.green.shade800
-                                    : Colors.black87,
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'Have a coupon code?',
-                                hintStyle: TextStyle(
-                                    color: Colors.grey.shade500,
-                                    fontWeight: FontWeight.normal),
-                                prefixIcon: Icon(
-                                  Icons.local_offer_outlined,
-                                  color: _appliedGlobalOffer != null
-                                      ? Colors.green
-                                      : Colors.grey.shade400,
-                                  size: 22,
+                          ),
+                          SizedBox(height: context.h(AppSpacing.md)),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  height: context.h(50),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.surface,
+                                    borderRadius: BorderRadius.circular(
+                                        context.w(AppSpacing.radiusMd)),
+                                  ),
+                                  child: TextField(
+                                    controller: _couponController,
+                                    enabled: !_isApplyingCoupon,
+                                    readOnly: _appliedGlobalOffer != null,
+                                    textAlignVertical: TextAlignVertical.center,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: context.sp(14),
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: 'Enter code (e.g. SCHOLAR20)',
+                                      hintStyle: TextStyle(
+                                          color:
+                                              theme.colorScheme.outlineVariant,
+                                          fontWeight: FontWeight.normal),
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: context.w(AppSpacing.md),
+                                        vertical: context.h(12),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(
+                                            context.w(AppSpacing.radiusMd)),
+                                        borderSide: BorderSide(
+                                          color: _appliedGlobalOffer != null
+                                              ? theme.colorScheme.primary
+                                              : theme
+                                                  .colorScheme.outlineVariant,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(
+                                            context.w(AppSpacing.radiusMd)),
+                                        borderSide: BorderSide(
+                                          color: _appliedGlobalOffer != null
+                                              ? theme.colorScheme.primary
+                                              : theme.colorScheme.primary,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      disabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(
+                                            context.w(AppSpacing.radiusMd)),
+                                        borderSide: BorderSide(
+                                            color: theme
+                                                .colorScheme.outlineVariant),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                                border: InputBorder.none,
-                                contentPadding:
-                                    const EdgeInsets.symmetric(vertical: 14),
-                                suffixIcon: _isApplyingCoupon
-                                    ? const Padding(
-                                        padding: EdgeInsets.all(12),
-                                        child: SizedBox(
+                              ),
+                              SizedBox(width: context.w(AppSpacing.md)),
+                              SizedBox(
+                                height: context.h(50),
+                                child: ElevatedButton(
+                                  onPressed: _appliedGlobalOffer == null
+                                      ? _applyOrderCoupon
+                                      : _removeOrderCoupon,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: _appliedGlobalOffer == null
+                                        ? theme.colorScheme.surfaceVariant
+                                        : theme.colorScheme.errorContainer
+                                            .withValues(alpha: 0.3),
+                                    foregroundColor: _appliedGlobalOffer == null
+                                        ? theme.colorScheme.primary
+                                        : theme.colorScheme.error,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                          context.w(AppSpacing.radiusMd)),
+                                      side: BorderSide(
+                                          color:
+                                              theme.colorScheme.outlineVariant),
+                                    ),
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: context.w(AppSpacing.xl)),
+                                  ),
+                                  child: _isApplyingCoupon
+                                      ? SizedBox(
                                           width: 20,
                                           height: 20,
                                           child: CircularProgressIndicator(
-                                              strokeWidth: 2),
+                                              strokeWidth: 2,
+                                              color: theme.colorScheme.primary),
+                                        )
+                                      : Text(
+                                          _appliedGlobalOffer == null
+                                              ? "Apply"
+                                              : "Remove",
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold),
                                         ),
-                                      )
-                                    : _appliedGlobalOffer == null
-                                        ? TextButton(
-                                            onPressed: _applyOrderCoupon,
-                                            style: TextButton.styleFrom(
-                                              foregroundColor: Colors.blue[900],
-                                              textStyle: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                letterSpacing: 0.5,
-                                              ),
-                                            ),
-                                            child: const Text("APPLY"),
-                                          )
-                                        : IconButton(
-                                            onPressed: _removeOrderCoupon,
-                                            icon: const Icon(Icons.close,
-                                                color: Colors.red),
-                                            tooltip: 'Remove Coupon',
-                                          ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                           if (_couponError != null)
                             Padding(
-                              padding: const EdgeInsets.only(top: 8, left: 16),
+                              padding: EdgeInsets.only(
+                                  top: context.h(8), left: context.w(4)),
                               child: Text(
                                 _couponError!,
-                                style: const TextStyle(
-                                    color: Colors.red, fontSize: 12),
+                                style: TextStyle(
+                                    color: theme.colorScheme.error,
+                                    fontSize: context.sp(12)),
                               ),
                             ),
                           // ----------------------------
@@ -568,21 +618,23 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Widget _buildBottomCheckoutBar(List<Map<String, dynamic>> items) {
+    final theme = Theme.of(context);
     final total = _calculateTotal(items);
 
-    return Container(
-      padding: const EdgeInsets.only(left: 24, top: 24, right: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: SafeArea(
+    return SafeArea(
+      bottom: true,
+      child: Container(
+        padding: const EdgeInsets.only(left: 24, top: 24, right: 24),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
         child: Padding(
           padding: const EdgeInsets.only(bottom: 24),
           child: Row(
@@ -592,22 +644,21 @@ class _CartScreenState extends State<CartScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'TOTAL',
+                    'Total',
                     style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: context.sp(14),
                       fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '₹${total.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 24,
+                    style: TextStyle(
+                      fontSize: context.sp(24),
                       fontWeight: FontWeight.bold,
                       height: 1.0,
-                      color: Colors.black,
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                 ],
@@ -641,11 +692,12 @@ class _CartScreenState extends State<CartScreen> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    padding: EdgeInsets.symmetric(vertical: context.h(16)),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius:
+                          BorderRadius.circular(context.w(AppSpacing.radiusMd)),
                     ),
                     elevation: 0,
                   ),

@@ -48,7 +48,7 @@ class TestResult {
       scoreObtained: (json['score_obtained'] as num).toDouble(),
       totalMarks: maxMarks,
       isPassed: json['is_passed'] as bool? ?? false,
-      attemptDate: DateTime.parse(json['attempt_date'] as String),
+      attemptDate: DateTime.parse(json['attempt_date'] as String).toLocal(),
       language: json['language'] as String? ?? 'en',
     );
   }

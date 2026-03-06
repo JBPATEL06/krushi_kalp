@@ -7,17 +7,17 @@ Widget buildFormCard(BuildContext context,
     width: double.infinity,
     padding: padding ?? const EdgeInsets.all(24),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(20),
       boxShadow: [
         BoxShadow(
-          color: Theme.of(context).primaryColor.withValues(alpha: 0.08),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
           blurRadius: 20,
           offset: const Offset(0, 5),
         ),
       ],
       border: Border.all(
-          color: Theme.of(context).primaryColor.withValues(alpha: 0.1)),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)),
     ),
     child: child,
   );
@@ -37,12 +37,12 @@ Future<T?> showAppDialog<T>({
     context: context,
     builder: (ctx) => Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       elevation: 0,
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -58,17 +58,17 @@ Future<T?> showAppDialog<T>({
           children: [
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 16),
             DefaultTextStyle(
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
-                color: Color(0xFF64748B),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 height: 1.4,
               ),
               child: content,
@@ -81,7 +81,8 @@ Future<T?> showAppDialog<T>({
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.grey[600],
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onSurfaceVariant,
                         textStyle: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       child: const Text('Cancel'),
@@ -95,13 +96,14 @@ Future<T?> showAppDialog<T>({
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isDestructive
-                              ? Colors.red[50]
+                              ? Theme.of(context).colorScheme.errorContainer
                               : Theme.of(context)
-                                  .primaryColor
+                                  .colorScheme
+                                  .primary
                                   .withValues(alpha: 0.1),
                           foregroundColor: isDestructive
-                              ? Colors.red
-                              : Theme.of(context).primaryColor,
+                              ? Theme.of(context).colorScheme.error
+                              : Theme.of(context).colorScheme.primary,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 12),
@@ -135,32 +137,39 @@ InputDecoration getPremiumInputDecoration(
     prefixIcon: prefixIcon,
     suffixIcon: suffixIcon,
     filled: true,
-    fillColor: const Color(0xFFF8FAFC), // Slate 50
+    fillColor:
+        Theme.of(context).colorScheme.surfaceVariant.withValues(alpha: 0.3),
     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-    labelStyle: const TextStyle(
-        color: Color(0xFF64748B), fontWeight: FontWeight.w500), // Slate 500
-    hintStyle: const TextStyle(color: Color(0xFF94A3B8)), // Slate 400
+    labelStyle: TextStyle(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w500),
+    hintStyle: TextStyle(color: Theme.of(context).colorScheme.outlineVariant),
     floatingLabelStyle: TextStyle(
-        color: Theme.of(context).primaryColor, fontWeight: FontWeight.w600),
+        color: Theme.of(context).colorScheme.primary,
+        fontWeight: FontWeight.w600),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
-      borderSide: BorderSide(color: Colors.blueGrey.withValues(alpha: 0.1)),
+      borderSide:
+          BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
-      borderSide: const BorderSide(color: Color(0xFFE2E8F0)), // Slate 200
+      borderSide:
+          BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
-      borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+      borderSide:
+          BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
-      borderSide: const BorderSide(color: Colors.redAccent),
+      borderSide: BorderSide(color: Theme.of(context).colorScheme.error),
     ),
     focusedErrorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
-      borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+      borderSide:
+          BorderSide(color: Theme.of(context).colorScheme.error, width: 2),
     ),
   );
 }

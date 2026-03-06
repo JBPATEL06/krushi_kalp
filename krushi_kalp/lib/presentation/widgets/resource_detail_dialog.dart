@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../../domain/models/resource.dart';
 import '../../../../data/services/secure_file_service.dart';
 import '../screens/pdf_viewer_screen.dart';
-import '../../../../core/theme/app_colors.dart';
 
 class ResourceDetailDialog extends StatefulWidget {
   final Resource resource;
@@ -111,12 +110,14 @@ class _ResourceDetailDialogState extends State<ResourceDetailDialog> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.calendar_today,
-                    size: 14, color: AppColors.textSecondary),
+                    size: 14,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(width: 4),
                 Text(
                   widget.resource.createdAt.toString().split(' ')[0],
-                  style:
-                      TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 if (widget.resource.category != null) ...[
                   const SizedBox(width: 12),
@@ -124,7 +125,10 @@ class _ResourceDetailDialogState extends State<ResourceDetailDialog> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primaryContainer
+                          .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -132,7 +136,7 @@ class _ResourceDetailDialogState extends State<ResourceDetailDialog> {
                       style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary),
+                          color: Theme.of(context).colorScheme.primary),
                     ),
                   ),
                 ],
@@ -145,7 +149,10 @@ class _ResourceDetailDialogState extends State<ResourceDetailDialog> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.neutral100,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceVariant
+                      .withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -162,7 +169,8 @@ class _ResourceDetailDialogState extends State<ResourceDetailDialog> {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Text(
                   _errorMessage!,
-                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.error, fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -179,8 +187,8 @@ class _ResourceDetailDialogState extends State<ResourceDetailDialog> {
                     : Icons.download),
                 label: Text(_downloadedFile != null ? 'Open' : 'Download Now'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8)),
@@ -192,8 +200,8 @@ class _ResourceDetailDialogState extends State<ResourceDetailDialog> {
                 icon: const Icon(Icons.shopping_cart),
                 label: Text('Buy Now for ₹${widget.resource.price}'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8)),

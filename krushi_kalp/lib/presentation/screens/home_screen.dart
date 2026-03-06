@@ -6,7 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/services/banner_service.dart';
 import '../../domain/models/home_banner.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../providers/navigation_provider.dart';
 import '../../data/services/app_config_service.dart';
@@ -89,24 +88,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
         scrolledUnderElevation: 0,
-        shape: const Border(
+        shape: Border(
           bottom: BorderSide(
-            color: AppColors.neutral200,
+            color: theme.colorScheme.outlineVariant,
             width: 1,
           ),
         ),
         leading: Builder(
           builder: (context) => IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.menu_rounded,
-              color: AppColors.neutral900,
+              color: theme.colorScheme.onSurface,
               size: 26,
             ),
             tooltip: 'Menu',
@@ -115,11 +115,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         title: Text(
           "Krushi Kalp",
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-                letterSpacing: 0.5,
-              ),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.primary,
+            letterSpacing: 0.5,
+          ),
         ),
         actions: const [
           SizedBox(
@@ -145,30 +145,29 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: AppSpacing.lg),
+                  SizedBox(height: context.h(AppSpacing.xl)),
                   Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     child: Text(
                       'Hello, $_userName',
-                      style:
-                          Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.neutral900,
-                              ),
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     )
                         .animate()
                         .fadeIn(duration: 600.ms)
                         .slideX(begin: -0.2), // Animate Greeting
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(height: context.h(AppSpacing.lg)),
                   _buildBannerCarousel()
                       .animate()
                       .fadeIn(duration: 800.ms, delay: 200.ms)
                       .scale(begin: const Offset(0.95, 0.95)), // Animate Banner
-                  const SizedBox(height: AppSpacing.lg),
+                  SizedBox(height: context.h(AppSpacing.xl)),
                   _buildCategoryGrid(),
-                  const SizedBox(height: AppSpacing.xl),
+                  SizedBox(height: context.h(AppSpacing.xxl)),
                 ],
               ),
             ),
@@ -179,14 +178,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDrawer() {
+    final theme = Theme.of(context);
     return Drawer(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.colorScheme.surface,
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary,
             ),
             accountName: Text(
               _userName,
@@ -199,11 +199,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 context.read<NavigationProvider>().setIndex(4); // Goto Profile
               },
               child: CircleAvatar(
-                backgroundColor: Colors.white,
+                backgroundColor: theme.colorScheme.surface,
                 child: Text(
                   _userName.isNotEmpty ? _userName[0].toUpperCase() : 'A',
                   style:
-                      const TextStyle(fontSize: 32, color: AppColors.primary),
+                      TextStyle(fontSize: 32, color: theme.colorScheme.primary),
                 ),
               ),
             ),
@@ -214,15 +214,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           ListTile(
             leading:
-                const Icon(Icons.home_outlined, color: AppColors.neutral900),
+                Icon(Icons.home_outlined, color: theme.colorScheme.onSurface),
             title: const Text('Home'),
             onTap: () {
               Navigator.pop(context); // Close drawer
             },
           ),
           ListTile(
-            leading: const Icon(Icons.shopping_cart_outlined,
-                color: AppColors.neutral900),
+            leading: Icon(Icons.shopping_cart_outlined,
+                color: theme.colorScheme.onSurface),
             title: const Text('My Cart'),
             onTap: () {
               Navigator.pop(context);
@@ -233,9 +233,9 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.emoji_events_outlined,
-                color: AppColors.neutral900),
-            title: const Text('Test Results'),
+            leading: Icon(Icons.emoji_events_outlined,
+                color: theme.colorScheme.onSurface),
+            title: const Text('Results'),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -245,8 +245,8 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.person_outline_rounded,
-                color: AppColors.neutral900),
+            leading: Icon(Icons.person_outline_rounded,
+                color: theme.colorScheme.onSurface),
             title: const Text('Profile'),
             onTap: () {
               Navigator.pop(context);
@@ -258,7 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const Divider(),
           ListTile(
             leading:
-                const Icon(Icons.share_outlined, color: AppColors.neutral900),
+                Icon(Icons.share_outlined, color: theme.colorScheme.onSurface),
             title: const Text('Share App'),
             onTap: () {
               Navigator.pop(context);
@@ -267,9 +267,9 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.logout, color: AppColors.error),
-            title:
-                const Text('Logout', style: TextStyle(color: AppColors.error)),
+            leading: Icon(Icons.logout, color: theme.colorScheme.error),
+            title: Text('Logout',
+                style: TextStyle(color: theme.colorScheme.error)),
             onTap: () async {
               Navigator.pop(context);
               final confirm = await showDialog<bool>(
@@ -284,8 +284,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(context, true),
-                      child: const Text('Logout',
-                          style: TextStyle(color: AppColors.error)),
+                      child: Text('Logout',
+                          style: TextStyle(color: theme.colorScheme.error)),
                     ),
                   ],
                 ),
@@ -338,14 +338,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Shimmer-style loading placeholder shown ONLY while waiting for stream
   Widget _buildBannerShimmer() {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
     )
         .animate(onPlay: (c) => c.repeat())
-        .shimmer(duration: 1200.ms, color: AppColors.neutral100);
+        .shimmer(duration: 1200.ms, color: theme.colorScheme.surfaceVariant);
   }
 
   Widget _buildStaticBanner() {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       height: context.h(180),
@@ -354,7 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: theme.colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -368,14 +370,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildStaticBannerImage() {
+    final theme = Theme.of(context);
     return Image.asset(
       'assets/images/homeBanner.png',
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) {
         return Container(
-          color: AppColors.primary.withOpacity(0.1),
-          child: const Center(
-            child: Icon(Icons.broken_image, color: AppColors.neutral400),
+          color: theme.colorScheme.primary.withValues(alpha: 0.1),
+          child: Center(
+            child: Icon(Icons.broken_image, color: theme.colorScheme.outline),
           ),
         );
       },
@@ -383,6 +386,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategoryGrid() {
+    final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
     // Calculate aspect ratio dynamically: (Width - margins - spacing) / (Number of columns * required height)
     // We want a minimum height that fits the now-responsive CategoryCard content.
@@ -412,7 +416,7 @@ class _HomeScreenState extends State<HomeScreen> {
           CategoryCard(
             title: 'Daily Current Affair',
             icon: Icons.newspaper,
-            color: Colors.deepOrange,
+            color: theme.colorScheme.primary,
             onTap: () {
               final provider = context.read<ResourceProvider>();
               final hasCurrentAffairs = provider.currentAffairs
@@ -437,9 +441,9 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           CategoryCard(
-            title: 'Test Series',
+            title: 'Mocks',
             icon: Icons.quiz_outlined,
-            color: Colors.blue,
+            color: theme.colorScheme.secondary,
             onTap: () {
               final hasPurchased =
                   context.read<TestProvider>().purchasedTests.isNotEmpty;
@@ -456,7 +460,7 @@ class _HomeScreenState extends State<HomeScreen> {
           CategoryCard(
             title: 'E-Books',
             icon: Icons.menu_book_rounded,
-            color: Colors.green,
+            color: theme.colorScheme.tertiary,
             onTap: () {
               final provider = context.read<ResourceProvider>();
               final hasPurchased = provider.ebooks
@@ -481,7 +485,7 @@ class _HomeScreenState extends State<HomeScreen> {
           CategoryCard(
             title: 'Study Material',
             icon: Icons.description_rounded,
-            color: Colors.purple,
+            color: theme.colorScheme.primary,
             onTap: () {
               final provider = context.read<ResourceProvider>();
               final hasPurchased = provider.studyMaterials
@@ -508,7 +512,7 @@ class _HomeScreenState extends State<HomeScreen> {
           CategoryCard(
             title: 'Free Material',
             icon: Icons.card_giftcard,
-            color: Colors.amber,
+            color: theme.colorScheme.secondary,
             onTap: () {
               Navigator.push(
                 context,
@@ -521,7 +525,7 @@ class _HomeScreenState extends State<HomeScreen> {
           CategoryCard(
             title: 'PYQs',
             icon: Icons.history_edu_rounded,
-            color: Colors.red,
+            color: theme.colorScheme.error,
             onTap: () {
               final provider = context.read<ResourceProvider>();
               final hasPurchased = provider.pyqs
@@ -624,6 +628,7 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         SizedBox(
@@ -640,7 +645,7 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: theme.colorScheme.shadow.withValues(alpha: 0.08),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -653,14 +658,14 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
                     fit: BoxFit.cover,
                     width: double.infinity,
                     placeholder: (context, url) => Container(
-                      color: AppColors.neutral100,
+                      color: theme.colorScheme.surfaceVariant,
                       child: const Center(child: CircularProgressIndicator()),
                     ),
                     errorWidget: (context, url, error) => Container(
-                      color: AppColors.neutral200,
-                      child: const Center(
+                      color: theme.colorScheme.surfaceVariant,
+                      child: Center(
                         child: Icon(Icons.broken_image,
-                            color: AppColors.neutral400, size: 40),
+                            color: theme.colorScheme.outline, size: 40),
                       ),
                     ),
                   ),
@@ -683,8 +688,8 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(4),
                   color: _current == entry.key
-                      ? AppColors.primary
-                      : AppColors.neutral300,
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.surfaceVariant,
                 ),
               );
             }).toList(),

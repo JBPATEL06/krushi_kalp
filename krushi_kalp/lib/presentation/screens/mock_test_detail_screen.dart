@@ -3,7 +3,6 @@ import '../../data/services/app_config_service.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/offer.dart';
 import '../../utils/price_calculator.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 
 import 'package:provider/provider.dart';
@@ -163,367 +162,363 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
     final isActuallyPurchased = widget.isPurchased ||
         provider.purchasedTests.any((t) => t.id == widget.test.id);
 
+    final theme = Theme.of(context);
+    final surfaceColor = theme.colorScheme.surface;
+    final textPrimary = theme.colorScheme.onSurface;
+    final textSecondary = theme.colorScheme.onSurfaceVariant;
+    final neutral200 = theme.colorScheme.surfaceVariant;
+    final neutral400 = theme.colorScheme.outline;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.test.title,
             style: Theme.of(context).textTheme.titleLarge),
-        backgroundColor: AppColors.surface,
+        backgroundColor: surfaceColor,
         elevation: 0,
         centerTitle: false,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: AppColors.textPrimary, size: 24),
+          icon: Icon(Icons.close, color: textPrimary, size: 24),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: textPrimary,
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            await context.read<TestProvider>().fetchPurchasedStatus();
-            await _loadReviews();
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (widget.test.signedUrl != null &&
-                    widget.test.signedUrl!.isNotEmpty)
-                  Hero(
-                    tag: widget.heroTag ?? 'test_image_${widget.test.id}',
-                    child: SizedBox(
-                      height: context.h(250),
-                      width: double.infinity,
-                      child: CachedNetworkImage(
-                        imageUrl: widget.test.signedUrl!,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: AppColors.neutral200,
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await context.read<TestProvider>().fetchPurchasedStatus();
+          await _loadReviews();
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.test.signedUrl != null &&
+                  widget.test.signedUrl!.isNotEmpty)
+                Hero(
+                  tag: widget.heroTag ?? 'test_image_${widget.test.id}',
+                  child: SizedBox(
+                    height: context.h(250),
+                    width: double.infinity,
+                    child: CachedNetworkImage(
+                      imageUrl: widget.test.signedUrl!,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: neutral200,
+                        child: const Center(
+                          child: CircularProgressIndicator(),
                         ),
-                        errorWidget: (context, url, error) => Container(
-                          color: AppColors.neutral200,
-                          child: const Icon(Icons.broken_image,
-                              size: 40, color: AppColors.neutral400),
-                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: neutral200,
+                        child: Icon(Icons.broken_image,
+                            size: 40, color: neutral400),
                       ),
                     ),
-                  )
-                else
-                  Container(
-                    height: 200,
-                    width: double.infinity,
-                    color: AppColors.neutral200,
-                    child: const Icon(Icons.image,
-                        size: 64, color: AppColors.neutral400),
                   ),
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusLg),
-                        ),
-                        child: Builder(builder: (context) {
-                          final displayOffers = widget.activeOffers
-                              ?.where((o) => o.isSale)
-                              .toList();
-                          final priceData =
-                              PriceCalculator.calculateDisplayPrice(
-                            basePrice: widget.test.price,
-                            activeOffers: displayOffers,
-                            testId: widget.test.id,
-                          );
-                          final displayPrice =
-                              priceData['finalPrice'] as double;
-                          final displayMrp = priceData['mrp'] as double;
-                          final hasOffer = priceData['offer'] != null;
-                          final discPercent = (displayMrp > displayPrice &&
-                                  displayMrp > 0)
-                              ? ((displayMrp - displayPrice) / displayMrp * 100)
-                                  .round()
-                              : 0;
+                )
+              else
+                Container(
+                  height: 200,
+                  width: double.infinity,
+                  color: neutral200,
+                  child: Icon(Icons.image, size: 64, color: neutral400),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        color: surfaceColor,
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.radiusLg),
+                      ),
+                      child: Builder(builder: (context) {
+                        final displayOffers = widget.activeOffers
+                            ?.where((o) => o.isSale)
+                            .toList();
+                        final priceData = PriceCalculator.calculateDisplayPrice(
+                          basePrice: widget.test.price,
+                          activeOffers: displayOffers,
+                          testId: widget.test.id,
+                        );
+                        final displayPrice = priceData['finalPrice'] as double;
+                        final displayMrp = priceData['mrp'] as double;
+                        final hasOffer = priceData['offer'] != null;
+                        final discPercent = (displayMrp > displayPrice &&
+                                displayMrp > 0)
+                            ? ((displayMrp - displayPrice) / displayMrp * 100)
+                                .round()
+                            : 0;
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.test.title,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: context.sp(22),
-                                    ),
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  if (!isActuallyPurchased) ...[
-                                    if (hasOffer &&
-                                        displayMrp > displayPrice) ...[
-                                      Text(
-                                        '₹${displayMrp.toStringAsFixed(0)}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                              color: AppColors.neutral500,
-                                              decoration:
-                                                  TextDecoration.lineThrough,
-                                            ),
-                                      ),
-                                      const SizedBox(width: AppSpacing.sm),
-                                    ],
-                                    Text(
-                                      displayPrice == 0
-                                          ? 'Free'
-                                          : '₹${displayPrice.toStringAsFixed(0)}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headlineSmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black,
-                                          ),
-                                    ),
-                                    if (hasOffer && discPercent > 0) ...[
-                                      const SizedBox(width: AppSpacing.md),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: AppSpacing.sm,
-                                            vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.error
-                                              .withValues(alpha: 0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(4),
-                                          border: Border.all(
-                                              color: AppColors.error
-                                                  .withValues(alpha: 0.3)),
-                                        ),
-                                        child: Text(
-                                          '$discPercent% OFF',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .labelSmall
-                                              ?.copyWith(
-                                                color: AppColors.error,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                        ),
-                                      ),
-                                    ],
-                                  ] else ...[
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 12, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            AppColors.success.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                            color: AppColors.success),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(Icons.check_circle,
-                                              size: 16,
-                                              color: AppColors.success),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            "Purchased",
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleMedium
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: AppColors.success,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                              // Rating Summary — only visible if reviews are enabled
-                              if (_configLoaded &&
-                                  AppConfigService.areReviewsVisible)
-                                Row(
-                                  children: [
-                                    RateStars(
-                                      rating: (_ratingStats['average'] as num)
-                                          .toDouble(),
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '${_ratingStats['average']} (${_ratingStats['count']} reviews)',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                            ],
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Container(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusLg),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _DetailItem(
-                              icon: Icons.access_time,
-                              label: 'Duration',
-                              value: widget.test.time,
-                            ),
-                            _ContainerDivider(),
-                            _DetailItem(
-                              icon: Icons.help_outline,
-                              label: 'Questions',
-                              value: '${widget.test.totalQuestions}',
-                            ),
-                            _ContainerDivider(),
-                            _DetailItem(
-                              icon: Icons.star_border,
-                              label: 'Marks',
-                              value: '${widget.test.totalMarks}',
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusLg),
-                        ),
-                        child: Column(
+                        return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Description",
+                              widget.test.title,
                               style: Theme.of(context)
                                   .textTheme
-                                  .titleLarge
+                                  .headlineMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: context.sp(18),
-                                  ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              widget.test.description.isEmpty
-                                  ? "This mock test covers all important topics. Practice to improve your speed and accuracy."
-                                  : widget.test.description,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    color: AppColors.textSecondary,
-                                    height: 1.5,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusLg),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Test Information",
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
+                                    fontSize: context.sp(22),
                                   ),
                             ),
                             const SizedBox(height: AppSpacing.md),
-                            _InfoRow(
-                              icon: Icons.category_outlined,
-                              label: "Category",
-                              value: widget.test.category,
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                if (!isActuallyPurchased) ...[
+                                  if (hasOffer &&
+                                      displayMrp > displayPrice) ...[
+                                    Text(
+                                      '₹${displayMrp.toStringAsFixed(0)}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            color: textSecondary,
+                                            decoration:
+                                                TextDecoration.lineThrough,
+                                          ),
+                                    ),
+                                    const SizedBox(width: AppSpacing.sm),
+                                  ],
+                                  Text(
+                                    displayPrice == 0
+                                        ? 'Free'
+                                        : '₹${displayPrice.toStringAsFixed(0)}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: textPrimary,
+                                        ),
+                                  ),
+                                  if (hasOffer && discPercent > 0) ...[
+                                    const SizedBox(width: AppSpacing.md),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: AppSpacing.sm,
+                                          vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: theme
+                                            .colorScheme.primaryContainer
+                                            .withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(
+                                            color: theme.colorScheme.primary
+                                                .withValues(alpha: 0.3)),
+                                      ),
+                                      child: Text(
+                                        '$discPercent% OFF',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelSmall
+                                            ?.copyWith(
+                                              color: theme.colorScheme.primary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ] else ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: theme
+                                          .colorScheme.secondaryContainer
+                                          .withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                          color: theme.colorScheme.secondary),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.check_circle,
+                                            size: 16,
+                                            color: theme.colorScheme.secondary),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          "Purchased",
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color:
+                                                    theme.colorScheme.secondary,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
-                            if (widget.test.negativeMarking)
-                              _InfoRow(
-                                icon: Icons.warning_amber_rounded,
-                                label: "Negative Marking",
-                                value:
-                                    "Yes (-${widget.test.negativeMarksPerQ} per wrong)",
-                                valueColor: AppColors.error,
-                              )
-                            else
-                              const _InfoRow(
-                                icon: Icons.check_circle_outline,
-                                label: "Negative Marking",
-                                value: "None",
-                                valueColor: AppColors.success,
-                              ),
-                            if (widget.test.discount != null &&
-                                widget.test.discount!.isNotEmpty)
-                              _InfoRow(
-                                icon: Icons.local_offer_outlined,
-                                label: "Discount",
-                                value: widget.test.discount!,
-                                valueColor: Colors.orange[700],
+                            const SizedBox(height: AppSpacing.md),
+                            // Rating Summary — only visible if reviews are enabled
+                            if (_configLoaded &&
+                                AppConfigService.areReviewsVisible)
+                              Row(
+                                children: [
+                                  RateStars(
+                                    rating: (_ratingStats['average'] as num)
+                                        .toDouble(),
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${_ratingStats['average']} (${_ratingStats['count']} reviews)',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: textSecondary,
+                                    ),
+                                  ),
+                                ],
                               ),
                           ],
-                        ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        color: surfaceColor,
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.radiusLg),
                       ),
-                      const SizedBox(height: AppSpacing.md),
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusLg),
-                        ),
-                        child: _buildReviewsSection(isActuallyPurchased),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _DetailItem(
+                            icon: Icons.access_time,
+                            label: 'Duration',
+                            value: widget.test.time,
+                          ),
+                          _ContainerDivider(),
+                          _DetailItem(
+                            icon: Icons.help_outline,
+                            label: 'Questions',
+                            value: '${widget.test.totalQuestions}',
+                          ),
+                          _ContainerDivider(),
+                          _DetailItem(
+                            icon: Icons.star_border,
+                            label: 'Marks',
+                            value: '${widget.test.totalMarks}',
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 60),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        color: surfaceColor,
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.radiusLg),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Description",
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: context.sp(18),
+                                ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            widget.test.description.isEmpty
+                                ? "This mock test covers all important topics. Practice to improve your speed and accuracy."
+                                : widget.test.description,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: textSecondary,
+                                  height: 1.5,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        color: surfaceColor,
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.radiusLg),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Test Information",
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          _InfoRow(
+                            icon: Icons.category_outlined,
+                            label: "Category",
+                            value: widget.test.category,
+                          ),
+                          if (widget.test.negativeMarking)
+                            _InfoRow(
+                              icon: Icons.warning_amber_rounded,
+                              label: "Negative Marking",
+                              value:
+                                  "Yes (-${widget.test.negativeMarksPerQ} per wrong)",
+                              valueColor: theme.colorScheme.error,
+                            )
+                          else
+                            _InfoRow(
+                              icon: Icons.check_circle_outline,
+                              label: "Negative Marking",
+                              value: "None",
+                              valueColor: theme.colorScheme.primary,
+                            ),
+                          if (widget.test.discount != null &&
+                              widget.test.discount!.isNotEmpty)
+                            _InfoRow(
+                              icon: Icons.local_offer_outlined,
+                              label: "Discount",
+                              value: widget.test.discount!,
+                              valueColor: theme.colorScheme.tertiary,
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    _buildReviewsSection(isActuallyPurchased),
+                    const SizedBox(height: 60),
+                  ],
                 ),
-              ]
-                  .animate(interval: 50.ms)
-                  .fadeIn(duration: 400.ms)
-                  .slideY(begin: 0.1, end: 0),
-            ),
+              ),
+            ]
+                .animate(interval: 50.ms)
+                .fadeIn(duration: 400.ms)
+                .slideY(begin: 0.1, end: 0),
           ),
         ),
       ),
@@ -531,6 +526,7 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
   }
 
   Widget _buildReviewsSection(bool isPurchased) {
+    final theme = Theme.of(context);
     // Wait for config to be loaded before deciding visibility
     if (!_configLoaded) return const SizedBox.shrink();
 
@@ -585,12 +581,12 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
         if (_isLoadingReviews)
           const Center(child: CircularProgressIndicator())
         else if (_reviews.isEmpty)
-          const Center(
+          Center(
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
+              padding: const EdgeInsets.symmetric(vertical: 20),
               child: Text(
                 "No reviews yet. Be the first to review!",
-                style: TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
               ),
             ),
           )
@@ -603,12 +599,13 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
           hasMoreReviews
               ? const SizedBox
                   .shrink() // Don't show any cards, just the button below
-              : const Center(
+              : Center(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
+                    padding: const EdgeInsets.symmetric(vertical: 20),
                     child: Text(
                       "No positive reviews to display.",
-                      style: TextStyle(color: AppColors.textSecondary),
+                      style:
+                          TextStyle(color: theme.colorScheme.onSurfaceVariant),
                     ),
                   ),
                 )
@@ -657,7 +654,7 @@ class _ContainerDivider extends StatelessWidget {
     return Container(
       height: 40,
       width: 1,
-      color: AppColors.neutral200,
+      color: Theme.of(context).colorScheme.outlineVariant,
     );
   }
 }
@@ -675,15 +672,16 @@ class _DetailItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: AppColors.primary, size: 24),
+          child: Icon(icon, color: theme.colorScheme.primary, size: 24),
         ),
         const SizedBox(height: 8),
         Text(
@@ -694,10 +692,10 @@ class _DetailItem extends StatelessWidget {
               ),
         ),
         Text(label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                )),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            )),
       ],
     );
   }
@@ -719,27 +717,28 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppColors.neutral500),
+          Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(width: 12),
           Text(
             "$label:",
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.neutral600,
-                  fontWeight: FontWeight.w500,
-                ),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               value,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: valueColor ?? AppColors.textPrimary,
-                  ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: valueColor ?? theme.colorScheme.onSurface,
+              ),
             ),
           ),
         ],

@@ -12,7 +12,7 @@ class RateStars extends StatelessWidget {
     super.key,
     required this.rating,
     this.size = 24,
-    this.color = const Color(0xFFFFC107), // Amber/Gold default
+    this.color = Colors.amber, // Default if not provided
     this.isInteractive = false,
     this.onRatingChanged,
   });

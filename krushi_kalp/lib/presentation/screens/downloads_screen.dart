@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:collection/collection.dart';
 import 'pdf_viewer_screen.dart';
 import '../../domain/models/resource.dart';
 import '../../domain/models/mock_test.dart';
@@ -9,9 +8,10 @@ import 'package:provider/provider.dart';
 import '../providers/resource_provider.dart';
 import '../providers/test_provider.dart';
 import '../../data/services/download_service.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../utils/exam_helper.dart';
+import '../widgets/common/responsive_wrapper.dart';
+import '../widgets/common/modern_card.dart';
 
 class DownloadsScreen extends StatefulWidget {
   const DownloadsScreen({super.key});
@@ -26,6 +26,18 @@ class _DownloadsScreenState extends State<DownloadsScreen>
   Map<String, bool> _localStatus = {};
   bool _isLoading = true;
 
+  // Storage & Filter State
+  int _totalBytesUsed = 0;
+  String _searchQuery = '';
+  String _activeFilter = 'All Files';
+  final List<String> _filters = ['All Files', 'Mocks', 'Ebook', 'CA', 'GK'];
+
+  final TextEditingController _searchController = TextEditingController();
+
+  // Selection State
+  Set<String> _selectedItems = {};
+  bool _isSelectionMode = false;
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +48,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -45,10 +58,6 @@ class _DownloadsScreenState extends State<DownloadsScreen>
       _checkDownloads();
     }
   }
-
-  // To avoid infinite loops or excessive checks, we track the last IDs checked
-  Set<int> _lastTestIds = {};
-  Set<int> _lastResourceIds = {};
 
   Future<void> _checkDownloads() async {
     if (!mounted) return;
@@ -65,15 +74,10 @@ class _DownloadsScreenState extends State<DownloadsScreen>
 
     final myResources = resourceProvider.purchasedResources;
     final myTests = testProvider.userTests;
-    final purchasedResourceIds = resourceProvider.purchasedResourceIds;
-
-    _lastTestIds = myTests.map((t) => t.id).toSet();
-    _lastResourceIds = purchasedResourceIds;
 
     final downloadService = DownloadService();
 
-    // Check ALL purchased resources (regardless of fileUrl — the file may
-    // have been downloaded in a previous session even if the URL changed)
+    // Check ALL purchased resources (regardless of fileUrl)
     final resourceChecks = myResources.map((r) async {
       final filename = 'resource_${r.id}.pdf';
       final exists =
@@ -88,15 +92,142 @@ class _DownloadsScreenState extends State<DownloadsScreen>
       return MapEntry<String, bool>('test_${t.id}', exists);
     }).toList();
 
-    final allChecks = [...resourceChecks, ...testChecks];
-    final results = await Future.wait(allChecks);
+    final results = await Future.wait([...resourceChecks, ...testChecks]);
     final newStatus = Map<String, bool>.fromEntries(results);
 
-    if (mounted) {
-      setState(() {
-        _localStatus = newStatus;
-        _isLoading = false;
-      });
+    // --- Storage Calculation ---
+    if (userId != null) {
+      final used = await downloadService.getTotalStorageUsed(userId);
+
+      if (mounted) {
+        setState(() {
+          _localStatus = newStatus;
+          _totalBytesUsed = used; // Update storage in setState
+          _isLoading = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _localStatus = newStatus;
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _toggleSelection(String id) {
+    setState(() {
+      if (_selectedItems.contains(id)) {
+        _selectedItems.remove(id);
+        if (_selectedItems.isEmpty) _isSelectionMode = false;
+      } else {
+        _selectedItems.add(id);
+        _isSelectionMode = true;
+      }
+    });
+  }
+
+  void _toggleSelectAll(List<dynamic> visibleItems) {
+    setState(() {
+      if (_selectedItems.length == visibleItems.length) {
+        _selectedItems.clear();
+        _isSelectionMode = false;
+      } else {
+        _selectedItems = visibleItems
+            .map((item) {
+              if (item is Resource) return 'res_${item.id}';
+              if (item is MockTest) return 'test_${item.id}';
+              return '';
+            })
+            .where((id) => id.isNotEmpty)
+            .toSet();
+        _isSelectionMode = true;
+      }
+    });
+  }
+
+  Future<void> _deleteSelected() async {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete ${_selectedItems.length} items?'),
+        content:
+            const Text('Are you sure you want to delete the selected files?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() => _isLoading = true);
+      final ds = DownloadService();
+      for (final id in _selectedItems) {
+        final filename = id.startsWith('res_')
+            ? 'resource_${id.replaceFirst('res_', '')}.pdf'
+            : 'mock_test_${id.replaceFirst('test_', '')}.json';
+        await ds.deleteFile(filename, userId: uid);
+      }
+      _selectedItems.clear();
+      _isSelectionMode = false;
+      await _checkDownloads();
+    }
+  }
+
+  String _formatSize(int bytes) {
+    if (bytes <= 0) return "0 B";
+    const suffixes = ["B", "KB", "MB", "GB", "TB"];
+    var i = (bytes == 0) ? 0 : (bytes.toString().length - 1) / 3;
+    var index = i.floor();
+    return "${(bytes / (1 << (index * 10))).toStringAsFixed(1)} ${suffixes[index]}";
+  }
+
+  Future<void> _clearStorage() async {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear All Downloads'),
+        content: const Text(
+            'This will delete ALL downloaded files from your device. Are you sure?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Clear All'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() => _isLoading = true);
+      await DownloadService().clearAllDownloads(uid);
+      await _checkDownloads();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('All downloads cleared')),
+        );
+      }
     }
   }
 
@@ -198,454 +329,473 @@ class _DownloadsScreenState extends State<DownloadsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     // Watch providers for changes
     final resourceProvider = context.watch<ResourceProvider>();
     final testProvider = context.watch<TestProvider>();
 
-    final purchasedResourceIds = resourceProvider.purchasedResourceIds;
     final myTests = testProvider.userTests;
     final myResources = resourceProvider.purchasedResources;
-
-    // Trigger re-check if purchase IDs changed (and we're not loading)
-    final currentTestIds = myTests.map((t) => t.id).toSet();
-    if (!_isLoading &&
-        (!SetEquality().equals(_lastTestIds, currentTestIds) ||
-            !SetEquality().equals(_lastResourceIds, purchasedResourceIds))) {
-      // Use future.microtask to avoid calling setState during build
-      Future.microtask(() => _checkDownloads());
-    }
 
     final displayItems = <dynamic>[];
 
     for (var r in myResources) {
       if (_localStatus['res_${r.id}'] == true) {
-        displayItems.add(r);
+        final matchesSearch =
+            r.title.toLowerCase().contains(_searchQuery.toLowerCase());
+
+        // Detailed Filtering Logic
+        bool matchesFilter = _activeFilter == 'All Files';
+        if (!matchesFilter) {
+          if (_activeFilter == 'Ebook' && r.type == ResourceType.eBook)
+            matchesFilter = true;
+          if (_activeFilter == 'CA' && r.type == ResourceType.currentAffair)
+            matchesFilter = true;
+          if (_activeFilter == 'GK' &&
+              (r.type == ResourceType.studyMaterial ||
+                  r.type == ResourceType.pyq)) matchesFilter = true;
+        }
+
+        if (matchesSearch && matchesFilter) displayItems.add(r);
       }
     }
 
     for (var t in myTests) {
       if (_localStatus['test_${t.id}'] == true) {
-        displayItems.add(t);
+        final matchesSearch =
+            t.title.toLowerCase().contains(_searchQuery.toLowerCase());
+        final matchesFilter =
+            _activeFilter == 'All Files' || _activeFilter == 'Mock Test';
+        if (matchesSearch && matchesFilter) displayItems.add(t);
       }
     }
 
-    // Sort: Downloaded first? Or Date?
-    // Let's sort by Title for now
-    // displayItems.sort((a, b) => ...);
-
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Column(
-          children: [
-            Text(
-              "Downloads",
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            if (!_isLoading && displayItems.isNotEmpty)
-              Text(
-                "${displayItems.length} item${displayItems.length == 1 ? '' : 's'}",
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-              ),
-          ],
-        ),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.refresh_rounded,
-              color: _isLoading ? AppColors.primary : AppColors.textPrimary,
-            ),
-            onPressed: _isLoading ? null : _checkDownloads,
-            tooltip: 'Refresh',
+        automaticallyImplyLeading: false,
+        leading: _isSelectionMode
+            ? IconButton(
+                icon: Icon(Icons.close_rounded,
+                    color: theme.colorScheme.onSurface, size: context.sp(24)),
+                onPressed: () {
+                  setState(() {
+                    _isSelectionMode = false;
+                    _selectedItems.clear();
+                  });
+                },
+              )
+            : null,
+        title: Text(
+          _isSelectionMode ? "${_selectedItems.length} Selected" : "Downloads",
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+            fontSize: context.sp(20),
           ),
-          const SizedBox(width: AppSpacing.xs),
+        ),
+        backgroundColor: theme.colorScheme.surface,
+        elevation: 0,
+        centerTitle: false,
+        actions: [
+          if (_isSelectionMode)
+            IconButton(
+              icon: Icon(Icons.delete_outline_rounded,
+                  color: theme.colorScheme.error, size: context.sp(24)),
+              onPressed: _deleteSelected,
+            )
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : displayItems.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.xl),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+          : RefreshIndicator(
+              onRefresh: _checkDownloads,
+              color: theme.colorScheme.primary,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding:
+                    EdgeInsets.symmetric(horizontal: context.w(AppSpacing.lg)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: context.h(AppSpacing.md)),
+
+                    Container(
+                      height: context.h(45),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: context.w(AppSpacing.sm)),
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (val) => setState(() => _searchQuery = val),
+                        style: TextStyle(fontSize: context.sp(14)),
+                        decoration: InputDecoration(
+                          hintText: 'Search...',
+                          hintStyle: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.6),
+                              fontSize: context.sp(14)),
+                          prefixIcon: Icon(Icons.search_rounded,
+                              color: theme.colorScheme.onSurfaceVariant,
+                              size: context.sp(22)),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding:
+                              EdgeInsets.symmetric(vertical: context.h(12)),
+                        ),
+                      ),
+                    ),
+
+                    SizedBox(height: context.h(AppSpacing.lg)),
+
+                    // Storage Management Card
+                    _buildStorageCard(theme),
+
+                    SizedBox(height: context.h(AppSpacing.xl)),
+
+                    // Filter Chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _filters.map((filter) {
+                          final isSelected = _activeFilter == filter;
+                          return Padding(
+                            padding: EdgeInsets.only(
+                                right: context.w(AppSpacing.sm)),
+                            child: ChoiceChip(
+                              label: Text(filter),
+                              selected: isSelected,
+                              onSelected: (val) =>
+                                  setState(() => _activeFilter = filter),
+                              showCheckmark: isSelected,
+                              checkmarkColor: theme.colorScheme.onPrimary,
+                              selectedColor: theme.colorScheme.primary,
+                              backgroundColor: theme.colorScheme.surface,
+                              side: BorderSide(
+                                color: isSelected
+                                    ? Colors.transparent
+                                    : theme.colorScheme.outlineVariant,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(context.w(8)),
+                              ),
+                              labelStyle: TextStyle(
+                                color: isSelected
+                                    ? theme.colorScheme.onPrimary
+                                    : theme.colorScheme.onSurface,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                                fontSize: context.sp(13),
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: context.w(AppSpacing.md)),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+
+                    SizedBox(height: context.h(AppSpacing.xl)),
+
+                    // List Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            color: AppColors.neutral100,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.file_download_outlined,
-                            size: 56,
-                            color: AppColors.neutral400,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xl),
                         Text(
-                          "No Downloads Yet",
+                          "Recent Downloads",
                           style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    color: AppColors.textPrimary,
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
+                                    fontSize: context.sp(16),
                                   ),
                         ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          "Downloaded resources will appear here\nfor offline access",
-                          textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
+                        TextButton(
+                          onPressed: () => _toggleSelectAll(displayItems),
+                          child: Text(
+                              _selectedItems.length == displayItems.length
+                                  ? "Unselect All"
+                                  : "Select All",
+                              style: TextStyle(
+                                  color: theme.colorScheme.primary,
+                                  fontSize: context.sp(14))),
                         ),
                       ],
                     ),
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _checkDownloads,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: AppSpacing.md),
-                    itemCount: displayItems.length,
-                    itemBuilder: (context, index) {
-                      final item = displayItems[index];
 
-                      if (item is Resource) {
-                        return _buildResourceCard(item);
-                      } else if (item is MockTest) {
-                        return _buildTestCard(item);
-                      }
-                      return const SizedBox();
-                    },
-                  ),
+                    // Downloads List
+                    if (displayItems.isEmpty)
+                      _buildEmptyState(theme)
+                    else
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: displayItems.length,
+                        separatorBuilder: (_, __) =>
+                            SizedBox(height: context.h(AppSpacing.md)),
+                        itemBuilder: (context, index) {
+                          final item = displayItems[index];
+                          if (item is Resource)
+                            return _buildResourceCard(theme, item);
+                          if (item is MockTest)
+                            return _buildTestCard(theme, item);
+                          return const SizedBox();
+                        },
+                      ),
+
+                    SizedBox(height: context.h(AppSpacing.huge)),
+                  ],
                 ),
+              ),
+            ),
     );
   }
 
-  Widget _buildResourceCard(Resource resource) {
-    final filename = 'resource_${resource.id}.pdf';
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.neutral200.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+  Widget _buildStorageCard(ThemeData theme) {
+    return ModernCard(
+      padding: EdgeInsets.all(context.w(AppSpacing.lg)),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.storage_rounded,
+                  color: theme.colorScheme.primary, size: context.sp(20)),
+              SizedBox(width: context.w(AppSpacing.sm)),
+              Text(
+                "${_formatSize(_totalBytesUsed)} used",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.sp(14),
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          GestureDetector(
+            onTap: _clearStorage,
+            child: Text(
+              "Clean Up",
+              style: TextStyle(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: context.sp(13),
+              ),
+            ),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _openResourceSecurely(resource),
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              children: [
-                // Cover Image
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  child: resource.thumbnailUrl != null &&
-                          resource.thumbnailUrl!.isNotEmpty
-                      ? Image.network(
-                          resource.thumbnailUrl!,
-                          width: 56,
-                          height: 56,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius:
-                                  BorderRadius.circular(AppSpacing.radiusMd),
-                            ),
-                            child: const Icon(
-                              Icons.picture_as_pdf,
-                              color: AppColors.primary,
-                              size: 28,
-                            ),
-                          ),
-                        )
-                      : Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius:
-                                BorderRadius.circular(AppSpacing.radiusMd),
-                          ),
-                          child: const Icon(
-                            Icons.picture_as_pdf,
-                            color: AppColors.primary,
-                            size: 28,
-                          ),
-                        ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                // Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        resource.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.folder_outlined,
-                            size: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              resource.category ?? resource.type.name,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                // Actions
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.open_in_new_rounded,
-                          color: AppColors.primary, size: 20),
-                      onPressed: () => _openResourceSecurely(resource),
-                      tooltip: 'Open',
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline,
-                          color: AppColors.error, size: 20),
-                      onPressed: () => _confirmDelete(resource, filename),
-                      tooltip: 'Delete',
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+    );
+  }
+
+  Widget _buildEmptyState(ThemeData theme) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: context.h(AppSpacing.huge)),
+        child: Column(
+          children: [
+            Icon(Icons.file_download_off_rounded,
+                size: context.w(64),
+                color:
+                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3)),
+            SizedBox(height: context.h(AppSpacing.md)),
+            Text("No matching downloads found",
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildTestCard(MockTest test) {
-    final filename = 'mock_test_${test.id}.json';
+  Widget _buildResourceCard(ThemeData theme, Resource resource) {
+    final id = 'res_${resource.id}';
+    final isSelected = _selectedItems.contains(id);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.neutral200.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _startTestSecurely(test),
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              children: [
-                // Cover Image
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  child: test.signedUrl != null && test.signedUrl!.isNotEmpty
-                      ? Image.network(
-                          test.signedUrl!,
-                          width: 56,
-                          height: 56,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius:
-                                  BorderRadius.circular(AppSpacing.radiusMd),
-                            ),
-                            child: const Icon(
-                              Icons.description,
-                              color: AppColors.primary,
-                              size: 28,
-                            ),
-                          ),
-                        )
-                      : Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius:
-                                BorderRadius.circular(AppSpacing.radiusMd),
-                          ),
-                          child: const Icon(
-                            Icons.description,
-                            color: AppColors.primary,
-                            size: 28,
-                          ),
-                        ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                // Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        test.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.quiz_outlined,
-                            size: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              '${test.totalQuestions} Questions • ${test.category}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                // Actions
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.play_circle_outline,
-                          color: AppColors.primary, size: 24),
-                      onPressed: () => _startTestSecurely(test),
-                      tooltip: 'Start Test',
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline,
-                          color: AppColors.error, size: 20),
-                      onPressed: () => _confirmDelete(test, filename),
-                      tooltip: 'Delete',
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ],
-                ),
-              ],
+    return ModernCard(
+      margin: EdgeInsets.zero,
+      padding: EdgeInsets.all(context.w(AppSpacing.md)),
+      child: InkWell(
+        onTap: () {
+          if (_isSelectionMode) {
+            _toggleSelection(id);
+          } else {
+            _openResourceSecurely(resource);
+          }
+        },
+        onLongPress: () => _toggleSelection(id),
+        child: Row(
+          children: [
+            if (_isSelectionMode) ...[
+              Icon(
+                isSelected
+                    ? Icons.check_box_rounded
+                    : Icons.check_box_outline_blank_rounded,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant,
+                size: context.sp(24),
+              ),
+              SizedBox(width: context.w(AppSpacing.md)),
+            ],
+            // Icon Placeholder
+            Container(
+              width: context.w(45),
+              height: context.w(45),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.error.withValues(alpha: 0.08),
+                borderRadius:
+                    BorderRadius.circular(context.w(AppSpacing.radiusMd)),
+              ),
+              child: Icon(Icons.picture_as_pdf_rounded,
+                  color: theme.colorScheme.error, size: context.sp(20)),
             ),
-          ),
+            SizedBox(width: context.w(AppSpacing.md)),
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    resource.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: context.sp(14),
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  SizedBox(height: context.h(2)),
+                  Text(
+                    "${resource.category ?? 'PDF'} • PDF",
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: context.sp(11),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (!_isSelectionMode)
+              ElevatedButton(
+                onPressed: () => _openResourceSecurely(resource),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                  elevation: 0,
+                  padding: EdgeInsets.symmetric(
+                      horizontal: context.w(12), vertical: 0),
+                  minimumSize: Size(0, context.h(30)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(context.w(8))),
+                ),
+                child: Text("Open",
+                    style: TextStyle(
+                        fontSize: context.sp(12), fontWeight: FontWeight.bold)),
+              ),
+            if (_isSelectionMode)
+              Icon(Icons.drag_indicator_rounded,
+                  color:
+                      theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  size: context.sp(20)),
+          ],
         ),
       ),
     );
   }
 
-  Future<void> _confirmDelete(dynamic item, String filename) async {
-    final title = item is Resource
-        ? item.title
-        : (item is MockTest ? item.title : 'this item');
+  Widget _buildTestCard(ThemeData theme, MockTest test) {
+    final id = 'test_${test.id}';
+    final isSelected = _selectedItems.contains(id);
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Download'),
-        content: Text(
-            'Are you sure you want to delete "$title" from your device?\n\nYou can download it again anytime.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Delete'),
-          ),
-        ],
+    return ModernCard(
+      margin: EdgeInsets.zero,
+      padding: EdgeInsets.all(context.w(AppSpacing.md)),
+      child: InkWell(
+        onTap: () {
+          if (_isSelectionMode) {
+            _toggleSelection(id);
+          } else {
+            _startTestSecurely(test);
+          }
+        },
+        onLongPress: () => _toggleSelection(id),
+        child: Row(
+          children: [
+            if (_isSelectionMode) ...[
+              Icon(
+                isSelected
+                    ? Icons.check_box_rounded
+                    : Icons.check_box_outline_blank_rounded,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant,
+                size: context.sp(24),
+              ),
+              SizedBox(width: context.w(AppSpacing.md)),
+            ],
+            Container(
+              width: context.w(45),
+              height: context.w(45),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                borderRadius:
+                    BorderRadius.circular(context.w(AppSpacing.radiusMd)),
+              ),
+              child: Icon(Icons.quiz_rounded,
+                  color: theme.colorScheme.primary, size: context.sp(20)),
+            ),
+            SizedBox(width: context.w(AppSpacing.md)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    test.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: context.sp(14),
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  SizedBox(height: context.h(2)),
+                  Text(
+                    "${test.totalQuestions} Questions",
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: context.sp(11),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (!_isSelectionMode)
+              ElevatedButton(
+                onPressed: () => _startTestSecurely(test),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.tertiary,
+                  foregroundColor: theme.colorScheme.onTertiary,
+                  elevation: 0,
+                  padding: EdgeInsets.symmetric(
+                      horizontal: context.w(12), vertical: 0),
+                  minimumSize: Size(0, context.h(30)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(context.w(8))),
+                ),
+                child: Text("Attempt",
+                    style: TextStyle(
+                        fontSize: context.sp(12), fontWeight: FontWeight.bold)),
+              ),
+            if (_isSelectionMode)
+              Icon(Icons.drag_indicator_rounded,
+                  color:
+                      theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  size: context.sp(20)),
+          ],
+        ),
       ),
     );
-
-    if (confirmed == true && mounted) {
-      try {
-        final uid = Supabase.instance.client.auth.currentUser?.id;
-        await DownloadService().deleteFile(filename, userId: uid);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('File deleted successfully'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-          // Refresh the list
-          _checkDownloads();
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting file: $e')),
-          );
-        }
-      }
-    }
   }
 }

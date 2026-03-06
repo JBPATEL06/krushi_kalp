@@ -84,13 +84,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           "Notifications",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         centerTitle: true,
       ),
@@ -111,15 +112,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           final notifications = snapshot.data ?? [];
 
           if (notifications.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.notifications_none, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
+                  Icon(Icons.notifications_none,
+                      size: 64, color: theme.colorScheme.onSurfaceVariant),
+                  const SizedBox(height: 16),
                   Text(
                     "No notifications yet",
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -147,10 +149,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   key: Key(id.toString()),
                   direction: DismissDirection.endToStart,
                   background: Container(
-                    color: Colors.red,
+                    color: theme.colorScheme.error,
                     alignment: Alignment.centerRight,
                     padding: const EdgeInsets.only(right: 20),
-                    child: const Icon(Icons.delete, color: Colors.white),
+                    child: Icon(Icons.delete, color: theme.colorScheme.onError),
                   ),
                   onDismissed: (_) {
                     _deleteNotification(id);
@@ -162,8 +164,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ),
                     child: ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: Colors.blue[50],
-                        child: Icon(_getIconForType(type), color: Colors.blue),
+                        backgroundColor: theme.colorScheme.primaryContainer
+                            .withValues(alpha: 0.2),
+                        child: Icon(_getIconForType(type),
+                            color: theme.colorScheme.primary),
                       ),
                       title: Text(
                         title,
@@ -172,7 +176,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       subtitle: Text(message),
                       trailing: Text(
                         _formatDate(notif['created_at']),
-                        style: TextStyle(color: Colors.grey[500], fontSize: 10),
+                        style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontSize: 10),
                       ),
                     ),
                   ),

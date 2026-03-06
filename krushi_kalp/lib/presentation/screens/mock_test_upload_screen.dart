@@ -8,7 +8,6 @@ import '../../utils/excel_to_json_converter.dart';
 import '../utils/ui_helpers.dart';
 import '../../data/services/test_service.dart';
 import '../../data/services/admin_notification_service.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 
 class MockTestUploadScreen extends StatefulWidget {
@@ -123,6 +122,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
     }
 
     setState(() => _isLoading = true);
+    final theme = Theme.of(context);
     final supabase = Supabase.instance.client;
 
     try {
@@ -209,7 +209,8 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Error: $e'), backgroundColor: AppColors.error),
+              content: Text('Error: $e'),
+              backgroundColor: theme.colorScheme.error),
         );
       }
     } finally {
@@ -219,20 +220,21 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Upload Mock Test',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -244,11 +246,12 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                   return Container(
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.neutral200.withValues(alpha: 0.5),
+                          color:
+                              theme.colorScheme.shadow.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -437,7 +440,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                             value: _isNegativeMarking,
                             onChanged: (v) =>
                                 setState(() => _isNegativeMarking = v),
-                            activeColor: AppColors.primary,
+                            activeColor: theme.colorScheme.primary,
                           ),
                           if (_isNegativeMarking)
                             TextFormField(
@@ -457,8 +460,8 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
 
                           // Cover Image Picker
                           ListTile(
-                            leading:
-                                Icon(Icons.image, color: AppColors.primary),
+                            leading: Icon(Icons.image,
+                                color: theme.colorScheme.primary),
                             title: Text(
                                 _coverImage?.name ?? 'Select Cover Image',
                                 style: Theme.of(context).textTheme.bodyMedium),
@@ -466,15 +469,17 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                             trailing: IconButton(
                               icon: const Icon(Icons.upload_file),
                               onPressed: _pickCoverImage,
-                              color: AppColors.primary,
+                              color: theme.colorScheme.primary,
                             ),
                             tileColor: _coverImage != null
-                                ? AppColors.success.withValues(alpha: 0.1)
+                                ? theme.colorScheme.primaryContainer
+                                    .withValues(alpha: 0.1)
                                 : null,
                             shape: RoundedRectangleBorder(
                               borderRadius:
                                   BorderRadius.circular(AppSpacing.radiusMd),
-                              side: BorderSide(color: AppColors.neutral300),
+                              side: BorderSide(
+                                  color: theme.colorScheme.outlineVariant),
                             ),
                           ),
                           const SizedBox(height: AppSpacing.md),
@@ -482,7 +487,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                           // Excel File Picker
                           ListTile(
                             leading: Icon(Icons.table_chart,
-                                color: AppColors.primary),
+                                color: theme.colorScheme.primary),
                             title: Text(
                               _excelFile?.name ?? 'Select Excel File (.xlsx)',
                               style: Theme.of(context).textTheme.bodyMedium,
@@ -491,15 +496,17 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                             trailing: IconButton(
                               icon: const Icon(Icons.upload_file),
                               onPressed: _pickExcelFile,
-                              color: AppColors.primary,
+                              color: theme.colorScheme.primary,
                             ),
                             tileColor: _excelFile != null
-                                ? AppColors.success.withValues(alpha: 0.1)
+                                ? theme.colorScheme.primaryContainer
+                                    .withValues(alpha: 0.1)
                                 : null,
                             shape: RoundedRectangleBorder(
                               borderRadius:
                                   BorderRadius.circular(AppSpacing.radiusMd),
-                              side: BorderSide(color: AppColors.neutral300),
+                              side: BorderSide(
+                                  color: theme.colorScheme.outlineVariant),
                             ),
                           ),
 
@@ -510,8 +517,8 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                             child: ElevatedButton(
                               onPressed: _uploadMockTest,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: AppColors.onPrimary,
+                                backgroundColor: theme.colorScheme.primary,
+                                foregroundColor: theme.colorScheme.onPrimary,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(
                                       AppSpacing.radiusMd),
@@ -523,7 +530,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                                     .textTheme
                                     .titleMedium
                                     ?.copyWith(
-                                      color: AppColors.onPrimary,
+                                      color: theme.colorScheme.onPrimary,
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
@@ -540,14 +547,15 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
   }
 
   Widget _buildSectionTitle(BuildContext context, String title) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Text(
         title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+        style: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: theme.colorScheme.onSurface,
+        ),
       ),
     );
   }

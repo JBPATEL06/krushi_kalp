@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:krushi_kalp/core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_colors.dart';
 
 class ModernCard extends StatelessWidget {
   final Widget child;
@@ -26,15 +28,21 @@ class ModernCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     Widget card = Container(
       width: width,
       height: height,
-      margin: margin ?? const EdgeInsets.only(bottom: 12),
-      padding: padding ?? const EdgeInsets.all(16),
+      margin: margin ?? EdgeInsets.only(bottom: AppSpacing.md),
+      padding: padding ?? EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: backgroundColor ?? AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.neutral200.withOpacity(0.6)),
+        color: backgroundColor ?? colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: colorScheme.outline
+              .withOpacity(theme.brightness == Brightness.dark ? 0.2 : 0.4),
+        ),
         boxShadow: AppShadows.soft,
       ),
       child: child,
@@ -45,7 +53,7 @@ class ModernCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           child: card,
         ),
       );

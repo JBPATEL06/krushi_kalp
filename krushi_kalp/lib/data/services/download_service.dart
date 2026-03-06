@@ -365,4 +365,43 @@ class DownloadService {
       rethrow;
     }
   }
+
+  /// Calculates the total size (in bytes) of all files in the user's directory.
+  Future<int> getTotalStorageUsed(String userId) async {
+    if (userId.isEmpty) return 0;
+    try {
+      final dir = await _userDir(userId);
+      int totalSize = 0;
+      if (await dir.exists()) {
+        await for (final entity
+            in dir.list(recursive: true, followLinks: false)) {
+          if (entity is File) {
+            totalSize += await entity.length();
+          }
+        }
+      }
+      return totalSize;
+    } catch (e) {
+      debugPrint('Error calculating storage size: $e');
+      return 0;
+    }
+  }
+
+  /// Wipes all files in the user's directory and resets the manifest.
+  Future<void> clearAllDownloads(String userId) async {
+    if (userId.isEmpty) return;
+    try {
+      final dir = await _userDir(userId);
+      if (await dir.exists()) {
+        final entities = dir.listSync();
+        for (final entity in entities) {
+          await entity.delete(recursive: true);
+        }
+      }
+      debugPrint('Storage cleared for user: $userId');
+    } catch (e) {
+      debugPrint('Error clearing storage: $e');
+      rethrow;
+    }
+  }
 }

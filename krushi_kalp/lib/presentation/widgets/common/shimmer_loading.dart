@@ -8,8 +8,8 @@ class Shimmer extends StatefulWidget {
   const Shimmer({
     super.key,
     required this.child,
-    this.baseColor = const Color(0xFFE0E0E0),
-    this.highlightColor = const Color(0xFFF5F5F5),
+    this.baseColor = Colors.grey,
+    this.highlightColor = Colors.white,
   });
 
   @override
@@ -44,19 +44,22 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
         return ShaderMask(
           blendMode: BlendMode.srcATop,
           shaderCallback: (bounds) {
+            final base = widget.baseColor;
+            final highlight = widget.highlightColor;
+
             return LinearGradient(
               colors: [
-                widget.baseColor,
-                widget.highlightColor,
-                widget.baseColor,
+                base,
+                highlight,
+                base,
               ],
               stops: const [
                 0.1,
                 0.5,
                 0.9,
               ],
-              begin: Alignment(-1.0, -0.3),
-              end: Alignment(1.0, 0.3),
+              begin: const Alignment(-1.0, -0.3),
+              end: const Alignment(1.0, 0.3),
               transform: _SlidingGradientTransform(percent: _animation.value),
             ).createShader(bounds);
           },
@@ -99,7 +102,8 @@ class Skeleton extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: color ?? Colors.grey[300],
+        color: color ??
+            Theme.of(context).colorScheme.surfaceVariant.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(borderRadius),
       ),
     );

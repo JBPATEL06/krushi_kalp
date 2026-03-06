@@ -11,7 +11,6 @@ import '../../data/services/test_service.dart';
 import '../../domain/models/test_result.dart';
 import '../widgets/common/network_error_state.dart';
 import 'pdf_viewer_screen.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 
 class ScoreScreen extends StatefulWidget {
@@ -133,22 +132,23 @@ class _ScoreScreenState extends State<ScoreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           "Score History",
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textPrimary),
+            icon: Icon(Icons.refresh, color: theme.colorScheme.onSurface),
             onPressed: _loadData,
           ),
         ],
@@ -174,17 +174,14 @@ class _ScoreScreenState extends State<ScoreScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.history,
-                                    size: 64, color: AppColors.neutral400),
+                                Icon(Icons.history,
+                                    size: 64, color: theme.colorScheme.outline),
                                 const SizedBox(height: AppSpacing.lg),
                                 Text(
                                   "No attempts yet.",
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyLarge
-                                      ?.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
                               ],
                             ),
@@ -228,15 +225,16 @@ class _ScoreScreenState extends State<ScoreScreen> {
   }
 
   Widget _buildResultCard(TestResult result) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        border: Border.all(color: AppColors.neutral100),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: theme.colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -254,16 +252,18 @@ class _ScoreScreenState extends State<ScoreScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: result.isPassed
-                      ? AppColors.success.withValues(alpha: 0.1)
-                      : AppColors.error.withValues(alpha: 0.1),
+                      ? theme.colorScheme.primaryContainer
+                          .withValues(alpha: 0.3)
+                      : theme.colorScheme.errorContainer.withValues(alpha: 0.3),
                 ),
                 child: Center(
                   child: Text(
                     "${((result.scoreObtained / result.totalMarks) * 100).toInt()}%",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color:
-                          result.isPassed ? AppColors.success : AppColors.error,
+                      color: result.isPassed
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.error,
                       fontSize: 14,
                     ),
                   ),
@@ -286,12 +286,11 @@ class _ScoreScreenState extends State<ScoreScreen> {
                             result.testTitle,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style:
-                                Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      height: 1.2,
-                                      color: AppColors.textPrimary,
-                                    ),
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              height: 1.2,
+                              color: theme.colorScheme.onSurface,
+                            ),
                           ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
@@ -300,8 +299,10 @@ class _ScoreScreenState extends State<ScoreScreen> {
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: result.isPassed
-                                ? AppColors.success.withValues(alpha: 0.1)
-                                : AppColors.error.withValues(alpha: 0.1),
+                                ? theme.colorScheme.primaryContainer
+                                    .withValues(alpha: 0.3)
+                                : theme.colorScheme.errorContainer
+                                    .withValues(alpha: 0.3),
                             borderRadius:
                                 BorderRadius.circular(AppSpacing.radiusSm),
                           ),
@@ -309,8 +310,8 @@ class _ScoreScreenState extends State<ScoreScreen> {
                             result.isPassed ? "PASS" : "FAIL",
                             style: TextStyle(
                               color: result.isPassed
-                                  ? AppColors.success
-                                  : AppColors.error,
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.error,
                               fontWeight: FontWeight.bold,
                               fontSize: 10,
                             ),
@@ -324,27 +325,27 @@ class _ScoreScreenState extends State<ScoreScreen> {
                     Row(
                       children: [
                         Icon(Icons.assignment_turned_in_outlined,
-                            size: 14, color: AppColors.textSecondary),
+                            size: 14,
+                            color: theme.colorScheme.onSurfaceVariant),
                         const SizedBox(width: 4),
                         Text(
                           "${result.scoreObtained.toStringAsFixed(1)} / ${result.totalMarks}",
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                         const SizedBox(width: AppSpacing.md),
                         Icon(Icons.translate,
-                            size: 14, color: AppColors.textSecondary),
+                            size: 14,
+                            color: theme.colorScheme.onSurfaceVariant),
                         const SizedBox(width: 4),
                         Text(
                           result.language == 'gu' ? 'Gujarati' : 'English',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),
@@ -353,10 +354,10 @@ class _ScoreScreenState extends State<ScoreScreen> {
                     // Date
                     Text(
                       _formatDate(result.attemptDate),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.neutral400,
-                            fontSize: 11,
-                          ),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
@@ -367,7 +368,7 @@ class _ScoreScreenState extends State<ScoreScreen> {
           // 3. Actions Divider
           Padding(
             padding: const EdgeInsets.only(top: 12, bottom: 8),
-            child: Divider(height: 1, color: AppColors.neutral100),
+            child: Divider(height: 1, color: theme.colorScheme.outlineVariant),
           ),
 
           // 4. Action Buttons (Full Width Touch Targets)
@@ -376,10 +377,11 @@ class _ScoreScreenState extends State<ScoreScreen> {
             children: [
               TextButton.icon(
                 onPressed: () => _deleteResult(result.resultId),
-                icon: const Icon(Icons.delete_outline,
-                    size: 18, color: AppColors.error),
+                icon: Icon(Icons.delete_outline,
+                    size: 18, color: theme.colorScheme.error),
                 label: Text("Delete",
-                    style: TextStyle(color: AppColors.error, fontSize: 13)),
+                    style: TextStyle(
+                        color: theme.colorScheme.error, fontSize: 13)),
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.md, vertical: 8),
@@ -391,14 +393,16 @@ class _ScoreScreenState extends State<ScoreScreen> {
               TextButton.icon(
                 onPressed: () =>
                     _downloadAndOpenResult(result.testId, result.testTitle),
-                icon: const Icon(Icons.remove_red_eye,
-                    size: 18, color: AppColors.info),
-                label: const Text("View Result",
-                    style: TextStyle(color: AppColors.info, fontSize: 13)),
+                icon: Icon(Icons.remove_red_eye,
+                    size: 18, color: theme.colorScheme.primary),
+                label: Text("View Result",
+                    style: TextStyle(
+                        color: theme.colorScheme.primary, fontSize: 13)),
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.lg, vertical: 8),
-                  backgroundColor: AppColors.info.withValues(alpha: 0.05),
+                  backgroundColor:
+                      theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
                   minimumSize: Size.zero,
@@ -424,7 +428,9 @@ class _ScoreScreenState extends State<ScoreScreen> {
               child: const Text("Cancel")),
           TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: Text("Delete", style: TextStyle(color: AppColors.error))),
+              child: Text("Delete",
+                  style:
+                      TextStyle(color: Theme.of(context).colorScheme.error))),
         ],
       ),
     );
@@ -457,11 +463,11 @@ class _ScoreScreenState extends State<ScoreScreen> {
               _isLoading = false;
             });
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
+              SnackBar(
+                content: const Text(
                     "Server permission error: Please check Supabase Delete Policy."),
-                backgroundColor: AppColors.error,
-                duration: Duration(seconds: 4),
+                backgroundColor: Theme.of(context).colorScheme.error,
+                duration: const Duration(seconds: 4),
               ),
             );
           }
@@ -481,6 +487,6 @@ class _ScoreScreenState extends State<ScoreScreen> {
   }
 
   String _formatDate(DateTime date) {
-    return "${date.day}/${date.month}/${date.year} • ${date.hour}:${date.minute.toString().padLeft(2, '0')}";
+    return "${date.day}/${date.month}/${date.year} • ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
   }
 }

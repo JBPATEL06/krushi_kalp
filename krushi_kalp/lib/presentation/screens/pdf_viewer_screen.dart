@@ -23,20 +23,42 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   int? currentPage = 0;
   bool isReady = false;
   String errorMessage = '';
+  bool _isNightMode = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (pages == 0) {
+      _isNightMode = Theme.of(context).brightness == Brightness.dark;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
         elevation: 1,
-        actions: [],
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isNightMode ? Icons.dark_mode : Icons.light_mode,
+              color: _isNightMode ? Colors.amber : theme.colorScheme.primary,
+            ),
+            tooltip: 'Toggle Night Mode',
+            onPressed: () {
+              setState(() {
+                _isNightMode = !_isNightMode;
+              });
+            },
+          ),
+        ],
       ),
       body: Stack(
         children: <Widget>[
           PDFView(
+            key: ValueKey(_isNightMode),
             filePath: widget.file.path,
             enableSwipe: true,
             swipeHorizontal: false,
@@ -47,9 +69,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
             fitPolicy: FitPolicy.WIDTH,
             preventLinkNavigation: false,
             password: widget.password, // Pass the password here
-            onRender: (pages) {
+            nightMode: _isNightMode,
+            onRender: (p) {
               setState(() {
-                pages = pages;
+                pages = p;
                 isReady = true;
               });
             },

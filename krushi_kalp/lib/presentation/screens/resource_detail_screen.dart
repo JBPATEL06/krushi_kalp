@@ -1,24 +1,27 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../domain/models/resource.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/resource_provider.dart';
+import '../providers/offer_provider.dart';
+import '../providers/cart_provider.dart';
+import '../../utils/price_calculator.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'pdf_viewer_screen.dart';
 import 'dart:io';
-import '../../data/services/download_service.dart'; // NEW
+import '../../data/services/download_service.dart';
 
 import '../../data/services/app_config_service.dart';
 import '../../data/services/review_service.dart';
 import '../../domain/models/review.dart';
 import '../widgets/reviews/review_card.dart';
 import '../widgets/reviews/review_dialog.dart';
+import '../widgets/reviews/rate_stars.dart';
 import 'reviews/all_reviews_screen.dart';
-import '../widgets/common/responsive_wrapper.dart';
 
 class ResourceDetailScreen extends StatefulWidget {
   final Resource resource;
@@ -26,6 +29,7 @@ class ResourceDetailScreen extends StatefulWidget {
   final String? heroTag;
 
   const ResourceDetailScreen({
+    super.key,
     required this.resource,
     this.isPurchased = false,
     this.heroTag,
@@ -36,13 +40,13 @@ class ResourceDetailScreen extends StatefulWidget {
 }
 
 class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
-  // Reviews State
   bool _isLoadingReviews = true;
   bool _configLoaded = false;
   List<Review> _reviews = [];
   Review? _userReview;
   Map<String, dynamic> _ratingStats = {'average': 0.0, 'count': 0};
   bool _isDownloading = false;
+  bool _isAddingToCart = false;
 
   @override
   void initState() {
@@ -51,7 +55,6 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
   }
 
   Future<void> _loadData() async {
-    // Fetch fresh configs every time this screen is opened
     await AppConfigService.fetchConfigs();
     if (mounted) setState(() => _configLoaded = true);
     _loadReviews();
@@ -60,21 +63,17 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
   Future<void> _loadReviews() async {
     if (!mounted) return;
     setState(() => _isLoadingReviews = true);
-
     try {
       final user = Supabase.instance.client.auth.currentUser;
       final futures = <Future>[
         ReviewService.getReviewsForItem(widget.resource.id, 'resource'),
         ReviewService.getRatingStats(widget.resource.id, 'resource'),
       ];
-
       if (user != null) {
         futures.add(ReviewService.getUserReview(
             user.id, widget.resource.id, 'resource'));
       }
-
       final results = await Future.wait(futures);
-
       if (mounted) {
         setState(() {
           _reviews = results[0] as List<Review>;
@@ -88,7 +87,6 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
         });
       }
     } catch (e) {
-      debugPrint("Error loading reviews: $e");
       if (mounted) setState(() => _isLoadingReviews = false);
     }
   }
@@ -101,7 +99,6 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
       );
       return;
     }
-
     showDialog(
       context: context,
       builder: (context) => ReviewDialog(
@@ -119,12 +116,11 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
               rating: rating,
               reviewText: text,
             );
-
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Review submitted successfully!')),
               );
-              _loadReviews(); // Refresh list
+              _loadReviews();
             }
           } catch (e) {
             if (mounted) {
@@ -142,7 +138,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Review deleted successfully')),
               );
-              _loadReviews(); // Refresh
+              _loadReviews();
             }
           } catch (e) {
             if (mounted) {
@@ -163,18 +159,14 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
       );
       return;
     }
-
     setState(() => _isDownloading = true);
     try {
       final url = widget.resource.fileUrl!;
       final filename = 'resource_${widget.resource.id}.pdf';
       final userId = Supabase.instance.client.auth.currentUser?.id;
-
-      final downloadService = DownloadService();
       final path =
-          await downloadService.downloadFile(url, filename, userId: userId);
+          await DownloadService().downloadFile(url, filename, userId: userId);
       final file = File(path);
-
       if (mounted) {
         Navigator.push(
           context,
@@ -187,7 +179,6 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
         );
       }
     } catch (e) {
-      debugPrint("Error opening PDF: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error opening PDF: $e")),
@@ -198,307 +189,377 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
     }
   }
 
+  Future<void> _addToCart(double finalPrice) async {
+    final theme = Theme.of(context);
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please login to purchase items.")),
+      );
+      return;
+    }
+    setState(() => _isAddingToCart = true);
+    try {
+      await context.read<CartProvider>().addToCart(
+            resourceId: widget.resource.id,
+            price: finalPrice,
+            authUserId: user.id,
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("${widget.resource.title} added to cart"),
+            backgroundColor: theme.colorScheme.primary,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(e.toString()),
+              backgroundColor: theme.colorScheme.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isAddingToCart = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final resource = widget.resource;
-    // Check purchase status from provider (real-time)
     final isPurchased = context
         .watch<ResourceProvider>()
         .purchasedResourceIds
-        .contains(widget.resource.id);
+        .contains(resource.id);
+
+    final activeOffers = context.watch<OfferProvider>().activeOffers;
+    final user = Supabase.instance.client.auth.currentUser;
+    final priceData = PriceCalculator.calculateDisplayPrice(
+      basePrice: resource.price,
+      activeOffers: activeOffers,
+      resourceId: resource.id,
+      userId: user?.id,
+    );
+    final double finalPrice = priceData['finalPrice'];
+    final double originalPrice = priceData['mrp'];
+    final bool hasDiscount = finalPrice < originalPrice;
+
+    double percentOff = 0;
+    if (hasDiscount && originalPrice > 0) {
+      percentOff = ((originalPrice - finalPrice) / originalPrice) * 100;
+    }
+
+    // final inCart = context.watch<CartProvider>().isResourceInCart(resource.id);
+
+    // Base layout colors from theme
+    final bgColor = theme.scaffoldBackgroundColor;
+    final surfaceColor = theme.colorScheme.surface;
+    final textPrimary = theme.colorScheme.onSurface;
+    final textSecondary = theme.colorScheme.onSurfaceVariant;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        title: Text(resource.title),
-        backgroundColor: Colors.transparent,
+        title: const Text('Resource Detail'),
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
+        centerTitle: false,
+        foregroundColor: textPrimary,
       ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            // refresh
-            await _loadReviews();
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 1. HEADER IMAGE
-                if (widget.resource.thumbnailUrl != null &&
-                    widget.resource.thumbnailUrl!.isNotEmpty)
-                  Hero(
-                    tag: widget.heroTag ??
-                        'resource_image_${widget.resource.id}',
-                    child: SizedBox(
-                      height: context.h(250),
-                      width: double.infinity,
-                      child: CachedNetworkImage(
-                        imageUrl: widget.resource.thumbnailUrl!,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: AppColors.neutral200,
-                          child:
-                              const Center(child: CircularProgressIndicator()),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: AppColors.neutral200,
-                          child: const Icon(Icons.broken_image,
-                              size: 40, color: AppColors.neutral400),
-                        ),
+      // bottomNavigationBar removed entirely per user request
+      body: RefreshIndicator(
+        onRefresh: () async => await _loadReviews(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildImageHeader(isDark),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // --- CARD 1: Title, Tags, Price, Rating ---
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        color: surfaceColor,
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.radiusLg),
                       ),
-                    ),
-                  )
-                else
-                  Container(
-                    height: 200,
-                    width: double.infinity,
-                    color: AppColors.neutral200,
-                    child: const Icon(Icons.menu_book,
-                        size: 64, color: AppColors.neutral400),
-                  ),
-
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Column(
-                    children: [
-                      // 2. TITLE & TYPE CARD
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusLg),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Name
-                            Text(
-                              widget.resource.title,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineSmall
-                                  ?.copyWith(fontWeight: FontWeight.bold),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Title
+                          Text(
+                            resource.title,
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
                             ),
-                            const SizedBox(height: AppSpacing.xs),
-
-                            // Category / Type
-                            Text(
-                              widget.resource.type.name.toUpperCase(),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.0,
+                          ),
+                          // Price Row & Rating Section
+                          if (!isPurchased && originalPrice > 0) ...[
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                if (hasDiscount) ...[
+                                  Text(
+                                    '₹${originalPrice.toStringAsFixed(0)}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: textSecondary,
+                                          fontWeight: FontWeight.w600,
+                                          decoration:
+                                              TextDecoration.lineThrough,
+                                        ),
                                   ),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-
-                            // Price / Status
-                            if (widget.resource.price > 0 && !isPurchased)
-                              Text(
-                                '₹${widget.resource.price.toStringAsFixed(0)}',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.primary,
-                                    ),
-                              )
-                            else if (isPurchased)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color:
-                                      AppColors.success.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: AppColors.success),
+                                  const SizedBox(width: AppSpacing.sm),
+                                ],
+                                Text(
+                                  '₹${finalPrice.toStringAsFixed(0)}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                        color: textPrimary,
+                                      ),
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.check_circle,
-                                        size: 16, color: AppColors.success),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Purchased',
+                                if (hasDiscount && percentOff > 0) ...[
+                                  const SizedBox(width: AppSpacing.md),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: AppSpacing.sm, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.primaryContainer
+                                          .withOpacity(
+                                              0.2), // Light faded primary
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                          color: theme.colorScheme.primary
+                                              .withOpacity(0.3)),
+                                    ),
+                                    child: Text(
+                                      '${percentOff.toInt()}% OFF',
                                       style: Theme.of(context)
                                           .textTheme
-                                          .titleMedium
+                                          .labelMedium
                                           ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.success,
+                                            color: theme.colorScheme
+                                                .primary, // Primary color defined by your themes
+                                            fontWeight: FontWeight.w800,
                                           ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            else
-                              Text(
-                                'Free',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.success,
-                                    ),
-                              ),
-
-                            // Rating — left-aligned, only if reviews visible
-                            if (_configLoaded &&
-                                AppConfigService.areReviewsVisible) ...[
-                              const SizedBox(height: AppSpacing.sm),
-                              Row(
-                                children: [
-                                  const Icon(Icons.star_rounded,
-                                      size: 16, color: Colors.amber),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${_ratingStats['average']} (${_ratingStats['count']} reviews)',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textSecondary,
                                     ),
                                   ),
                                 ],
+                              ],
+                            ),
+                          ] else if (isPurchased) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.secondaryContainer
+                                    .withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                    color: theme.colorScheme.secondary),
                               ),
-                            ],
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: AppSpacing.md),
-
-                      // 4. DESCRIPTION CARD
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusLg),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.check_circle,
+                                      size: 16,
+                                      color: theme.colorScheme.secondary),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "Purchased",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: theme.colorScheme.secondary,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else ...[
                             Text(
-                              "About this Resource",
+                              "Free",
                               style: Theme.of(context)
                                   .textTheme
-                                  .titleLarge
+                                  .headlineSmall
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: context.sp(18),
-                                  ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              (widget.resource.description ?? "").isEmpty
-                                  ? "No description available."
-                                  : widget.resource.description!,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    color: AppColors.textSecondary,
-                                    height: 1.5,
+                                    color: theme.colorScheme.primary,
                                   ),
                             ),
                           ],
-                        ),
-                      ),
 
-                      const SizedBox(height: AppSpacing.md),
+                          const SizedBox(height: AppSpacing.sm),
 
-                      // 5. ACTION BUTTON (View PDF / Buy)
-                      if (isPurchased || widget.resource.price == 0)
-                        SizedBox(
-                          width: double.infinity,
-                          height: context.h(50),
-                          child: ElevatedButton.icon(
-                            onPressed: _isDownloading
-                                ? null
-                                : () {
-                                    // All resources (E-Books, PYQs, etc.) in this app are PDFs.
-                                    _openPdf();
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(AppSpacing.radiusMd),
-                              ),
+                          // Rating Summary
+                          if (_configLoaded &&
+                              AppConfigService.areReviewsVisible)
+                            Row(
+                              children: [
+                                RateStars(
+                                  rating: (_ratingStats['average'] as num)
+                                      .toDouble(),
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${_ratingStats['average']} (${_ratingStats['count']} reviews)',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: textSecondary,
+                                  ),
+                                ),
+                              ],
                             ),
-                            icon: _isDownloading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                        color: Colors.white, strokeWidth: 2))
-                                : const Icon(Icons.visibility),
-                            label: Text(_isDownloading
-                                ? "Downloading..."
-                                : "View Resource"),
-                          ),
-                        ),
-
-                      const SizedBox(height: AppSpacing.md),
-
-                      // 6. REVIEWS SECTION CARD
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusLg),
-                        ),
-                        child: _buildReviewsSection(isPurchased),
+                        ],
                       ),
+                    ),
 
-                      const SizedBox(height: 60), // Bottom padding
-                    ],
-                  ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    // --- CARD 2: Description ---
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        color: surfaceColor,
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.radiusLg),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Description",
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            (resource.description ?? "").isEmpty
+                                ? "No description available for this resource."
+                                : resource.description!,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: textSecondary,
+                                  height: 1.5,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: AppSpacing.md),
+
+                    // Student Reviews Section (Rendered on scaffold directly)
+                    _buildReviewsSection(isPurchased, isDark, textPrimary),
+
+                    const SizedBox(height: 60),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ]
+                .animate(interval: 50.ms)
+                .fadeIn(duration: 400.ms)
+                .slideY(begin: 0.1, end: 0),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildReviewsSection(bool isPurchased) {
-    // Check if current user is logged in
-    final user = Supabase.instance.client.auth.currentUser;
-    // Show top 3 POSITIVE reviews (4 or 5 stars) first to encourage sales
-    final positiveReviews =
-        _reviews.where((r) => r.rating >= 4).take(3).toList();
-    final displayedReviews = positiveReviews.isNotEmpty
-        ? positiveReviews
-        : _reviews.take(3).toList();
-    final hasMoreReviews = _reviews.length > displayedReviews.length;
+  Widget _buildImageHeader(bool isDark) {
+    final theme = Theme.of(context);
+    if (widget.resource.thumbnailUrl == null ||
+        widget.resource.thumbnailUrl!.isEmpty) {
+      return Hero(
+        tag: widget.heroTag ?? 'resource_image_${widget.resource.id}',
+        child: Container(
+          height: 240,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+              ],
+            ),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(
+                widget.resource.type == ResourceType.eBook
+                    ? Icons.menu_book
+                    : Icons.picture_as_pdf,
+                size: 100,
+                color: theme.colorScheme.onPrimary.withValues(alpha: 0.2),
+              ),
+              Icon(
+                widget.resource.type == ResourceType.eBook
+                    ? Icons.menu_book
+                    : Icons.picture_as_pdf,
+                size: 60,
+                color: theme.colorScheme.onPrimary,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return Hero(
+      tag: widget.heroTag ?? 'resource_image_${widget.resource.id}',
+      child: Container(
+        height: 260,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors
+              .transparent, // Blends with the UI background per user request
+        ),
+        child: CachedNetworkImage(
+          imageUrl: widget.resource.thumbnailUrl!,
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
+  }
 
-    // Wait for config to be loaded before deciding visibility
-    if (!_configLoaded) return const SizedBox.shrink();
-
-    // Check if reviews are visible
-    if (!AppConfigService.areReviewsVisible) {
-      return const SizedBox.shrink(); // Hide reviews if disabled
+  Widget _buildReviewsSection(
+      bool isPurchased, bool isDark, Color textPrimary) {
+    final theme = Theme.of(context);
+    if (!_configLoaded || !AppConfigService.areReviewsVisible) {
+      return const SizedBox.shrink();
     }
 
-    // Check if user can review (bought it or it's free)
-    // AND hasn't reviewed yet
-    // AND writing reviews is allowed by admin
+    final user = Supabase.instance.client.auth.currentUser;
+    final positiveReviews = _reviews.where((r) => r.rating >= 4).toList();
+    final displayedReviews = positiveReviews.take(3).toList();
+    final hasMoreReviews = _reviews.length > displayedReviews.length;
     final canReview = (isPurchased || widget.resource.price == 0) &&
         _userReview == null &&
         user != null &&
@@ -514,7 +575,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
               "Reviews",
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: context.sp(18),
+                    fontSize: 18,
                   ),
             ),
             if (canReview)
@@ -530,61 +591,52 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
           ],
         ),
         const SizedBox(height: AppSpacing.md),
-
-        // Reviews List
         if (_isLoadingReviews)
           const Center(child: CircularProgressIndicator())
         else if (_reviews.isEmpty)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
-              child: Text(
-                "No reviews yet. Be the first to review!",
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            ),
-          )
+          Center(
+              child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Text("No reviews yet. Be the first to review!",
+                      style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant))))
         else if (displayedReviews.isEmpty)
           hasMoreReviews
               ? const SizedBox.shrink()
-              : const Center(
+              : Center(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Text(
-                      "No positive reviews to display.",
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Text("No positive reviews to display.",
+                        style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant)),
                   ),
                 )
-        else
+        else ...[
           ...displayedReviews.map((review) {
             final isOwnReview = user != null && review.userId == user.id;
             return Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: ReviewCard(
-                review: review,
-                isOwnReview: isOwnReview,
-                onEdit: isOwnReview ? _showReviewDialog : null,
-              ),
+                  review: review,
+                  isOwnReview: isOwnReview,
+                  onEdit: isOwnReview ? _showReviewDialog : null,
+                  isFlat: false),
             );
           }),
-
-        if (!(_isLoadingReviews) &&
-            (_reviews.isNotEmpty) &&
+        ],
+        if (!_isLoadingReviews &&
+            _reviews.isNotEmpty &&
             (hasMoreReviews || displayedReviews.isEmpty))
           Center(
             child: TextButton.icon(
               onPressed: () {
                 Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AllReviewsScreen(
-                      itemId: widget.resource.id,
-                      itemType: 'resource',
-                      itemTitle: widget.resource.title,
-                    ),
-                  ),
-                );
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => AllReviewsScreen(
+                            itemId: widget.resource.id,
+                            itemType: 'resource',
+                            itemTitle: widget.resource.title)));
               },
               icon: const Icon(Icons.arrow_forward, size: 16),
               label: const Text("View All Reviews"),

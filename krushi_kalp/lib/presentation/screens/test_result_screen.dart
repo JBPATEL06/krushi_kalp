@@ -6,7 +6,6 @@ import '../../domain/services/pdf_service.dart';
 import 'pdf_viewer_screen.dart';
 import 'test_analysis_screen.dart';
 import '../../data/services/translation_service.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../data/services/review_service.dart'; // NEW
@@ -96,11 +95,12 @@ class _TestResultScreenState extends State<TestResultScreen>
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.wifi_off_rounded, color: AppColors.error),
-            SizedBox(width: AppSpacing.sm),
-            Text('Offline Attempt'),
+            Icon(Icons.wifi_off_rounded,
+                color: Theme.of(context).colorScheme.error),
+            const SizedBox(width: AppSpacing.sm),
+            const Text('Offline Attempt'),
           ],
         ),
         content: const Text(
@@ -221,11 +221,10 @@ class _TestResultScreenState extends State<TestResultScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Logic
+    final theme = Theme.of(context);
     final double percentage =
         widget.totalMarks > 0 ? (widget.score / widget.totalMarks) * 100 : 0.0;
     final bool isPassed = percentage >= 40; // Passing logic
-
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -243,21 +242,21 @@ class _TestResultScreenState extends State<TestResultScreen>
         alignment: Alignment.topCenter,
         children: [
           Scaffold(
-            backgroundColor: AppColors.background,
+            backgroundColor: theme.colorScheme.surface,
             appBar: AppBar(
               title: Text(
                 'RESULTS SUMMARY',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
               ),
               centerTitle: true,
-              backgroundColor: AppColors.surface,
+              backgroundColor: theme.colorScheme.surface,
               elevation: 0,
               leading: IconButton(
-                icon: const Icon(Icons.close, color: AppColors.textPrimary),
+                icon: Icon(Icons.close, color: theme.colorScheme.onSurface),
                 onPressed: () => Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(
                     builder: (context) => const MainScreen(),
@@ -266,168 +265,217 @@ class _TestResultScreenState extends State<TestResultScreen>
                 ),
               ),
             ),
-            body: SafeArea(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    const SizedBox(height: AppSpacing.lg),
-                    // Score Card
-                    Container(
-                      margin:
-                          const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 32, horizontal: AppSpacing.lg),
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.primary, AppColors.primaryActive],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusXl),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: AppSpacing.lg),
+                  // Score Card
+                  Container(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 32, horizontal: AppSpacing.lg),
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          theme.colorScheme.primary,
+                          theme.colorScheme.primaryContainer
                         ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      child: Column(
-                        children: [
-                          Text(
-                            'TOTAL SCORE',
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelLarge
-                                ?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.5,
-                                ),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              theme.colorScheme.primary.withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'TOTAL SCORE',
+                          style:
+                              Theme.of(context).textTheme.labelLarge?.copyWith(
+                                    color: theme.colorScheme.onPrimary
+                                        .withValues(alpha: 0.8),
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.5,
+                                  ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        // Icon
+                        Container(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.onPrimary
+                                .withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
                           ),
-                          const SizedBox(height: AppSpacing.md),
-                          // Icon
-                          Container(
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              isPassed
-                                  ? Icons.emoji_events_rounded
-                                  : Icons.sentiment_dissatisfied_rounded,
-                              size: 64,
-                              color: Colors.white,
-                            ),
+                          child: Icon(
+                            isPassed
+                                ? Icons.emoji_events_rounded
+                                : Icons.sentiment_dissatisfied_rounded,
+                            size: 64,
+                            color: theme.colorScheme.onPrimary,
                           ),
-                          const SizedBox(height: AppSpacing.md),
-                          // Percentage Animation
-                          AnimatedBuilder(
-                            animation: _scoreAnimation,
-                            builder: (context, child) {
-                              return Text(
-                                '${_scoreAnimation.value.toStringAsFixed(0)}%',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .displayLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      fontSize: 56,
-                                    ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: Text(
-                              isPassed
-                                  ? 'Test Completed Successfully\nYou have achieved the passing score for the ${widget.testTitle}.'
-                                  : 'Test Not Cleared\nYou did not achieve the required passing score for the ${widget.testTitle}.',
-                              textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        // Percentage Animation
+                        AnimatedBuilder(
+                          animation: _scoreAnimation,
+                          builder: (context, child) {
+                            return Text(
+                              '${_scoreAnimation.value.toStringAsFixed(0)}%',
                               style: Theme.of(context)
                                   .textTheme
-                                  .titleMedium
+                                  .displayLarge
                                   ?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.95),
-                                    fontWeight: FontWeight.w600,
-                                    height: 1.4,
-                                    fontSize: 18, // Slightly larger
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onPrimary,
+                                    fontSize: 56,
                                   ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: AppSpacing.xxl),
-
-                    // Stats Grid
-                    Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _buildStatCard(
-                              label: 'RIGHT',
-                              value: '${widget.correctAnswers ?? 0}',
-                              color: AppColors.success,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.lg),
-                          Expanded(
-                            child: _buildStatCard(
-                              label: 'WRONG',
-                              value: '${widget.wrongAnswers ?? 0}',
-                              color: AppColors.error,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // PDF Download Button
-                    Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed:
-                              _isGeneratingPdf ? null : _generateAndDownloadPdf,
-                          icon: _isGeneratingPdf
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.download,
-                                  color: AppColors.textPrimary),
-                          label: Text(
-                            _isGeneratingPdf
-                                ? 'Generating PDF...'
-                                : 'Download & View Result PDF',
+                            );
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Text(
+                            isPassed
+                                ? 'Test Completed Successfully\nYou have achieved the passing score for the ${widget.testTitle}.'
+                                : 'Test Not Cleared\nYou did not achieve the required passing score for the ${widget.testTitle}.',
+                            textAlign: TextAlign.center,
                             style: Theme.of(context)
                                 .textTheme
                                 .titleMedium
                                 ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
+                                  color: theme.colorScheme.onPrimary
+                                      .withValues(alpha: 0.95),
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.4,
+                                  fontSize: 18, // Slightly larger
                                 ),
                           ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: AppSpacing.xxl),
+
+                  // Stats Grid
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            label: 'RIGHT',
+                            value: '${widget.correctAnswers ?? 0}',
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.lg),
+                        Expanded(
+                          child: _buildStatCard(
+                            label: 'WRONG',
+                            value: '${widget.wrongAnswers ?? 0}',
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // PDF Download Button
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed:
+                            _isGeneratingPdf ? null : _generateAndDownloadPdf,
+                        icon: _isGeneratingPdf
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Icon(Icons.download,
+                                color: theme.colorScheme.onSurface),
+                        label: Text(
+                          _isGeneratingPdf
+                              ? 'Generating PDF...'
+                              : 'Download & View Result PDF',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          side: BorderSide(
+                            color: theme.colorScheme.onSurface,
+                            width: 2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.radiusXl),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Rating Button (only if online)
+                  if (!_isOffline)
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                      child: _buildRatingSection(),
+                    ),
+
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Analysis Button
+                  if (widget.questions != null &&
+                      widget.selectedAnswers != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.sm,
+                      ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TestAnalysisScreen(
+                                  testTitle: widget.testTitle,
+                                  questions: widget.questions as List<Question>,
+                                  selectedAnswers: widget.selectedAnswers!,
+                                ),
+                              ),
+                            );
+                          },
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 18),
-                            side: const BorderSide(
-                              color: AppColors.textPrimary,
+                            side: BorderSide(
+                              color: theme.colorScheme.onSurface,
                               width: 2,
                             ),
                             shape: RoundedRectangleBorder(
@@ -435,149 +483,103 @@ class _TestResultScreenState extends State<TestResultScreen>
                                   BorderRadius.circular(AppSpacing.radiusXl),
                             ),
                           ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Rating Button (only if online)
-                    if (!_isOffline)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg),
-                        child: _buildRatingSection(),
-                      ),
-
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Analysis Button
-                    if (widget.questions != null &&
-                        widget.selectedAnswers != null)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                          vertical: AppSpacing.sm,
-                        ),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => TestAnalysisScreen(
-                                    testTitle: widget.testTitle,
-                                    questions:
-                                        widget.questions as List<Question>,
-                                    selectedAnswers: widget.selectedAnswers!,
-                                  ),
-                                ),
-                              );
-                            },
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 18),
-                              side: const BorderSide(
-                                color: AppColors.textPrimary,
-                                width: 2,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(AppSpacing.radiusXl),
-                              ),
-                            ),
-                            child: Text(
-                              'Check Answers',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
-                                  ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                    // Discard Button (only if online and resultId exists)
-                    if (!_isOffline && widget.resultId != null)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                          vertical: AppSpacing.sm,
-                        ),
-                        child: _isDiscarding
-                            ? const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(AppSpacing.md),
-                                  child: CircularProgressIndicator(),
-                                ),
-                              )
-                            : TextButton.icon(
-                                onPressed: _discardResult,
-                                icon: const Icon(Icons.delete_outline,
-                                    color: AppColors.error),
-                                label: const Text(
-                                  'Discard This Result',
-                                  style: TextStyle(
-                                    color: AppColors.error,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                style: TextButton.styleFrom(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 16),
-                                  backgroundColor:
-                                      AppColors.error.withValues(alpha: 0.1),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        AppSpacing.radiusXl),
-                                  ),
-                                ),
-                              ),
-                      ),
-
-                    // Bottom Button (Back to Home)
-                    Padding(
-                      padding: const EdgeInsets.all(AppSpacing.xl),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(
-                                builder: (context) => const MainScreen(),
-                              ),
-                              (route) => false,
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                AppColors.textPrimary, // Dark Theme
-                            foregroundColor: AppColors.onPrimary,
-                            padding: const EdgeInsets.symmetric(vertical: 18),
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppSpacing.radiusXl),
-                            ),
-                            elevation: 0,
-                          ),
                           child: Text(
-                            'Back to Home',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.onPrimary,
-                                ),
+                            'Check Answers',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurface,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ],
-                ),
+
+                  SafeArea(
+                    bottom: true,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Discard Button (only if online and resultId exists)
+                        if (!_isOffline && widget.resultId != null)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg,
+                              vertical: AppSpacing.sm,
+                            ),
+                            child: _isDiscarding
+                                ? const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(AppSpacing.md),
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  )
+                                : SizedBox(
+                                    width: double.infinity,
+                                    child: TextButton.icon(
+                                      onPressed: _discardResult,
+                                      icon: Icon(Icons.delete_outline,
+                                          color: theme.colorScheme.error),
+                                      label: const Text(
+                                        'Discard This Result',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor:
+                                            theme.colorScheme.error,
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 16),
+                                        backgroundColor: theme.colorScheme.error
+                                            .withValues(alpha: 0.1),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              AppSpacing.radiusXl),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                          ),
+
+                        // Bottom Button (Back to Home)
+                        Padding(
+                          padding: const EdgeInsets.all(AppSpacing.xl),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                    builder: (context) => const MainScreen(),
+                                  ),
+                                  (route) => false,
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: theme.colorScheme.primary,
+                                foregroundColor: theme.colorScheme.onPrimary,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 18),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                      AppSpacing.radiusXl),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: Text(
+                                'Back to Home',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onPrimary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -587,12 +589,12 @@ class _TestResultScreenState extends State<TestResultScreen>
             shouldLoop: false,
             numberOfParticles: 20, // Reduced from default (30)
             gravity: 0.3, // Slower fall
-            colors: const [
-              Color(0xFF2563EB), // Blue
-              Color(0xFF60A5FA), // Light Blue
-              Color(0xFFFFFFFF), // White
-              Color(0xFFCBD5E1), // Slate/Silver
-              Color(0xFF1E40AF), // Dark Blue
+            colors: [
+              theme.colorScheme.primary,
+              theme.colorScheme.secondary,
+              theme.colorScheme.tertiary,
+              theme.colorScheme.surface,
+              theme.colorScheme.outline,
             ],
           ),
           // Offline Indicator
@@ -604,17 +606,18 @@ class _TestResultScreenState extends State<TestResultScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.error.withValues(alpha: 0.8),
+                  color: theme.colorScheme.error.withValues(alpha: 0.8),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.cloud_off, color: Colors.white, size: 14),
+                    Icon(Icons.cloud_off,
+                        color: theme.colorScheme.onPrimary, size: 14),
                     SizedBox(width: 4),
                     Text(
                       'Offline',
                       style: TextStyle(
-                          color: Colors.white,
+                          color: theme.colorScheme.onPrimary,
                           fontSize: 10,
                           fontWeight: FontWeight.bold),
                     ),
@@ -671,46 +674,50 @@ class _TestResultScreenState extends State<TestResultScreen>
   Widget _buildRatingSection() {
     if (_isLoadingRating) return const SizedBox.shrink();
     if (_hasRated) {
+      final theme = Theme.of(context);
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: AppColors.success.withValues(alpha: 0.1),
+          color: theme.colorScheme.secondary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
+          border: Border.all(
+              color: theme.colorScheme.secondary.withValues(alpha: 0.2)),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.check_circle_outline,
-                color: AppColors.success, size: 20),
-            SizedBox(width: AppSpacing.sm),
+                color: theme.colorScheme.secondary, size: 20),
+            const SizedBox(width: AppSpacing.sm),
             Text(
               "Thanks for your feedback!",
               style: TextStyle(
-                  color: AppColors.success, fontWeight: FontWeight.bold),
+                  color: theme.colorScheme.secondary,
+                  fontWeight: FontWeight.bold),
             ),
           ],
         ),
       );
     }
 
+    final theme = Theme.of(context);
     return SizedBox(
       width: double.infinity,
       child: TextButton.icon(
         onPressed: () => _showRatingDialog(),
-        icon: const Icon(Icons.star_rate_rounded, color: Color(0xFFFFC107)),
-        label: const Text(
+        icon: Icon(Icons.star_rate_rounded, color: theme.colorScheme.secondary),
+        label: Text(
           'Rate this Test',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          backgroundColor: const Color(0xFFFFC107).withValues(alpha: 0.1),
+          backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.1),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
         ),
@@ -790,7 +797,7 @@ class _TestResultScreenState extends State<TestResultScreen>
             value,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
           ),
         ],
@@ -812,10 +819,11 @@ class _TestResultScreenState extends State<TestResultScreen>
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
+            child: Text(
               "Discard",
               style: TextStyle(
-                  color: AppColors.error, fontWeight: FontWeight.bold),
+                  color: Theme.of(context).colorScheme.error,
+                  fontWeight: FontWeight.bold),
             ),
           ),
         ],

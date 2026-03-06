@@ -26,15 +26,17 @@ class Review {
   });
 
   factory Review.fromJson(Map<String, dynamic> json) {
-    // Handle joined user data if available (Supabase join syntax)
     String? name;
     String? avatar;
 
-    // Check if 'users' table was joined
     if (json['users'] != null) {
-      name = json['users']
-          ['username']; // Only username is reliable from AuthService
-      // avatar = json['users']['avatar_url']; // Removed as strictly not in AuthService insert
+      name = json['users']['username'];
+      avatar = json['users']['avatar_url']; // Extract avatar if available
+    }
+
+    // fallback if no join but 'user_name' is provided flat
+    if (name == null && json['user_name'] != null) {
+      name = json['user_name'];
     }
 
     return Review(

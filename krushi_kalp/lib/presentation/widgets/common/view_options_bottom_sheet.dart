@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 
 /// A bottom sheet that shows options: View Online or Download
@@ -17,11 +16,12 @@ class ViewOptionsBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius:
-            BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusXl)),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppSpacing.radiusXl)),
       ),
       padding: EdgeInsets.only(
         top: AppSpacing.xl,
@@ -36,17 +36,17 @@ class ViewOptionsBottomSheet extends StatelessWidget {
           // Title
           Text(
             'How would you like to view?',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
             title,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -57,7 +57,7 @@ class ViewOptionsBottomSheet extends StatelessWidget {
             icon: Icons.cloud_outlined,
             title: 'View Online',
             subtitle: 'Quick preview without downloading',
-            iconColor: AppColors.primary,
+            iconColor: theme.colorScheme.primary,
             onTap: () {
               Navigator.pop(context);
               onViewOnline();
@@ -71,7 +71,7 @@ class ViewOptionsBottomSheet extends StatelessWidget {
             icon: Icons.download_outlined,
             title: 'Download & View',
             subtitle: 'Save to device for offline access',
-            iconColor: AppColors.success,
+            iconColor: theme.colorScheme.primary, // Using primary for action
             onTap: () {
               Navigator.pop(context);
               onDownload();
@@ -114,8 +114,9 @@ class _OptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Material(
-      color: AppColors.background,
+      color: theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
       child: InkWell(
         onTap: onTap,
@@ -143,27 +144,27 @@ class _OptionCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
               ),
 
               // Arrow
-              const Icon(
+              Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: AppColors.textSecondary,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ],
           ),

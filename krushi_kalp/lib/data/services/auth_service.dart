@@ -95,10 +95,18 @@ class AuthService {
 
       if (profile == null) {
         debugPrint('Creating new profile for ${user.email}');
+
+        // Extract real name from Google Auth metadata (usually 'full_name' or 'name')
+        final metadata = user.userMetadata ?? {};
+        final String displayName = metadata['full_name'] ??
+            metadata['name'] ??
+            user.email?.split('@')[0] ??
+            'User';
+
         await Supabase.instance.client.from('users').insert({
           'id': user.id,
           'email': user.email,
-          'username': user.email?.split('@')[0] ?? 'User',
+          'username': displayName,
           'language': 'en', // Default Language
           // 'role': 'Student', // Omitted: Let DB default 'Student' apply to avoid Enum errors
           // 'created_at': DateTime.now().toIso8601String(), // Let DB handle default

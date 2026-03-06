@@ -7,7 +7,6 @@ import '../providers/auth_provider.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
 import '../providers/navigation_provider.dart';
-import '../../core/theme/app_colors.dart';
 import 'profile_screen.dart';
 import '../providers/test_provider.dart';
 import '../providers/resource_provider.dart';
@@ -51,12 +50,14 @@ class _MainScreenState extends State<MainScreen> {
       final userId = auth.currentUser!.id;
       debugPrint("MainScreen: Triggering background sync for user: $userId");
 
-      // Trigger background fetches
+      // Trigger background fetches (Non-blocking)
       final testProvider = context.read<TestProvider>();
       final resourceProvider = context.read<ResourceProvider>();
 
-      // We don't await them as they can run in background
+      // We don't await them so they run in the background post-login
+      testProvider.fetchTests();
       testProvider.fetchUserTests(userId);
+      resourceProvider.fetchAll();
       resourceProvider.fetchPurchasedResources(userId);
     }
   }
@@ -81,6 +82,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     debugPrint("MainScreen: Build");
+    final theme = Theme.of(context);
     return Consumer<NavigationProvider>(
       builder: (context, navProvider, child) {
         return PopScope(
@@ -165,89 +167,96 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                   bottomNavigationBar: navProvider.selectedIndex >= 4
                       ? null
-                      : Container(
-                          decoration: BoxDecoration(
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 20,
-                                offset: const Offset(0, -5),
-                              ),
-                            ],
-                          ),
-                          child: NavigationBarTheme(
-                            data: NavigationBarThemeData(
-                              backgroundColor: Colors.white,
-                              indicatorColor: Colors.transparent, // Clean look
-                              labelBehavior:
-                                  NavigationDestinationLabelBehavior.alwaysShow,
-                              labelTextStyle:
-                                  WidgetStateProperty.resolveWith((states) {
-                                if (states.contains(WidgetState.selected)) {
-                                  return const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
-                                  );
-                                }
-                                return const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.textSecondary,
-                                );
-                              }),
-                              iconTheme:
-                                  WidgetStateProperty.resolveWith((states) {
-                                if (states.contains(WidgetState.selected)) {
-                                  return const IconThemeData(
-                                    size: 26,
-                                    color: AppColors.primary,
-                                  );
-                                }
-                                return const IconThemeData(
-                                  size: 24,
-                                  color: AppColors.textSecondary,
-                                );
-                              }),
-                            ),
-                            child: NavigationBar(
-                              height: 70,
-                              backgroundColor: Colors.white,
-                              shadowColor: Colors.transparent,
-                              surfaceTintColor: Colors.white,
-                              selectedIndex: navProvider.selectedIndex,
-                              onDestinationSelected: (index) {
-                                if (index == 2) {
-                                  navProvider.setStoreCategory('All');
-                                }
-                                navProvider.setIndex(index);
-                              },
-                              destinations: const [
-                                NavigationDestination(
-                                  icon: Icon(Icons.home_outlined),
-                                  selectedIcon:
-                                      Icon(Icons.home_rounded, size: 28),
-                                  label: 'Home',
-                                ),
-                                NavigationDestination(
-                                  icon: Icon(Icons.quiz_outlined),
-                                  selectedIcon:
-                                      Icon(Icons.quiz_rounded, size: 28),
-                                  label: 'Tests',
-                                ),
-                                NavigationDestination(
-                                  icon: Icon(Icons.storefront_outlined),
-                                  selectedIcon:
-                                      Icon(Icons.storefront_rounded, size: 28),
-                                  label: 'Store',
-                                ),
-                                NavigationDestination(
-                                  icon: Icon(Icons.download_outlined),
-                                  selectedIcon:
-                                      Icon(Icons.download_rounded, size: 28),
-                                  label: 'Downloads',
+                      : SafeArea(
+                          bottom: true,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              boxShadow: [
+                                BoxShadow(
+                                  color: theme.colorScheme.shadow
+                                      .withValues(alpha: 0.1),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, -5),
                                 ),
                               ],
+                            ),
+                            child: NavigationBarTheme(
+                              data: NavigationBarThemeData(
+                                backgroundColor: theme.colorScheme.surface,
+                                elevation: 0,
+                                indicatorColor:
+                                    theme.colorScheme.primary.withOpacity(0.1),
+                                labelBehavior:
+                                    NavigationDestinationLabelBehavior
+                                        .alwaysShow,
+                                labelTextStyle:
+                                    WidgetStateProperty.resolveWith((states) {
+                                  if (states.contains(WidgetState.selected)) {
+                                    return TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.primary,
+                                    );
+                                  }
+                                  return TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  );
+                                }),
+                                iconTheme:
+                                    WidgetStateProperty.resolveWith((states) {
+                                  if (states.contains(WidgetState.selected)) {
+                                    return IconThemeData(
+                                      size: 26,
+                                      color: theme.colorScheme.primary,
+                                    );
+                                  }
+                                  return IconThemeData(
+                                    size: 24,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  );
+                                }),
+                              ),
+                              child: NavigationBar(
+                                height: 70,
+                                backgroundColor: theme.colorScheme.surface,
+                                shadowColor: Colors.transparent,
+                                surfaceTintColor: theme.colorScheme.surface,
+                                selectedIndex: navProvider.selectedIndex,
+                                onDestinationSelected: (index) {
+                                  if (index == 2) {
+                                    navProvider.setStoreCategory('All');
+                                  }
+                                  navProvider.setIndex(index);
+                                },
+                                destinations: const [
+                                  NavigationDestination(
+                                    icon: Icon(Icons.home_outlined),
+                                    selectedIcon:
+                                        Icon(Icons.home_rounded, size: 28),
+                                    label: 'Home',
+                                  ),
+                                  NavigationDestination(
+                                    icon: Icon(Icons.quiz_outlined),
+                                    selectedIcon:
+                                        Icon(Icons.quiz_rounded, size: 28),
+                                    label: 'Mocks',
+                                  ),
+                                  NavigationDestination(
+                                    icon: Icon(Icons.storefront_outlined),
+                                    selectedIcon: Icon(Icons.storefront_rounded,
+                                        size: 28),
+                                    label: 'Store',
+                                  ),
+                                  NavigationDestination(
+                                    icon: Icon(Icons.download_outlined),
+                                    selectedIcon:
+                                        Icon(Icons.download_rounded, size: 28),
+                                    label: 'Downloads',
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

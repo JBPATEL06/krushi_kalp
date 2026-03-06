@@ -58,9 +58,10 @@ extension ResponsiveContext on BuildContext {
     return scale > 1.2 ? 1.2 : scale;
   }
 
-  double sp(double size) => size * scaleFactor; // Scaled pixels
-  double w(double width) => width * scaleFactor;
-  double h(double height) => height * scaleFactor;
+  double sp(double size) =>
+      size * scaleFactor * 0.9; // Scaled pixels with 10% reduction
+  double w(double width) => width * scaleFactor * 0.9;
+  double h(double height) => height * scaleFactor * 0.9;
 
   bool get isTablet => MediaQuery.of(this).size.width > 600;
   bool get isDesktop => MediaQuery.of(this).size.width > 1200;

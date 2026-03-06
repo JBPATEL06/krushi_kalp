@@ -11,7 +11,6 @@ import '../../data/services/translation_service.dart';
 import '../widgets/common/network_error_state.dart';
 import 'test_result_screen.dart';
 import 'main_screen.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 
 class ExamScreen extends StatefulWidget {
@@ -329,6 +328,7 @@ class _ExamScreenState extends State<ExamScreen> {
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+    final theme = Theme.of(context);
 
     if (_errorMessage != null) {
       return Scaffold(
@@ -356,12 +356,11 @@ class _ExamScreenState extends State<ExamScreen> {
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          title: Text(widget.test.title,
-              style: Theme.of(context).textTheme.titleLarge),
-          backgroundColor: AppColors.surface,
-          foregroundColor: AppColors.textPrimary,
+          title: Text(widget.test.title, style: theme.textTheme.titleLarge),
+          backgroundColor: theme.colorScheme.surface,
+          foregroundColor: theme.colorScheme.onSurface,
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.close),
@@ -376,23 +375,6 @@ class _ExamScreenState extends State<ExamScreen> {
               }
             },
           ),
-          actions: [
-            if (widget.test.durationMinutes != null)
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 16.0),
-                  child: Text(
-                    _formatTime(_remainingSeconds),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: _remainingSeconds < 60
-                              ? AppColors.error
-                              : AppColors.textPrimary,
-                        ),
-                  ),
-                ),
-              ),
-          ],
         ),
         body: Column(
           children: [
@@ -401,8 +383,8 @@ class _ExamScreenState extends State<ExamScreen> {
               value: _questions.isEmpty
                   ? 0
                   : (_currentQuestionIndex + 1) / _questions.length,
-              backgroundColor: AppColors.neutral200,
-              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+              backgroundColor: theme.colorScheme.surfaceVariant,
+              valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
               minHeight: 4,
             ),
 
@@ -413,18 +395,18 @@ class _ExamScreenState extends State<ExamScreen> {
                 children: [
                   Text(
                     "Question ${_currentQuestionIndex + 1}/${_questions.length}",
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary,
-                        ),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.md, vertical: 6),
                     decoration: BoxDecoration(
                       color: _remainingSeconds < 60
-                          ? AppColors.error.withValues(alpha: 0.1)
-                          : AppColors.primary.withValues(alpha: 0.1),
+                          ? theme.colorScheme.error.withValues(alpha: 0.1)
+                          : theme.colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -433,8 +415,8 @@ class _ExamScreenState extends State<ExamScreen> {
                           Icons.timer_outlined,
                           size: 16,
                           color: _remainingSeconds < 60
-                              ? AppColors.error
-                              : AppColors.primary,
+                              ? theme.colorScheme.error
+                              : theme.colorScheme.primary,
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -442,8 +424,8 @@ class _ExamScreenState extends State<ExamScreen> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: _remainingSeconds < 60
-                                ? AppColors.error
-                                : AppColors.primary,
+                                ? theme.colorScheme.error
+                                : theme.colorScheme.primary,
                           ),
                         ),
                       ],
@@ -482,7 +464,7 @@ class _ExamScreenState extends State<ExamScreen> {
                     }
                   }
 
-                  return _buildQuestionCard(displayQuestion, index);
+                  return _buildQuestionCard(theme, displayQuestion, index);
                 },
               ),
             ),
@@ -512,23 +494,24 @@ class _ExamScreenState extends State<ExamScreen> {
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: isCurrent
-                              ? AppColors.primary
+                              ? theme.colorScheme.primary
                               : (isAnswered
-                                  ? AppColors.primary.withValues(alpha: 0.1)
-                                  : AppColors.surface),
+                                  ? theme.colorScheme.primary
+                                      .withValues(alpha: 0.1)
+                                  : theme.colorScheme.surface),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: isCurrent
-                                ? AppColors.primary
-                                : AppColors.neutral300,
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.outlineVariant,
                           ),
                         ),
                         child: Text(
                           '${index + 1}',
                           style: TextStyle(
                             color: isCurrent
-                                ? AppColors.onPrimary
-                                : AppColors.textPrimary,
+                                ? theme.colorScheme.onPrimary
+                                : theme.colorScheme.onSurface,
                             fontWeight:
                                 isCurrent ? FontWeight.bold : FontWeight.normal,
                           ),
@@ -540,93 +523,95 @@ class _ExamScreenState extends State<ExamScreen> {
               ),
 
             // Bottom Buttons
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                boxShadow: [
-                  BoxShadow(
-                      blurRadius: 5,
-                      color: Colors.black.withValues(alpha: 0.1)),
-                ],
-              ),
-              child: Row(
-                children: [
-                  // Previous Button
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _currentQuestionIndex > 0
-                          ? () => _changePage(_currentQuestionIndex - 1)
-                          : null,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSpacing.md),
-                        ),
-                        side: const BorderSide(color: AppColors.neutral300),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.arrow_back,
-                              size: 18, color: AppColors.textPrimary),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Previous',
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelLarge
-                                ?.copyWith(color: AppColors.textPrimary),
+            SafeArea(
+              bottom: true,
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.shadow.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    // Previous Button
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _currentQuestionIndex > 0
+                            ? () => _changePage(_currentQuestionIndex - 1)
+                            : null,
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppSpacing.md),
                           ),
-                        ],
+                          side: BorderSide(
+                              color: theme.colorScheme.outlineVariant),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.arrow_back,
+                                size: 18, color: theme.colorScheme.onSurface),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Previous',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                  color: theme.colorScheme.onSurface),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  // Next Button
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (_currentQuestionIndex < _questions.length - 1) {
-                          _changePage(_currentQuestionIndex + 1);
-                        } else {
-                          _showSubmitDialog();
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSpacing.md),
+                    const SizedBox(width: AppSpacing.md),
+                    // Next Button
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (_currentQuestionIndex < _questions.length - 1) {
+                            _changePage(_currentQuestionIndex + 1);
+                          } else {
+                            _showSubmitDialog(theme);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppSpacing.md),
+                          ),
+                          elevation: 0,
                         ),
-                        elevation: 0,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            _currentQuestionIndex < _questions.length - 1
-                                ? 'Next Question'
-                                : 'Submit Test',
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelLarge
-                                ?.copyWith(
-                                  color: AppColors.onPrimary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Icon(
-                            Icons.arrow_forward,
-                            size: 18,
-                            color: AppColors.onPrimary,
-                          ),
-                        ],
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _currentQuestionIndex < _questions.length - 1
+                                  ? 'Next Question'
+                                  : 'Submit Test',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.onPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.arrow_forward,
+                              size: 18,
+                              color: theme.colorScheme.onPrimary,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -635,7 +620,7 @@ class _ExamScreenState extends State<ExamScreen> {
     );
   }
 
-  Widget _buildQuestionCard(Question q, int index) {
+  Widget _buildQuestionCard(ThemeData theme, Question q, int index) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -643,10 +628,10 @@ class _ExamScreenState extends State<ExamScreen> {
         children: [
           Text(
             'Question ${index + 1} of ${_questions.length}',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.bold,
-                ),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
@@ -665,17 +650,20 @@ class _ExamScreenState extends State<ExamScreen> {
               margin: const EdgeInsets.only(bottom: AppSpacing.md),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.primary.withValues(alpha: 0.1)
-                    : AppColors.surface,
+                    ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                    : theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(AppSpacing.md),
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.neutral300,
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.outlineVariant,
                   width: isSelected ? 2 : 1,
                 ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.2),
+                          color:
+                              theme.colorScheme.primary.withValues(alpha: 0.2),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         )
@@ -703,19 +691,19 @@ class _ExamScreenState extends State<ExamScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: isSelected
-                                ? AppColors.primary
-                                : AppColors.surface,
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.surface,
                             border: Border.all(
                               color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.neutral400,
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                           child: isSelected
-                              ? const Icon(
+                              ? Icon(
                                   Icons.check,
                                   size: 16,
-                                  color: AppColors.onPrimary,
+                                  color: theme.colorScheme.onPrimary,
                                 )
                               : null,
                         ),
@@ -723,15 +711,14 @@ class _ExamScreenState extends State<ExamScreen> {
                         Expanded(
                           child: Text(
                             q.options[optIndex],
-                            style:
-                                Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      color: isSelected
-                                          ? AppColors.primary
-                                          : AppColors.textPrimary,
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                    ),
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: isSelected
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurface,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
                           ),
                         ),
                       ],
@@ -747,6 +734,7 @@ class _ExamScreenState extends State<ExamScreen> {
   }
 
   Future<bool> _showExitConfirmation() async {
+    final theme = Theme.of(context);
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
@@ -760,10 +748,10 @@ class _ExamScreenState extends State<ExamScreen> {
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text(
+                child: Text(
                   'Exit',
                   style: TextStyle(
-                    color: AppColors.error,
+                    color: theme.colorScheme.error,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -774,7 +762,7 @@ class _ExamScreenState extends State<ExamScreen> {
         false;
   }
 
-  void _showSubmitDialog() {
+  void _showSubmitDialog(ThemeData theme) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -838,6 +826,7 @@ class _TranslationLoadingWidgetState extends State<TranslationLoadingWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -849,10 +838,8 @@ class _TranslationLoadingWidgetState extends State<TranslationLoadingWidget> {
             const SizedBox(height: AppSpacing.sm),
             Text(
               "(Please wait...)",
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: AppColors.textSecondary),
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           ] else ...[
             const Icon(Icons.timer_off, size: 48, color: Colors.orange),
@@ -867,8 +854,8 @@ class _TranslationLoadingWidgetState extends State<TranslationLoadingWidget> {
               icon: const Icon(Icons.language),
               label: const Text("Attempt in English"),
               style: ElevatedButton.styleFrom(
-                foregroundColor: Colors.white,
-                backgroundColor: AppColors.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
+                backgroundColor: theme.colorScheme.primary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,

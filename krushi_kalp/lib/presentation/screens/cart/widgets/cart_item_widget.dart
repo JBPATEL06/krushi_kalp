@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../domain/models/offer.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../widgets/common/responsive_wrapper.dart';
+import '../../../widgets/common/modern_card.dart';
 
 class CartItemWidget extends StatelessWidget {
   final Map<String, dynamic> item;
@@ -46,82 +48,96 @@ class CartItemWidget extends StatelessWidget {
     final double strikethroughPrice = mrp ?? currentPrice;
     final bool isDiscounted = strikethroughPrice > finalItemPrice;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-                image: imageUrl != null
-                    ? DecorationImage(
-                        image: NetworkImage(imageUrl),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-              ),
-              child: imageUrl == null
-                  ? const Icon(Icons.book, size: 30, color: Colors.grey)
+    final theme = Theme.of(context);
+    return ModernCard(
+      margin: EdgeInsets.only(bottom: context.h(AppSpacing.md)),
+      padding: EdgeInsets.all(context.w(AppSpacing.md)),
+      child: Row(
+        children: [
+          // Square Thumbnail
+          Container(
+            width: context.w(80),
+            height: context.w(80),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceVariant,
+              borderRadius:
+                  BorderRadius.circular(context.w(AppSpacing.radiusMd)),
+              image: imageUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(imageUrl),
+                      fit: BoxFit.cover,
+                    )
                   : null,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+            child: imageUrl == null
+                ? Icon(Icons.school_outlined,
+                    size: context.w(30),
+                    color: theme.colorScheme.onSurfaceVariant)
+                : null,
+          ),
+          SizedBox(width: context.w(AppSpacing.lg)),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                    fontSize: context.sp(16),
+                    height: 1.2,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    category,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 13,
-                    ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: context.h(4)),
+                Text(
+                  category,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: context.sp(13),
                   ),
-                  const SizedBox(height: 8),
-                  // Price Row
-                  Row(
-                    children: [
-                      if (isDiscounted) ...[
-                        Text("₹${strikethroughPrice.toStringAsFixed(0)}",
-                            style: const TextStyle(
-                                decoration: TextDecoration.lineThrough,
-                                color: Colors.grey,
-                                fontSize: 12)),
-                        const SizedBox(width: 4),
-                      ],
-                      Text(
-                        '₹${finalItemPrice.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color:
-                              isDiscounted ? AppColors.success : Colors.black,
-                        ),
-                      ),
+                ),
+                SizedBox(height: context.h(8)),
+
+                // Price Row
+                Row(
+                  children: [
+                    if (isDiscounted) ...[
+                      Text("₹${strikethroughPrice.toStringAsFixed(0)}",
+                          style: TextStyle(
+                              decoration: TextDecoration.lineThrough,
+                              color: theme.colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.5),
+                              fontSize: context.sp(12))),
+                      SizedBox(width: context.w(6)),
                     ],
-                  ),
-                ],
-              ),
+                    Text(
+                      '₹${finalItemPrice.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: context.sp(16),
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
-              onPressed: onRemove,
-            ),
-          ],
-        ),
+          ),
+
+          // Delete Button (Subtle)
+          IconButton(
+            icon: Icon(Icons.delete_outline_rounded,
+                color: theme.colorScheme.error.withValues(alpha: 0.7),
+                size: context.sp(22)),
+            onPressed: onRemove,
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
       ),
     );
   }

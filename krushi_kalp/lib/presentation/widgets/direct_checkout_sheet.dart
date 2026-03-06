@@ -245,9 +245,11 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
         });
 
         Navigator.pop(context); // Close sheet
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text("Purchase Successful! 🎉"),
-            backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text("Purchase Successful! 🎉",
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer)),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer));
         // Navigate to Home tab
         Provider.of<NavigationProvider>(context, listen: false).setIndex(0);
       }
@@ -266,17 +268,20 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: SafeArea(
+        child: SafeArea(
+          bottom: true,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -292,8 +297,9 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                           : Container(
                               width: 60,
                               height: 60,
-                              color: Colors.grey[200],
-                              child: const Icon(Icons.book)),
+                              color: theme.colorScheme.surfaceVariant,
+                              child: Icon(Icons.book,
+                                  color: theme.colorScheme.outline)),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -305,7 +311,8 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                                   fontWeight: FontWeight.bold, fontSize: 16)),
                           Text(_category,
                               style: TextStyle(
-                                  color: Colors.grey[600], fontSize: 13)),
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: 13)),
                         ],
                       ),
                     ),
@@ -350,8 +357,8 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                           )
                         : IconButton(
                             onPressed: _isProcessing ? null : _removeCoupon,
-                            icon: const Icon(Icons.highlight_remove,
-                                color: Colors.red)),
+                            icon: Icon(Icons.highlight_remove,
+                                color: theme.colorScheme.error)),
                   ],
                 ),
                 if (_appliedOffer != null)
@@ -361,8 +368,9 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                         _appliedOffer!.code != null
                             ? "Code Applied: ${_appliedOffer!.code}"
                             : "Offer Applied: ${_appliedOffer!.title}",
-                        style: const TextStyle(
-                            color: Colors.green, fontWeight: FontWeight.bold)),
+                        style: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.bold)),
                   ),
 
                 const SizedBox(height: 24),
@@ -381,10 +389,10 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Discount",
-                          style: TextStyle(color: Colors.green)),
+                      Text("Discount",
+                          style: TextStyle(color: theme.colorScheme.primary)),
                       Text("-₹${(_basePrice - _finalPrice).toStringAsFixed(2)}",
-                          style: const TextStyle(color: Colors.green)),
+                          style: TextStyle(color: theme.colorScheme.primary)),
                     ],
                   ),
                 const SizedBox(height: 16),
@@ -395,10 +403,10 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                         style: TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 18)),
                     Text("₹${_finalPrice.toStringAsFixed(2)}",
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
-                            color: Color(0xFF1E88E5))),
+                            color: theme.colorScheme.primary)),
                   ],
                 ),
 

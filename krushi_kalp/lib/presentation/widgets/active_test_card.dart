@@ -33,19 +33,20 @@ class ActiveTestCard extends StatelessWidget {
       margin: EdgeInsets.only(bottom: context.h(16)),
       padding: EdgeInsets.all(context.w(16)),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(context.w(16)),
         border: Border.all(
-          color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
           width: 1,
         ), // Slim Primary Border
 
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+          if (Theme.of(context).brightness == Brightness.light)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
         ],
       ),
       child: Row(
@@ -58,7 +59,7 @@ class ActiveTestCard extends StatelessWidget {
             child: Container(
               width: context.w(60),
               height: context.w(60),
-              color: _getIconBackgroundColor(status),
+              color: _getIconBackgroundColor(context, status),
               child: imageUrl != null && imageUrl!.isNotEmpty
                   ? Image.network(
                       imageUrl!,
@@ -67,7 +68,7 @@ class ActiveTestCard extends StatelessWidget {
                         return Center(
                           child: Icon(
                             _getIconData(status),
-                            color: _getIconColor(status),
+                            color: _getIconColor(context, status),
                             size: 28,
                           ),
                         );
@@ -76,7 +77,7 @@ class ActiveTestCard extends StatelessWidget {
                   : Center(
                       child: Icon(
                         _getIconData(status),
-                        color: _getIconColor(status),
+                        color: _getIconColor(context, status),
                         size: 28,
                       ),
                     ),
@@ -96,6 +97,7 @@ class ActiveTestCard extends StatelessWidget {
                         title,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontSize: context.sp(16),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -107,7 +109,8 @@ class ActiveTestCard extends StatelessWidget {
                 Text(
                   subtitle,
                   style: TextStyle(
-                      color: Colors.grey[600], fontSize: context.sp(13)),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: context.sp(13)),
                 ),
                 if (status == TestStatus.newTest) ...[
                   const SizedBox(height: 6),
@@ -116,20 +119,25 @@ class ActiveTestCard extends StatelessWidget {
                       Icon(
                         Icons.access_time,
                         size: 14,
-                        color: Colors.grey[500],
+                        color: Theme.of(context).colorScheme.outlineVariant,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         time ?? '',
-                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                            fontSize: 12),
                       ),
                       const SizedBox(width: 12),
-                      const Icon(Icons.list, size: 14, color: Colors.grey),
+                      Icon(Icons.list,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.outlineVariant),
                       const SizedBox(width: 4),
                       Text(
                         '${questionCount ?? 0} Questions',
                         style: TextStyle(
-                            color: Colors.grey[500], fontSize: context.sp(12)),
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                            fontSize: context.sp(12)),
                       ),
                     ],
                   ),
@@ -138,16 +146,18 @@ class ActiveTestCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.check_circle,
                         size: 14,
-                        color: Colors.green,
+                        color: Theme.of(context).colorScheme.secondary,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         'Evaluated Yesterday',
                         style: TextStyle(
-                            color: Colors.grey[600], fontSize: context.sp(12)),
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontSize: context.sp(12)),
                       ),
                     ],
                   ),
@@ -174,12 +184,13 @@ class ActiveTestCard extends StatelessWidget {
       child: Container(
         width: context.w(40),
         height: context.w(40),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Color(0xFF1E88E5),
+          color: Theme.of(context).colorScheme.primary,
         ),
-        child:
-            Icon(Icons.play_arrow, color: Colors.white, size: context.sp(24)),
+        child: Icon(Icons.play_arrow,
+            color: Theme.of(context).colorScheme.onPrimary,
+            size: context.sp(24)),
       ),
     );
   }
@@ -192,10 +203,12 @@ class ActiveTestCard extends StatelessWidget {
         height: context.w(36),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.grey[300]!),
+          border:
+              Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         ),
-        child:
-            Icon(Icons.arrow_forward, size: context.sp(18), color: Colors.grey),
+        child: Icon(Icons.arrow_forward,
+            size: context.sp(18),
+            color: Theme.of(context).colorScheme.onSurfaceVariant),
       ),
     );
   }
@@ -208,36 +221,37 @@ class ActiveTestCard extends StatelessWidget {
         height: context.w(36),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.grey[300]!),
+          border:
+              Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         child: Icon(Icons.picture_as_pdf,
-            size: context.sp(18), color: Colors.grey),
+            size: context.sp(18),
+            color: Theme.of(context).colorScheme.onSurfaceVariant),
       ),
     );
   }
 
-  Color _getIconBackgroundColor(TestStatus status) {
+  Color _getIconBackgroundColor(BuildContext context, TestStatus status) {
+    final theme = Theme.of(context);
     switch (status) {
       case TestStatus.running:
-        return Colors.blue[50]!;
+        return theme.colorScheme.primaryContainer.withValues(alpha: 0.5);
       case TestStatus.newTest:
-        return Colors.deepPurple[50]!;
+        return theme.colorScheme.tertiaryContainer.withValues(alpha: 0.5);
       case TestStatus.evaluated:
-        return Colors.green[50]!;
+        return theme.colorScheme.secondaryContainer.withValues(alpha: 0.5);
     }
   }
 
-  Color _getIconColor(TestStatus status) {
+  Color _getIconColor(BuildContext context, TestStatus status) {
+    final theme = Theme.of(context);
     switch (status) {
       case TestStatus.running:
-        // Context is not available here, using a static color that matches the primary theme
-        // Or refactor to require context. For now, assuming standard reference or using Color(0xFF2563EB)
-        // Ideally we pass context or use the same hex if context unavailable in helper (but this is a widget method)
-        return const Color(0xFF2563EB); // Matches Theme Primary
+        return theme.colorScheme.primary;
       case TestStatus.newTest:
-        return Colors.purple;
+        return theme.colorScheme.tertiary;
       case TestStatus.evaluated:
-        return Colors.green;
+        return theme.colorScheme.secondary;
     }
   }
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../domain/models/resource.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 
 class StoreCurrentAffairsList extends StatelessWidget {
@@ -31,14 +30,15 @@ class StoreCurrentAffairsList extends StatelessWidget {
       delegate: SliverChildBuilderDelegate(
         (context, index) {
           final item = items[index];
+          final theme = Theme.of(context);
           return Padding(
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
             child: Card(
               elevation: 0,
-              color: AppColors.surface,
+              color: theme.colorScheme.surface,
               shape: RoundedRectangleBorder(
-                side: BorderSide(color: AppColors.neutral200),
+                side: BorderSide(color: theme.colorScheme.outlineVariant),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
               child: ListTile(
@@ -49,12 +49,12 @@ class StoreCurrentAffairsList extends StatelessWidget {
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius:
                             BorderRadius.circular(AppSpacing.radiusMd),
                       ),
-                      child:
-                          const Icon(Icons.newspaper, color: AppColors.primary),
+                      child: Icon(Icons.newspaper,
+                          color: theme.colorScheme.primary),
                     ),
                     if (purchasedIds.contains(item.id))
                       Positioned(
@@ -63,8 +63,8 @@ class StoreCurrentAffairsList extends StatelessWidget {
                         child: Container(
                           width: 12,
                           height: 12,
-                          decoration: const BoxDecoration(
-                            color: AppColors.success,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.check,
@@ -89,9 +89,9 @@ class StoreCurrentAffairsList extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       DateFormat('MMM dd, yyyy').format(item.createdAt),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.neutral500,
-                          ),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -105,7 +105,7 @@ class StoreCurrentAffairsList extends StatelessWidget {
                           '₹${item.mrp!.toStringAsFixed(0)}',
                           style: TextStyle(
                             decoration: TextDecoration.lineThrough,
-                            color: AppColors.textSecondary,
+                            color: theme.colorScheme.onSurfaceVariant,
                             fontSize: 10,
                           ),
                         ),
@@ -115,14 +115,15 @@ class StoreCurrentAffairsList extends StatelessWidget {
                             : '₹${item.price.toStringAsFixed(0)}',
                         style: TextStyle(
                           color: item.price <= 0
-                              ? AppColors.success
-                              : AppColors.primary,
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.primary,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
                       ),
                     ] else
-                      const Icon(Icons.check_circle, color: AppColors.success),
+                      Icon(Icons.check_circle,
+                          color: theme.colorScheme.primary),
                   ],
                 ),
                 onTap: () => onTap(item),

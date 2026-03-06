@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/question.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/translation_service.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 
 class TestAnalysisScreen extends StatefulWidget {
@@ -66,18 +65,19 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: Text(
           'Analysis: ${widget.testTitle}',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: theme.colorScheme.surface,
+        foregroundColor: theme.colorScheme.onSurface,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -112,15 +112,16 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
     final isCorrect = selectedOption == q.correctOptionIndex;
     final isSkipped = selectedOption == null;
 
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.lg),
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: theme.colorScheme.shadow.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -134,23 +135,25 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
               CircleAvatar(
                 radius: 12,
                 backgroundColor: isSkipped
-                    ? AppColors.neutral400
-                    : (isCorrect ? AppColors.success : AppColors.error),
+                    ? theme.colorScheme.outline
+                    : (isCorrect
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.error),
                 child: Icon(
                   isSkipped
                       ? Icons.remove
                       : (isCorrect ? Icons.check : Icons.close),
                   size: 16,
-                  color: AppColors.onPrimary,
+                  color: theme.colorScheme.onPrimary,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
                 'Question ${index + 1}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textSecondary,
-                    ),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -168,16 +171,16 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
             final isRealAnswer = q.correctOptionIndex == optIndex;
 
             Color? bgColor;
-            Color borderColor = AppColors.neutral300;
+            Color borderColor = theme.colorScheme.outline;
             IconData? icon;
 
             if (isRealAnswer) {
-              borderColor = AppColors.success;
-              bgColor = AppColors.success.withValues(alpha: 0.1);
+              borderColor = theme.colorScheme.primary;
+              bgColor = theme.colorScheme.primary.withValues(alpha: 0.1);
               icon = Icons.check_circle;
             } else if (isSelected && !isRealAnswer) {
-              borderColor = AppColors.error;
-              bgColor = AppColors.error.withValues(alpha: 0.1);
+              borderColor = theme.colorScheme.error;
+              bgColor = theme.colorScheme.error.withValues(alpha: 0.1);
               icon = Icons.cancel;
             }
 
@@ -185,7 +188,7 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
               margin: const EdgeInsets.only(bottom: AppSpacing.sm),
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: bgColor ?? AppColors.surface,
+                color: bgColor ?? theme.colorScheme.surface,
                 border: Border.all(
                   color: borderColor,
                   width: (isSelected || isRealAnswer) ? 2 : 1,
@@ -199,8 +202,8 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
                       q.options[optIndex],
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: (isRealAnswer || isSelected)
-                                ? AppColors.textPrimary
-                                : AppColors.textSecondary,
+                                ? theme.colorScheme.onSurface
+                                : theme.colorScheme.onSurfaceVariant,
                             fontWeight: (isRealAnswer || isSelected)
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -210,7 +213,9 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
                   if (icon != null)
                     Icon(
                       icon,
-                      color: isRealAnswer ? AppColors.success : AppColors.error,
+                      color: isRealAnswer
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.error,
                       size: 20,
                     ),
                 ],
@@ -222,10 +227,10 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
               padding: const EdgeInsets.only(top: AppSpacing.sm),
               child: Text(
                 'You skipped this question',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.warning,
-                      fontStyle: FontStyle.italic,
-                    ),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.secondary,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             ),
         ],

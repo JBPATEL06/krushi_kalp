@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 
 class PrimaryButton extends StatelessWidget {
@@ -20,7 +19,7 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('Building PrimaryButton: $text'); // Debug print
+    final theme = Theme.of(context);
 
     Widget buttonContent = Row(
       mainAxisSize: MainAxisSize.min,
@@ -32,12 +31,11 @@ class PrimaryButton extends StatelessWidget {
             width: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           )
         else ...[
           if (icon != null) ...[
-            Icon(icon, size: 20, color: Colors.white),
+            Icon(icon, size: 20),
             const SizedBox(width: AppSpacing.sm),
           ],
           Text(text),
@@ -46,10 +44,10 @@ class PrimaryButton extends StatelessWidget {
     );
 
     final buttonStyle = ElevatedButton.styleFrom(
-      backgroundColor: AppColors.primary,
-      foregroundColor: Colors.white,
-      disabledBackgroundColor: AppColors.neutral300,
-      disabledForegroundColor: AppColors.neutral500,
+      backgroundColor: theme.colorScheme.primary,
+      foregroundColor: theme.colorScheme.onPrimary,
+      disabledBackgroundColor: theme.colorScheme.surfaceVariant,
+      disabledForegroundColor: theme.colorScheme.outline,
       padding: const EdgeInsets.symmetric(
         vertical: AppSpacing.lg,
         horizontal: AppSpacing.xl,
@@ -58,9 +56,9 @@ class PrimaryButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
       ),
       elevation: 0,
-      textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+      textStyle: theme.textTheme.labelLarge?.copyWith(
+        fontWeight: FontWeight.bold,
+      ),
     );
 
     if (isFullWidth) {

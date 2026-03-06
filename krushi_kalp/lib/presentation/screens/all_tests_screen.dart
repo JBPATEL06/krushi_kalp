@@ -9,7 +9,6 @@ import '../widgets/active_test_card.dart';
 import '../widgets/common/network_error_state.dart';
 import 'pdf_viewer_screen.dart';
 import 'mock_test_detail_screen.dart'; // Import Detail Screen
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 
 class AllTestsScreen extends StatefulWidget {
@@ -94,19 +93,20 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'All Mock Tests',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
       ),
       body: StreamBuilder<List<MockTest>>(
         stream: _testsStream,
@@ -133,13 +133,15 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.assignment_outlined,
-                      size: 64, color: AppColors.neutral400),
+                      size: 64,
+                      color: theme.colorScheme.onSurfaceVariant
+                          .withValues(alpha: 0.5)),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     'No tests available.',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),

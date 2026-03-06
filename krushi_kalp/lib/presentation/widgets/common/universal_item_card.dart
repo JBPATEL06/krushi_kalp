@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import 'modern_card.dart';
+import '../../../../core/theme/app_radius.dart';
 import 'responsive_wrapper.dart';
 
+/// Universal horizontal card used across the entire app.
+///
+/// Layout:
+///   ┌──────────────────────────────────────────────┐
+///   │ [IMAGE]  │  Title                             │
+///   │  fills   │  Subtitle / metadata               │
+///   │ container│  Rating   │  Price  │  Action btn  │
+///   └──────────────────────────────────────────────┘
+///
+/// The image pane uses [BoxFit.cover] inside a [ClipRRect] so the image
+/// always fills its container – no empty space, no overflow.
 class UniversalItemCard extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -30,7 +40,7 @@ class UniversalItemCard extends StatelessWidget {
 
   final String? heroTag;
   final Widget? customAction;
-  final bool enableAnimation; // New property
+  final bool enableAnimation;
 
   const UniversalItemCard({
     super.key,
@@ -55,428 +65,378 @@ class UniversalItemCard extends StatelessWidget {
     this.reviewCount,
     this.heroTag,
     this.customAction,
-    this.enableAnimation =
-        false, // Default false to avoid double animation in grids
+    this.enableAnimation = false,
   });
+
+  // ─── Image pane width as fraction of card height ──────────────────────────
+  // The card height is fixed.  Image pane = 38% of card width.
+  // Using AspectRatio(0.72) on the image pane gives a roughly portrait thumbnail.
+  static const double _imagePaneAspect = 0.72; // width / height
 
   @override
   Widget build(BuildContext context) {
-    if (isPurchased && !hideTags) {
-      return _buildPurchasedCard(context);
-    }
-    return _buildStandardCard(context);
-  }
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-  Widget _buildPurchasedCard(BuildContext context) {
-    return ModernCard(
-      animate: enableAnimation,
-      onTap: onTap,
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Hero(
-                tag: heroTag ?? 'item_${title}_$price',
-                child: SizedBox(
-                  width: context.w(100),
-                  height: context.h(140),
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.horizontal(
-                        left: Radius.circular(16)), // Match ModernCard radius
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        _buildImage(),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                  height: 1.2,
-                                ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      if (subtitle != null)
-                        Text(
-                          subtitle!,
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 12,
-                                  ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              if (trailing != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: trailing!,
-                ),
-            ],
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-                AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
-            child: SizedBox(
-              height: context.h(48),
-              child: customAction ??
-                  ElevatedButton.icon(
-                    onPressed: isActionEnabled ? onActionTap : null,
-                    icon: const Icon(Icons.visibility_outlined, size: 20),
-                    label: Text(
-                      actionLabel,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: actionColor ?? AppColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusMd),
-                      ),
-                      elevation: 0,
-                    ),
-                  ),
-            ),
-          ),
-        ],
+    final Widget card = Card(
+      elevation: 0,
+      margin: EdgeInsets.only(bottom: AppSpacing.lg),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withOpacity(isDark ? 0.18 : 0.35),
+        ),
       ),
-    );
-  }
-
-  Widget _buildStandardCard(BuildContext context) {
-    return ModernCard(
-      animate: enableAnimation,
-      onTap: onTap,
-      padding: EdgeInsets.zero,
-      child: SizedBox(
-        height: context.h(155),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Hero(
-              tag: heroTag ?? 'item_${title}_$price',
-              child: AspectRatio(
-                aspectRatio: 0.75,
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.horizontal(
-                      left: Radius.circular(16)), // Match ModernCard radius
+      color: theme.colorScheme.surface,
+      // clipBehavior ensures the image respects the card's rounded corners
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── LEFT: IMAGE PANE ────────────────────────────────────────
+              AspectRatio(
+                aspectRatio: _imagePaneAspect,
+                child: Hero(
+                  tag: heroTag ?? 'uic_${title}_$price',
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      _buildImage(),
+                      // Image fills the pane completely – no letterboxing
+                      _buildImage(context, theme),
+
+                      // Discount badge
                       if (discountTag != null &&
                           discountTag!.isNotEmpty &&
                           !isPurchased)
                         Positioned(
-                          top: 8,
-                          left: 8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppColors.success,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              discountTag!,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          top: AppSpacing.xs,
+                          left: AppSpacing.xs,
+                          child: _badge(
+                            discountTag!,
+                            background: theme.colorScheme.tertiary,
+                            foreground: theme.colorScheme.onTertiary,
+                            context: context,
                           ),
                         ),
+
+                      // Purchased badge
                       if (isPurchased && !hideTags)
                         Positioned(
-                          top: 8,
-                          left: 8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.blueGrey,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              'Purchased',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          top: AppSpacing.xs,
+                          left: AppSpacing.xs,
+                          child: _badge(
+                            'Purchased',
+                            background: theme.colorScheme.primary,
+                            foreground: theme.colorScheme.onPrimary,
+                            context: context,
                           ),
                         ),
                     ],
                   ),
                 ),
               ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                            height: 1.2,
-                          ),
-                    ),
-                    if (subtitle != null || time != null)
+
+              // ── RIGHT: CONTENT PANE ─────────────────────────────────────
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.md,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Title + subtitle block (top)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (subtitle != null)
+                          Text(
+                            title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.onSurface,
+                              height: 1.25,
+                              fontSize: context.sp(14),
+                            ),
+                          ),
+                          if (subtitle != null) ...[
+                            SizedBox(height: AppSpacing.xs),
                             Text(
                               subtitle!,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 11,
-                                  ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontSize: context.sp(11),
+                              ),
                             ),
+                          ],
                           if (time != null) ...[
-                            const SizedBox(height: 2),
+                            SizedBox(height: AppSpacing.xs),
                             Row(
                               children: [
-                                const Icon(Icons.access_time,
-                                    size: 12, color: AppColors.textSecondary),
-                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.access_time_rounded,
+                                  size: context.sp(11),
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                SizedBox(width: AppSpacing.xs),
                                 Text(
                                   time!,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 11,
-                                      ),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                    fontSize: context.sp(11),
+                                  ),
                                 ),
                               ],
                             ),
                           ],
                         ],
                       ),
-                    const SizedBox(height: 8),
-                    if (rating != null && rating! > 0)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          children: [
-                            Text(
-                              rating!.toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.neutral700,
-                              ),
-                            ),
-                            const SizedBox(width: 2),
-                            const Icon(Icons.star_rounded,
-                                size: 14, color: Color(0xFFFFC107)),
-                            if (reviewCount != null) ...[
-                              const SizedBox(width: 4),
-                              Text(
-                                '($reviewCount)',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.neutral500,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        if (!isPurchased && price >= 0)
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (originalPrice != null &&
-                                  originalPrice! > price)
-                                Text(
-                                  '₹${originalPrice!.toStringAsFixed(0)}',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelSmall
-                                      ?.copyWith(
-                                        decoration: TextDecoration.lineThrough,
-                                        color: AppColors.textSecondary,
-                                        fontSize: 10,
-                                      ),
-                                ),
-                              Text(
-                                price == 0
-                                    ? 'Free'
-                                    : '₹${price.toStringAsFixed(0)}',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.primary,
-                                      fontSize: context.sp(18),
-                                    ),
-                              ),
-                            ],
-                          )
-                        else if (isPurchased)
-                          const SizedBox()
-                        else
-                          const SizedBox(),
+
+                      // Rating row (middle-bottom)
+                      if (rating != null && rating! > 0)
                         Row(
                           children: [
-                            if (onCartTap != null && price > 0 && !isPurchased)
-                              Padding(
-                                padding:
-                                    const EdgeInsets.only(right: AppSpacing.sm),
-                                child: InkWell(
-                                  onTap: onCartTap,
-                                  borderRadius: BorderRadius.circular(
-                                      AppSpacing.radiusMd),
-                                  child: Container(
-                                    width: 36,
-                                    height: 36,
-                                    decoration: BoxDecoration(
-                                      color: isInCart
-                                          ? AppColors.primary
-                                          : AppColors.primary
-                                              .withValues(alpha: 0.1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      isInCart
-                                          ? Icons.shopping_cart
-                                          : Icons.shopping_cart_outlined,
-                                      size: 18,
-                                      color: isInCart
-                                          ? Colors.white
-                                          : AppColors.primary,
-                                    ),
-                                  ),
+                            Icon(Icons.star_rounded,
+                                size: context.sp(13),
+                                color: theme.colorScheme.tertiary),
+                            SizedBox(width: AppSpacing.xs),
+                            Text(
+                              rating!.toStringAsFixed(1),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.tertiary,
+                                fontSize: context.sp(11),
+                              ),
+                            ),
+                            if (reviewCount != null) ...[
+                              SizedBox(width: AppSpacing.xs),
+                              Text(
+                                '($reviewCount)',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: context.sp(10),
                                 ),
                               ),
-                            SizedBox(
-                              height: context.h(36),
-                              child: customAction ??
-                                  ElevatedButton(
-                                    onPressed: isPurchased
-                                        ? onTap
-                                        : (isActionEnabled
-                                            ? onActionTap
-                                            : null),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: isPurchased
-                                          ? Colors.grey[300]
-                                          : (actionColor ??
-                                              (price == 0
-                                                  ? AppColors.success
-                                                  : AppColors.primary)),
-                                      foregroundColor: isPurchased
-                                          ? AppColors.textPrimary
-                                          : Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: AppSpacing.lg),
-                                      shape: const StadiumBorder(),
-                                      elevation: 0,
-                                      visualDensity: VisualDensity.compact,
+                            ],
+                          ],
+                        ),
+
+                      // Price + action row (bottom)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Price block
+                          if (!isPurchased && price >= 0)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (originalPrice != null &&
+                                    originalPrice! > price)
+                                  Text(
+                                    '₹${originalPrice!.toStringAsFixed(0)}',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      decoration: TextDecoration.lineThrough,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                      fontSize: context.sp(10),
                                     ),
-                                    child: Text(
-                                      isPurchased ? 'View' : actionLabel,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
+                                  ),
+                                Text(
+                                  price == 0
+                                      ? 'Free'
+                                      : '₹${price.toStringAsFixed(0)}',
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w900,
+                                    color: theme.colorScheme.primary,
+                                    fontSize: context.sp(15),
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            const SizedBox.shrink(),
+
+                          // Cart icon + action button row
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Cart icon – only for purchasable, non-owned items
+                              if (onCartTap != null &&
+                                  price > 0 &&
+                                  !isPurchased)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      right: AppSpacing.xs),
+                                  child: InkWell(
+                                    onTap: onCartTap,
+                                    borderRadius: BorderRadius.circular(
+                                        AppSpacing.radiusFull),
+                                    child: Container(
+                                      width: context.w(32),
+                                      height: context.w(32),
+                                      decoration: BoxDecoration(
+                                        color: isInCart
+                                            ? theme.colorScheme.primary
+                                            : theme.colorScheme.primary
+                                                .withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        isInCart
+                                            ? Icons.shopping_cart
+                                            : Icons.shopping_cart_outlined,
+                                        size: context.sp(16),
+                                        color: isInCart
+                                            ? theme.colorScheme.onPrimary
+                                            : theme.colorScheme.primary,
                                       ),
                                     ),
                                   ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
+                                ),
+
+                              // Action button / custom action
+                              SizedBox(
+                                height: context.h(32),
+                                child: customAction ??
+                                    ElevatedButton(
+                                      onPressed: isPurchased
+                                          ? onTap
+                                          : (isActionEnabled
+                                              ? onActionTap
+                                              : null),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: isPurchased
+                                            ? theme.colorScheme.surfaceVariant
+                                            : (actionColor ??
+                                                (price == 0
+                                                    ? theme.colorScheme.tertiary
+                                                    : theme
+                                                        .colorScheme.primary)),
+                                        foregroundColor: isPurchased
+                                            ? theme.colorScheme.onSurfaceVariant
+                                            : theme.colorScheme.onPrimary,
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: AppSpacing.md),
+                                        shape: const StadiumBorder(),
+                                        elevation: 0,
+                                        visualDensity: VisualDensity.compact,
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      child: Text(
+                                        isPurchased ? 'View' : actionLabel,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: context.sp(11),
+                                        ),
+                                      ),
+                                    ),
+                              ),
+                            ],
+                          ),
+
+                          // Optional trailing widget
+                          if (trailing != null) trailing!,
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            if (trailing != null)
-              Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.sm),
-                child: trailing!,
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (!enableAnimation) return card;
+
+    // Light entrance animation when enabled
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeOut,
+      builder: (context, value, child) => Opacity(
+        opacity: value,
+        child: Transform.translate(
+          offset: Offset(0, 12 * (1 - value)),
+          child: child,
+        ),
+      ),
+      child: card,
+    );
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  Widget _buildImage(BuildContext context, ThemeData theme) {
+    if (coverUrl != null && coverUrl!.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: coverUrl!,
+        // BoxFit.cover fills the container completely; no gaps, no overflow
+        fit: BoxFit.cover,
+        placeholder: (_, __) => Container(
+          color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+          child: Center(
+            child: SizedBox(
+              width: context.w(20),
+              height: context.w(20),
+              child: CircularProgressIndicator(
+                strokeWidth: 1.5,
+                color: theme.colorScheme.primary.withOpacity(0.4),
               ),
-          ],
+            ),
+          ),
+        ),
+        errorWidget: (_, __, ___) => _buildPlaceholder(context, theme),
+      );
+    }
+    return _buildPlaceholder(context, theme);
+  }
+
+  Widget _buildPlaceholder(BuildContext context, ThemeData theme) {
+    return Container(
+      color: theme.colorScheme.primary.withOpacity(0.06),
+      child: Center(
+        child: Icon(
+          Icons.school_outlined,
+          size: context.sp(32),
+          color: theme.colorScheme.primary.withOpacity(0.28),
         ),
       ),
     );
   }
 
-  Widget _buildImage() {
-    if (coverUrl != null && coverUrl!.isNotEmpty) {
-      return CachedNetworkImage(
-        imageUrl: coverUrl!,
-        fit: BoxFit.cover,
-        placeholder: (context, url) => Container(
-          color: AppColors.neutral50,
-          child: const Center(
-              child: Icon(Icons.image, color: AppColors.neutral400)),
+  Widget _badge(
+    String label, {
+    required Color background,
+    required Color foreground,
+    required BuildContext context,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: foreground,
+          fontSize: context.sp(9),
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
         ),
-        errorWidget: (context, url, error) => Container(
-          color: AppColors.neutral100,
-          child: const Icon(Icons.broken_image, color: AppColors.neutral400),
-        ),
-      );
-    } else {
-      return Container(
-        color: AppColors.primary.withValues(alpha: 0.05),
-        child: Center(
-          child: Icon(
-            Icons.school_outlined,
-            size: 32,
-            color: AppColors.primary.withValues(alpha: 0.3),
-          ),
-        ),
-      );
-    }
+      ),
+    );
   }
 }

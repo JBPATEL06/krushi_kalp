@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../data/services/review_service.dart';
 import '../../../../domain/models/review.dart';
@@ -36,9 +35,6 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
   Future<void> _loadAllReviews() async {
     setState(() => _isLoading = true);
     try {
-      // In a real app we might paginate connected to a scroll controller,
-      // but for V1 let's just fetch all (or a large limit like 100).
-      // Reusing getReviewsForItem from ReviewService which currently fetches all matching.
       final reviews =
           await ReviewService.getReviewsForItem(widget.itemId, widget.itemType);
 
@@ -55,7 +51,7 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
   }
 
   void _showReviewDialog(Review? existingReview) {
-    if (existingReview == null) return; // Only editing own reviews here for now
+    if (existingReview == null) return;
 
     showDialog(
       context: context,
@@ -66,7 +62,6 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
         isEdit: true,
         lastEditedAt: existingReview.updatedAt,
         onSubmit: (rating, text) async {
-          // Optimistic update or refresh
           try {
             final user = Supabase.instance.client.auth.currentUser;
             if (user == null) return;
@@ -83,7 +78,7 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Review updated successfully!')),
               );
-              _loadAllReviews(); // Refresh list
+              _loadAllReviews();
             }
           } catch (e) {
             if (mounted) {
@@ -100,7 +95,7 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Review deleted successfully')),
               );
-              _loadAllReviews(); // Refresh
+              _loadAllReviews();
             }
           } catch (e) {
             if (mounted) {
@@ -116,16 +111,17 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final user = Supabase.instance.client.auth.currentUser;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('All Reviews'),
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: theme.colorScheme.surface,
+        foregroundColor: theme.colorScheme.onSurface,
         elevation: 0,
       ),
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.colorScheme.surface,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _reviews.isEmpty

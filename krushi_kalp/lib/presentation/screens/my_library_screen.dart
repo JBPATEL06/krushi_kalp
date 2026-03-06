@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart'; // NEW
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../providers/auth_provider.dart';
 import '../providers/test_provider.dart';
@@ -75,22 +74,23 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "My Library",
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textPrimary),
+            icon: Icon(Icons.refresh, color: theme.colorScheme.onSurface),
             onPressed: _loadData,
           ),
         ],
@@ -99,19 +99,19 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                _buildSearchAndFilterBar(),
+                _buildSearchAndFilterBar(theme),
                 const SizedBox(height: AppSpacing.sm),
-                _buildFilterChips(),
+                _buildFilterChips(theme),
                 Expanded(child: _buildContentList()),
               ],
             ),
     );
   }
 
-  Widget _buildSearchAndFilterBar() {
+  Widget _buildSearchAndFilterBar(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
-      color: Colors.white,
+      color: theme.colorScheme.surface,
       child: Row(
         children: [
           Expanded(
@@ -119,13 +119,15 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search my library...',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                prefixIcon: Icon(Icons.search,
+                    color: theme.colorScheme.onSurfaceVariant),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: Colors.grey[100],
+                fillColor:
+                    theme.colorScheme.surfaceVariant.withValues(alpha: 0.5),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                 isDense: true,
               ),
@@ -133,7 +135,7 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
           ),
           const SizedBox(width: AppSpacing.md),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.sort, color: AppColors.textPrimary),
+            icon: Icon(Icons.sort, color: theme.colorScheme.onSurface),
             onSelected: (value) {
               setState(() {
                 _selectedSort = value;
@@ -151,7 +153,7 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
     );
   }
 
-  Widget _buildFilterChips() {
+  Widget _buildFilterChips(ThemeData theme) {
     return Container(
       height: 50,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -170,14 +172,18 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
                 setState(() => _selectedFilter = filter);
               }
             },
-            selectedColor: AppColors.primary.withValues(alpha: 0.1),
+            selectedColor: theme.colorScheme.primary.withValues(alpha: 0.1),
             labelStyle: TextStyle(
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+              color: isSelected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
-            backgroundColor: Colors.white,
+            backgroundColor: theme.colorScheme.surface,
             side: BorderSide(
-              color: isSelected ? AppColors.primary : AppColors.neutral300,
+              color: isSelected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outlineVariant,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
@@ -190,6 +196,7 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
   }
 
   Widget _buildContentList() {
+    final theme = Theme.of(context);
     final testProvider = context.watch<TestProvider>();
     final resourceProvider = context.watch<ResourceProvider>();
 
@@ -270,7 +277,7 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
     });
 
     if (items.isEmpty) {
-      return _buildEmptyState("No items found.");
+      return _buildEmptyState(theme, "No items found.");
     }
 
     return RefreshIndicator(
@@ -340,22 +347,22 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
     );
   }
 
-  Widget _buildEmptyState(String message) {
+  Widget _buildEmptyState(ThemeData theme, String message) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.library_books_outlined,
             size: 64,
-            color: AppColors.neutral400,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
             message,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

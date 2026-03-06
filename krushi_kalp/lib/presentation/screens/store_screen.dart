@@ -6,7 +6,6 @@ import '../../data/services/test_service.dart';
 import 'mock_test_detail_screen.dart';
 import '../../domain/models/offer.dart';
 
-import 'cart_screen.dart'; // NEW
 import '../providers/test_provider.dart';
 import '../providers/offer_provider.dart';
 import '../providers/network_provider.dart';
@@ -14,8 +13,8 @@ import '../providers/cart_provider.dart';
 import '../providers/navigation_provider.dart'; // Re-added
 import '../../utils/price_calculator.dart';
 import 'dart:async';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart'; // NEW
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart';
 import 'store/widgets/store_grid.dart';
 import '../widgets/direct_checkout_sheet.dart';
 // For Start Exam
@@ -43,10 +42,11 @@ class _StoreScreenState extends State<StoreScreen>
   // State for Filtering
   String _searchQuery = '';
   String _sortOption = 'Latest';
+  bool _isSearching = false;
 
   // Tabs: Key -> Label
   final Map<String, String> _categoryMap = {
-    'Mock Tests': 'Tests',
+    'Mock Tests': 'Mocks',
     'E-Books': 'E-Books',
     'Study Materials': 'Materials',
     'Current Affairs': 'GK & CA',
@@ -171,10 +171,11 @@ class _StoreScreenState extends State<StoreScreen>
           );
 
       if (mounted) {
+        final theme = Theme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Added $title to Cart'),
-            backgroundColor: AppColors.success,
+            backgroundColor: theme.colorScheme.tertiary,
           ),
         );
       }
@@ -217,11 +218,12 @@ class _StoreScreenState extends State<StoreScreen>
       }
 
       if (mounted) {
+        final theme = Theme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content:
                 Text('Claimed ${test?.title ?? resource?.title} successfully!'),
-            backgroundColor: AppColors.success,
+            backgroundColor: theme.colorScheme.tertiary,
           ),
         );
       }
@@ -244,6 +246,7 @@ class _StoreScreenState extends State<StoreScreen>
       return;
     }
 
+    final theme = Theme.of(context);
     Offer? bestOffer;
     double price = test?.price ?? resource?.price ?? 0;
     int? id = test?.id ?? resource?.id;
@@ -267,7 +270,7 @@ class _StoreScreenState extends State<StoreScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: theme.colorScheme.surface,
       builder: (_) => DirectCheckoutSheet(
         test: test,
         resource: resource,
@@ -440,8 +443,10 @@ class _StoreScreenState extends State<StoreScreen>
     } else if (category == 'PYQs') {
       resources = provider.pyqs;
     } else if (category == 'Current Affairs') {
+      final caItems = List<Resource>.from(provider.currentAffairs);
+      caItems.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return StoreCurrentAffairsList(
-        items: provider.currentAffairs,
+        items: caItems,
         purchasedIds: provider.purchasedResourceIds,
         onTap: (item) {
           final isPurchased = provider.purchasedResourceIds.contains(item.id);
@@ -473,6 +478,9 @@ class _StoreScreenState extends State<StoreScreen>
     resources = resources
         .where((r) => !provider.purchasedResourceIds.contains(r.id))
         .toList();
+
+    // Sort by createdAt descending (LIFO)
+    resources.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return StoreResourceGrid(
       resources: resources,
@@ -510,64 +518,99 @@ class _StoreScreenState extends State<StoreScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
-        centerTitle: false,
-        title: Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.xs),
-          child: Text(
-            "Store",
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+        centerTitle: true,
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: Icon(Icons.arrow_back, color: theme.colorScheme.primary),
+                onPressed: () => Navigator.maybePop(context),
+              )
+            : null,
+        title: Text(
+          "Store",
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         actions: [
-          _buildCartIcon(),
+          IconButton(
+            icon: Icon(Icons.search, color: theme.colorScheme.primary),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) _searchQuery = '';
+              });
+            },
+          ),
           const SizedBox(width: AppSpacing.md),
         ],
       ),
       body: Column(
         children: [
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: _buildSearchBar(),
-          ),
-          const SizedBox(height: AppSpacing.md),
+          // Search Bar - Hidden by default
+          if (_isSearching) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: _buildSearchBar(),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
 
           // Custom Pill Tab Bar
           Container(
             height: context.h(40),
             width: double.infinity,
             padding: const EdgeInsets.only(left: AppSpacing.lg),
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              labelColor: Colors.white,
-              unselectedLabelColor: AppColors.textSecondary,
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
-              indicator: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              labelPadding:
-                  const EdgeInsets.symmetric(horizontal: 12), // Tighter padding
-              tabAlignment: TabAlignment.start, // Align tabs to start (left)
-              tabs: _labels.map((t) => Tab(text: t)).toList(),
-            ),
+            child: AnimatedBuilder(
+                animation: _tabController,
+                builder: (context, _) {
+                  return TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    labelColor: theme.colorScheme.onPrimary,
+                    unselectedLabelColor: theme.colorScheme.primary,
+                    indicatorSize: TabBarIndicatorSize.label,
+                    dividerColor: Colors.transparent,
+                    indicator: const BoxDecoration(color: Colors.transparent),
+                    labelPadding: const EdgeInsets.only(right: 8),
+                    tabAlignment: TabAlignment.start,
+                    tabs: _labels.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final label = entry.value;
+                      final isSelected = _tabController.index == index;
+
+                      return Tab(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.surfaceVariant,
+                            borderRadius: BorderRadius.circular(AppRadius.full),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: isSelected
+                                  ? theme.colorScheme.onPrimary
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                }),
           ),
           const SizedBox(height: AppSpacing.md),
 
@@ -577,7 +620,14 @@ class _StoreScreenState extends State<StoreScreen>
                 CartProvider>(
               builder: (context, testProvider, offerProvider, resourceProvider,
                   cartProvider, child) {
-                if (testProvider.isLoading || resourceProvider.isLoading) {
+                // Soft loader: Only show spinner if we have NO data.
+                // This prevents state loss and "No items" glitches during pull-to-refresh.
+                final hasNoData = testProvider.tests.isEmpty &&
+                    resourceProvider.ebooks.isEmpty &&
+                    resourceProvider.studyMaterials.isEmpty;
+
+                if ((testProvider.isLoading || resourceProvider.isLoading) &&
+                    hasNoData) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
@@ -663,19 +713,23 @@ class _StoreScreenState extends State<StoreScreen>
   }
 
   Widget _buildSearchBar() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       height: context.h(48), // Slightly taller
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
+          if (!isDark)
+            BoxShadow(
+              color: theme.colorScheme.shadow.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
         ],
-        border: Border.all(color: AppColors.neutral200),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
       ),
       child: TextField(
         onChanged: (val) {
@@ -683,27 +737,16 @@ class _StoreScreenState extends State<StoreScreen>
             _searchQuery = val;
           });
         },
-        decoration: const InputDecoration(
+        style: TextStyle(color: theme.colorScheme.onSurface),
+        decoration: InputDecoration(
           hintText: 'Search for tests, books...',
-          hintStyle: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-          prefixIcon: Icon(Icons.search, color: AppColors.primary),
+          hintStyle: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant, fontSize: 14),
+          prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
         ),
       ),
-    );
-  }
-
-  Widget _buildCartIcon() {
-    return IconButton(
-      icon: const Icon(Icons.shopping_cart_outlined,
-          color: AppColors.textPrimary),
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const CartScreen()),
-        );
-      },
     );
   }
 }

@@ -36,6 +36,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _save() async {
+    final theme = Theme.of(context);
     final username = _usernameController.text.trim();
     final phone = _phoneController.text.trim();
 
@@ -67,9 +68,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             children: [
               Text('You are changing your phone number to: +91 $phone'),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Note: This number will be used for all future payments and pre-filled in Razorpay. Please ensure it is a valid and active number.',
-                style: TextStyle(fontSize: 13, color: Colors.grey),
+                style: TextStyle(
+                    fontSize: 13, color: theme.colorScheme.onSurfaceVariant),
               ),
             ],
           ),
@@ -100,9 +102,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile updated successfully!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Profile updated successfully!'),
+            backgroundColor: theme.colorScheme.primary,
           ),
         );
         Navigator.pop(context, true); // Signal profile screen to refresh
@@ -110,7 +112,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Error: $e'),
+              backgroundColor: theme.colorScheme.error),
         );
       }
     } finally {
@@ -152,7 +156,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey[700])),
+                    color: theme.colorScheme.onSurfaceVariant)),
             const SizedBox(height: 8),
             TextField(
               controller: _usernameController,
@@ -171,12 +175,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey[700])),
+                    color: theme.colorScheme.onSurfaceVariant)),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[400]!),
+                border: Border.all(color: theme.colorScheme.outline),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: DropdownButtonHideUnderline(
@@ -202,7 +206,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey[700])),
+                    color: theme.colorScheme.onSurfaceVariant)),
             const SizedBox(height: 8),
             TextField(
               controller: _phoneController,
@@ -221,7 +225,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 8),
             Text(
               'Your number will be used to prefill Razorpay during checkout.',
-              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+              style: TextStyle(
+                  fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
             ),
           ],
         ),

@@ -56,6 +56,7 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
   }
 
   Future<bool> _showExitConfirmation() async {
+    final theme = Theme.of(context);
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -70,9 +71,9 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
+            child: Text(
               'Exit',
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: theme.colorScheme.error),
             ),
           ),
         ],
@@ -109,8 +110,13 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        backgroundColor: theme.colorScheme.surface,
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     final question = _questions[_currentQuestionIndex];
@@ -126,7 +132,11 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
         }
       },
       child: Scaffold(
+        backgroundColor: theme.colorScheme.surface,
         appBar: AppBar(
+          backgroundColor: theme.colorScheme.surface,
+          foregroundColor: theme.colorScheme.onSurface,
+          elevation: 0,
           title: Text(widget.testTitle),
           leading: IconButton(
             icon: const Icon(Icons.close),
@@ -143,7 +153,10 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
                 padding: const EdgeInsets.only(right: 16.0),
                 child: Text(
                   '${_currentQuestionIndex + 1}/${_questions.length}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
               ),
             ),
@@ -154,17 +167,27 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              LinearProgressIndicator(value: progress),
+              LinearProgressIndicator(
+                value: progress,
+                backgroundColor: theme.colorScheme.surfaceVariant,
+                valueColor:
+                    AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
+              ),
               const SizedBox(height: 24),
               Text(
                 'Question ${_currentQuestionIndex + 1}',
-                style: Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(color: Colors.grey[600]),
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 8),
-              Text(question.text,
-                  style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                question.text,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 32),
               ...List.generate(question.options.length, (index) {
                 final isSelected = _selectedAnswers[question.id] == index;
@@ -175,26 +198,28 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.all(16),
                       backgroundColor: isSelected
-                          ? Theme.of(context)
-                              .primaryColor
-                              .withValues(alpha: 0.1)
-                          : null,
+                          ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                          : theme.colorScheme.surface,
                       side: BorderSide(
                         color: isSelected
-                            ? Theme.of(context).primaryColor
-                            : Colors.grey[300]!,
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.outlineVariant,
                         width: isSelected ? 2 : 1,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
                         question.options[index],
-                        style: TextStyle(
+                        style: theme.textTheme.bodyLarge?.copyWith(
                           color: isSelected
-                              ? Theme.of(context).primaryColor
-                              : Colors.black87,
-                          fontSize: 16,
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurface,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -202,18 +227,28 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
                 );
               }),
               const Spacer(),
-              ElevatedButton(
-                onPressed: _selectedAnswers[question.id] != null
-                    ? _nextQuestion
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                ),
-                child: Text(
-                  _currentQuestionIndex == _questions.length - 1
-                      ? 'Submit Test'
-                      : 'Next Question',
-                  style: const TextStyle(fontSize: 18),
+              SafeArea(
+                bottom: true,
+                child: ElevatedButton(
+                  onPressed: _selectedAnswers[question.id] != null
+                      ? _nextQuestion
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    padding: const EdgeInsets.all(16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    _currentQuestionIndex == _questions.length - 1
+                        ? 'Submit Test'
+                        : 'Next Question',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],

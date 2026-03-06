@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Brand Palette - Classic Blue & White
-  static const Color primary = Color(0xFF2563EB); // Royal Blue
-  static const Color primaryHover = Color(0xFF1D4ED8);
-  static const Color primaryActive = Color(0xFF1E40AF);
+  // Brand Palette - Academic Navy & Slate
+  static const Color primary = Color(0xFF1E1B4B); // Deep Academic Navy
+  static const Color primaryHover = Color(0xFF2E2A68);
+  static const Color primaryActive = Color(0xFF13113A);
   static const Color onPrimary = Colors.white;
 
-  static const Color secondary = Color(0xFF64748B); // Cool Slate Slate
+  static const Color secondary = Color(0xFF475569); // Slate Gray
   static const Color onSecondary = Colors.white;
 
   // Neutral Palette (Clean Gray/Slate)
-  static const Color neutral50 = Color(0xFFF8FAFC);
-  static const Color neutral100 = Color(0xFFF1F5F9);
+  static const Color neutral50 = Color(0xFFF8FAFC); // Cards, light surface
+  static const Color neutral100 =
+      Color(0xFFF1F5F9); // Main background (Scaffold)
   static const Color neutral200 = Color(0xFFE2E8F0);
   static const Color neutral300 = Color(0xFFCBD5E1);
   static const Color neutral400 = Color(0xFF94A3B8);
@@ -29,7 +30,7 @@ class AppColors {
   static const Color info = Color(0xFF3B82F6);
 
   // Surface Colors
-  static const Color background = Colors.white;
+  static const Color background = Color(0xFFF5F7FB); // Slight blue-tint gray
   static const Color surface = Colors.white;
   static const Color surfaceElevated = Colors.white;
   static const Color overlay = Color(0x660F172A);
@@ -47,50 +48,49 @@ class AppColors {
 
 // ── Dark Mode Palette ─────────────────────────────────────────────────────────
 class AppColorsDark {
-  // Brand — same primary blue in dark mode
-  static const Color primary =
-      Color(0xFF3B82F6); // slightly lighter for contrast
-  static const Color primaryHover = Color(0xFF2563EB);
+  // Brand — Accent Color for buttons (Keep the nice indigo)
+  static const Color primary = Color(0xFF818CF8);
+  static const Color primaryHover = Color(0xFF6366F1);
   static const Color onPrimary = Colors.white;
 
-  static const Color secondary = Color(0xFF94A3B8);
+  static const Color secondary = Color(0xFFAAAAAA); // Neutral grey
   static const Color onSecondary = Colors.white;
 
-  // Dark surfaces (navy scale)
-  static const Color background = Color(0xFF0F172A); // deepest
-  static const Color surface = Color(0xFF1E293B); // card / sheet
-  static const Color surfaceHigh = Color(0xFF273549); // elevated card
+  // Dark surfaces (YouTube-style true neutral scale)
+  static const Color background = Color(0xFF0F0F0F); // deepest true black
+  static const Color surface = Color(0xFF212121); // dark grey card
+  static const Color surfaceHigh = Color(0xFF272727); // elevated sheet
 
-  // Neutral scale — inverted for dark
-  static const Color neutral50 = Color(0xFF273549);
-  static const Color neutral100 = Color(0xFF334155);
-  static const Color neutral200 = Color(0xFF475569);
-  static const Color neutral300 = Color(0xFF64748B);
-  static const Color neutral400 = Color(0xFF94A3B8);
-  static const Color neutral500 = Color(0xFFCBD5E1);
-  static const Color neutral600 = Color(0xFFE2E8F0);
-  static const Color neutral700 = Color(0xFFF1F5F9);
-  static const Color neutral800 = Color(0xFFF8FAFC);
+  // Neutral scale — true greys
+  static const Color neutral50 = Color(0xFF1A1A1A);
+  static const Color neutral100 = Color(0xFF2A2A2A);
+  static const Color neutral200 = Color(0xFF333333);
+  static const Color neutral300 = Color(0xFF4D4D4D);
+  static const Color neutral400 = Color(0xFF808080);
+  static const Color neutral500 = Color(0xFFAAAAAA);
+  static const Color neutral600 = Color(0xFFCCCCCC);
+  static const Color neutral700 = Color(0xFFE5E5E5);
+  static const Color neutral800 = Color(0xFFF2F2F2);
   static const Color neutral900 = Colors.white;
 
-  // Semantic — slightly brighter for dark backgrounds
+  // Semantic
   static const Color success = Color(0xFF34D399);
   static const Color warning = Color(0xFFFBBF24);
   static const Color error = Color(0xFFF87171);
   static const Color info = Color(0xFF60A5FA);
 
   // Borders
-  static const Color border = Color(0xFF334155);
+  static const Color border = Color(0xFF303030); // Subtle youtube divider line
   static const Color borderFocus = primary;
   static const Color borderError = error;
 
   // Text
   static const Color textPrimary = Colors.white;
-  static const Color textSecondary = neutral400;
-  static const Color textDisabled = neutral300;
+  static const Color textSecondary = neutral500;
+  static const Color textDisabled = neutral400;
 
   // Overlay
-  static const Color overlay = Color(0xCC0F172A);
+  static const Color overlay = Color(0xB3000000); // 70% black
 }
 
 class AppGradients {

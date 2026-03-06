@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import 'rate_stars.dart';
 
@@ -91,14 +90,16 @@ class _ReviewDialogState extends State<ReviewDialog> {
                         widget.isEdit ? 'Edit Review' : 'Rate & Review',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         widget.title,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -110,8 +111,8 @@ class _ReviewDialogState extends State<ReviewDialog> {
                   children: [
                     if (widget.isEdit && widget.onDelete != null)
                       IconButton(
-                        icon: const Icon(Icons.delete_outline,
-                            color: AppColors.error),
+                        icon: Icon(Icons.delete_outline,
+                            color: Theme.of(context).colorScheme.error),
                         onPressed: () {
                           // Confirm delete?
                           showDialog(
@@ -132,8 +133,11 @@ class _ReviewDialogState extends State<ReviewDialog> {
                                     Navigator.pop(
                                         context); // Close review dialog
                                   },
-                                  child: const Text("Delete",
-                                      style: TextStyle(color: AppColors.error)),
+                                  child: Text("Delete",
+                                      style: TextStyle(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .error)),
                                 ),
                               ],
                             ),
@@ -141,8 +145,9 @@ class _ReviewDialogState extends State<ReviewDialog> {
                         },
                       ),
                     IconButton(
-                      icon:
-                          const Icon(Icons.close, color: AppColors.neutral500),
+                      icon: Icon(Icons.close,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
@@ -154,9 +159,9 @@ class _ReviewDialogState extends State<ReviewDialog> {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Last edited on: ${_formatDate(widget.lastEditedAt!)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.neutral400,
+                  color: Theme.of(context).colorScheme.outlineVariant,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -177,8 +182,8 @@ class _ReviewDialogState extends State<ReviewDialog> {
             Center(
               child: Text(
                 _getRatingLabel(_rating),
-                style: const TextStyle(
-                  color: AppColors.primary,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -194,15 +199,18 @@ class _ReviewDialogState extends State<ReviewDialog> {
                 hintText: 'Share your experience (optional)...',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  borderSide: const BorderSide(color: AppColors.neutral300),
+                  borderSide: BorderSide(
+                      color: Theme.of(context).colorScheme.outlineVariant),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  borderSide: const BorderSide(color: AppColors.neutral300),
+                  borderSide: BorderSide(
+                      color: Theme.of(context).colorScheme.outlineVariant),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  borderSide: const BorderSide(color: AppColors.primary),
+                  borderSide:
+                      BorderSide(color: Theme.of(context).colorScheme.primary),
                 ),
                 contentPadding: const EdgeInsets.all(AppSpacing.md),
               ),
@@ -214,18 +222,19 @@ class _ReviewDialogState extends State<ReviewDialog> {
             ElevatedButton(
               onPressed: _isSubmitting ? null : _handleSubmit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                 ),
               ),
               child: _isSubmitting
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                         strokeWidth: 2,
                       ),
                     )

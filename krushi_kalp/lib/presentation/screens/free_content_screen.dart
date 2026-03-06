@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart'; // NEW
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../providers/test_provider.dart';
 import '../providers/resource_provider.dart';
@@ -88,7 +87,7 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
           SnackBar(
             content:
                 Text('Claimed ${test?.title ?? resource?.title} successfully!'),
-            backgroundColor: AppColors.success,
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
         _fetchData();
@@ -215,31 +214,32 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
   @override
   Widget build(BuildContext context) {
     debugPrint('[FreeContent] 🎨 Building UI (isLoading: $_isLoading)');
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("Free Material"),
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: theme.colorScheme.onSurface,
       ),
       body: Column(
         children: [
           // Search Bar
           Container(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             padding: const EdgeInsets.all(AppSpacing.md),
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search free content...',
-                prefixIcon:
-                    const Icon(Icons.search, color: AppColors.textSecondary),
+                prefixIcon: Icon(Icons.search,
+                    color: theme.colorScheme.onSurfaceVariant),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear,
-                            color: AppColors.textSecondary),
+                        icon: Icon(Icons.clear,
+                            color: theme.colorScheme.onSurfaceVariant),
                         onPressed: () {
                           _searchController.clear();
                           debugPrint('[FreeContent] 🧹 Search cleared');
@@ -247,7 +247,8 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
                       )
                     : null,
                 filled: true,
-                fillColor: AppColors.neutral50,
+                fillColor:
+                    theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                   borderSide: BorderSide.none,
@@ -262,7 +263,7 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
 
           // Filter Chips
           Container(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md,
               vertical: AppSpacing.sm,
@@ -284,13 +285,14 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
                               '[FreeContent] 🏷️ Filter changed to: $filter');
                         });
                       },
-                      backgroundColor: AppColors.neutral100,
-                      selectedColor: AppColors.primary.withValues(alpha: 0.2),
-                      checkmarkColor: AppColors.primary,
+                      backgroundColor: theme.colorScheme.surfaceVariant,
+                      selectedColor: theme.colorScheme.primaryContainer
+                          .withValues(alpha: 0.5),
+                      checkmarkColor: theme.colorScheme.primary,
                       labelStyle: TextStyle(
                         color: isSelected
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurfaceVariant,
                         fontWeight:
                             isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
@@ -313,6 +315,7 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
   }
 
   Widget _buildContent() {
+    final theme = Theme.of(context);
     if (_isLoading) {
       debugPrint('[FreeContent] ⏳ Showing loading indicator');
       return const Center(
@@ -326,16 +329,16 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline,
               size: 64,
-              color: AppColors.error,
+              color: theme.colorScheme.error,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               _errorMessage!,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: theme.colorScheme.onSurfaceVariant,
                 fontSize: 16,
               ),
               textAlign: TextAlign.center,
@@ -346,8 +349,8 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
               icon: const Icon(Icons.refresh),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
               ),
             ),
           ],
@@ -366,7 +369,7 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
             Icon(
               Icons.inbox_outlined,
               size: 64,
-              color: AppColors.textSecondary.withValues(alpha: 0.5),
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
@@ -374,7 +377,8 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
                   ? 'No results found for "$_searchQuery"'
                   : 'No free content available',
               style: TextStyle(
-                color: AppColors.textSecondary.withValues(alpha: 0.7),
+                color:
+                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                 fontSize: 16,
               ),
               textAlign: TextAlign.center,

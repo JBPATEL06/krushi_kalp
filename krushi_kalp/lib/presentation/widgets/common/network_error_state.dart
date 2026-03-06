@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../providers/network_provider.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 
 /// A premium, animated network error state widget.
@@ -121,14 +120,16 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
   // ── Compact variant ─────────────────────────────────────────────────────────
 
   Widget _buildCompact(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(0.06),
+        color: theme.colorScheme.error.withOpacity(0.06),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: AppColors.error.withOpacity(0.18), width: 1),
+        border: Border.all(
+            color: theme.colorScheme.error.withOpacity(0.18), width: 1),
       ),
       child: Row(
         children: [
@@ -136,19 +137,19 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: AppColors.error.withOpacity(0.12),
+              color: theme.colorScheme.error.withOpacity(0.12),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.wifi_off_rounded,
-                size: 18, color: AppColors.error),
+            child: Icon(Icons.wifi_off_rounded,
+                size: 18, color: theme.colorScheme.error),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
               widget.message ?? 'No internet connection',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: AppColors.neutral700,
+                color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -161,24 +162,24 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.sm, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: theme.colorScheme.primaryContainer.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 ),
                 child: _isRetrying
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 14,
                         height: 14,
                         child: CircularProgressIndicator(
                           strokeWidth: 1.5,
-                          color: AppColors.primary,
+                          color: theme.colorScheme.primary,
                         ),
                       )
-                    : const Text(
+                    : Text(
                         'Retry',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
               ),
@@ -218,6 +219,7 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
   }
 
   Widget _buildAnimatedIcon() {
+    final theme = Theme.of(context);
     return SizedBox(
       width: 140,
       height: 140,
@@ -235,9 +237,9 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
                   child: Container(
                     width: 72,
                     height: 72,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppColors.error,
+                      color: theme.colorScheme.error,
                     ),
                   ),
                 ),
@@ -253,10 +255,10 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
               height: 80,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white,
+                color: theme.colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.error.withOpacity(0.20),
+                    color: theme.colorScheme.error.withOpacity(0.20),
                     blurRadius: 24,
                     spreadRadius: 4,
                   ),
@@ -268,15 +270,15 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.error.withOpacity(0.15),
-                      AppColors.error.withOpacity(0.06),
+                      theme.colorScheme.error.withOpacity(0.15),
+                      theme.colorScheme.error.withOpacity(0.06),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                 ),
-                child: const Icon(Icons.wifi_off_rounded,
-                    size: 34, color: AppColors.error),
+                child: Icon(Icons.wifi_off_rounded,
+                    size: 34, color: theme.colorScheme.error),
               ),
             ),
           ),
@@ -286,14 +288,15 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
   }
 
   Widget _buildTextBlock() {
+    final theme = Theme.of(context);
     return Column(
       children: [
-        const Text(
+        Text(
           'No Internet',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w700,
-            color: AppColors.neutral900,
+            color: theme.colorScheme.onSurface,
             letterSpacing: -0.4,
           ),
           textAlign: TextAlign.center,
@@ -301,9 +304,9 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
         const SizedBox(height: 10),
         Text(
           widget.message ?? 'Check your Wi-Fi or mobile data\nand try again.',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14.5,
-            color: AppColors.neutral500,
+            color: theme.colorScheme.onSurfaceVariant,
             height: 1.55,
           ),
           textAlign: TextAlign.center,
@@ -313,6 +316,7 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
   }
 
   Widget _buildRetryButton() {
+    final theme = Theme.of(context);
     return AnimatedBuilder(
       animation:
           _isRetrying ? const AlwaysStoppedAnimation(0) : _pulseController,
@@ -327,7 +331,7 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.28 + glow),
+                color: theme.colorScheme.primary.withOpacity(0.28 + glow),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -336,9 +340,10 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
           child: ElevatedButton(
             onPressed: _isRetrying ? null : _handleRetry,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+              disabledBackgroundColor:
+                  theme.colorScheme.primary.withOpacity(0.5),
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -379,22 +384,23 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
   }
 
   Widget _buildTips() {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.neutral100,
+        color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Try these steps:',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppColors.neutral700,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -408,18 +414,19 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.only(top: 5),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 5),
                     child: CircleAvatar(
-                        radius: 2.5, backgroundColor: AppColors.neutral400),
+                        radius: 2.5,
+                        backgroundColor: theme.colorScheme.outlineVariant),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       tip,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.neutral500,
+                        color: theme.colorScheme.onSurfaceVariant,
                         height: 1.4,
                       ),
                     ),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../data/services/download_service.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../widgets/common/responsive_wrapper.dart';
 
 class DownloadActionButton extends StatefulWidget {
   final String filename;
@@ -64,20 +64,22 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
   @override
   Widget build(BuildContext context) {
     if (_checking) {
-      return const SizedBox(
-        height: 48,
+      return SizedBox(
+        height: context.h(48),
         child: Center(
             child: SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(strokeWidth: 2))),
+                height: context.h(20),
+                width: context.w(20),
+                child: const CircularProgressIndicator(strokeWidth: 2))),
       );
     }
 
     final label = _isDownloaded ? widget.startLabel : "Download";
     final icon =
         _isDownloaded ? Icons.visibility_outlined : Icons.download_rounded;
-    final color = _isDownloaded ? AppColors.primary : AppColors.secondary;
+    final theme = Theme.of(context);
+    final color =
+        theme.colorScheme.primary; // Both primary for professional look
 
     Widget button = ElevatedButton.icon(
       onPressed: () async {
@@ -88,15 +90,22 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
           _checkStatus();
         }
       },
-      icon: Icon(icon, color: Colors.white),
+      icon: Icon(icon, color: Colors.white, size: context.sp(20)),
       label: Text(label,
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold)),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: context.sp(14),
+          )),
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+        padding: EdgeInsets.symmetric(
+          vertical: context.h(8),
+          horizontal: context.w(20),
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        minimumSize: Size(widget.isFullWidth ? double.infinity : 0, 48),
+        minimumSize:
+            Size(widget.isFullWidth ? double.infinity : 0, context.h(40)),
       ),
     );
 

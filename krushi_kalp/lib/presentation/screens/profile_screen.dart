@@ -13,8 +13,6 @@ import 'edit_profile_screen.dart';
 import 'package:krushi_kalp/presentation/screens/chat_screen.dart';
 
 import '../widgets/common/network_error_state.dart';
-import 'purchased_tests_screen.dart';
-import 'mock_test_upload_screen.dart';
 import '../../data/services/chat_service.dart';
 import '../../data/services/app_config_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -81,6 +79,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _updateLanguage(String newLang) async {
+    final theme = Theme.of(context);
     // FIX: Use AuthProvider
     final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
     if (user == null) return;
@@ -109,7 +108,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text('Failed to update language: $e'),
-              backgroundColor: Colors.red),
+              backgroundColor: theme.colorScheme.error),
         );
       }
     }
@@ -134,6 +133,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     // FIX: Use AuthProvider
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
@@ -226,7 +226,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: context.w(50),
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: theme.colorScheme.surfaceVariant,
                     backgroundImage:
                         avatarUrl != null ? NetworkImage(avatarUrl) : null,
                     child: avatarUrl == null
@@ -244,7 +244,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: Theme.of(
                       context,
                     ).textTheme.bodyLarge?.copyWith(
-                        color: Colors.grey[600], fontSize: context.sp(16)),
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: context.sp(16)),
                   ),
                   SizedBox(height: context.h(32)),
 
@@ -253,9 +254,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: EdgeInsets.symmetric(
                         horizontal: context.w(16), vertical: context.h(8)),
                     decoration: BoxDecoration(
-                      color: Colors.blue[50],
+                      color: theme.colorScheme.primaryContainer
+                          .withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(context.w(12)),
-                      border: Border.all(color: Colors.blue[100]!),
+                      border: Border.all(
+                          color: theme.colorScheme.primaryContainer
+                              .withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -263,7 +267,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Row(
                           children: [
                             Icon(Icons.language,
-                                color: Colors.blue[700], size: context.sp(24)),
+                                color: theme.colorScheme.primary,
+                                size: context.sp(24)),
                             SizedBox(width: context.w(12)),
                             Text(
                               'Language',
@@ -372,8 +377,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: Text('Logout',
                           style: TextStyle(fontSize: context.sp(14))),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
+                        foregroundColor: theme.colorScheme.error,
+                        side: BorderSide(color: theme.colorScheme.error),
                         padding: EdgeInsets.all(context.w(16)),
                       ),
                     ),
@@ -387,7 +392,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: Text('Delete Account',
                           style: TextStyle(fontSize: context.sp(14))),
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.grey,
+                        foregroundColor: theme.colorScheme.onSurfaceVariant,
                         padding: EdgeInsets.all(context.w(16)),
                       ),
                     ),
@@ -409,19 +414,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     String? subtitle,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
     return ListTile(
-      leading: Icon(icon,
-          color: Theme.of(context).primaryColor, size: context.sp(24)),
+      leading:
+          Icon(icon, color: theme.colorScheme.primary, size: context.sp(24)),
       title: Text(title, style: TextStyle(fontSize: context.sp(16))),
       subtitle: subtitle != null
           ? Text(subtitle, style: TextStyle(fontSize: context.sp(13)))
           : null,
-      trailing: Icon(Icons.chevron_right, size: context.sp(24)),
+      trailing: Icon(Icons.chevron_right,
+          color: theme.colorScheme.onSurfaceVariant, size: context.sp(24)),
       onTap: onTap,
     );
   }
 
   Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final theme = Theme.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -436,7 +444,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style:
+                TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
             child: const Text('Send Request'),
           ),
         ],
@@ -490,9 +499,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (context.mounted) {
           Navigator.pop(context); // Pop loading
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Deletion request sent to admin support.'),
-              backgroundColor: Colors.green,
+              backgroundColor:
+                  theme.colorScheme.primary, // Using primary for success
             ),
           );
         }
@@ -502,7 +512,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error sending request: $e'),
-              backgroundColor: Colors.red,
+              backgroundColor: theme.colorScheme.error,
             ),
           );
         }
@@ -511,6 +521,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showContactOptions(BuildContext context) {
+    final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -527,7 +538,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 20),
             ListTile(
-              leading: const Icon(Icons.email, color: Colors.blue),
+              leading: Icon(Icons.email, color: theme.colorScheme.primary),
               title: const Text("Email Support"),
               onTap: () {
                 Navigator.pop(context);
@@ -536,7 +547,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.chat, color: Colors.green),
+              leading: Icon(Icons.chat, color: theme.colorScheme.secondary),
               title: const Text("WhatsApp"),
               onTap: () {
                 Navigator.pop(context);
@@ -546,7 +557,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.send, color: Colors.blueAccent),
+              leading: Icon(Icons.send, color: theme.colorScheme.tertiary),
               title: const Text("Telegram"),
               onTap: () {
                 Navigator.pop(context);

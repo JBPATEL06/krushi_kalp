@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../domain/models/review.dart';
 import 'rate_stars.dart';
@@ -8,31 +7,38 @@ class ReviewCard extends StatelessWidget {
   final Review review;
   final bool isOwnReview;
   final VoidCallback? onEdit;
+  final bool isFlat; // New flag for the elegant flat layout
 
   const ReviewCard({
     super.key,
     required this.review,
     this.isOwnReview = false,
     this.onEdit,
+    this.isFlat = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: AppColors.neutral200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      margin: EdgeInsets.only(bottom: isFlat ? AppSpacing.lg : AppSpacing.md),
+      padding: isFlat ? EdgeInsets.zero : const EdgeInsets.all(AppSpacing.md),
+      decoration: isFlat
+          ? null
+          : BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+              boxShadow: [
+                if (theme.brightness == Brightness.light)
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+              ],
+            ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -41,14 +47,15 @@ class ReviewCard extends StatelessWidget {
               // Avatar
               CircleAvatar(
                 radius: 16,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundColor:
+                    theme.colorScheme.primary.withValues(alpha: 0.1),
                 backgroundImage: review.userAvatarUrl != null
                     ? NetworkImage(review.userAvatarUrl!)
                     : null,
                 child: Text(
                   review.userName[0].toUpperCase(),
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: theme.colorScheme.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -62,17 +69,18 @@ class ReviewCard extends StatelessWidget {
                   children: [
                     Text(
                       review.userName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
                         fontSize: 14,
-                        color: AppColors.textPrimary,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     Text(
                       _formatDate(review.updatedAt),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -81,8 +89,8 @@ class ReviewCard extends StatelessWidget {
               // Edit Action (if own review)
               if (isOwnReview)
                 IconButton(
-                  icon: const Icon(Icons.edit,
-                      size: 18, color: AppColors.primary),
+                  icon: Icon(Icons.edit,
+                      size: 18, color: theme.colorScheme.primary),
                   onPressed: onEdit,
                   tooltip: 'Edit Review',
                   padding: EdgeInsets.zero,
@@ -97,7 +105,7 @@ class ReviewCard extends StatelessWidget {
           RateStars(
             rating: review.rating,
             size: 16,
-            color: const Color(0xFFFFC107),
+            color: theme.colorScheme.secondary,
           ),
 
           const SizedBox(height: AppSpacing.xs),
@@ -106,17 +114,17 @@ class ReviewCard extends StatelessWidget {
           if (review.reviewText != null && review.reviewText!.isNotEmpty)
             Text(
               review.reviewText!,
-              style: const TextStyle(
-                color: AppColors.neutral700,
+              style: TextStyle(
+                color: theme.colorScheme.onSurfaceVariant,
                 height: 1.4,
                 fontSize: 14,
               ),
             )
           else
-            const Text(
+            Text(
               "No written feedback.",
               style: TextStyle(
-                color: AppColors.neutral400,
+                color: theme.colorScheme.outlineVariant,
                 fontStyle: FontStyle.italic,
                 fontSize: 12,
               ),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../widgets/common/responsive_wrapper.dart';
 
 class CartOrderSummary extends StatelessWidget {
   final double subtotal;
@@ -14,41 +16,60 @@ class CartOrderSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final total = subtotal - discountAmount;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(context.w(AppSpacing.lg)),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(20),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(context.w(AppSpacing.radiusXl)),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSummaryRow('Subtotal', subtotal),
+          Text(
+            'Order Summary',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+              fontSize: context.sp(18),
+            ),
+          ),
+          SizedBox(height: context.h(AppSpacing.lg)),
+          _buildSummaryRow(context, 'Subtotal', subtotal),
           if (discountAmount > 0) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: context.h(AppSpacing.md)),
             _buildSummaryRow(
-              'Discount (${couponCode ?? 'Coupon'})',
+              context,
+              'Student Discount (${couponCode ?? '10%'})',
               -discountAmount,
               isDiscount: true,
             ),
           ],
-          const SizedBox(height: 20),
-          const Divider(),
-          const SizedBox(height: 16),
+          SizedBox(height: context.h(AppSpacing.md)),
+          _buildSummaryRow(context, 'Academic Tax', 0.0), // Placeholder for UI
+          SizedBox(height: context.h(AppSpacing.lg)),
+          Divider(color: theme.colorScheme.outlineVariant, thickness: 1),
+          SizedBox(height: context.h(AppSpacing.lg)),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Total Amount',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              Text(
+                'Total',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                  fontSize: context.sp(20),
+                ),
               ),
               Text(
                 '₹${total.toStringAsFixed(2)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  color: Colors.black,
+                  fontSize: context.sp(22),
+                  color: theme.colorScheme.primary,
                 ),
               ),
             ],
@@ -59,25 +80,35 @@ class CartOrderSummary extends StatelessWidget {
   }
 
   Widget _buildSummaryRow(
+    BuildContext context,
     String label,
     double amount, {
     bool isDiscount = false,
   }) {
+    final theme = Theme.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: TextStyle(
-            color: isDiscount ? Colors.green : Colors.grey[700],
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: isDiscount
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant,
             fontWeight: isDiscount ? FontWeight.w600 : FontWeight.normal,
+            fontSize: context.sp(14),
           ),
         ),
         Text(
-          '₹${amount.abs().toStringAsFixed(2)}',
+          amount == 0 && !isDiscount
+              ? '₹0.00'
+              : '${isDiscount ? "-" : ""}₹${amount.abs().toStringAsFixed(2)}',
           style: TextStyle(
-            color: isDiscount ? Colors.green : Colors.black,
-            fontWeight: FontWeight.bold,
+            color: isDiscount
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurface,
+            fontWeight: FontWeight.w600,
+            fontSize: context.sp(15),
           ),
         ),
       ],

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/network_provider.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../utils/navigator_key.dart';
 
@@ -166,36 +165,35 @@ class _NoInternetScreenState extends State<NoInternetScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) SystemNavigator.pop();
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         body: FadeTransition(
           opacity: _fade,
           child: SlideTransition(
             position: _slide,
-            child: SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildIcon(),
-                      const SizedBox(height: 32),
-                      _buildText(),
-                      const SizedBox(height: 32),
-                      _buildRetryButton(),
-                      const SizedBox(height: 20),
-                      _buildExitButton(),
-                      const SizedBox(height: 28),
-                      _buildTipsCard(),
-                    ],
-                  ),
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildIcon(theme),
+                    const SizedBox(height: 32),
+                    _buildText(theme),
+                    const SizedBox(height: 32),
+                    _buildRetryButton(theme),
+                    const SizedBox(height: 20),
+                    _buildExitButton(theme),
+                    const SizedBox(height: 28),
+                    _buildTipsCard(theme),
+                  ],
                 ),
               ),
             ),
@@ -205,7 +203,7 @@ class _NoInternetScreenState extends State<NoInternetScreen>
     );
   }
 
-  Widget _buildIcon() {
+  Widget _buildIcon(ThemeData theme) {
     return SizedBox(
       width: 160,
       height: 160,
@@ -240,9 +238,9 @@ class _NoInternetScreenState extends State<NoInternetScreen>
                   child: Container(
                     width: 72,
                     height: 72,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppColors.error,
+                      color: theme.colorScheme.error,
                     ),
                   ),
                 ),
@@ -258,10 +256,10 @@ class _NoInternetScreenState extends State<NoInternetScreen>
               height: 88,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white,
+                color: theme.colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.error.withOpacity(0.22),
+                    color: theme.colorScheme.error.withValues(alpha: 0.22),
                     blurRadius: 28,
                     spreadRadius: 6,
                   ),
@@ -273,15 +271,15 @@ class _NoInternetScreenState extends State<NoInternetScreen>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      AppColors.error.withOpacity(0.18),
-                      AppColors.error.withOpacity(0.06),
+                      theme.colorScheme.error.withValues(alpha: 0.18),
+                      theme.colorScheme.error.withValues(alpha: 0.06),
                     ],
                   ),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.wifi_off_rounded,
                   size: 38,
-                  color: AppColors.error,
+                  color: theme.colorScheme.error,
                 ),
               ),
             ),
@@ -291,25 +289,25 @@ class _NoInternetScreenState extends State<NoInternetScreen>
     );
   }
 
-  Widget _buildText() {
+  Widget _buildText(ThemeData theme) {
     return Column(
       children: [
-        const Text(
+        Text(
           'No Internet',
           style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w800,
-            color: AppColors.neutral900,
+            color: theme.colorScheme.onSurface,
             letterSpacing: -0.6,
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 10),
-        const Text(
+        Text(
           'You are offline. Please restore your\nconnection to continue.',
           style: TextStyle(
             fontSize: 14.5,
-            color: AppColors.neutral500,
+            color: theme.colorScheme.onSurfaceVariant,
             height: 1.6,
           ),
           textAlign: TextAlign.center,
@@ -318,7 +316,7 @@ class _NoInternetScreenState extends State<NoInternetScreen>
     );
   }
 
-  Widget _buildRetryButton() {
+  Widget _buildRetryButton(ThemeData theme) {
     return AnimatedBuilder(
       animation: _pulseCtrl,
       builder: (_, child) {
@@ -331,7 +329,7 @@ class _NoInternetScreenState extends State<NoInternetScreen>
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.26 + glow),
+                color: theme.colorScheme.primary.withValues(alpha: 0.26 + glow),
                 blurRadius: 18,
                 offset: const Offset(0, 7),
               ),
@@ -340,26 +338,29 @@ class _NoInternetScreenState extends State<NoInternetScreen>
           child: ElevatedButton(
             onPressed: _isRetrying ? null : _retry,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+              disabledBackgroundColor:
+                  theme.colorScheme.primary.withValues(alpha: 0.5),
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
             ),
             child: _isRetrying
-                ? const Row(
+                ? Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
+                          strokeWidth: 2,
+                          color: theme.colorScheme.onPrimary,
+                        ),
                       ),
-                      SizedBox(width: 10),
-                      Text('Checking...',
+                      const SizedBox(width: 10),
+                      const Text('Checking...',
                           style: TextStyle(
                               fontWeight: FontWeight.w600, fontSize: 15)),
                     ],
@@ -380,23 +381,23 @@ class _NoInternetScreenState extends State<NoInternetScreen>
     );
   }
 
-  Widget _buildExitButton() {
+  Widget _buildExitButton(ThemeData theme) {
     return SizedBox(
       width: double.infinity,
       height: 48,
       child: OutlinedButton.icon(
         onPressed: () => SystemNavigator.pop(),
-        icon: const Icon(Icons.exit_to_app_rounded,
-            size: 18, color: AppColors.neutral500),
-        label: const Text(
+        icon: Icon(Icons.exit_to_app_rounded,
+            size: 18, color: theme.colorScheme.onSurfaceVariant),
+        label: Text(
           'Exit App',
           style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
-              color: AppColors.neutral600),
+              color: theme.colorScheme.onSurfaceVariant),
         ),
         style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: AppColors.neutral200),
+          side: BorderSide(color: theme.colorScheme.outlineVariant),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           ),
@@ -405,27 +406,27 @@ class _NoInternetScreenState extends State<NoInternetScreen>
     );
   }
 
-  Widget _buildTipsCard() {
+  Widget _buildTipsCard(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.neutral100,
+        color: theme.colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.lightbulb_outline_rounded,
-                  size: 15, color: AppColors.neutral500),
-              SizedBox(width: 6),
+                  size: 15, color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 6),
               Text(
                 'Try these:',
                 style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.neutral700),
+                    color: theme.colorScheme.onSurface),
               ),
             ],
           ),
@@ -440,17 +441,18 @@ class _NoInternetScreenState extends State<NoInternetScreen>
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.only(top: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
                     child: CircleAvatar(
-                        radius: 2.5, backgroundColor: AppColors.neutral400),
+                        radius: 2.5,
+                        backgroundColor: theme.colorScheme.outline),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(tip,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.neutral500,
+                            color: theme.colorScheme.onSurfaceVariant,
                             height: 1.4)),
                   ),
                 ],

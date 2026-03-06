@@ -3,11 +3,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../domain/models/resource.dart';
 import '../../../../domain/models/offer.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../widgets/common/universal_item_card.dart';
+import 'store_item_card.dart';
 import '../../../../utils/price_calculator.dart';
 import '../../../../data/services/review_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../widgets/common/download_action_button.dart';
+import '../../../widgets/common/responsive_wrapper.dart';
 
 class StoreResourceGrid extends StatefulWidget {
   final List<Resource> resources;
@@ -85,13 +86,13 @@ class _StoreResourceGridState extends State<StoreResourceGrid> {
     }
 
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      padding: EdgeInsets.symmetric(horizontal: context.w(AppSpacing.lg)),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
           (context, index) {
             final resource = widget.resources[index];
             return Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              padding: EdgeInsets.only(bottom: context.h(AppSpacing.md)),
               child: _buildCard(context, resource),
             ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
           },
@@ -152,7 +153,7 @@ class _StoreResourceGridState extends State<StoreResourceGrid> {
       }
     }
 
-    return UniversalItemCard(
+    return StoreItemCard(
       title: resource.title,
       subtitle: subtitle,
       price: displayPrice,

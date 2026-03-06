@@ -5,7 +5,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
 import 'main_screen.dart';
 import '../../data/services/notification_service.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../widgets/common/primary_button.dart';
 import '../widgets/common/premium_card.dart';
@@ -82,7 +81,7 @@ class _LoginScreenState extends State<LoginScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please agree to the Terms and Conditions to proceed.'),
-          backgroundColor: AppColors.error,
+          backgroundColor: Colors.red, // Semantic error color for snackbar
         ),
       );
       return;
@@ -99,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(msg),
-            backgroundColor: AppColors.error,
+            backgroundColor: Theme.of(context).colorScheme.error,
             duration: const Duration(seconds: 4),
           ),
         );
@@ -125,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen>
     final isLoading = context.select<AuthProvider, bool>((p) => p.isLoading);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Stack(
         children: [
           // Background Elements
@@ -137,7 +136,10 @@ class _LoginScreenState extends State<LoginScreen>
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.1),
               ),
             ),
           ),
@@ -149,7 +151,10 @@ class _LoginScreenState extends State<LoginScreen>
               height: 200,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.secondary.withValues(alpha: 0.1),
+                color: Theme.of(context)
+                    .colorScheme
+                    .secondary
+                    .withValues(alpha: 0.1),
               ),
             ),
           ),
@@ -194,7 +199,8 @@ class _LoginScreenState extends State<LoginScreen>
                                   _agreedToTerms = value ?? false;
                                 });
                               },
-                              activeColor: AppColors.primary,
+                              activeColor:
+                                  Theme.of(context).colorScheme.primary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(4),
                               ),
@@ -208,7 +214,9 @@ class _LoginScreenState extends State<LoginScreen>
                                     TextSpan(
                                       text: 'Terms and Conditions',
                                       style: TextStyle(
-                                        color: AppColors.primary,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
                                         fontWeight: FontWeight.bold,
                                         decoration: TextDecoration.underline,
                                       ),

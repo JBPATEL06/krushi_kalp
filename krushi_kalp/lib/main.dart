@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/screens/splash_screen.dart';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/test_provider.dart';
@@ -68,16 +69,15 @@ class MyApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'Krushi kalp',
-      // ── ACTIVE THEME: Option C — Indigo + Saffron ──
-      // To switch to Option A (Forest Sage): change both lines below to AppTheme.themeOptionA / darkThemeOptionA
-      theme: AppTheme.themeOptionC,
-      darkTheme: AppTheme.darkThemeOptionC,
-      themeMode: ThemeMode.system, // Auto-detects device OS theme
+      // ── ACTIVE THEME: User Defined ──
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
+      // Auto-detects device OS theme
       builder: (context, child) => NetworkAwareWrapper(
-        child: SafeArea(
-          child: ResponsiveWrapper(child: child!),
-        ),
+        child: ResponsiveWrapper(child: child!),
       ),
+
       home: const SplashScreen(),
     );
   }
