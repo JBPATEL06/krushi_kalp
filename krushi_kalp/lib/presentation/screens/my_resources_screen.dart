@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_animate/flutter_animate.dart'; // NEW
+import '../../data/services/auth_service.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../domain/models/resource.dart';
 import '../providers/resource_provider.dart';
 import '../providers/auth_provider.dart';
@@ -104,53 +104,57 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(context),
-          SliverToBoxAdapter(
-            child: _buildSearchAndFilterBar(theme),
-          ),
-          if (_isLoading)
-            const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (resources.isEmpty)
-            SliverFillRemaining(
-              child: _buildEmptyState(),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final resource = resources[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                      child: DownloadItemCard(
-                        title: resource.title,
-                        subtitle: resource.description,
-                        coverUrl: resource.thumbnailUrl,
-                        heroTag: 'resource_image_${resource.id}',
-                        customAction: DownloadActionButton(
-                          filename: 'resource_${resource.id}.pdf',
-                          url: resource.fileUrl,
-                          startLabel: "Open",
-                          isFullWidth: false,
-                          onAction: () => _openResource(resource),
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            _buildSliverAppBar(context),
+            SliverToBoxAdapter(
+              child: _buildSearchAndFilterBar(theme),
+            ),
+            if (_isLoading)
+              const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (resources.isEmpty)
+              SliverFillRemaining(
+                child: _buildEmptyState(),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final resource = resources[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        child: DownloadItemCard(
+                          title: resource.title,
+                          subtitle: resource.description,
+                          coverUrl: resource.thumbnailUrl,
+                          heroTag: 'resource_image_${resource.id}',
+                          customAction: DownloadActionButton(
+                            filename: 'resource_${resource.id}.pdf',
+                            url: resource.fileUrl,
+                            startLabel: "Open",
+                            isFullWidth: false,
+                            onAction: () => _openResource(resource),
+                          ),
+                          onTap: () => _openResource(resource),
                         ),
-                        onTap: () => _openResource(resource),
-                      ),
-                    )
-                        .animate(delay: (index < 5 ? index * 100 : 0).ms)
-                        .fadeIn(duration: 400.ms)
-                        .slideY(begin: 0.1, end: 0);
-                  },
-                  childCount: resources.length,
+                      )
+                          .animate(delay: (index < 5 ? index * 100 : 0).ms)
+                          .fadeIn(duration: 400.ms)
+                          .slideY(begin: 0.1, end: 0);
+                    },
+                    childCount: resources.length,
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -280,7 +284,7 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
 
   Future<void> _openResource(Resource resource) async {
     final filename = 'resource_${resource.id}.pdf';
-    final userId = Supabase.instance.client.auth.currentUser?.id;
+    final userId = AuthService.instance.currentUser?.id;
     if (userId == null) return;
 
     // Check if already downloaded

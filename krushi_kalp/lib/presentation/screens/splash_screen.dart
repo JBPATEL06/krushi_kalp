@@ -66,7 +66,7 @@ class _SplashScreenState extends State<SplashScreen> {
         return null;
       }),
     ]).timeout(
-      const Duration(milliseconds: 1500), // Reduced from 3s
+      const Duration(seconds: 5), // Increased from 1.5s for cold starts
       onTimeout: () {
         debugPrint("Splash: Parallel init timed out — proceeding anyway.");
         return [];

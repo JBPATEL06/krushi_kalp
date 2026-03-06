@@ -230,9 +230,11 @@ class UniversalItemCard extends StatelessWidget {
                         ),
 
                       // Price + action row (bottom)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.xs,
                         children: [
                           // Price block
                           if (!isPurchased && price >= 0)

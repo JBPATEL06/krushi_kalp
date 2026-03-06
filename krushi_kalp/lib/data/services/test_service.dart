@@ -1,17 +1,28 @@
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/question.dart';
 import '../../utils/retry_helper.dart';
 import 'cart_service.dart';
+import 'auth_service.dart';
 
 class TestService {
-  static final _supabase = Supabase.instance.client;
+  // --- SINGLETON ---
+  TestService._();
+  static final TestService instance = TestService._();
+
+  final _supabase = Supabase.instance.client;
+
+  RealtimeChannel getOffersChannel() {
+    return _supabase.channel('public:offers:realtime');
+  }
 
   // --- MOCK TESTS READING ---
 
-  static Future<List<MockTest>> fetchMockTests() async {
+  Future<List<MockTest>> fetchMockTests() async {
     try {
       final response = await RetryHelper.run(() => _supabase
           .from('mock_tests')
@@ -28,7 +39,7 @@ class TestService {
     }
   }
 
-  static Future<MockTest?> fetchMockTestById(int testId) async {
+  Future<MockTest?> fetchMockTestById(int testId) async {
     try {
       final response = await _supabase
           .from('mock_tests')
@@ -46,7 +57,7 @@ class TestService {
     }
   }
 
-  static Future<List<String>> fetchCategories() async {
+  Future<List<String>> fetchCategories() async {
     try {
       final response = await _supabase.from('mock_tests').select('category');
 
@@ -62,7 +73,7 @@ class TestService {
     }
   }
 
-  static Future<List<String>> fetchLanguages() async {
+  Future<List<String>> fetchLanguages() async {
     try {
       final response = await _supabase.from('mock_tests').select('language');
 
@@ -84,7 +95,7 @@ class TestService {
     }
   }
 
-  static Stream<List<MockTest>> streamMockTests() {
+  Stream<List<MockTest>> streamMockTests() {
     return _supabase
         .from('mock_tests')
         .stream(primaryKey: ['test_id'])
@@ -96,7 +107,7 @@ class TestService {
         });
   }
 
-  static Future<List<Question>> fetchQuestions(String filePath) async {
+  Future<List<Question>> fetchQuestions(String filePath) async {
     try {
       final Uint8List fileBytes =
           await _supabase.storage.from('mock_test').download(filePath);
@@ -109,8 +120,16 @@ class TestService {
   }
 
   // --- MOCK TESTS ADMIN (WRITE) ---
+  Future<void> createMockTest(MockTest test) async {
+    try {
+      await _supabase.from('mock_tests').insert(test.toJson());
+    } catch (e) {
+      debugPrint('Error creating mock test: $e');
+      throw Exception('Failed to create test: $e');
+    }
+  }
 
-  static Future<void> deleteMockTest(int testId) async {
+  Future<void> deleteMockTest(int testId) async {
     try {
       // 1. Fetch test details to get file paths (for Storage deletion)
       final testRow = await _supabase
@@ -150,8 +169,7 @@ class TestService {
     }
   }
 
-  static Future<void> updateMockTest(
-      int testId, Map<String, dynamic> updates) async {
+  Future<void> updateMockTest(int testId, Map<String, dynamic> updates) async {
     try {
       await _supabase.from('mock_tests').update(updates).eq('test_id', testId);
     } catch (e) {
@@ -162,7 +180,7 @@ class TestService {
 
   // --- RESULTS ---
 
-  static Future<int?> submitTestResult({
+  Future<int?> submitTestResult({
     required int testId,
     required double score,
     required int totalMarks,
@@ -190,7 +208,7 @@ class TestService {
     }
   }
 
-  static Future<List<dynamic>> fetchUserResults(String authUserId) async {
+  Future<List<dynamic>> fetchUserResults(String authUserId) async {
     try {
       final response = await _supabase
           .from('results')
@@ -204,8 +222,7 @@ class TestService {
     }
   }
 
-  static Future<Map<String, dynamic>?> fetchLatestResult(
-      String authUserId) async {
+  Future<Map<String, dynamic>?> fetchLatestResult(String authUserId) async {
     try {
       final response = await _supabase
           .from('results')
@@ -221,9 +238,9 @@ class TestService {
     }
   }
 
-  static Future<bool> deleteTestResult(int resultId) async {
+  Future<bool> deleteTestResult(int resultId) async {
     try {
-      final user = _supabase.auth.currentUser;
+      final user = AuthService.instance.currentUser;
       final userId = user?.id;
 
       debugPrint('TestService: Attempting to delete result ID: $resultId');
@@ -274,8 +291,8 @@ class TestService {
 
   // --- PURCHASES & CART ---
 
-  static Stream<List<MockTest>> streamPurchasedTests() {
-    final authUserId = _supabase.auth.currentUser?.id;
+  Stream<List<MockTest>> streamPurchasedTests() {
+    final authUserId = AuthService.instance.currentUser?.id;
     if (authUserId == null) return Stream.value([]);
 
     return _supabase
@@ -322,7 +339,7 @@ class TestService {
         });
   }
 
-  static Future<List<MockTest>> fetchPurchasedTests(String authUserId) async {
+  Future<List<MockTest>> fetchUserTests(String authUserId) async {
     try {
       // 1. Fetch successful orders
       final ordersResponse = await _supabase
@@ -382,40 +399,7 @@ class TestService {
     }
   }
 
-  // Backwards compatibility for legacy checkout flow (if used)
-  static Future<void> purchaseMockTest({
-    required int testId,
-    required double amount,
-    required String authUserId,
-  }) async {
-    try {
-      final newOrder = await _supabase
-          .from('orders')
-          .insert({
-            'user_id': authUserId,
-            'status': 'SUCCESS',
-            'total_amount': amount,
-            'payment_gateway_id':
-                'manual_legacy_${DateTime.now().millisecondsSinceEpoch}',
-            'created_at': DateTime.now().toUtc().toIso8601String(),
-          })
-          .select('order_id')
-          .single();
-
-      final orderId = newOrder['order_id'];
-
-      await _supabase.from('order_items').insert({
-        'order_id': orderId,
-        'test_id': testId,
-        'price_at_purchase': amount,
-      });
-    } catch (e) {
-      debugPrint('Error purchasing test (legacy): $e');
-      throw Exception('Failed to purchase test: $e');
-    }
-  }
-
-  static Future<void> claimFreeTest({
+  Future<void> claimFreeTest({
     required int testId,
     required String authUserId,
   }) async {
@@ -461,28 +445,15 @@ class TestService {
     }
   }
 
-  static Future<void> addToCart({
-    required int testId,
-    required double price,
-    required String authUserId,
-  }) async {
-    // Delegate to CartService
-    await CartService.addToCart(
-      authUserId: authUserId,
-      testId: testId,
-      price: price,
-    );
-  }
-
   // --- DIRECT BUY FLOW ---
-  static Future<String> createDirectOrder({
+  Future<String> createDirectOrder({
     required int testId,
     required double price,
     required String authUserId,
   }) async {
     try {
       // 0. OWNERSHIP CHECK
-      final isOwned = await CartService.checkOwnership(
+      final isOwned = await CartService.instance.checkOwnership(
         userId: authUserId,
         testId: testId,
       );
@@ -519,7 +490,7 @@ class TestService {
     }
   }
 
-  static Future<void> checkout({
+  Future<void> checkout({
     required String orderId,
     required String paymentId,
     required double amount,
@@ -549,22 +520,24 @@ class TestService {
       debugPrint(
           'TestService: Order Update Status: ${orderResponse.isNotEmpty ? "Success" : "Failed (Empty Response)"}');
 
-      // 2. CLEANUP CART (PENDING ORDER)
-      // If this was a Direct Buy or just a purchase, ensure the item is removed from Cart (PENDING order) if it exists there.
+      // 2. CLEANUP CART (REMOVE PURCHASED ITEMS FROM PENDING ORDERS)
       try {
-        // Find which mock tests were in this successful order
-        final fileItems = await _supabase
+        final orderItems = await _supabase
             .from('order_items')
-            .select('test_id')
+            .select('test_id, resource_id')
             .eq('order_id', orderId);
 
-        final purchasedTestIds = (fileItems as List)
+        final purchasedTestIds = (orderItems as List)
             .where((i) => i['test_id'] != null)
             .map((i) => i['test_id'] as int)
             .toList();
 
-        if (purchasedTestIds.isNotEmpty) {
-          // Find user's PENDING order (Cart)
+        final purchasedResourceIds = (orderItems)
+            .where((i) => i['resource_id'] != null)
+            .map((i) => i['resource_id'] as int)
+            .toList();
+
+        if (purchasedTestIds.isNotEmpty || purchasedResourceIds.isNotEmpty) {
           final pendingOrder = await _supabase
               .from('orders')
               .select('order_id')
@@ -574,14 +547,25 @@ class TestService {
 
           if (pendingOrder != null) {
             final cartOrderId = pendingOrder['order_id'];
-            // Remove these specific tests from the cart order
-            await _supabase
-                .from('order_items')
-                .delete()
-                .eq('order_id', cartOrderId)
-                .inFilter('test_id', purchasedTestIds);
+
+            if (purchasedTestIds.isNotEmpty) {
+              await _supabase
+                  .from('order_items')
+                  .delete()
+                  .eq('order_id', cartOrderId)
+                  .inFilter('test_id', purchasedTestIds);
+            }
+
+            if (purchasedResourceIds.isNotEmpty) {
+              await _supabase
+                  .from('order_items')
+                  .delete()
+                  .eq('order_id', cartOrderId)
+                  .inFilter('resource_id', purchasedResourceIds);
+            }
+
             debugPrint(
-                'TestService: Cleaned up ${purchasedTestIds.length} items from Cart (Order: $cartOrderId)');
+                'TestService: Cleaned up purchased items from Cart (Order: $cartOrderId)');
           }
         }
       } catch (cleanupError) {
@@ -611,36 +595,11 @@ class TestService {
     }
   }
 
-  // --- ORDER LEVEL COUPON LOGIC ---
-  static Future<void> applyCouponToOrder(String orderId, int offerId) async {
-    try {
-      await _supabase.from('orders').update({
-        'offer_id': offerId,
-        'updated_at': DateTime.now().toUtc().toIso8601String()
-      }).eq('order_id', orderId);
-    } catch (e) {
-      debugPrint('Error applying coupon to order: $e');
-      throw Exception('Failed to apply coupon');
-    }
-  }
-
-  static Future<void> removeCouponFromOrder(String orderId) async {
-    try {
-      await _supabase.from('orders').update({
-        'offer_id': null,
-        'updated_at': DateTime.now().toIso8601String()
-      }).eq('order_id', orderId);
-    } catch (e) {
-      debugPrint('Error removing coupon from order: $e');
-    }
-  }
-
   // --- PER ITEM COUPON LOGIC (DEPRECATED but kept for now if needed, though we are moving away) ---
   // We can remove the old per-item methods or leave them unused for safety until full transition.
   // For cleanliness, I will comment them out or just leave them as is but we won't call them from UI.
 
-  static Future<List<MockTest>> _populateSignedUrls(
-      List<MockTest> tests) async {
+  Future<List<MockTest>> _populateSignedUrls(List<MockTest> tests) async {
     return await Future.wait(
       tests.map((test) async {
         String? contentUrl;
@@ -649,8 +608,6 @@ class TestService {
         // 1. Generate Content URL (JSON)
         if (test.filePath.isNotEmpty) {
           try {
-            // Use filePath directly (assuming it matches download() logic)
-            // Debug log to confirm what path we are trying
             debugPrint(
                 "TestService: Generating signed URL for content path: '${test.filePath}'");
 
@@ -706,6 +663,121 @@ class TestService {
         );
       }),
     );
+  }
+
+  Future<void> uploadResultPdf(String path, File file) async {
+    try {
+      await _supabase.storage.from('mock_test').upload(
+            path,
+            file,
+            fileOptions: const FileOptions(upsert: true),
+          );
+    } catch (e) {
+      debugPrint('Error uploading result PDF: $e');
+      throw Exception('Failed to upload result PDF: $e');
+    }
+  }
+
+  Future<Uint8List> downloadResultPdf(String bucketPath) async {
+    try {
+      return await _supabase.storage.from('mock_test').download(bucketPath);
+    } catch (e) {
+      debugPrint('Error downloading result PDF: $e');
+      throw Exception('Failed to download result PDF: $e');
+    }
+  }
+
+  Future<String?> getSignedUrl(String path, String bucket) async {
+    try {
+      return await _supabase.storage
+          .from(bucket)
+          .createSignedUrl(path, 60 * 60 * 24);
+    } catch (e) {
+      debugPrint('Error getting signed URL: $e');
+      return null;
+    }
+  }
+
+  Future<List<dynamic>> fetchAllTestsRaw() async {
+    return await _supabase
+        .from('mock_tests')
+        .select()
+        .order('created_at', ascending: false);
+  }
+
+  Future<Set<int>> fetchPurchasedTestIds(String userId) async {
+    try {
+      final ordersResponse = await _supabase
+          .from('orders')
+          .select('order_id')
+          .eq('user_id', userId)
+          .inFilter('status', ['SUCCESS', 'COMPLETED']);
+
+      if ((ordersResponse as List).isEmpty) {
+        return {};
+      }
+
+      final orderIds = (ordersResponse).map((o) => o['order_id']).toList();
+
+      final itemsResponse = await _supabase
+          .from('order_items')
+          .select('test_id')
+          .inFilter('order_id', orderIds);
+
+      final ids = (itemsResponse as List)
+          .where((i) => i['test_id'] != null)
+          .map((i) => i['test_id'] as int)
+          .toSet();
+      return ids;
+    } catch (e) {
+      return {};
+    }
+  }
+
+  Future<void> uploadMockTestWithFiles({
+    required Map<String, dynamic> insertData,
+    required Uint8List imageBytes,
+    required String jsonString,
+  }) async {
+    // 1. Insert Metadata
+    final response = await _supabase
+        .from('mock_tests')
+        .insert(insertData)
+        .select('test_id')
+        .single();
+
+    final int testId = response['test_id'];
+
+    // 2. Upload Image
+    const imagePath = 'mock_test_cover/';
+    final fullImagePath = '$imagePath$testId.jpg';
+    await _supabase.storage.from('mock_test').uploadBinary(
+          fullImagePath,
+          imageBytes,
+          fileOptions: const FileOptions(
+            upsert: true,
+            contentType: 'image/jpeg',
+          ),
+        );
+
+    // 3. Upload JSON
+    final jsonBytes = utf8.encode(jsonString);
+    final jsonPath = 'mock_test_json_file/$testId.json';
+
+    await _supabase.storage.from('mock_test').uploadBinary(
+          jsonPath,
+          jsonBytes,
+          fileOptions: const FileOptions(
+            upsert: true,
+            contentType: 'application/json',
+          ),
+        );
+
+    // 4. Update Path
+    await _supabase.from('mock_tests').update({
+      'file_path': jsonPath,
+      'cover_image_path': fullImagePath,
+    }).eq('test_id', testId);
   }
 }
 

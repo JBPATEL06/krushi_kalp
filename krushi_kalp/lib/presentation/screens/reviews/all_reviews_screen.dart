@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../data/services/auth_service.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../data/services/review_service.dart';
 import '../../../../domain/models/review.dart';
@@ -63,11 +63,11 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
         lastEditedAt: existingReview.updatedAt,
         onSubmit: (rating, text) async {
           try {
-            final user = Supabase.instance.client.auth.currentUser;
-            if (user == null) return;
+            final userId = AuthService.instance.currentUser?.id;
+            if (userId == null) return;
 
             await ReviewService.submitReview(
-              userId: user.id,
+              userId: userId,
               itemId: widget.itemId,
               itemType: widget.itemType,
               rating: rating,
@@ -112,7 +112,7 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = AuthService.instance.currentUser;
 
     return Scaffold(
       appBar: AppBar(

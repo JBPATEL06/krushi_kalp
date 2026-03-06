@@ -3,7 +3,7 @@ import '../../domain/models/resource.dart';
 import '../../core/theme/app_spacing.dart';
 
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/services/auth_service.dart';
 import '../providers/resource_provider.dart';
 import '../providers/offer_provider.dart';
 import '../providers/cart_provider.dart';
@@ -64,7 +64,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
     if (!mounted) return;
     setState(() => _isLoadingReviews = true);
     try {
-      final user = Supabase.instance.client.auth.currentUser;
+      final user = AuthService.instance.currentUser;
       final futures = <Future>[
         ReviewService.getReviewsForItem(widget.resource.id, 'resource'),
         ReviewService.getRatingStats(widget.resource.id, 'resource'),
@@ -92,7 +92,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
   }
 
   void _showReviewDialog() {
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = AuthService.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please login to review')),
@@ -163,7 +163,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
     try {
       final url = widget.resource.fileUrl!;
       final filename = 'resource_${widget.resource.id}.pdf';
-      final userId = Supabase.instance.client.auth.currentUser?.id;
+      final userId = AuthService.instance.currentUser?.id;
       final path =
           await DownloadService().downloadFile(url, filename, userId: userId);
       final file = File(path);
@@ -191,7 +191,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
 
   Future<void> _addToCart(double finalPrice) async {
     final theme = Theme.of(context);
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = AuthService.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please login to purchase items.")),
@@ -237,7 +237,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
         .contains(resource.id);
 
     final activeOffers = context.watch<OfferProvider>().activeOffers;
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = AuthService.instance.currentUser;
     final priceData = PriceCalculator.calculateDisplayPrice(
       basePrice: resource.price,
       activeOffers: activeOffers,
@@ -556,7 +556,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
       return const SizedBox.shrink();
     }
 
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = AuthService.instance.currentUser;
     final positiveReviews = _reviews.where((r) => r.rating >= 4).toList();
     final displayedReviews = positiveReviews.take(3).toList();
     final hasMoreReviews = _reviews.length > displayedReviews.length;

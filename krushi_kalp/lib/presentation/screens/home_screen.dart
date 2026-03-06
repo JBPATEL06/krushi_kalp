@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/test_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/services/banner_service.dart';
 import '../../domain/models/home_banner.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -13,6 +12,7 @@ import 'login_screen.dart';
 import 'my_resources_screen.dart';
 import '../providers/resource_provider.dart';
 import '../providers/auth_provider.dart';
+import '../../data/services/auth_service.dart';
 import 'free_content_screen.dart';
 import 'cart_screen.dart';
 import 'score_screen.dart';
@@ -43,36 +43,11 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  /*
-  Future<void> _loadBanners() async {
-    if (!mounted) return;
-    setState(() => _isLoadingBanners = true);
-    try {
-      final banners = await BannerService.fetchActiveBanners();
-      if (mounted) {
-        setState(() {
-          _banners = banners;
-          _isLoadingBanners = false;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error loading banners in UI: $e");
-      if (mounted) {
-        setState(() => _isLoadingBanners = false);
-      }
-    }
-  }
-  */
-
   Future<void> _loadUserData() async {
     try {
-      final user = Supabase.instance.client.auth.currentUser;
+      final user = AuthService.instance.currentUser;
       if (user != null) {
-        final profile = await Supabase.instance.client
-            .from('users')
-            .select('username')
-            .eq('id', user.id)
-            .maybeSingle();
+        final profile = await AuthService.instance.getUserProfile(user.id);
 
         if (profile != null && mounted) {
           setState(() {
@@ -132,13 +107,18 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context, provider, child) {
           return RefreshIndicator(
             onRefresh: () async {
-              await Future.wait([
-                _loadUserData(),
-                AppConfigService.fetchConfigs(),
-                provider.fetchTests(forceRefresh: true),
-                context.read<ResourceProvider>().fetchPurchasedResources(
-                    context.read<AuthProvider>().currentUser?.id ?? ''),
-              ]);
+              try {
+                await Future.wait([
+                  _loadUserData(),
+                  AppConfigService.fetchConfigs(),
+                  provider.fetchTests(forceRefresh: true),
+                  context.read<ResourceProvider>().fetchPurchasedResources(
+                      context.read<AuthProvider>().currentUser?.id ?? ''),
+                ]).timeout(const Duration(seconds: 20));
+              } catch (e) {
+                debugPrint("HomeScreen: Refresh error or timeout: $e");
+                // The indicator will stop automatically when this async block finishes
+              }
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -292,7 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
               );
 
               if (confirm == true && mounted) {
-                await Supabase.instance.client.auth.signOut();
+                await context.read<AuthProvider>().signOut();
                 if (mounted) {
                   Navigator.pushAndRemoveUntil(
                     context,
@@ -311,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBannerCarousel() {
     return StreamBuilder<List<HomeBanner>>(
-      stream: BannerService.streamAllBanners(),
+      stream: BannerService.instance.streamAllBanners(),
       builder: (context, snapshot) {
         // Loading → show shimmer placeholder (NOT static banner)
         if (snapshot.connectionState == ConnectionState.waiting) {

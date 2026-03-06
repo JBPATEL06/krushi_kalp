@@ -10,6 +10,7 @@ class ChatService {
   // Singleton
   static final ChatService _instance = ChatService._internal();
   factory ChatService() => _instance;
+  static ChatService get instance => _instance;
 
   final SupabaseClient _supabase = Supabase.instance.client;
 
@@ -104,7 +105,7 @@ class ChatService {
     // If User is listening, refresh their messages
     if (!_userMessagesController.isClosed &&
         _userMessagesController.hasListener) {
-      final user = AuthService().currentUser;
+      final user = AuthService.instance.currentUser;
       if (user != null) {
         _fetchAndEmitMessages(user.id, _userMessagesController);
       }
@@ -191,7 +192,7 @@ class ChatService {
   // ==========================================
 
   Stream<List<Message>> getMessagesStream() {
-    final user = AuthService().currentUser;
+    final user = AuthService.instance.currentUser;
     if (user == null) return Stream.value([]);
 
     debugPrint("ChatService: getMessagesStream (User) called");
@@ -206,7 +207,7 @@ class ChatService {
   }
 
   Future<void> sendMessage(String text) async {
-    final user = AuthService().currentUser;
+    final user = AuthService.instance.currentUser;
     if (user == null) return;
 
     await _supabase.from('messages').insert({
@@ -264,7 +265,7 @@ class ChatService {
   }
 
   Future<void> clearChat() async {
-    final user = AuthService().currentUser;
+    final user = AuthService.instance.currentUser;
     if (user == null) return;
 
     // Delete all messages where user_id matches OR message is SENT to this user?

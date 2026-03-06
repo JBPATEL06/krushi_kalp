@@ -1,6 +1,6 @@
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/services/auth_service.dart';
 import '../../domain/models/question.dart';
 import '../../domain/services/pdf_service.dart';
 import 'pdf_viewer_screen.dart';
@@ -130,7 +130,7 @@ class _TestResultScreenState extends State<TestResultScreen>
     });
 
     try {
-      final user = Supabase.instance.client.auth.currentUser;
+      final user = AuthService.instance.currentUser;
       final userId = user?.id ?? 'guest_user';
       final userName = user?.userMetadata?['full_name'] ?? 'User';
 
@@ -170,11 +170,7 @@ class _TestResultScreenState extends State<TestResultScreen>
       // Path: exam_result/<testId>.pdf (as requested)
       final path = 'exam_result/${widget.testId}.pdf';
       try {
-        await Supabase.instance.client.storage.from('mock_test').upload(
-              path,
-              file,
-              fileOptions: const FileOptions(upsert: true),
-            );
+        await TestService.instance.uploadResultPdf(path, file);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -644,7 +640,7 @@ class _TestResultScreenState extends State<TestResultScreen>
     // Only check once
     if (!_isLoadingRating) return;
 
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = AuthService.instance.currentUser;
     if (user == null) {
       if (mounted) setState(() => _isLoadingRating = false);
       return;
@@ -726,7 +722,7 @@ class _TestResultScreenState extends State<TestResultScreen>
   }
 
   void _showRatingDialog() {
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = AuthService.instance.currentUser;
     if (user == null) return;
     int? tId = int.tryParse(widget.testId);
     if (tId == null) return;
@@ -833,7 +829,7 @@ class _TestResultScreenState extends State<TestResultScreen>
     if (confirmed == true && mounted) {
       setState(() => _isDiscarding = true);
       try {
-        await TestService.deleteTestResult(widget.resultId!);
+        await TestService.instance.deleteTestResult(widget.resultId!);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Result discarded successfully.')),

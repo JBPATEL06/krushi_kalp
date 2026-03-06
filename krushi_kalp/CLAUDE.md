@@ -145,29 +145,33 @@ Stored in `app_config` table, accessed via `AppConfigService`:
 
 ## Known Issues / Technical Debt
 
-### Security (Critical)
-- ~~**Hardcoded AES key** in `encryption_service.dart`~~ → **FIXED:** Now reads from `.env` via `ENCRYPTION_KEY`
-- ~~**Two different Google Client IDs** hardcoded in `auth_service.dart` and `auth_provider.dart`~~ → **FIXED:** Both now read `GOOGLE_WEB_CLIENT_ID` from `.env`
-- **No Razorpay server-side verification** — payments can theoretically be spoofed
-- ~~**No code obfuscation** in release builds~~ → **FIXED:** Use `scripts/build_release.bat` which runs `--obfuscate --split-debug-info=debug-info/`
+### Audit v2.0 (March 2026) - **NEW**
+- **Architecture**: Tight coupling to Supabase. **Fix**: Implement Repository Pattern.
+- **Security**: Client-side pricing logic. **Fix**: Backend price validation.
+- **Payment Reliability**: No webhooks for Razorpay. **Fix**: Implement Server-side Webhooks.
+- **Performance**: N+1 Signed URL fetching for thumbnails. **Fix**: Batch URL signing + 50min TTL Cache.
+- **Stability**: Missing `dispose()` logic in 8+ providers; double-tap buy race conditions; **Fixed**: Synchronization Gates blocking parallel fetches in `ResourceProvider`.
+- **Garbage Code**: Identified legacy `purchaseMockTest`, `applyCouponToOrder`, and dead `AdminProvider`.
 
-### Infrastructure
-- ~~**Zero automated tests**~~ → **FIXED:** 24 unit tests in `test/price_calculator_test.dart`
-- ~~**No crash reporting**~~ → **FIXED:** Firebase Crashlytics + `FlutterError.onError` + `runZonedGuarded` in `main.dart`
-- ~~**No offline caching** strategy~~ → **PARTIALLY FIXED:** `RetryHelper` added for auto-retry with exponential backoff on network failures. Full offline caching (Hive/Isar) deferred to post-launch.
-- **No dark mode** support
+---
 
-### Code Quality
-- ~~**Placeholder legal URLs** default to google.com~~ → **FIXED:** Now defaults to `krushikalp.netlify.app/privacy-policy` and `/terms-and-conditions`
-- ~~**Default WhatsApp number `+919876543210`**~~ → **FIXED:** Defaults to empty string
-- ~~**`FutureBuilder` used inside scrollable lists** (`StoreGrid`, `StoreResourceGrid`) for rating fetch~~ → **FIXED:** `ReviewService.getBulkRatingStats()` fetches all ratings in one DB query at `initState`; single `setState` on completion
+## 🚀 Enterprise Refactoring Roadmap
+
+| Phase | Goal | Key Action |
+|---|---|---|
+| **Phase 1** | Stability | Fix Race conditions, Memory leaks, and Dispose logic. |
+| **Phase 2** | Scalability | Standardize Service Patterns (Singletons) & Repositories. |
+| **Phase 3** | Performance | Implement Signed URL Caching & Batching. |
+| **Phase 4** | Security | Setup Razorpay Webhooks (Edge Functions). |
+
+---
 
 ---
 
 ## Files That Exist But Are Unused (Kept for Future Use)
 
 These files are not imported anywhere currently. Delete or integrate as needed:
-- **Screens:** `all_tests_screen`, `checkout_screen`, `my_library_screen`, `network_pdf_viewer_screen`, `notifications_screen`, `test_attempt_screen`
+- **Screens:** `checkout_screen`, `my_library_screen`, `network_pdf_viewer_screen`, `test_attempt_screen`
 - **Models:** `feedback_model`, `notification`, `order`, `transaction`, `user`
 - **Services:** `admin_service.dart` (24KB), `view_options_bottom_sheet`, `responsive.dart`
 - **Widgets:** `shimmer_loading`, `custom_text_field`
@@ -210,6 +214,15 @@ flutter clean && flutter pub get && flutter run
 8.  **Timezone Compliance (UTC to Local):** Centralized UTC-to-Local conversion in the `TestResult` model. Improved time formatting with leading zeros for a consistent enterprise-grade feel.
 9.  **Icon Clarity standard:** Updated all profile and setting icons to use `theme.colorScheme.primary` tokens, ensuring high visibility and branding consistency in dark mode.
 10. **UI Polishing:** Resolved double-timer logic in `ExamScreen`, standardized button sizes in `TestResult`, and removed redundant AppBars to maximize content real estate.
+11. **Sync Gate Stabilization:** Refined Synchronization Gates in `ResourceProvider` and `TestProvider` to allow parallel background fetches (e.g., in `MainScreen`) while still preventing redundant UI rebuilds.
+12. **Free Material UI Overhaul:** Created a specialized `FreeItemCard` and redesigned the `FreeContentScreen` with an integrated Search/Filter top bar, animated pills, and surface-consistent backgrounds for a premium feel.
+13. **Real-time Cost Optimization:** Converted the "All Mock Tests" screen from `StreamBuilder` to `FutureBuilder`. This prevents persistent database connections while the user browses the test list, reducing Supabase costs.
+14. **Refresh & Startup Stability:**
+    - Added a **20-second safety timeout** and **parallelized background fetches** to the `HomeScreen` pull-to-refresh logic to prevent "infinite loading" hangs.
+    - Extended the `SplashScreen` parallel initialization timeout to **5 seconds** for more resilient cold starts.
+    - Integrated `RetryHelper` with 10s individual timeouts in `AppConfigService`.
+15. **System Nav & Contact Refinement:** Removed WhatsApp from contact options in `ProfileScreen` and implemented `SafeArea` in the "Contact Us" modal to resolve overlaps with the system navigation/gesture bar.
+16. **Dark Mode Green Accent:** Replaced red/pink accent colors with a vibrant emerald green in Dark Mode (#2DD4BF) for a more cohesive, high-trust agricultural aesthetic.
 
 ---
 
@@ -226,4 +239,4 @@ The Store Screen (Tests/Resources) uses a strictly responsive "Stitch Math" layo
 
 **Plan:** Replace `UniversalItemCard` in store grids with the new `StoreItemCard` widget to achieve a premium look while preserving all purchase/download logic.
 
-<!-- Updated by Gemini Flash on 2026-03-06 -->
+<!-- Updated by Gemini Flash on 2026-03-07 at 01:00 AM -->

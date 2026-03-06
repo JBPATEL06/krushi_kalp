@@ -4,10 +4,17 @@ import 'package:rxdart/rxdart.dart';
 import '../../utils/network_utils.dart'; // Import NetworkUtils
 
 class AdminService {
-  static final _supabase = Supabase.instance.client;
+  // Singleton
+  static final AdminService _instance = AdminService._internal();
+  factory AdminService() => _instance;
+  AdminService._internal();
+
+  static AdminService get instance => _instance;
+
+  final _supabase = Supabase.instance.client;
 
   // Fetch all users for Admin User Selector
-  static Future<List<Map<String, dynamic>>> getAllUsers() async {
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
     try {
       final response =
           await _supabase.from('users').select('id, email, username');
@@ -23,7 +30,7 @@ class AdminService {
   }
 
   // Lookup User ID by Email
-  static Future<String?> getUserIdByEmail(String email) async {
+  Future<String?> getUserIdByEmail(String email) async {
     try {
       final response = await _supabase
           .from('users')
@@ -43,7 +50,7 @@ class AdminService {
   }
 
   /// Streams aggregated stats for the Analysis Page
-  static Stream<Map<String, dynamic>> streamDashboardStats() {
+  Stream<Map<String, dynamic>> streamDashboardStats() {
     // 1. Mock Tests Stream
     final testsStream =
         _supabase.from('mock_tests').stream(primaryKey: ['test_id']);
@@ -114,7 +121,7 @@ class AdminService {
   }
 
   // DEPRECATED: Kept to prevent build errors during migration. Use streamDashboardStats instead.
-  static Future<Map<String, dynamic>> getDashboardStats() async {
+  Future<Map<String, dynamic>> getDashboardStats() async {
     try {
       final testsCount = await _supabase.from('mock_tests').count();
       final usersCount = await _supabase.from('users').count();
@@ -165,7 +172,7 @@ class AdminService {
   /// Note: Complex joins in Realtime are not supported directly.
   /// We will stream Results and fetch related data efficiently.
   /// For "Top Users", we need: Results -> join MockTest (total_marks) & User.
-  static Stream<List<Map<String, dynamic>>> streamTopUsers() {
+  Stream<List<Map<String, dynamic>>> streamTopUsers() {
     return _supabase
         .from('results')
         .stream(primaryKey: ['result_id']).asyncMap((results) async {
@@ -237,7 +244,7 @@ class AdminService {
   /// Listens to ORDERS stream (safer) then fetches items.
   /// Streams top performing tests (based on sales)
   /// LISTENS TO ORDER_ITEMS DIRECTLY (Simpler Logic)
-  static Stream<List<Map<String, dynamic>>> streamTopTests() {
+  Stream<List<Map<String, dynamic>>> streamTopTests() {
     return _supabase
         .from('order_items')
         .stream(primaryKey: ['item_id']).asyncMap((items) async {
@@ -336,7 +343,7 @@ class AdminService {
   // ... (Existing Methods below)
 
   /// Fetches top performing users based on quiz scores
-  static Future<List<Map<String, dynamic>>> getTopUsers() async {
+  Future<List<Map<String, dynamic>>> getTopUsers() async {
     try {
       // Fetch results with user details AND test details (for total_marks)
       final response = await _supabase.from('results').select(
@@ -384,7 +391,7 @@ class AdminService {
   }
 
   /// Fetches all users with their activity data for filtering
-  static Future<List<Map<String, dynamic>>> getAllUsersWithActivity() async {
+  Future<List<Map<String, dynamic>>> getAllUsersWithActivity() async {
     try {
       final response = await _supabase
           .from('users')
@@ -433,7 +440,7 @@ class AdminService {
   }
 
   /// Fetches all successful orders with user details
-  static Future<List<Map<String, dynamic>>> getAllOrders() async {
+  Future<List<Map<String, dynamic>>> getAllOrders() async {
     try {
       final response = await _supabase
           .from('orders')
@@ -450,7 +457,7 @@ class AdminService {
   }
 
   /// Streams all successful orders with user details (Manual Join)
-  static Stream<List<Map<String, dynamic>>> streamAllOrders() {
+  Stream<List<Map<String, dynamic>>> streamAllOrders() {
     return _supabase
         .from('orders')
         .stream(primaryKey: ['order_id'])
@@ -483,7 +490,7 @@ class AdminService {
   }
 
   /// Fetches detailed user profile including phone number
-  static Future<Map<String, dynamic>?> getUserDetails(String userId) async {
+  Future<Map<String, dynamic>?> getUserDetails(String userId) async {
     try {
       final response = await _supabase
           .from('users')
@@ -499,7 +506,7 @@ class AdminService {
   }
 
   /// Fetches a user's purchase history
-  static Future<List<Map<String, dynamic>>> getUserOrders(String userId) async {
+  Future<List<Map<String, dynamic>>> getUserOrders(String userId) async {
     try {
       final response = await _supabase
           .from('orders')
@@ -515,8 +522,7 @@ class AdminService {
   }
 
   /// Fetches a user's test results
-  static Future<List<Map<String, dynamic>>> getUserResults(
-      String userId) async {
+  Future<List<Map<String, dynamic>>> getUserResults(String userId) async {
     try {
       final response = await _supabase
           .from('results')
@@ -531,7 +537,7 @@ class AdminService {
   }
 
   /// Promotes a user to Admin role
-  static Future<void> promoteToAdmin(String userId) async {
+  Future<void> promoteToAdmin(String userId) async {
     try {
       await _supabase.from('users').update({'role': 'Admin'}).eq('id', userId);
     } catch (e) {
@@ -541,7 +547,7 @@ class AdminService {
   }
 
   /// Streams all users with basic info
-  static Stream<List<Map<String, dynamic>>> streamUsers() {
+  Stream<List<Map<String, dynamic>>> streamUsers() {
     return _supabase
         .from('users')
         .stream(primaryKey: ['id'])
@@ -581,7 +587,7 @@ class AdminService {
   }
 
   /// Streams detailed user profile
-  static Stream<Map<String, dynamic>> streamUserDetails(String userId) {
+  Stream<Map<String, dynamic>> streamUserDetails(String userId) {
     return _supabase
         .from('users')
         .stream(primaryKey: ['id'])
@@ -590,7 +596,7 @@ class AdminService {
   }
 
   /// Streams user orders
-  static Stream<List<Map<String, dynamic>>> streamUserOrders(String userId) {
+  Stream<List<Map<String, dynamic>>> streamUserOrders(String userId) {
     return _supabase
         .from('orders')
         .stream(primaryKey: ['order_id'])
@@ -601,7 +607,7 @@ class AdminService {
   }
 
   /// Streams user results
-  static Stream<List<Map<String, dynamic>>> streamUserResults(String userId) {
+  Stream<List<Map<String, dynamic>>> streamUserResults(String userId) {
     return _supabase
         .from('results')
         .stream(primaryKey: ['result_id'])
@@ -631,7 +637,7 @@ class AdminService {
   }
 
   /// Deletes a user account (Admin only)
-  static Future<void> deleteUser(String userId) async {
+  Future<void> deleteUser(String userId) async {
     try {
       await _supabase.from('users').delete().eq('id', userId);
     } catch (e) {
@@ -641,7 +647,7 @@ class AdminService {
   }
 
   // Get analytic stats for a specific Resource Type (Category level)
-  static Future<Map<String, dynamic>> getResourceTypeStats(String type) async {
+  Future<Map<String, dynamic>> getResourceTypeStats(String type) async {
     try {
       // 1. Total count of resources of this type
       final countRes = await _supabase
@@ -667,8 +673,7 @@ class AdminService {
   }
 
   // Get analytic stats for a specific Resource Item (Single item level)
-  static Future<Map<String, dynamic>> getResourceItemStats(
-      int resourceId) async {
+  Future<Map<String, dynamic>> getResourceItemStats(int resourceId) async {
     try {
       // 1. Get current price/details
       final itemRes = await _supabase
@@ -695,7 +700,7 @@ class AdminService {
   }
 
   // Fetch detailed order history for Revenue Page
-  static Future<List<Map<String, dynamic>>> fetchAllOrdersWithDetails() async {
+  Future<List<Map<String, dynamic>>> fetchAllOrdersWithDetails() async {
     try {
       final response = await _supabase.from('orders').select('''
             *,

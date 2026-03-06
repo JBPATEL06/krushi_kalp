@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/question.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/translation_service.dart';
@@ -32,14 +31,10 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
   }
 
   Future<void> _checkUserLanguage() async {
-    final user = AuthService().currentUser;
+    final user = AuthService.instance.currentUser;
     if (user != null) {
       try {
-        final userData = await Supabase.instance.client
-            .from('users')
-            .select('language')
-            .eq('id', user.id)
-            .maybeSingle();
+        final userData = await AuthService.instance.getUserProfile(user.id);
 
         if (userData != null && userData['language'] == 'gu') {
           if (mounted) {

@@ -3,10 +3,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/order_item.dart';
 
 class CartService {
-  static final _supabase = Supabase.instance.client;
+  // --- SINGLETON ---
+  CartService._();
+  static final CartService instance = CartService._();
+
+  final _supabase = Supabase.instance.client;
 
   // --- READ ---
-  static Future<List<OrderItem>> fetchCartItems(String userId) async {
+  Future<List<OrderItem>> fetchCartItems(String userId) async {
     try {
       // 1. Find PENDING order
       final pendingOrderRes = await _supabase
@@ -28,7 +32,7 @@ class CartService {
           .eq('order_id', orderId)
           .order('created_at');
 
-      // 3. (Optional) Fetch global offer if needed - reusing logic from TestService
+      // 3. (Optional) Fetch global offer if needed
       Map<String, dynamic>? globalOfferData;
       if (appliedOfferId != null) {
         try {
@@ -42,9 +46,6 @@ class CartService {
       }
 
       final List<OrderItem> items = (itemsResponse as List).map((json) {
-        // Attach offer data manually if needed by UI, or handle in UI
-        // For now, just parsing to OrderItem
-        // OrderItem model has 'offers' map, so we can inject it
         if (globalOfferData != null) {
           json['offers'] = globalOfferData;
         }
@@ -61,7 +62,7 @@ class CartService {
   // --- WRITE ---
 
   /// Checks if user already owns the item (Status = SUCCESS)
-  static Future<bool> checkOwnership({
+  Future<bool> checkOwnership({
     required String userId,
     int? testId,
     int? resourceId,
@@ -86,11 +87,11 @@ class CartService {
       return response != null;
     } catch (e) {
       debugPrint("CartService: Error checking ownership: $e");
-      return false; // Fail safe? Or throw? Better to allow check to fail as false to not block, but might risk double buy.
+      return false;
     }
   }
 
-  static Future<void> addToCart({
+  Future<void> addToCart({
     required String authUserId,
     int? testId,
     int? resourceId,
@@ -159,8 +160,8 @@ class CartService {
       // 2. Insert Item
       await _supabase.from('order_items').insert({
         'order_id': orderId,
-        'test_id': testId, // Can be null
-        'resource_id': resourceId, // Can be null
+        'test_id': testId,
+        'resource_id': resourceId,
         'price_at_purchase': price,
         'created_at': DateTime.now().toUtc().toIso8601String(),
       });
@@ -170,7 +171,7 @@ class CartService {
     }
   }
 
-  static Future<void> removeCartItem(int itemId) async {
+  Future<void> removeCartItem(int itemId) async {
     try {
       await _supabase.from('order_items').delete().eq('item_id', itemId);
     } catch (e) {

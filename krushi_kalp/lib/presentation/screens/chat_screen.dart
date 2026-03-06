@@ -20,7 +20,8 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final ChatService _chatService = ChatService();
   late Stream<List<Message>> _messagesStream;
-  final types.User _user = types.User(id: AuthService().currentUser?.id ?? '');
+  final types.User _user =
+      types.User(id: AuthService.instance.currentUser?.id ?? '');
 
   @override
   void initState() {
@@ -143,7 +144,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    if (AuthService().currentUser == null) {
+    if (AuthService.instance.currentUser == null) {
       return const Scaffold(body: Center(child: Text("Please login to chat.")));
     }
 

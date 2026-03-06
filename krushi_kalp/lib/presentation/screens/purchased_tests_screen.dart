@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/services/auth_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../domain/models/mock_test.dart';
 import '../providers/test_provider.dart';
@@ -23,6 +23,7 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _sortOption = 'Newest';
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -42,7 +43,15 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
   }
 
   Future<void> _loadData() async {
-    // We rely on MainScreen's initial sync or pull-to-refresh to avoid redundant fetches
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    final user = AuthService.instance.currentUser;
+    if (user != null) {
+      await context.read<TestProvider>().fetchUserTests(user.id);
+    }
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   List<MockTest> _getFilteredData(List<MockTest> tests) {
@@ -83,7 +92,7 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
             SliverToBoxAdapter(
               child: _buildSearchAndFilterBar(theme),
             ),
-            if (testProvider.isLoading && tests.isEmpty)
+            if (_isLoading || (testProvider.isLoading && tests.isEmpty))
               SliverToBoxAdapter(child: _buildSkeletonLoader(theme))
             else if (filteredTests.isEmpty)
               SliverFillRemaining(
@@ -109,8 +118,7 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
                             url: item.contentUrl,
                             startLabel: "Start",
                             isFullWidth: false,
-                            userId:
-                                Supabase.instance.client.auth.currentUser?.id,
+                            userId: AuthService.instance.currentUser?.id,
                             onAction: () async {
                               if (item.contentUrl == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(

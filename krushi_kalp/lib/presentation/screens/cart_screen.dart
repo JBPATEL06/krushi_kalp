@@ -1,24 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:provider/provider.dart';
+
 import '../../data/services/payment_service.dart';
+import '../../data/services/auth_service.dart';
 import '../../data/services/cart_service.dart';
 import '../../data/services/test_service.dart';
 import '../../data/services/offer_service.dart';
+import '../../data/services/resource_service.dart';
+
 import '../../domain/models/offer.dart';
-import '../../domain/models/order_item.dart'; // Added
+import '../../domain/models/order_item.dart';
+import '../../domain/models/resource.dart';
+import '../../domain/models/mock_test.dart';
+
 import '../../utils/price_calculator.dart';
+import '../../utils/responsive.dart';
+import '../../core/theme/app_spacing.dart';
+
 import '../widgets/common/network_error_state.dart';
+import '../widgets/common/responsive_wrapper.dart';
 import 'cart/widgets/cart_item_widget.dart';
 import 'cart/widgets/cart_order_summary.dart';
-import 'package:provider/provider.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/cart_provider.dart';
-import '../../core/theme/app_spacing.dart';
-import '../widgets/common/responsive_wrapper.dart';
-// ... (imports remain)
-
-// ... (imports remain)
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -29,7 +34,7 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   late Future<List<Map<String, dynamic>>> _cartFuture;
-  late PaymentService _paymentService;
+
   List<Map<String, dynamic>> _currentCartItems = [];
 
   // --- Coupon Logic ---
@@ -37,12 +42,13 @@ class _CartScreenState extends State<CartScreen> {
   bool _isApplyingCoupon = false;
   String? _couponError;
   Offer? _appliedGlobalOffer;
+  bool _isProcessing = false; // PRO FIX: Synchronization Gate
 
   @override
   void initState() {
     super.initState();
     _loadCart();
-    _paymentService = PaymentService(
+    PaymentService.init(
       onSuccess: _handlePaymentSuccess,
       onFailure: (response) {
         if (mounted) {
@@ -69,90 +75,93 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   void dispose() {
-    _paymentService.dispose();
+    PaymentService.instance.dispose();
     super.dispose();
   }
 
   void _loadCart() {
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = AuthService.instance.currentUser;
     if (user != null) {
       setState(() {
         _cartFuture = Future.wait([
-          CartService.fetchCartItems(user.id),
-          OfferService.fetchActiveSaleOffers(),
+          CartService.instance.fetchCartItems(user.id),
+          OfferService.instance.fetchActiveSaleOffers(),
         ]).then((results) async {
           final items = results[0] as List<OrderItem>;
           final saleOffers = results[1] as List<Offer>;
 
           // Map to UI model and Sign URLs
-          final cartItems = await Future.wait(items.map((item) async {
-            String? imageUrl;
-            String? path;
-            String title = 'Unavailable Item';
-            String subtitle = 'General';
-            double originalPrice = item.priceAtPurchase; // Default fallback
+          final cartItems = await Future.wait(
+            items.map((item) async {
+              String? imageUrl;
+              String? path;
+              String title = 'Unavailable Item';
+              String subtitle = 'General';
+              double originalPrice = item.priceAtPurchase; // Default fallback
 
-            final mockTest = item.mockTest;
-            final resource = item.resource;
+              final mockTest = item.mockTest;
+              final resource = item.resource;
 
-            if (mockTest != null) {
-              title = mockTest.title;
-              subtitle = mockTest.category;
-              path = mockTest.coverImagePath;
-              originalPrice = mockTest.price;
-            } else if (resource != null) {
-              title = resource.title;
-              subtitle = resource.category ?? 'General';
-              path = resource.thumbnailUrl;
-              originalPrice = resource.price;
-            }
-
-            if (path != null && !path.startsWith('http')) {
-              // Only sign if we know it's a mock test storage path for now
               if (mockTest != null) {
-                path = path.replaceAll('mock_test/', '');
-                try {
-                  imageUrl = await Supabase.instance.client.storage
-                      .from('mock_test')
-                      .createSignedUrl(path, 60 * 60);
-                } catch (e) {
-                  // ignore error
+                title = mockTest.title;
+                subtitle = mockTest.category;
+                path = mockTest.coverImagePath;
+                originalPrice = mockTest.price;
+              } else if (resource != null) {
+                title = resource.title;
+                subtitle = resource.category ?? 'General';
+                path = resource.thumbnailUrl;
+                originalPrice = resource.price;
+              }
+
+              if (path != null && !path.startsWith('http')) {
+                // Only sign if we know it's a mock test storage path for now
+                if (mockTest != null) {
+                  path = path.replaceAll('mock_test/', '');
+                  try {
+                    imageUrl = await TestService.instance.getSignedUrl(
+                      path,
+                      'mock_test',
+                    );
+                  } catch (e) {
+                    // ignore error
+                  }
+                } else {
+                  imageUrl = path;
                 }
               } else {
                 imageUrl = path;
               }
-            } else {
-              imageUrl = path;
-            }
 
-            // --- Calculate Automatic Sale Price ---
-            final priceData = PriceCalculator.calculateDisplayPrice(
-              basePrice: originalPrice,
-              activeOffers: saleOffers,
-              testId: item.testId,
-              resourceId: item.resourceId,
-              userId: user.id,
-            );
+              // --- Calculate Automatic Sale Price ---
+              final priceData = PriceCalculator.calculateDisplayPrice(
+                basePrice: originalPrice,
+                activeOffers: saleOffers,
+                testId: item.testId,
+                resourceId: item.resourceId,
+                userId: user.id,
+              );
 
-            final double finalPrice = priceData['finalPrice'];
-            final double mrp = priceData['mrp'];
-            // --------------------------------------
+              final double finalPrice = priceData['finalPrice'];
+              final double mrp = priceData['mrp'];
+              // --------------------------------------
 
-            return {
-              'item_id': item.itemId,
-              'test_id': item.testId,
-              'resource_id': item.resourceId,
-              'order_id': item.orderId,
-              'title': title,
-              'subtitle': subtitle,
-              'price': finalPrice, // Use calculated sale price
-              'mrp': mrp, // Use calculated MRP
-              'original_price': originalPrice,
-              'image_url': imageUrl,
-              'color': Colors.blue[50], // Placeholder color
-              'offers': item.offers,
-            };
-          }));
+              return {
+                'item_id': item.itemId,
+                'test_id': item.testId,
+                'resource_id': item.resourceId,
+                'order_id': item.orderId,
+                'title': title,
+                'subtitle': subtitle,
+                'price': finalPrice, // Use calculated sale price
+                'mrp': mrp, // Use calculated MRP
+                'original_price': originalPrice,
+                'image_url': imageUrl,
+                'color': Colors.blue[50], // Placeholder color
+                'offers': item.offers,
+              };
+            }),
+          );
 
           _processGlobalOffer(cartItems);
           // _processMrpDisplay(cartItems); // REMOVED: Handled inline
@@ -214,18 +223,22 @@ class _CartScreenState extends State<CartScreen> {
     });
 
     try {
-      final offer = await OfferService.verifyCoupon(code);
+      final offer = await OfferService.instance.verifyCoupon(code);
       if (offer != null) {
         final total = _calculateSubtotal(_currentCartItems);
         final testIds =
             _currentCartItems.map((e) => e['test_id'] as int).toList();
 
         if (offer.isValid(
-            userId: Supabase.instance.client.auth.currentUser!.id,
-            cartTotal: total,
-            cartTestIds: testIds)) {
+          userId: AuthService.instance.currentUser!.id,
+          cartTotal: total,
+          cartTestIds: testIds,
+        )) {
           final orderId = _currentCartItems.first['order_id'] as String;
-          await TestService.applyCouponToOrder(orderId, offer.id);
+          await OfferService.instance.applyCouponToOrder(
+            orderId: orderId,
+            offerId: offer.id,
+          );
           await _refreshCart(); // Refresh to show discount
         } else {
           setState(() => _couponError = "Coupon not valid for these items");
@@ -245,7 +258,7 @@ class _CartScreenState extends State<CartScreen> {
     setState(() => _isApplyingCoupon = true);
     try {
       final orderId = _currentCartItems.first['order_id'] as String;
-      await TestService.removeCouponFromOrder(orderId);
+      await OfferService.instance.removeCouponFromOrder(orderId);
       _couponController.clear();
       await _refreshCart(); // Refresh to remove discount logic
     } catch (e) {
@@ -260,13 +273,15 @@ class _CartScreenState extends State<CartScreen> {
       await context.read<CartProvider>().removeFromCart(itemId: itemId);
       await _refreshCart();
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Item removed')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Item removed')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -275,21 +290,28 @@ class _CartScreenState extends State<CartScreen> {
     final paymentId = response.paymentId;
     if (paymentId == null) return;
 
-    if (_currentCartItems.isEmpty) return;
+    if (_isProcessing) return; // PRO FIX: Double-tap gate
+    _isProcessing = true;
+
+    if (_currentCartItems.isEmpty) {
+      if (mounted) setState(() => _isProcessing = false);
+      return;
+    }
 
     // Assume all items belong to same order
     final orderId = _currentCartItems.first['order_id'] as String;
     final total = _calculateTotal(_currentCartItems);
     final discount = _calculateTotalDiscount(_currentCartItems);
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = AuthService.instance.currentUser;
 
     try {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Payment Successful! Processing...")));
+          const SnackBar(content: Text("Payment Successful! Processing...")),
+        );
       }
 
-      await TestService.checkout(
+      await TestService.instance.checkout(
         orderId: orderId,
         paymentId: paymentId,
         amount: total,
@@ -299,18 +321,18 @@ class _CartScreenState extends State<CartScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
             content: Text("Purchase Complete! 🎉"),
-            backgroundColor: Colors.green));
+            backgroundColor: Colors.green,
+          ),
+        );
         // Navigate to Home tab and pop the cart screen
         Provider.of<NavigationProvider>(context, listen: false).setIndex(0);
         Navigator.pop(context);
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("Error: $e")));
-      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
@@ -331,7 +353,9 @@ class _CartScreenState extends State<CartScreen> {
         final totalBasePrice = _calculateSubtotal(items);
 
         return offer.calculateDiscountAmount(
-            totalAmount: totalBasePrice, cartItems: items);
+          totalAmount: totalBasePrice,
+          cartItems: items,
+        );
       } catch (_) {}
     }
     return 0.0;
@@ -360,8 +384,11 @@ class _CartScreenState extends State<CartScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded,
-              color: theme.colorScheme.onSurface, size: context.sp(24)),
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: theme.colorScheme.onSurface,
+            size: context.sp(24),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -395,178 +422,200 @@ class _CartScreenState extends State<CartScreen> {
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(16.0),
-                    child: Builder(builder: (context) {
-                      // Trigger auto-apply check once when we have data
-                      // We use a simplified check to avoid loops: e.g. check only if we haven't lately?
-                      // Or just rely on the fact that if we apply, stream updates.
-                      // Ideally this runs only if items changed or on init.
-                      // For MVP, we let it run. But we need to use addPostFrameCallback to avoid build issues.
-                      if (cartItems.isNotEmpty) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _checkAutoApply();
-                        });
-                      }
+                    child: Builder(
+                      builder: (context) {
+                        // Trigger auto-apply check once when we have data
+                        // We use a simplified check to avoid loops: e.g. check only if we haven't lately?
+                        // Or just rely on the fact that if we apply, stream updates.
+                        // Ideally this runs only if items changed or on init.
+                        // For MVP, we let it run. But we need to use addPostFrameCallback to avoid build issues.
+                        if (cartItems.isNotEmpty) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _checkAutoApply();
+                          });
+                        }
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'YOUR CURRICULUM (${cartItems.length} ITEMS)',
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.bold,
-                              fontSize: context.sp(14),
-                              letterSpacing: 0.5,
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'YOUR CURRICULUM (${cartItems.length} ITEMS)',
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.bold,
+                                fontSize: context.sp(14),
+                                letterSpacing: 0.5,
+                              ),
                             ),
-                          ),
-                          SizedBox(height: context.h(AppSpacing.lg)),
-                          ...cartItems.map((item) => CartItemWidget(
+                            SizedBox(height: context.h(AppSpacing.lg)),
+                            ...cartItems.map(
+                              (item) => CartItemWidget(
                                 item: item,
-                                onRemove: () => _deleteItem(
-                                  item['item_id'] as int,
-                                ),
-                              )),
-                          const SizedBox(height: 24),
-
-                          // --- COUPON INPUT SECTION ---
-                          Text(
-                            'STUDENT DISCOUNT CODE',
-                            style: TextStyle(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.bold,
-                              fontSize: context.sp(13),
+                                onRemove: () =>
+                                    _deleteItem(item['item_id'] as int),
+                              ),
                             ),
-                          ),
-                          SizedBox(height: context.h(AppSpacing.md)),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Container(
-                                  height: context.h(50),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.surface,
-                                    borderRadius: BorderRadius.circular(
-                                        context.w(AppSpacing.radiusMd)),
-                                  ),
-                                  child: TextField(
-                                    controller: _couponController,
-                                    enabled: !_isApplyingCoupon,
-                                    readOnly: _appliedGlobalOffer != null,
-                                    textAlignVertical: TextAlignVertical.center,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: context.sp(14),
-                                      color: theme.colorScheme.onSurface,
+                            const SizedBox(height: 24),
+
+                            // --- COUPON INPUT SECTION ---
+                            Text(
+                              'STUDENT DISCOUNT CODE',
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.bold,
+                                fontSize: context.sp(13),
+                              ),
+                            ),
+                            SizedBox(height: context.h(AppSpacing.md)),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    height: context.h(50),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(
+                                        context.w(AppSpacing.radiusMd),
+                                      ),
                                     ),
-                                    decoration: InputDecoration(
-                                      hintText: 'Enter code (e.g. SCHOLAR20)',
-                                      hintStyle: TextStyle(
+                                    child: TextField(
+                                      controller: _couponController,
+                                      enabled: !_isApplyingCoupon,
+                                      readOnly: _appliedGlobalOffer != null,
+                                      textAlignVertical:
+                                          TextAlignVertical.center,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: context.sp(14),
+                                        color: theme.colorScheme.onSurface,
+                                      ),
+                                      decoration: InputDecoration(
+                                        hintText: 'Enter code (e.g. SCHOLAR20)',
+                                        hintStyle: TextStyle(
                                           color:
                                               theme.colorScheme.outlineVariant,
-                                          fontWeight: FontWeight.normal),
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: context.w(AppSpacing.md),
-                                        vertical: context.h(12),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(
-                                            context.w(AppSpacing.radiusMd)),
-                                        borderSide: BorderSide(
-                                          color: _appliedGlobalOffer != null
-                                              ? theme.colorScheme.primary
-                                              : theme
-                                                  .colorScheme.outlineVariant,
+                                          fontWeight: FontWeight.normal,
                                         ),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(
-                                            context.w(AppSpacing.radiusMd)),
-                                        borderSide: BorderSide(
-                                          color: _appliedGlobalOffer != null
-                                              ? theme.colorScheme.primary
-                                              : theme.colorScheme.primary,
-                                          width: 1.5,
+                                        contentPadding: EdgeInsets.symmetric(
+                                          horizontal: context.w(AppSpacing.md),
+                                          vertical: context.h(12),
                                         ),
-                                      ),
-                                      disabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(
-                                            context.w(AppSpacing.radiusMd)),
-                                        borderSide: BorderSide(
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            context.w(AppSpacing.radiusMd),
+                                          ),
+                                          borderSide: BorderSide(
+                                            color: _appliedGlobalOffer != null
+                                                ? theme.colorScheme.primary
+                                                : theme
+                                                    .colorScheme.outlineVariant,
+                                          ),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            context.w(AppSpacing.radiusMd),
+                                          ),
+                                          borderSide: BorderSide(
+                                            color: _appliedGlobalOffer != null
+                                                ? theme.colorScheme.primary
+                                                : theme.colorScheme.primary,
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        disabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            context.w(AppSpacing.radiusMd),
+                                          ),
+                                          borderSide: BorderSide(
                                             color: theme
-                                                .colorScheme.outlineVariant),
+                                                .colorScheme.outlineVariant,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              SizedBox(width: context.w(AppSpacing.md)),
-                              SizedBox(
-                                height: context.h(50),
-                                child: ElevatedButton(
-                                  onPressed: _appliedGlobalOffer == null
-                                      ? _applyOrderCoupon
-                                      : _removeOrderCoupon,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: _appliedGlobalOffer == null
-                                        ? theme.colorScheme.surfaceVariant
-                                        : theme.colorScheme.errorContainer
-                                            .withValues(alpha: 0.3),
-                                    foregroundColor: _appliedGlobalOffer == null
-                                        ? theme.colorScheme.primary
-                                        : theme.colorScheme.error,
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(
-                                          context.w(AppSpacing.radiusMd)),
-                                      side: BorderSide(
-                                          color:
-                                              theme.colorScheme.outlineVariant),
-                                    ),
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal: context.w(AppSpacing.xl)),
-                                  ),
-                                  child: _isApplyingCoupon
-                                      ? SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: theme.colorScheme.primary),
-                                        )
-                                      : Text(
+                                SizedBox(width: context.w(AppSpacing.md)),
+                                SizedBox(
+                                  height: context.h(50),
+                                  child: ElevatedButton(
+                                    onPressed: _appliedGlobalOffer == null
+                                        ? _applyOrderCoupon
+                                        : _removeOrderCoupon,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
                                           _appliedGlobalOffer == null
-                                              ? "Apply"
-                                              : "Remove",
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.bold),
+                                              ? theme.colorScheme.surfaceVariant
+                                              : theme.colorScheme.errorContainer
+                                                  .withValues(alpha: 0.3),
+                                      foregroundColor:
+                                          _appliedGlobalOffer == null
+                                              ? theme.colorScheme.primary
+                                              : theme.colorScheme.error,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          context.w(AppSpacing.radiusMd),
                                         ),
+                                        side: BorderSide(
+                                          color:
+                                              theme.colorScheme.outlineVariant,
+                                        ),
+                                      ),
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: context.w(AppSpacing.xl),
+                                      ),
+                                    ),
+                                    child: _isApplyingCoupon
+                                        ? SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: theme.colorScheme.primary,
+                                            ),
+                                          )
+                                        : Text(
+                                            _appliedGlobalOffer == null
+                                                ? "Apply"
+                                                : "Remove",
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (_couponError != null)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  top: context.h(8),
+                                  left: context.w(4),
+                                ),
+                                child: Text(
+                                  _couponError!,
+                                  style: TextStyle(
+                                    color: theme.colorScheme.error,
+                                    fontSize: context.sp(12),
+                                  ),
                                 ),
                               ),
-                            ],
-                          ),
-                          if (_couponError != null)
-                            Padding(
-                              padding: EdgeInsets.only(
-                                  top: context.h(8), left: context.w(4)),
-                              child: Text(
-                                _couponError!,
-                                style: TextStyle(
-                                    color: theme.colorScheme.error,
-                                    fontSize: context.sp(12)),
-                              ),
-                            ),
-                          // ----------------------------
 
-                          const SizedBox(height: 32),
-                          CartOrderSummary(
-                            subtotal: _calculateSubtotal(cartItems),
-                            discountAmount: _calculateTotalDiscount(cartItems),
-                            couponCode: null, // Logic moved global
-                          ),
-                          const SizedBox(height: 24),
-                        ],
-                      );
-                    }),
+                            // ----------------------------
+                            const SizedBox(height: 32),
+                            CartOrderSummary(
+                              subtotal: _calculateSubtotal(cartItems),
+                              discountAmount: _calculateTotalDiscount(
+                                cartItems,
+                              ),
+                              couponCode: null, // Logic moved global
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -604,8 +653,10 @@ class _CartScreenState extends State<CartScreen> {
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    Provider.of<NavigationProvider>(context, listen: false)
-                        .setIndex(2); // 2 = Store tab
+                    Provider.of<NavigationProvider>(
+                      context,
+                      listen: false,
+                    ).setIndex(2); // 2 = Store tab
                   },
                   child: const Text('Go to Store'),
                 ),
@@ -666,38 +717,38 @@ class _CartScreenState extends State<CartScreen> {
               const SizedBox(width: 24),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () async {
-                    final user = Supabase.instance.client.auth.currentUser;
+                  onPressed: _isProcessing
+                      ? null
+                      : () async {
+                          if (_isProcessing) return;
+                          setState(() => _isProcessing = true);
 
-                    // Fetch phone from DB to prefill Razorpay (no blocking)
-                    String? userPhone = user?.phone;
-                    if (user != null &&
-                        (userPhone == null || userPhone.isEmpty)) {
-                      try {
-                        final profile = await Supabase.instance.client
-                            .from('users')
-                            .select('phonenumber')
-                            .eq('id', user.id)
-                            .maybeSingle();
-                        userPhone = profile?['phonenumber'];
-                      } catch (_) {}
-                    }
+                          final user = AuthService.instance.currentUser;
 
-                    _paymentService.openCheckout(
-                      amount: total,
-                      orderId:
-                          'cart_checkout_${DateTime.now().millisecondsSinceEpoch}',
-                      email: user?.email,
-                      contact: userPhone,
-                    );
-                  },
+                          // Pre-fill phone if available locally, do not block network to fetch it.
+                          // Razorpay UI will prompt user if phone is missing.
+                          String? userPhone = user?.phone;
+
+                          PaymentService.instance.openCheckout(
+                            amount: total,
+                            orderId:
+                                'cart_checkout_${DateTime.now().millisecondsSinceEpoch}',
+                            email: user?.email,
+                            contact: userPhone,
+                          );
+
+                          if (mounted) {
+                            setState(() => _isProcessing = false);
+                          }
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
                     foregroundColor: theme.colorScheme.onPrimary,
                     padding: EdgeInsets.symmetric(vertical: context.h(16)),
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(context.w(AppSpacing.radiusMd)),
+                      borderRadius: BorderRadius.circular(
+                        context.w(AppSpacing.radiusMd),
+                      ),
                     ),
                     elevation: 0,
                   ),
@@ -707,7 +758,9 @@ class _CartScreenState extends State<CartScreen> {
                       Text(
                         'Proceed to Payment',
                         style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       SizedBox(width: 8),
                       Icon(Icons.arrow_forward, size: 20),

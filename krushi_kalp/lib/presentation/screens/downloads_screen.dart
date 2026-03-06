@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/services/auth_service.dart';
 import 'pdf_viewer_screen.dart';
 import '../../domain/models/resource.dart';
 import '../../domain/models/mock_test.dart';
@@ -67,7 +67,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
     final testProvider = context.read<TestProvider>();
 
     // If purchased resources haven't been loaded yet, fetch them now
-    final userId = Supabase.instance.client.auth.currentUser?.id;
+    final userId = AuthService.instance.currentUser?.id;
     if (resourceProvider.purchasedResources.isEmpty && userId != null) {
       await resourceProvider.fetchPurchasedResources(userId);
     }
@@ -148,7 +148,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
   }
 
   Future<void> _deleteSelected() async {
-    final uid = Supabase.instance.client.auth.currentUser?.id;
+    final uid = AuthService.instance.currentUser?.id;
     if (uid == null) return;
 
     final confirmed = await showDialog<bool>(
@@ -195,7 +195,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
   }
 
   Future<void> _clearStorage() async {
-    final uid = Supabase.instance.client.auth.currentUser?.id;
+    final uid = AuthService.instance.currentUser?.id;
     if (uid == null) return;
 
     final confirmed = await showDialog<bool>(
@@ -233,7 +233,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
 
   /// Opens a resource PDF after verifying ownership and purchase status.
   Future<void> _openResourceSecurely(Resource resource) async {
-    final uid = Supabase.instance.client.auth.currentUser?.id;
+    final uid = AuthService.instance.currentUser?.id;
     if (uid == null) return;
 
     final filename = 'resource_${resource.id}.pdf';
@@ -284,7 +284,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
 
   /// Starts a mock test after verifying ownership and purchase status.
   Future<void> _startTestSecurely(MockTest test) async {
-    final uid = Supabase.instance.client.auth.currentUser?.id;
+    final uid = AuthService.instance.currentUser?.id;
     if (uid == null) return;
 
     final filename = 'mock_test_${test.id}.json';

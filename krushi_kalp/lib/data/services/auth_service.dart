@@ -1,23 +1,33 @@
 import 'package:flutter/foundation.dart'; // For kIsWeb
-
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase/supabase.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-
-import 'package:google_sign_in/google_sign_in.dart'; // Standard import
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
+  // Singleton
+  static final AuthService _instance = AuthService._internal();
+  factory AuthService() => _instance;
+  AuthService._internal();
+
+  static AuthService get instance => _instance;
+
+  final _supabase = Supabase.instance.client;
+
+  SupabaseClient get supabaseClient => _supabase;
+
   // Get the current user
   User? get currentUser {
     try {
-      return Supabase.instance.client.auth.currentUser;
+      return _supabase.auth.currentUser;
     } catch (_) {
       return null;
     }
   }
 
   // Listen to auth state changes
-  Stream<AuthState> get onAuthStateChange =>
-      Supabase.instance.client.auth.onAuthStateChange;
+  Stream<AuthState> get onAuthStateChange => _supabase.auth.onAuthStateChange;
 
   // Sign in with Google (Native Flow)
   Future<void> signInWithGoogle() async {
@@ -60,32 +70,58 @@ class AuthService {
     // 4. Check & Create Profile (Auto-Signup)
     final user = response.user;
     if (user != null) {
-      await _ensureProfileExists(user);
-      await updateSessionId(user.id); // Generate new session
+      await ensureProfileExists(user);
+      await updateSessionId(user.id);
     }
   }
 
   // Sign In with Email and Password (Web Priority)
-  Future<void> signInWithEmailPassword(String email, String password) async {
-    try {
-      final response = await Supabase.instance.client.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
+  Future<AuthResponse> signInWithEmailPassword(
+    String email,
+    String password,
+  ) async {
+    final response = await _supabase.auth.signInWithPassword(
+      email: email,
+      password: password,
+    );
 
-      final user = response.user;
-      if (user != null) {
-        await _ensureProfileExists(user);
-        await updateSessionId(user.id);
-      }
-    } catch (e) {
-      debugPrint('Error signing in with email: $e');
-      rethrow; // Pass error to UI
+    final user = response.user;
+    if (user != null) {
+      await ensureProfileExists(user);
+      await updateSessionId(user.id);
     }
+    return response;
+  }
+
+  Future<AuthResponse> signInWithIdToken({
+    required OAuthProvider provider,
+    required String idToken,
+    String? accessToken,
+  }) async {
+    final response = await _supabase.auth.signInWithIdToken(
+      provider: provider,
+      idToken: idToken,
+      accessToken: accessToken,
+    );
+
+    final user = response.user;
+    if (user != null) {
+      await ensureProfileExists(user);
+      await updateSessionId(user.id);
+    }
+    return response;
+  }
+
+  // NEW: Sign Up with Email and Password
+  Future<AuthResponse> signUp({
+    required String email,
+    required String password,
+  }) async {
+    return await _supabase.auth.signUp(email: email, password: password);
   }
 
   // Helper to create profile if it doesn't exist
-  Future<void> _ensureProfileExists(User user) async {
+  Future<void> ensureProfileExists(User user) async {
     try {
       final profile = await Supabase.instance.client
           .from('users')
@@ -122,44 +158,106 @@ class AuthService {
 
   // Sign out
   Future<void> signOut() async {
-    await _clearSessionId(); // Clear DB session first
+    final user = currentUser;
+    if (user != null) {
+      await clearSession(user.id);
+    }
     try {
       await GoogleSignIn().signOut();
     } catch (e) {
       debugPrint('Error signing out of Google: $e');
     }
-    await Supabase.instance.client.auth.signOut();
+    await _supabase.auth.signOut();
   }
 
   // NEW: Update Session ID on Login
-  Future<void> updateSessionId(String userId) async {
-    final sessionId = DateTime.now().millisecondsSinceEpoch.toString();
-    // Ideally use UUID, but timestamp is sufficient for this purpose
+  Future<void> updateSessionId(String userId, [String? sessionId]) async {
+    final finalSessionId = sessionId ??
+        DateTime.now().millisecondsSinceEpoch.toString() +
+            userId.substring(0, 4);
     try {
-      await Supabase.instance.client
+      await _supabase
           .from('users')
-          .update({'session_id': sessionId}).eq('id', userId);
-
-      // Store local session ID (using shared_preferences if available, or just rely on re-fetch?)
-      // We need to store it locally to compare later.
-      // Since this Service is not persistent state provider, we will rely on AuthProvider to manage the "active" session.
-      // But we can store it in a static variable or SharedPreferences here if needed.
-      // Actually, AuthProvider should handle the "Monitoring" part.
+          .update({'session_id': finalSessionId}).eq('id', userId);
     } catch (e) {
       debugPrint('Error updating session ID: $e');
     }
   }
 
-  // NEW: Clear Session ID on Logout (Optional, but good practice)
-  Future<void> _clearSessionId() async {
-    final user = currentUser;
-    if (user == null) return;
+  Future<String?> getSessionId(String userId) async {
     try {
-      await Supabase.instance.client
+      final response = await _supabase
           .from('users')
-          .update({'session_id': null}).eq('id', user.id);
+          .select('session_id')
+          .eq('id', userId)
+          .maybeSingle();
+      return response?['session_id'] as String?;
+    } catch (e) {
+      debugPrint('Error fetching session ID: $e');
+      return null;
+    }
+  }
+
+  RealtimeChannel getUserChannel(String userId) {
+    return _supabase.channel('public:users:$userId');
+  }
+
+  void removeChannel(RealtimeChannel channel) {
+    _supabase.removeChannel(channel);
+  }
+
+  // NEW: Clear Session ID on Logout
+  Future<void> clearSession(String userId) async {
+    try {
+      await _supabase
+          .from('users')
+          .update({'session_id': null}).eq('id', userId);
     } catch (e) {
       debugPrint('Error clearing session ID: $e');
+    }
+  }
+
+  RealtimeChannel getSessionChannel(String userId) {
+    return _supabase.channel('public:users:id=eq.$userId').onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'users',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id',
+            value: userId,
+          ),
+          callback: (payload) {}, // Handled by listener in Provider
+        );
+  }
+
+  // --- PROFILE MANAGEMENT ---
+
+  Future<Map<String, dynamic>?> getUserProfile(String userId) async {
+    try {
+      final response =
+          await _supabase.from('users').select().eq('id', userId).maybeSingle();
+      return response;
+    } catch (e) {
+      debugPrint('Error fetching user profile: $e');
+      return null;
+    }
+  }
+
+  Stream<Map<String, dynamic>?> streamUserProfile(String userId) {
+    return _supabase
+        .from('users')
+        .stream(primaryKey: ['id'])
+        .eq('id', userId)
+        .map((rows) => rows.isNotEmpty ? rows.first : null);
+  }
+
+  Future<void> updateProfile(String userId, Map<String, dynamic> data) async {
+    try {
+      await _supabase.from('users').update(data).eq('id', userId);
+    } catch (e) {
+      debugPrint('Error updating profile: $e');
+      throw Exception('Failed to update profile: $e');
     }
   }
 
@@ -167,15 +265,15 @@ class AuthService {
   bool get isLoggedIn => currentUser != null;
 
   // NEW: Fetch User Role
-  Future<String?> getUserRole() async {
-    final user = currentUser;
-    if (user == null) return null;
+  Future<String?> getUserRole([String? userId]) async {
+    final targetId = userId ?? currentUser?.id;
+    if (targetId == null) return null;
 
     try {
-      final response = await Supabase.instance.client
+      final response = await _supabase
           .from('users')
           .select('role')
-          .eq('id', user.id)
+          .eq('id', targetId)
           .maybeSingle();
 
       if (response != null) {
@@ -185,5 +283,19 @@ class AuthService {
       debugPrint('Error fetching user role: $e');
     }
     return null;
+  }
+
+  Future<int?> getUserDbId(String authId) async {
+    try {
+      final response = await _supabase
+          .from('users')
+          .select('user_id')
+          .eq('id', authId)
+          .maybeSingle();
+      return response?['user_id'] as int?;
+    } catch (e) {
+      debugPrint('AuthService: Error fetching DB ID: $e');
+      return null;
+    }
   }
 }

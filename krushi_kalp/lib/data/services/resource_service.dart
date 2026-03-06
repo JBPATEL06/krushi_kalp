@@ -4,9 +4,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/resource.dart';
 
 class ResourceService {
+  // --- SINGLETON ---
+  ResourceService._();
+  static final ResourceService instance = ResourceService._();
+
   final SupabaseClient _client = Supabase.instance.client;
 
-  // Fetch resources by type (and optional category)
   Future<List<Resource>> fetchResources({
     required ResourceType type,
     String? category,
@@ -124,17 +127,29 @@ class ResourceService {
 
   // Admin: Create Resource
   Future<void> createResource(Resource resource) async {
-    await _client.from('resources').insert(resource.toJson());
+    try {
+      await _client.from('resources').insert(resource.toJson());
+    } catch (e) {
+      throw Exception('Failed to create resource: $e');
+    }
   }
 
   // Admin: Update Resource
   Future<void> updateResource(int id, Map<String, dynamic> updates) async {
-    await _client.from('resources').update(updates).eq('id', id);
+    try {
+      await _client.from('resources').update(updates).eq('id', id);
+    } catch (e) {
+      throw Exception('Failed to update resource: $e');
+    }
   }
 
   // Admin: Delete Resource
   Future<void> deleteResource(int id) async {
-    await _client.from('resources').delete().eq('id', id);
+    try {
+      await _client.from('resources').delete().eq('id', id);
+    } catch (e) {
+      throw Exception('Failed to delete resource: $e');
+    }
   }
 
   // Upload File (PDF/Image)

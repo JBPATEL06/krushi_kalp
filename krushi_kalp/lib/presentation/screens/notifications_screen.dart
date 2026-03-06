@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/services/auth_service.dart';
+import '../../data/services/notification_service.dart';
 import '../widgets/common/network_error_state.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -20,7 +20,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _setupStream() {
-    final user = AuthService().currentUser;
+    final user = AuthService.instance.currentUser;
 
     if (user != null) {
       // Need integer user_id. Fetch it first or use a FutureBuilder wrapper?
@@ -38,22 +38,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _fetchUserIdAndStream(String authId) async {
-    final supabase = Supabase.instance.client;
     try {
-      final userResponse = await supabase
-          .from('users')
-          .select('user_id')
-          .eq('id', authId)
-          .maybeSingle();
+      final intDbId = await AuthService.instance.getUserDbId(authId);
 
-      if (userResponse != null && mounted) {
-        final intDbId = userResponse['user_id'] as int;
+      if (intDbId != null && mounted) {
         setState(() {
-          _notificationsStream = supabase
-              .from('notifications')
-              .stream(primaryKey: ['notification_id'])
-              .eq('user_id', intDbId)
-              .order('created_at', ascending: false);
+          _notificationsStream =
+              NotificationService().fetchNotificationsStream(intDbId);
         });
       }
     } catch (e) {
@@ -63,10 +54,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Future<void> _deleteNotification(int id) async {
     try {
-      await Supabase.instance.client
-          .from('notifications')
-          .delete()
-          .eq('notification_id', id);
+      await NotificationService().deleteNotification(id);
 
       if (mounted) {
         ScaffoldMessenger.of(

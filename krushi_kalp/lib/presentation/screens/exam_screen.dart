@@ -67,7 +67,8 @@ class _ExamScreenState extends State<ExamScreen> {
         questions = jsonList.map((q) => Question.fromJson(q)).toList();
       } else {
         // 2. Fallback to Network (Legacy / Safety)
-        questions = await TestService.fetchQuestions(widget.test.filePath);
+        questions =
+            await TestService.instance.fetchQuestions(widget.test.filePath);
       }
 
       // If user chose Gujarati, ALWAYS translate — regardless of what
@@ -232,10 +233,10 @@ class _ExamScreenState extends State<ExamScreen> {
     if (totalScore < 0) totalScore = 0;
 
     if (mounted) {
-      final user = AuthService().currentUser;
+      final user = AuthService.instance.currentUser;
       Future<int?>? submissionFuture;
       if (user != null) {
-        submissionFuture = TestService.submitTestResult(
+        submissionFuture = TestService.instance.submitTestResult(
           testId: widget.test.id,
           score: totalScore,
           totalMarks: widget.test.totalMarks,

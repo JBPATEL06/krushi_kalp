@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:krushi_kalp/presentation/widgets/common/responsive_wrapper.dart';
-
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/auth_provider.dart';
@@ -14,6 +13,7 @@ import 'package:krushi_kalp/presentation/screens/chat_screen.dart';
 
 import '../widgets/common/network_error_state.dart';
 import '../../data/services/chat_service.dart';
+import '../../data/services/auth_service.dart';
 import '../../data/services/app_config_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -52,26 +52,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _setupStream() {
-    // FIX: Use AuthProvider instead of AuthService
     final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
     if (user != null) {
-      _profileStream = Supabase.instance.client
-          .from('users')
-          .stream(primaryKey: ['id'])
-          .eq('id', user.id)
-          .map((rows) => rows.isNotEmpty ? rows.first : null);
+      _profileStream = AuthService.instance.streamUserProfile(user.id);
     }
   }
 
   Future<void> _ensureProfile(User user) async {
     try {
       debugPrint('Profile missing for ${user.id}, creating...');
-      await Supabase.instance.client.from('users').upsert({
-        'id': user.id,
-        'email': user.email,
-        'username': user.email?.split('@')[0] ?? 'User',
-        'language': 'en',
-      });
+      await AuthService.instance.ensureProfileExists(user);
       debugPrint('Profile created.');
     } catch (e) {
       debugPrint('Error creating profile: $e');
@@ -80,31 +70,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _updateLanguage(String newLang) async {
     final theme = Theme.of(context);
-    // FIX: Use AuthProvider
     final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
     if (user == null) return;
 
-    // Optimistic Update: Update UI immediately
     setState(() {
       _selectedLanguage = newLang;
     });
 
     try {
-      final response = await Supabase.instance.client
-          .from('users')
-          .update({'language': newLang})
-          .eq('id', user.id)
-          .select();
-
-      if (response.isEmpty) {
-        // Handle creation/retry if needed (previous logic)
-        // ...
-      }
+      await AuthService.instance.updateProfile(user.id, {'language': newLang});
     } catch (e) {
       debugPrint('Error updating language: $e');
       if (mounted) {
-        // Revert on error? Or just show snackbar
-        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text('Failed to update language: $e'),
@@ -152,11 +129,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icon(Icons.edit_outlined, size: context.sp(24)),
             tooltip: 'Edit Profile',
             onPressed: () async {
-              final data = await Supabase.instance.client
-                  .from('users')
-                  .select()
-                  .eq('id', user!.id)
-                  .maybeSingle();
+              final data = await AuthService.instance.getUserProfile(user!.id);
               if (context.mounted && data != null) {
                 Navigator.push(
                   context,
@@ -209,7 +182,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // Use optimistic value if set, otherwise stream value
           final language =
               _selectedLanguage ?? data?['language'] as String? ?? 'en';
-          final isAdmin = (data?['role'] == 'Admin');
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -493,7 +465,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         // Actually, better to check/add import first. But I can't do parallel.
         // I'll update the method now.
 
-        await ChatService().sendMessage(
+        await ChatService.instance.sendMessage(
             "I need to delete account. Please process my request.");
 
         if (context.mounted) {
@@ -527,46 +499,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "Contact Us",
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: Icon(Icons.email, color: theme.colorScheme.primary),
-              title: const Text("Email Support"),
-              onTap: () {
-                Navigator.pop(context);
-                final email = AppConfigService.email;
-                _launchUrl("mailto:$email");
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.chat, color: theme.colorScheme.secondary),
-              title: const Text("WhatsApp"),
-              onTap: () {
-                Navigator.pop(context);
-                final phone = AppConfigService.whatsappNumber
-                    .replaceAll(RegExp(r'[^\d+]'), '');
-                _launchUrl("https://wa.me/$phone");
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.send, color: theme.colorScheme.tertiary),
-              title: const Text("Telegram"),
-              onTap: () {
-                Navigator.pop(context);
-                final username =
-                    AppConfigService.telegramUsername.replaceAll('@', '');
-                _launchUrl("https://t.me/$username");
-              },
-            ),
-          ],
+      builder: (context) => SafeArea(
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Contact Us",
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Icon(Icons.email, color: theme.colorScheme.primary),
+                title: const Text("Email Support"),
+                onTap: () {
+                  Navigator.pop(context);
+                  final email = AppConfigService.email;
+                  _launchUrl("mailto:$email");
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.send, color: theme.colorScheme.tertiary),
+                title: const Text("Telegram"),
+                onTap: () {
+                  Navigator.pop(context);
+                  final username =
+                      AppConfigService.telegramUsername.replaceAll('@', '');
+                  _launchUrl("https://t.me/$username");
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

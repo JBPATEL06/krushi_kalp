@@ -1,12 +1,12 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/mock_test.dart';
 import '../../data/services/test_service.dart';
+import '../../data/services/auth_service.dart';
 
-class TestProvider extends ChangeNotifier {
-  final SupabaseClient _supabase = Supabase.instance.client;
+class TestProvider with ChangeNotifier {
   static const String _purchasedTestsKey = 'cached_user_purchased_tests';
 
   List<MockTest> _allTests = [];
@@ -80,15 +80,13 @@ class TestProvider extends ChangeNotifier {
     _errorMessage = '';
 
     try {
-      final response = await _supabase
-          .from('mock_tests')
-          .select()
-          .order('created_at', ascending: false);
+      final results = await Future.wait([
+        TestService.instance.fetchAllTestsRaw(),
+        fetchPurchasedStatus(),
+      ]);
 
-      await fetchPurchasedStatus();
-
-      final List<dynamic> data = response;
-      List<MockTest> fetchedTests = await compute(_parseMockTests, data);
+      final response = results[0] as List<dynamic>;
+      List<MockTest> fetchedTests = await compute(_parseMockTests, response);
 
       fetchedTests = await _signUrls(fetchedTests);
       _cachedTests = fetchedTests;
@@ -106,14 +104,8 @@ class TestProvider extends ChangeNotifier {
       tests.map((test) async {
         if (test.coverImagePath != null) {
           try {
-            String path = test.coverImagePath!.replaceAll('mock_test/', '');
-            final signedUrl = await _supabase.storage
-                .from('mock_test')
-                .createSignedUrl(path, 60 * 60);
-
-            final freshUrl =
-                '$signedUrl&v=${DateTime.now().millisecondsSinceEpoch}';
-
+            final freshUrl = await TestService.instance
+                .getSignedUrl(test.coverImagePath!, 'mock_test');
             return test.copyWith(signedUrl: freshUrl);
           } catch (e) {
             return test;
@@ -125,34 +117,13 @@ class TestProvider extends ChangeNotifier {
   }
 
   Future<void> fetchPurchasedStatus() async {
-    final user = _supabase.auth.currentUser;
+    final user = AuthService.instance.currentUser;
     if (user == null) {
       _purchasedTestIds.clear();
       return;
     }
     try {
-      final ordersResponse = await _supabase
-          .from('orders')
-          .select('order_id')
-          .eq('user_id', user.id)
-          .inFilter('status', ['SUCCESS', 'COMPLETED']);
-
-      if ((ordersResponse as List).isEmpty) {
-        _purchasedTestIds.clear();
-        return;
-      }
-
-      final orderIds = (ordersResponse).map((o) => o['order_id']).toList();
-
-      final itemsResponse = await _supabase
-          .from('order_items')
-          .select('test_id')
-          .inFilter('order_id', orderIds);
-
-      final ids = (itemsResponse as List)
-          .where((i) => i['test_id'] != null)
-          .map((i) => i['test_id'] as int)
-          .toSet();
+      final ids = await TestService.instance.fetchPurchasedTestIds(user.id);
       _purchasedTestIds = ids;
 
       if (_cachedTests.isNotEmpty) {
@@ -165,13 +136,14 @@ class TestProvider extends ChangeNotifier {
 
   Future<void> fetchUserTests(String userId) async {
     _setLoading(true);
+    _errorMessage = '';
     try {
-      _userTests = await TestService.fetchPurchasedTests(userId);
+      _userTests = await TestService.instance.fetchUserTests(userId);
       _purchasedTestIds = _userTests.map((t) => t.id).toSet();
       _saveToPrefs();
-      notifyListeners();
     } catch (e) {
       debugPrint("Error fetching user tests: $e");
+      _errorMessage = 'Error loading your tests: $e';
     } finally {
       _setLoading(false);
     }
@@ -220,6 +192,13 @@ class TestProvider extends ChangeNotifier {
     if (_isLoading == value) return;
     _isLoading = value;
     Future.microtask(() => notifyListeners());
+  }
+
+  @override
+  void dispose() {
+    _allTests.clear();
+    _cachedTests.clear();
+    super.dispose();
   }
 }
 

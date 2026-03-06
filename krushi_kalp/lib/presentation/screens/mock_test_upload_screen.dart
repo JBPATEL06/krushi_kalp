@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../utils/excel_to_json_converter.dart';
 import '../utils/ui_helpers.dart';
 import '../../data/services/test_service.dart';
@@ -44,8 +43,8 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
   }
 
   Future<void> _loadCategories() async {
-    final cats = await TestService.fetchCategories();
-    final langs = await TestService.fetchLanguages();
+    final cats = await TestService.instance.fetchCategories();
+    final langs = await TestService.instance.fetchLanguages();
     if (mounted) {
       setState(() {
         _categories = cats;
@@ -123,8 +122,6 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
 
     setState(() => _isLoading = true);
     final theme = Theme.of(context);
-    final supabase = Supabase.instance.client;
-
     try {
       final insertData = {
         'title': _titleController.text.trim(),
@@ -144,51 +141,15 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
         'file_path': '',
       };
 
-      final response = await supabase
-          .from('mock_tests')
-          .insert(insertData)
-          .select('test_id')
-          .single();
-
-      final int testId = response['test_id'];
-
-      const imagePath = 'mock_test_cover/';
-      final fullPath = '$imagePath$testId.jpg';
-
-      if (_imageBytes != null) {
-        await supabase.storage.from('mock_test').uploadBinary(
-              fullPath,
-              _imageBytes!,
-              fileOptions: const FileOptions(
-                upsert: true,
-                contentType: 'image/jpeg',
-              ),
-            );
-      }
-
-      if (_excelBytes == null) {
-        throw 'Failed to read Excel file';
-      }
+      if (_excelBytes == null) throw 'Excel file not selected';
 
       final jsonList = ExcelToJsonConverter.convert(_excelBytes!);
-      final jsonString = jsonEncode(jsonList);
-      final jsonBytes = utf8.encode(jsonString);
 
-      final jsonPath = 'mock_test_json_file/$testId.json';
-
-      await supabase.storage.from('mock_test').uploadBinary(
-            jsonPath,
-            jsonBytes,
-            fileOptions: const FileOptions(
-              upsert: true,
-              contentType: 'application/json',
-            ),
-          );
-
-      await supabase.from('mock_tests').update({
-        'file_path': jsonPath,
-        'cover_image_path': fullPath,
-      }).eq('test_id', testId);
+      await TestService.instance.uploadMockTestWithFiles(
+        insertData: insertData,
+        imageBytes: _imageBytes!,
+        jsonString: jsonEncode(jsonList),
+      );
 
       try {
         await AdminNotificationService().sendBroadcast(
@@ -214,7 +175,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
         );
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 

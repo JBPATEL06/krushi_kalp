@@ -7,7 +7,7 @@ import '../../core/theme/app_spacing.dart';
 
 import 'package:provider/provider.dart';
 import '../providers/test_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/services/auth_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_animate/flutter_animate.dart'; // NEW
 
@@ -62,7 +62,7 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
     setState(() => _isLoadingReviews = true);
 
     try {
-      final user = Supabase.instance.client.auth.currentUser;
+      final user = AuthService.instance.currentUser;
       final futures = <Future>[
         ReviewService.getReviewsForItem(widget.test.id, 'test'),
         ReviewService.getRatingStats(widget.test.id, 'test'),
@@ -94,7 +94,7 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
   }
 
   void _showReviewDialog() {
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = AuthService.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please login to review')),
@@ -536,7 +536,7 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
     }
 
     // Check if current user is logged in
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = AuthService.instance.currentUser;
     final canReview = (isPurchased || widget.test.price == 0) &&
         _userReview == null &&
         user != null &&

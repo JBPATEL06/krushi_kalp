@@ -3,14 +3,21 @@ import 'package:flutter/foundation.dart';
 import '../../domain/models/home_banner.dart';
 
 class BannerService {
-  static final _supabase = Supabase.instance.client;
-  static const _bucket = 'banners';
-  static const _table = 'banner';
+  // Singleton
+  static final BannerService _instance = BannerService._internal();
+  factory BannerService() => _instance;
+  BannerService._internal();
+
+  static BannerService get instance => _instance;
+
+  final _supabase = Supabase.instance.client;
+  final _bucket = 'banners';
+  final _table = 'banner';
 
   // ─────────────────────────────────────────
   // USER: Fetch active banners (ordered by priority desc)
   // ─────────────────────────────────────────
-  static Future<List<HomeBanner>> fetchActiveBanners() async {
+  Future<List<HomeBanner>> fetchActiveBanners() async {
     try {
       final response = await _supabase
           .from(_table)
@@ -30,7 +37,7 @@ class BannerService {
   // ─────────────────────────────────────────
   // ADMIN: Real-time stream of ALL banners
   // ─────────────────────────────────────────
-  static Stream<List<HomeBanner>> streamAllBanners() {
+  Stream<List<HomeBanner>> streamAllBanners() {
     return _supabase
         .from(_table)
         .stream(primaryKey: ['id'])
@@ -41,7 +48,7 @@ class BannerService {
   // ─────────────────────────────────────────
   // ADMIN: Upload a new banner image
   // ─────────────────────────────────────────
-  static Future<void> uploadBanner(
+  Future<void> uploadBanner(
     Uint8List fileBytes,
     String fileName, {
     String title = 'New Banner',
@@ -80,7 +87,7 @@ class BannerService {
   // ─────────────────────────────────────────
   // ADMIN: Replace image of an existing banner
   // ─────────────────────────────────────────
-  static Future<void> replaceBannerImage(
+  Future<void> replaceBannerImage(
     int bannerId,
     String oldImageUrl,
     Uint8List newFileBytes,
@@ -118,7 +125,7 @@ class BannerService {
   // ─────────────────────────────────────────
   // ADMIN: Update banner metadata (title, priority, active)
   // ─────────────────────────────────────────
-  static Future<void> updateBannerMeta(
+  Future<void> updateBannerMeta(
     int bannerId, {
     String? title,
     int? priority,
@@ -142,7 +149,7 @@ class BannerService {
   // ─────────────────────────────────────────
   // ADMIN: Delete a banner
   // ─────────────────────────────────────────
-  static Future<void> deleteBanner(int id, String imageUrl) async {
+  Future<void> deleteBanner(int id, String imageUrl) async {
     try {
       // 1. Delete DB record
       await _supabase.from(_table).delete().eq('id', id);
@@ -160,7 +167,7 @@ class BannerService {
   // ─────────────────────────────────────────
   // Private: Extract and delete storage file
   // ─────────────────────────────────────────
-  static void _deleteStorageFile(String imageUrl) {
+  void _deleteStorageFile(String imageUrl) {
     try {
       final uri = Uri.parse(imageUrl);
       final segments = uri.pathSegments;

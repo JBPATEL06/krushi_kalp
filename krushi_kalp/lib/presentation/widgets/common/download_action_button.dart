@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
+import '../../../data/services/auth_service.dart';
 import '../../../data/services/download_service.dart';
 import '../../widgets/common/responsive_wrapper.dart';
 
@@ -40,8 +39,7 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
   Future<void> _checkStatus() async {
     if (!mounted) return;
 
-    final currentUserId =
-        widget.userId ?? Supabase.instance.client.auth.currentUser?.id;
+    final currentUserId = widget.userId ?? AuthService.instance.currentUser?.id;
 
     final exists = await DownloadService()
         .isFileDownloaded(widget.filename, userId: currentUserId);

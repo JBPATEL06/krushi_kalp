@@ -3,6 +3,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class PaymentService {
+  // --- SINGLETON ---
+  static PaymentService? _instance;
+  static PaymentService get instance {
+    if (_instance == null) {
+      throw Exception(
+          'PaymentService must be initialized with callbacks first.');
+    }
+    return _instance!;
+  }
+
+  static void init({
+    required Function(PaymentSuccessResponse) onSuccess,
+    required Function(PaymentFailureResponse) onFailure,
+    required Function(ExternalWalletResponse) onExternalWallet,
+  }) {
+    _instance = PaymentService._internal(
+      onSuccess: onSuccess,
+      onFailure: onFailure,
+      onExternalWallet: onExternalWallet,
+    );
+  }
+
   late Razorpay _razorpay;
 
   // Key read from .env — never hardcoded in source code
@@ -12,7 +34,7 @@ class PaymentService {
   final Function(PaymentFailureResponse) onFailure;
   final Function(ExternalWalletResponse) onExternalWallet;
 
-  PaymentService({
+  PaymentService._internal({
     required this.onSuccess,
     required this.onFailure,
     required this.onExternalWallet,

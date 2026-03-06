@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/mock_test.dart';
 import '../../data/services/test_service.dart';
+import '../../data/services/auth_service.dart';
 import 'mock_test_detail_screen.dart';
 import '../../domain/models/offer.dart';
 
@@ -104,44 +104,54 @@ class _StoreScreenState extends State<StoreScreen>
     }
   }
 
-  Future<void> _loadData() async {
-    // Start timer to show retry button if loading takes too long
-    // _loadingTimer = Timer(const Duration(seconds: 10), () {
-    //   if (mounted && context.read<TestProvider>().isLoading) {
-    //     setState(() {
-    //       _showRetryButton = true;
-    //     });
-    //   }
-    // });
+  bool _isProcessing = false;
 
-    // NotificationService().schedulePurchaseReminder(); // Removed excessive scheduling
+  Future<void> _loadData() async {
+    if (_isProcessing) return;
+    _isProcessing = true;
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (mounted) {
-        final offerProvider = context.read<OfferProvider>();
-        final cartProvider = context.read<CartProvider>();
+        try {
+          final offerProvider = context.read<OfferProvider>();
+          final cartProvider = context.read<CartProvider>();
 
-        // We only fetch things specific to the store functionality here.
-        // Tests and Purchased Resources are synced by MainScreen globally.
-        await Future.wait([
-          offerProvider.fetchActiveOffers(),
-          cartProvider.fetchCart(),
-        ]);
+          await Future.wait([
+            offerProvider.fetchActiveOffers(),
+            cartProvider.fetchCart(),
+          ]);
+        } finally {
+          if (mounted) _isProcessing = false;
+        }
+      } else {
+        _isProcessing = false;
       }
     });
   }
 
   Future<void> _refreshAll() async {
-    final testProvider = context.read<TestProvider>();
-    final offerProvider = context.read<OfferProvider>();
-    final cartProvider = context.read<CartProvider>();
-    final resourceProvider = context.read<ResourceProvider>();
+    if (_isProcessing) return;
+    _isProcessing = true;
 
-    await Future.wait([
-      testProvider.fetchTests(forceRefresh: true),
-      resourceProvider.fetchAll(),
-      offerProvider.fetchActiveOffers(),
-      cartProvider.fetchCart(),
-    ]);
+    try {
+      final testProvider = context.read<TestProvider>();
+      final offerProvider = context.read<OfferProvider>();
+      final cartProvider = context.read<CartProvider>();
+      final resourceProvider = context.read<ResourceProvider>();
+
+      await Future.wait([
+        testProvider.fetchTests(forceRefresh: true),
+        resourceProvider.fetchAll(),
+        offerProvider.fetchActiveOffers(),
+        cartProvider.fetchCart(),
+      ]);
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      } else {
+        _isProcessing = false;
+      }
+    }
   }
 
   // --- ACTIONS ---
@@ -153,7 +163,7 @@ class _StoreScreenState extends State<StoreScreen>
     required String title,
   }) async {
     try {
-      final user = Supabase.instance.client.auth.currentUser;
+      final user = AuthService.instance.currentUser;
       if (user == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -193,7 +203,7 @@ class _StoreScreenState extends State<StoreScreen>
     Resource? resource,
   }) async {
     try {
-      final user = Supabase.instance.client.auth.currentUser;
+      final user = AuthService.instance.currentUser;
       if (user == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -204,7 +214,7 @@ class _StoreScreenState extends State<StoreScreen>
       }
 
       if (test != null) {
-        await TestService.claimFreeTest(
+        await TestService.instance.claimFreeTest(
           testId: test.id,
           authUserId: user.id,
         );
@@ -281,7 +291,8 @@ class _StoreScreenState extends State<StoreScreen>
 
   Future<void> _openOrDownloadResource(Resource resource) async {
     final filename = 'resource_${resource.id}.pdf';
-    final userId = Supabase.instance.client.auth.currentUser?.id;
+    final user = AuthService.instance.currentUser;
+    final userId = user?.id;
 
     final isDownloaded =
         await DownloadService().isFileDownloaded(filename, userId: userId);

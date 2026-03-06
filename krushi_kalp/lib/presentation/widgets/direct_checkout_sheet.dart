@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/services/auth_service.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/offer.dart';
@@ -12,6 +12,8 @@ import '../../domain/models/resource.dart';
 import '../../data/services/resource_service.dart';
 import '../providers/navigation_provider.dart';
 import '../widgets/common/app_button.dart';
+import '../providers/test_provider.dart';
+import '../providers/resource_provider.dart';
 
 class DirectCheckoutSheet extends StatefulWidget {
   final MockTest? test; // Make nullable
@@ -29,7 +31,6 @@ class DirectCheckoutSheet extends StatefulWidget {
 
 class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
   final TextEditingController _couponController = TextEditingController();
-  late PaymentService _paymentService;
 
   Offer? _appliedOffer;
   double _finalPrice = 0.0;
@@ -50,7 +51,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
   @override
   void initState() {
     super.initState();
-    _paymentService = PaymentService(
+    PaymentService.init(
       onSuccess: _onPaymentSuccessActual,
       onFailure: (response) {
         if (mounted) {
@@ -69,7 +70,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
   }
 
   void _applyInitialOffer() {
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = AuthService.instance.currentUser;
     debugPrint('DirectCheckout: Applying Initial Offer. User: ${user?.id}');
     final priceData = PriceCalculator.calculateDisplayPrice(
       basePrice: _basePrice,
@@ -86,7 +87,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
   @override
   void dispose() {
     _couponController.dispose();
-    _paymentService.dispose();
+    PaymentService.instance.dispose();
     super.dispose();
   }
 
@@ -100,8 +101,8 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
     });
 
     try {
-      final user = Supabase.instance.client.auth.currentUser;
-      final offer = await OfferService.verifyCoupon(code);
+      final user = AuthService.instance.currentUser;
+      final offer = await OfferService.instance.verifyCoupon(code);
 
       if (offer != null) {
         // Validate specific constraints
@@ -145,30 +146,39 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
   }
 
   Future<void> _initiatePurchase() async {
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = AuthService.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Please login first")));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("Please login first")));
+      }
       return;
     }
 
+    if (_isProcessing) return; // PRO FIX: Synchronization Gate
     setState(() => _isProcessing = true);
 
     try {
       debugPrint(
           'DirectCheckout: Initiating Purchase. Item: $_title, Offer: ${_appliedOffer?.id}');
 
+      // Fire off profile fetch in parallel to hide network latency
+      Future<Map<String, dynamic>?> profileFuture = Future.value(null);
+      if (user.phone == null || user.phone!.isEmpty) {
+        profileFuture = AuthService.instance.getUserProfile(user.id);
+      }
+
       String orderId;
       if (widget.resource != null) {
         // Resource Order
-        orderId = await ResourceService().createDirectOrder(
+        orderId = await ResourceService.instance.createDirectOrder(
           resourceId: _resourceId!,
           price: _basePrice,
           userId: user.id,
         );
       } else {
         // Test Order
-        orderId = await TestService.createDirectOrder(
+        orderId = await TestService.instance.createDirectOrder(
           testId: _testId!,
           price: _basePrice, // Store Base Price
           authUserId: user.id,
@@ -177,7 +187,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
 
       debugPrint('DirectCheckout: Order Created: $orderId');
 
-      if (!mounted) return; // Check if widget is still active
+      if (!mounted) return; // PRO FIX: Check mounted after async DB call
 
       if (_finalPrice <= 0) {
         debugPrint('DirectCheckout: Zero Price detected. Skipping Razorpay.');
@@ -187,23 +197,22 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
         return;
       }
 
-      // Fetch phone from DB to prefill Razorpay (no blocking — Razorpay handles it)
+      // Resolve the parallel profile fetch
       String? userPhone = user.phone;
       if (userPhone == null || userPhone.isEmpty) {
         try {
-          final profile = await Supabase.instance.client
-              .from('users')
-              .select('phonenumber')
-              .eq('id', user.id)
-              .maybeSingle();
-          userPhone = profile?['phonenumber'];
+          final profile = await profileFuture;
+          if (profile != null && profile['phone'] != null) {
+            userPhone = profile['phone'];
+          }
         } catch (_) {}
       }
 
-      if (!mounted) return;
+      if (!mounted)
+        return; // PRO FIX: Avoid using context/opening Razorpay if disposed
 
       // 2. Open Razorpay
-      _paymentService.openCheckout(
+      PaymentService.instance.openCheckout(
         amount: _finalPrice,
         orderId: orderId,
         email: user.email,
@@ -223,13 +232,16 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
   String? _pendingOrderId; // To track the order being paid for
 
   Future<void> _completeCheckout(String paymentId) async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null || _pendingOrderId == null) return;
+    final user = AuthService.instance.currentUser;
+    if (user == null || _pendingOrderId == null) {
+      if (mounted) setState(() => _isProcessing = false);
+      return;
+    }
 
     try {
       debugPrint(
           'DirectCheckout: Completing Checkout. Order: $_pendingOrderId, Payment: $paymentId');
-      await TestService.checkout(
+      await TestService.instance.checkout(
         orderId: _pendingOrderId!,
         paymentId: paymentId,
         amount: _finalPrice,
@@ -252,6 +264,13 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
             backgroundColor: Theme.of(context).colorScheme.primaryContainer));
         // Navigate to Home tab
         Provider.of<NavigationProvider>(context, listen: false).setIndex(0);
+
+        // SYNC FIX: Auto-refresh data in background
+        if (widget.test != null) {
+          context.read<TestProvider>().fetchUserTests(user.id);
+        } else if (widget.resource != null) {
+          context.read<ResourceProvider>().fetchPurchasedResources(user.id);
+        }
       }
     } catch (e) {
       if (mounted) {

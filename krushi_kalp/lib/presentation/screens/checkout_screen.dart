@@ -23,7 +23,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _handlePurchase() async {
     setState(() => _isProcessing = true);
 
-    final user = AuthService().currentUser;
+    final user = AuthService.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('You must be logged in to purchase.')),
@@ -33,11 +33,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     try {
-      await TestService.purchaseMockTest(
+      // REPLACED legacy purchaseMockTest with direct checkout flow logic if needed,
+      // but for now, we follow the DirectCheckoutSheet pattern.
+      // If this screen is still in use, it should be migrated to use CartService/TestService orders.
+      final orderId = await TestService.instance.createDirectOrder(
         testId: widget.test.id,
-        amount: _total,
+        price: _total,
         authUserId: user.id,
       );
+      debugPrint("Direct order created: $orderId");
+
+      // Here we would normally trigger PaymentService, but for now we just show a message
+      // or redirect to a proper checkout.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text("Order created. Please complete payment.")),
+        );
+      }
 
       if (mounted) {
         // Show success, then navigate

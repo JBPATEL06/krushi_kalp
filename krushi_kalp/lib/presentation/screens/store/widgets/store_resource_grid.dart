@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../domain/models/resource.dart';
+import '../../../../data/services/auth_service.dart';
 import '../../../../domain/models/offer.dart';
 import '../../../../core/theme/app_spacing.dart';
 import 'store_item_card.dart';
@@ -168,7 +168,7 @@ class _StoreResourceGridState extends State<StoreResourceGrid> {
               url: resource.fileUrl,
               startLabel: "Open",
               isFullWidth: false,
-              userId: Supabase.instance.client.auth.currentUser?.id,
+              userId: AuthService.instance.currentUser?.id,
               onAction: () async {
                 widget.onBuyTap(resource);
               },

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../domain/models/mock_test.dart';
 import '../../../../domain/models/offer.dart';
 import 'store_item_card.dart';
 import '../../../../utils/price_calculator.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../data/services/auth_service.dart';
 import '../../../../data/services/review_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../widgets/common/download_action_button.dart';
@@ -159,7 +159,7 @@ class _StoreGridState extends State<StoreGrid> {
               url: test.contentUrl,
               startLabel: "Start",
               isFullWidth: true, // Needs to be full width in the vertical card
-              userId: Supabase.instance.client.auth.currentUser?.id,
+              userId: AuthService.instance.currentUser?.id,
               onAction: () async {
                 if (test.contentUrl == null) {
                   ScaffoldMessenger.of(context).showSnackBar(

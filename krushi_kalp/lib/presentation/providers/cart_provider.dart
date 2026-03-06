@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/services/auth_service.dart';
+import '../../data/services/test_service.dart';
 import '../../data/services/cart_service.dart';
 
 class CartProvider extends ChangeNotifier {
@@ -25,7 +26,7 @@ class CartProvider extends ChangeNotifier {
   }
 
   Future<void> fetchCart({bool forceRefresh = false}) async {
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = AuthService.instance.currentUser;
     if (user == null) {
       _cartItems = [];
       notifyListeners();
@@ -45,7 +46,7 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final items = await CartService.fetchCartItems(user.id);
+      final items = await CartService.instance.fetchCartItems(user.id);
 
       // Sign URLs (Logic moved from CartScreen)
       final processedItems = await Future.wait(items.map((item) async {
@@ -77,9 +78,8 @@ class CartProvider extends ChangeNotifier {
           // For now, only signing MockTests as before.
           if (item.mockTest != null) {
             try {
-              imageUrl = await Supabase.instance.client.storage
-                  .from('mock_test')
-                  .createSignedUrl(path, 60 * 60);
+              imageUrl =
+                  await TestService.instance.getSignedUrl(path, 'mock_test');
             } catch (e) {
               // ignore
             }
@@ -123,6 +123,7 @@ class CartProvider extends ChangeNotifier {
     required double price,
     required String authUserId,
   }) async {
+    if (_isLoading) return; // PRO FIX: Synchronization Gate
     if (testId == null && resourceId == null) return;
 
     if ((testId != null && isItemInCart(testId)) ||
@@ -137,7 +138,7 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await CartService.addToCart(
+      await CartService.instance.addToCart(
         authUserId: authUserId,
         testId: testId,
         resourceId: resourceId,
@@ -158,7 +159,7 @@ class CartProvider extends ChangeNotifier {
     required int itemId,
   }) async {
     try {
-      await CartService.removeCartItem(itemId);
+      await CartService.instance.removeCartItem(itemId);
       // Optimistic update
       _cartItems.removeWhere((item) => item['item_id'] == itemId);
       notifyListeners();
@@ -173,5 +174,11 @@ class CartProvider extends ChangeNotifier {
   void clearCart() {
     _cartItems = [];
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _cartItems.clear();
+    super.dispose();
   }
 }

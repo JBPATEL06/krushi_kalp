@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'auth_service.dart';
 import 'notification_service.dart';
 
 // Background Handler (Must be top-level)
@@ -116,21 +116,14 @@ class FCMService {
       await _firebaseMessaging.subscribeToTopic('all_users');
 
       // 4b. Subscribe to "admin_updates" ONLY if Admin
-      final user = Supabase.instance.client.auth.currentUser;
+      final user = AuthService.instance.currentUser;
       if (user != null) {
-        final profile = await Supabase.instance.client
-            .from('users')
-            .select('role')
-            .eq('id', user.id)
-            .maybeSingle();
+        final role = await AuthService.instance.getUserRole();
 
-        if (profile != null && profile['role'] == 'Admin') {
+        if (role == 'Admin') {
           await _firebaseMessaging.subscribeToTopic('admin_updates');
           debugPrint("Subscribed to 'admin_updates' topic (Admin Mode)");
         } else {
-          // CRITICAL FIX: Explicitly unsubscribe if NOT admin
-          // This prevents "User" accounts on a device previously used by "Admin"
-          // from receiving admin notifications.
           await _firebaseMessaging.unsubscribeFromTopic('admin_updates');
           debugPrint("Unsubscribed from 'admin_updates' topic (User Mode)");
         }
@@ -168,15 +161,15 @@ class FCMService {
   }
 
   Future<void> _saveTokenToDatabase(String token) async {
-    final user = Supabase.instance.client.auth.currentUser;
+    final user = AuthService.instance.currentUser;
     if (user != null) {
       try {
         // We need to store this in a 'users' table.
         // Use update instead of upsert to avoid accidentally wiping other columns (like username)
         // or failing not-null constraints if the row is treated as new.
-        await Supabase.instance.client.from('users').update({
+        await AuthService.instance.updateProfile(user.id, {
           'fcm_token': token,
-        }).eq('id', user.id);
+        });
 
         debugPrint("FCM Token Saved to Database");
       } catch (e) {

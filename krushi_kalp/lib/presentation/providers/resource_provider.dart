@@ -5,7 +5,7 @@ import '../../data/services/resource_service.dart';
 import '../../domain/models/resource.dart';
 
 class ResourceProvider extends ChangeNotifier {
-  final ResourceService _resourceService = ResourceService();
+  final ResourceService _resourceService = ResourceService.instance;
   static const String _purchasedResourcesKey =
       'cached_user_purchased_resources';
 
@@ -44,8 +44,9 @@ class ResourceProvider extends ChangeNotifier {
             jsonList.map((j) => Resource.fromJson(j)).toList();
         _purchasedResourceIds = _purchasedResources.map((r) => r.id).toSet();
         debugPrint(
-            'ResourceProvider: Loaded ${_purchasedResources.length} resources from cache');
-        notifyListeners();
+          'ResourceProvider: Loaded ${_purchasedResources.length} resources from cache',
+        );
+        Future.microtask(() => notifyListeners());
       }
     } catch (e) {
       debugPrint('ResourceProvider: Error loading from cache: $e');
@@ -55,18 +56,22 @@ class ResourceProvider extends ChangeNotifier {
   Future<void> _saveToPrefs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final String encodedData =
-          json.encode(_purchasedResources.map((r) => r.toJson()).toList());
+      final String encodedData = json.encode(
+        _purchasedResources.map((r) => r.toJson()).toList(),
+      );
       await prefs.setString(_purchasedResourcesKey, encodedData);
       debugPrint(
-          'ResourceProvider: Saved ${_purchasedResources.length} resources to cache');
+        'ResourceProvider: Saved ${_purchasedResources.length} resources to cache',
+      );
     } catch (e) {
       debugPrint('ResourceProvider: Error saving to cache: $e');
     }
   }
 
-  Future<void> fetchResources(ResourceType type,
-      {bool forceRefresh = false}) async {
+  Future<void> fetchResources(
+    ResourceType type, {
+    bool forceRefresh = false,
+  }) async {
     if (!forceRefresh) {
       bool hasData = false;
       switch (type) {
@@ -83,9 +88,7 @@ class ResourceProvider extends ChangeNotifier {
           hasData = _currentAffairs.isNotEmpty;
           break;
       }
-      if (hasData) {
-        return;
-      }
+      if (hasData) return;
     }
 
     _setLoading(true);
@@ -116,14 +119,18 @@ class ResourceProvider extends ChangeNotifier {
   }
 
   Future<void> fetchPurchasedResources(String userId) async {
+    _setLoading(true);
+    _errorMessage = null;
     try {
       final resources = await _resourceService.fetchPurchasedResources(userId);
       _purchasedResources = resources;
       _purchasedResourceIds = resources.map((r) => r.id).toSet();
       _saveToPrefs();
-      notifyListeners();
     } catch (e) {
       debugPrint('Error fetching purchased resources: $e');
+      _errorMessage = 'Failed to load purchased resources: $e';
+    } finally {
+      _setLoading(false);
     }
   }
 
@@ -143,9 +150,13 @@ class ResourceProvider extends ChangeNotifier {
   }
 
   Future<void> claimResource(int resourceId, String userId) async {
+    if (_isLoading) return;
+    _setLoading(true);
     try {
       await _resourceService.claimResource(
-          resourceId: resourceId, userId: userId);
+        resourceId: resourceId,
+        userId: userId,
+      );
       await fetchPurchasedResources(userId);
     } catch (e) {
       debugPrint('Error claiming resource: $e');
@@ -162,6 +173,6 @@ class ResourceProvider extends ChangeNotifier {
       if (_loadingCount > 0) _loadingCount--;
     }
     _isLoading = _loadingCount > 0;
-    notifyListeners();
+    Future.microtask(() => notifyListeners());
   }
 }

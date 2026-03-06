@@ -12,6 +12,8 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  final _supabase = Supabase.instance.client;
+
   bool _isInitialized = false;
 
   // Track currently active chat (User ID) to suppress notifications
@@ -96,11 +98,11 @@ class NotificationService {
             callback: (payload) {
               final newTest = payload.newRecord;
               debugPrint("📝 New Mock Test: ${newTest['title']}");
-//              showLocalNotification(
-//                id: _newTestIdBase + (newTest['test_id'] as int? ?? 0),
-//                title: "New Mock Test Added!",
-//                body: "Check out: ${newTest['title']}",
-//              );
+              showLocalNotification(
+                id: _generalIdBase + (newTest['test_id'] as int? ?? 0),
+                title: "New Mock Test Added!",
+                body: "Check out: ${newTest['title']}",
+              );
 
 // ... (In Broadcast)
 //                showLocalNotification(
@@ -130,12 +132,12 @@ class NotificationService {
             callback: (payload) {
               final newOffer = payload.newRecord;
               debugPrint("🏷️ New Offer: ${newOffer['title']}");
-//              showLocalNotification(
-//                id: _offerIdBase + (newOffer['id'] as int? ?? 0),
-//                title: "New Offer Available!",
-//                body:
-//                    "${newOffer['title']} - ${newOffer['discount_percentage']}% OFF!",
-//              );
+              showLocalNotification(
+                id: _generalIdBase + (newOffer['id'] as int? ?? 0),
+                title: "New Offer Available!",
+                body:
+                    "${newOffer['title']} - ${newOffer['discount_percentage']}% OFF!",
+              );
             },
           )
           .subscribe((status, error) {
@@ -248,11 +250,11 @@ class NotificationService {
                 return;
               }
 
-              // showLocalNotification(
-              //   id: _generalIdBase + (newNotif['notification_id'] as int? ?? 0),
-              //   title: newNotif['title'] ?? 'New Notification',
-              //   body: newNotif['message'] ?? 'You have a new update.',
-              // );
+              showLocalNotification(
+                id: _generalIdBase + (newNotif['notification_id'] as int? ?? 0),
+                title: newNotif['title'] ?? 'New Notification',
+                body: newNotif['message'] ?? 'You have a new update.',
+              );
             },
           )
           .subscribe((status, error) {
@@ -283,12 +285,12 @@ class NotificationService {
               // to avoid duplicates if RLS sends us our own personal notifs here too.
               if (newNotif['user_id'] == null) {
                 print("📢 Broadcast Payload Received: $newNotif");
-                // showLocalNotification(
-                //   id: _broadcastIdBase +
-                //       (newNotif['notification_id'] as int? ?? 0),
-                //   title: newNotif['title'] ?? 'Announcement',
-                //   body: newNotif['message'] ?? 'Check the app for updates.',
-                // );
+                showLocalNotification(
+                  id: _broadcastIdBase +
+                      (newNotif['notification_id'] as int? ?? 0),
+                  title: newNotif['title'] ?? 'Announcement',
+                  body: newNotif['message'] ?? 'Check the app for updates.',
+                );
               }
             },
           )
@@ -392,5 +394,17 @@ class NotificationService {
     );
     const details = NotificationDetails(android: androidDetails);
     await _notificationsPlugin.show(id, title, body, details);
+  }
+
+  Stream<List<Map<String, dynamic>>> fetchNotificationsStream(int userDbId) {
+    return _supabase
+        .from('notifications')
+        .stream(primaryKey: ['notification_id'])
+        .eq('user_id', userDbId)
+        .order('created_at', ascending: false);
+  }
+
+  Future<void> deleteNotification(int id) async {
+    await _supabase.from('notifications').delete().eq('notification_id', id);
   }
 }

@@ -4,10 +4,23 @@ import '../../domain/models/offer.dart';
 import '../../utils/network_utils.dart'; // Import NetworkUtils
 
 class OfferService {
-  static final _supabase = Supabase.instance.client;
+  // Singleton
+  static final OfferService _instance = OfferService._internal();
+  factory OfferService() => _instance;
+  OfferService._internal();
+
+  static OfferService get instance => _instance;
+
+  final _supabase = Supabase.instance.client;
+
+  SupabaseClient get supabaseClient => _supabase;
+
+  RealtimeChannel getOffersChannel() {
+    return _supabase.channel('offers_channel');
+  }
 
   // Fetch all offers (Admin)
-  static Future<List<Offer>> getAllOffers() async {
+  Future<List<Offer>> getAllOffers() async {
     try {
       final response = await _supabase
           .from('offers')
@@ -26,7 +39,7 @@ class OfferService {
   }
 
   // Stream all offers (Admin)
-  static Stream<List<Offer>> streamOffers() {
+  Stream<List<Offer>> streamOffers() {
     return _supabase
         .from('offers')
         .stream(primaryKey: ['offer_id'])
@@ -35,7 +48,7 @@ class OfferService {
   }
 
   // Fetch claim counts for all offers
-  static Future<Map<int, int>> getOfferClaimCounts() async {
+  Future<Map<int, int>> getOfferClaimCounts() async {
     try {
       debugPrint('OfferService: Fetching all offer claim counts...');
       final response =
@@ -67,7 +80,7 @@ class OfferService {
   }
 
   // Fetch active global offers (Store Display)
-  static Future<List<Offer>> getActiveGlobalOffers() async {
+  Future<List<Offer>> getActiveGlobalOffers() async {
     try {
       final now = DateTime.now().toUtc().toIso8601String();
       final response = await _supabase
@@ -87,7 +100,7 @@ class OfferService {
     }
   }
 
-  static Future<List<Offer>> fetchActiveSaleOffers() async {
+  Future<List<Offer>> fetchActiveSaleOffers() async {
     try {
       // Add a 5-minute grace period to account for slight clock drift
       final now = DateTime.now().toUtc();
@@ -123,7 +136,7 @@ class OfferService {
     }
   }
 
-  static Future<bool> checkCodeExists(String code) async {
+  Future<bool> checkCodeExists(String code) async {
     try {
       final response = await _supabase
           .from('offers')
@@ -137,8 +150,7 @@ class OfferService {
   }
 
   // Check Usage Limit for a User
-  static Future<bool> checkUsageLimit(
-      int offerId, String userId, int limit) async {
+  Future<bool> checkUsageLimit(int offerId, String userId, int limit) async {
     try {
       final count = await _supabase
           .from('offer_redemptions')
@@ -153,7 +165,7 @@ class OfferService {
   }
 
   // Create Offer (Admin)
-  static Future<void> createOffer(Offer offer) async {
+  Future<void> createOffer(Offer offer) async {
     try {
       if (offer.code != null) {
         final exists = await checkCodeExists(offer.code!);
@@ -173,7 +185,7 @@ class OfferService {
   }
 
   // Update Offer (Admin)
-  static Future<void> updateOffer(Offer offer) async {
+  Future<void> updateOffer(Offer offer) async {
     try {
       if (offer.id == 0) throw Exception("Invalid Offer ID for update");
 
@@ -203,7 +215,7 @@ class OfferService {
 
   // Delete/Deactivate
   // Returns: 'DELETED', 'ARCHIVED', or throws error
-  static Future<String> deleteOffer(int id) async {
+  Future<String> deleteOffer(int id) async {
     try {
       await _supabase.from('offers').delete().eq('offer_id', id);
       return 'DELETED';
@@ -224,7 +236,7 @@ class OfferService {
   }
 
   // Verify Coupon Code
-  static Future<Offer?> verifyCoupon(String code) async {
+  Future<Offer?> verifyCoupon(String code) async {
     try {
       final now = DateTime.now().toUtc().toIso8601String();
       final response = await _supabase
@@ -242,6 +254,33 @@ class OfferService {
       if (NetworkUtils.isNetworkError(e)) return null;
       print('Error verifying coupon: $e');
       return null;
+    }
+  }
+
+  // --- ORDER COUPON MANAGEMENT ---
+  Future<void> applyCouponToOrder({
+    required String orderId,
+    required int offerId,
+  }) async {
+    try {
+      await _supabase.from('orders').update({
+        'offer_id': offerId,
+        'updated_at': DateTime.now().toUtc().toIso8601String()
+      }).eq('order_id', orderId);
+    } catch (e) {
+      debugPrint('OfferService: Error applying coupon to order: $e');
+      throw Exception('Failed to apply coupon');
+    }
+  }
+
+  Future<void> removeCouponFromOrder(String orderId) async {
+    try {
+      await _supabase.from('orders').update({
+        'offer_id': null,
+        'updated_at': DateTime.now().toIso8601String()
+      }).eq('order_id', orderId);
+    } catch (e) {
+      debugPrint('OfferService: Error removing coupon from order: $e');
     }
   }
 }

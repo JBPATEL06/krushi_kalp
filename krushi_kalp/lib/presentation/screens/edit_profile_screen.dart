@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/services/auth_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic> profile;
@@ -92,13 +92,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     setState(() => _isSaving = true);
     try {
-      final userId = Supabase.instance.client.auth.currentUser?.id;
+      final userId = AuthService.instance.currentUser?.id;
       if (userId != null) {
-        await Supabase.instance.client.from('users').update({
+        await AuthService.instance.updateProfile(userId, {
           'username': username,
           'phonenumber': phone.isEmpty ? null : phone,
           'language': _selectedLanguage,
-        }).eq('id', userId);
+        });
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

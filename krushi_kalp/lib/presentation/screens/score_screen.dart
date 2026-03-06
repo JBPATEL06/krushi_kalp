@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../providers/auth_provider.dart';
 import '../providers/network_provider.dart';
@@ -58,7 +57,7 @@ class _ScoreScreenState extends State<ScoreScreen> {
         });
       }
       try {
-        final data = await TestService.fetchUserResults(user.id);
+        final data = await TestService.instance.fetchUserResults(user.id);
 
         if (mounted) {
           setState(() {
@@ -101,9 +100,7 @@ class _ScoreScreenState extends State<ScoreScreen> {
         const SnackBar(content: Text('Downloading Result...')),
       );
 
-      final bytes = await Supabase.instance.client.storage
-          .from('mock_test')
-          .download(bucketPath);
+      final bytes = await TestService.instance.downloadResultPdf(bucketPath);
 
       await file.writeAsBytes(bytes);
       _openPdf(file, title);
@@ -446,7 +443,7 @@ class _ScoreScreenState extends State<ScoreScreen> {
       }
 
       try {
-        final success = await TestService.deleteTestResult(resultId);
+        final success = await TestService.instance.deleteTestResult(resultId);
 
         if (success) {
           // Re-fetch to ensure consistency

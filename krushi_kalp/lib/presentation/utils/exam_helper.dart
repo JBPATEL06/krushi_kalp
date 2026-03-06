@@ -1,6 +1,5 @@
 import 'dart:io'; // NEW
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/download_service.dart'; // NEW
@@ -10,7 +9,7 @@ import '../widgets/common/download_progress_dialog.dart'; // NEW
 
 class ExamHelper {
   static Future<void> startExam(BuildContext context, MockTest test) async {
-    final user = AuthService().currentUser;
+    final user = AuthService.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please login to start the exam")),
@@ -84,13 +83,9 @@ class ExamHelper {
     // Pre-fetch language from profile as default
     String tempLanguage = 'en';
     try {
-      final data = await Supabase.instance.client
-          .from('users')
-          .select('language')
-          .eq('id', userId)
-          .maybeSingle();
-      if (data != null && data['language'] != null) {
-        tempLanguage = data['language'];
+      final profile = await AuthService.instance.getUserProfile(userId);
+      if (profile != null && profile['language'] != null) {
+        tempLanguage = profile['language'];
       }
     } catch (_) {}
 
@@ -174,9 +169,8 @@ class ExamHelper {
       await prefs.setBool('skip_exam_lang_dialog', true);
       await prefs.setString('default_exam_lang', selectedLanguage!);
       try {
-        await Supabase.instance.client
-            .from('users')
-            .update({'language': selectedLanguage}).eq('id', userId);
+        await AuthService.instance
+            .updateProfile(userId, {'language': selectedLanguage});
       } catch (_) {}
     }
 

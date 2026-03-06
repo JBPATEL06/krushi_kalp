@@ -35,6 +35,10 @@ class AppTheme {
       onSecondary: isDark ? AppColorsV2.backgroundDark : Colors.white,
       surface: isDark ? AppColorsV2.surfaceDark : AppColorsV2.surface,
       error: const Color(0xFFEF4444),
+      tertiary: isDark
+          ? const Color(0xFF2DD4BF) // Emerald/Teal-Green for Dark Mode
+          : const Color(0xFF10B981), // Solid Green for Light Mode
+      onTertiary: Colors.white,
       outline: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
       outlineVariant:
           isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),

@@ -1,11 +1,8 @@
-import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/material.dart';
 import '../../domain/models/offer.dart';
 import '../../data/services/offer_service.dart';
 
-class OfferProvider extends ChangeNotifier {
-  final SupabaseClient _supabase = Supabase.instance.client;
-
+class OfferProvider with ChangeNotifier {
   List<Offer> _activeOffers = [];
   bool _isLoading = false;
   String _errorMessage = '';
@@ -14,13 +11,10 @@ class OfferProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String get errorMessage => _errorMessage;
 
-  RealtimeChannel? _offerChannel;
-
   OfferProvider() {
     // Initial load
     fetchActiveOffers();
     // Setup Realtime Listener
-    _setupListener();
   }
 
   Future<void> fetchActiveOffers({bool forceRefresh = false}) async {
@@ -34,7 +28,7 @@ class OfferProvider extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      final offers = await OfferService.fetchActiveSaleOffers();
+      final offers = await OfferService.instance.fetchActiveSaleOffers();
       _activeOffers = offers;
       _errorMessage = '';
     } catch (e) {
@@ -46,25 +40,8 @@ class OfferProvider extends ChangeNotifier {
     }
   }
 
-  void _setupListener() {
-    _offerChannel = _supabase
-        .channel('public:offers:realtime')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'offers',
-          callback: (payload) {
-            debugPrint(
-                'OfferProvider: Realtime change detected. Refreshing...');
-            fetchActiveOffers();
-          },
-        )
-        .subscribe();
-  }
-
   @override
   void dispose() {
-    _offerChannel?.unsubscribe();
     super.dispose();
   }
 }

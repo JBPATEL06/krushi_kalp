@@ -4,13 +4,15 @@ import 'package:flutter_animate/flutter_animate.dart'; // NEW
 import '../../core/theme/app_spacing.dart';
 import '../providers/test_provider.dart';
 import '../providers/resource_provider.dart';
-import '../widgets/common/universal_item_card.dart';
+import '../widgets/free_content/free_item_card.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/resource.dart';
 import '../screens/mock_test_detail_screen.dart';
 import '../screens/resource_detail_screen.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/services/auth_service.dart';
 import '../../data/services/test_service.dart';
+import '../../core/theme/app_radius.dart';
+import '../widgets/common/responsive_wrapper.dart';
 
 class FreeContentScreen extends StatefulWidget {
   const FreeContentScreen({super.key});
@@ -24,6 +26,7 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   bool _isLoading = true;
+  bool _isProcessing = false;
   String? _errorMessage;
 
   @override
@@ -57,8 +60,10 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
     MockTest? test,
     Resource? resource,
   }) async {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
     try {
-      final user = Supabase.instance.client.auth.currentUser;
+      final user = AuthService.instance.currentUser;
       if (user == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -69,17 +74,24 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
       }
 
       if (test != null) {
-        await TestService.claimFreeTest(
+        await TestService.instance.claimFreeTest(
           testId: test.id,
           authUserId: user.id,
         );
         if (mounted) {
-          context.read<TestProvider>().fetchTests(forceRefresh: true);
+          final testProvider = context.read<TestProvider>();
+          await testProvider.fetchUserTests(user.id);
+          testProvider.fetchTests(forceRefresh: true);
         }
       } else if (resource != null) {
         await context
             .read<ResourceProvider>()
             .claimResource(resource.id, user.id);
+        if (mounted) {
+          await context
+              .read<ResourceProvider>()
+              .fetchPurchasedResources(user.id);
+        }
       }
 
       if (mounted) {
@@ -92,12 +104,8 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
         );
         _fetchData();
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Claim Error: $e')),
-        );
-      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
@@ -109,17 +117,25 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
     });
 
     try {
+      final user = AuthService.instance.currentUser;
       final testProvider = context.read<TestProvider>();
       final resourceProvider = context.read<ResourceProvider>();
 
       debugPrint(
           '[FreeContent] 📡 Fetching tests and resources from providers...');
 
-      // Fetch with caching support (won't refetch if already cached)
-      await Future.wait([
+      final List<Future> futures = [
         testProvider.fetchTests(),
         resourceProvider.fetchAll(),
-      ]);
+      ];
+
+      if (user != null) {
+        futures.add(testProvider.fetchUserTests(user.id));
+        futures.add(resourceProvider.fetchPurchasedResources(user.id));
+      }
+
+      // Fetch with caching support
+      await Future.wait(futures);
 
       final testCount = testProvider.tests.length;
       final resourceCount = resourceProvider.ebooks.length +
@@ -226,84 +242,129 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
       ),
       body: Column(
         children: [
-          // Search Bar
+          // Unified Top Section (Search + Filters)
           Container(
-            color: theme.colorScheme.surface,
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search free content...',
-                prefixIcon: Icon(Icons.search,
-                    color: theme.colorScheme.onSurfaceVariant),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(Icons.clear,
-                            color: theme.colorScheme.onSurfaceVariant),
-                        onPressed: () {
-                          _searchController.clear();
-                          debugPrint('[FreeContent] 🧹 Search cleared');
-                        },
-                      )
-                    : null,
-                filled: true,
-                fillColor:
-                    theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              border: Border(
+                bottom: BorderSide(
+                  color: theme.colorScheme.outline.withOpacity(0.1),
+                  width: 1,
                 ),
               ),
             ),
-          ),
-
-          // Filter Chips
-          Container(
-            color: theme.colorScheme.surface,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: ['All', 'Tests', 'Resources'].map((filter) {
-                  final isSelected = _selectedFilter == filter;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.sm),
-                    child: FilterChip(
-                      label: Text(filter),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          _selectedFilter = filter;
-                          debugPrint(
-                              '[FreeContent] 🏷️ Filter changed to: $filter');
-                        });
-                      },
-                      backgroundColor: theme.colorScheme.surfaceVariant,
-                      selectedColor: theme.colorScheme.primaryContainer
-                          .withValues(alpha: 0.5),
-                      checkmarkColor: theme.colorScheme.primary,
-                      labelStyle: TextStyle(
-                        color: isSelected
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurfaceVariant,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
+            child: Column(
+              children: [
+                // Search Bar
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.md,
+                    AppSpacing.md,
+                    AppSpacing.sm,
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontSize: context.sp(15),
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Search free content...',
+                      prefixIcon: Icon(
+                        Icons.search_rounded,
+                        color: theme.colorScheme.primary.withOpacity(0.5),
+                        size: context.sp(22),
+                      ),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(Icons.close_rounded,
+                                  size: context.sp(20)),
+                              onPressed: () {
+                                _searchController.clear();
+                                debugPrint('[FreeContent] 🧹 Search cleared');
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor:
+                          theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.md,
                       ),
                     ),
-                  );
-                }).toList(),
-              ),
+                  ),
+                ),
+
+                // Filter Chips
+                Padding(
+                  padding: EdgeInsets.only(
+                    left: AppSpacing.md,
+                    right: AppSpacing.md,
+                    bottom: AppSpacing.md,
+                  ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: ['All', 'Tests', 'Resources'].map((filter) {
+                        final isSelected = _selectedFilter == filter;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: AppSpacing.sm),
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedFilter = filter;
+                                debugPrint(
+                                    '[FreeContent] 🏷️ Filter changed to: $filter');
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(AppRadius.full),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: context.w(20),
+                                vertical: context.h(8),
+                              ),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.surfaceVariant
+                                        .withOpacity(0.5),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.full),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.outline
+                                          .withOpacity(0.2),
+                                ),
+                              ),
+                              child: Text(
+                                filter,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: isSelected
+                                      ? theme.colorScheme.onPrimary
+                                      : theme.colorScheme.onSurfaceVariant,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w900
+                                      : FontWeight.w600,
+                                  fontSize: context.sp(13),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-
-          const Divider(height: 1),
 
           // Content Area
           Expanded(
@@ -409,10 +470,16 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
             return const SizedBox.shrink();
           }
 
-          return card
-              .animate(delay: (index < 5 ? index * 100 : 0).ms)
-              .fadeIn(duration: 400.ms)
-              .slideY(begin: 0.1, end: 0);
+          return Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
+            ),
+            child: card
+                .animate(delay: (index < 5 ? index * 100 : 0).ms)
+                .fadeIn(duration: 400.ms)
+                .slideY(begin: 0.1, end: 0),
+          );
         },
       ),
     );
@@ -421,16 +488,18 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
   Widget _buildTestCard(MockTest test, int index) {
     debugPrint('[FreeContent] 🧪 Building card for test: ${test.title}');
     final uniqueTag = 'test_${test.id}_$index';
+    final purchasedTestIds =
+        context.read<TestProvider>().userTests.map((t) => t.id).toSet();
+    final isPurchased = purchasedTestIds.contains(test.id);
 
-    return UniversalItemCard(
+    return FreeItemCard(
       title: test.title,
-      subtitle: '${test.totalQuestions} Questions • ${test.totalMarks} Marks',
-      time: test.durationMinutes != null
-          ? '${test.durationMinutes} mins'
-          : 'No Limit',
-      price: test.price,
+      subtitle:
+          '${test.totalQuestions} Questions • ${test.totalMarks} Marks • ${test.durationMinutes ?? 0} mins',
+      typeLabel: 'Mock Test',
       coverUrl: test.signedUrl,
       actionLabel: 'Claim Free',
+      isPurchased: isPurchased,
       onTap: () {
         debugPrint('[FreeContent] 🎯 Navigating to test detail: ${test.id}');
         Navigator.push(
@@ -438,15 +507,14 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
           MaterialPageRoute(
             builder: (context) => MockTestDetailScreen(
               test: test,
-              isPurchased: test.price == 0,
+              isPurchased: isPurchased,
               heroTag: uniqueTag,
             ),
           ),
         );
       },
       onActionTap: () => _claimItem(test: test),
-      hideTags: true,
-      heroTag: uniqueTag, // Unique tag
+      heroTag: uniqueTag,
     );
   }
 
@@ -471,14 +539,16 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
     }
 
     final uniqueTag = 'resource_${resource.id}_$index';
+    final purchasedIds = context.read<ResourceProvider>().purchasedResourceIds;
+    final isPurchased = purchasedIds.contains(resource.id);
 
-    return UniversalItemCard(
+    return FreeItemCard(
       title: resource.title,
-      subtitle: typeLabel +
-          (resource.category != null ? ' • ${resource.category}' : ''),
-      price: resource.price,
+      subtitle: resource.category ?? 'Free Material',
+      typeLabel: typeLabel,
       coverUrl: resource.thumbnailUrl,
       actionLabel: 'Claim Free',
+      isPurchased: isPurchased,
       onTap: () {
         debugPrint(
             '[FreeContent] 🎯 Navigating to resource detail: ${resource.id}');
@@ -493,8 +563,7 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
         );
       },
       onActionTap: () => _claimItem(resource: resource),
-      hideTags: true,
-      heroTag: uniqueTag, // Unique tag
+      heroTag: uniqueTag,
     );
   }
 }

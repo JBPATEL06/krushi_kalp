@@ -55,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen>
       authProvider.removeListener(_onAuthChanged);
 
       if (role != 'Admin') {
-        NotificationService().connectAdmin();
+        NotificationService().connectUser();
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const MainScreen()),
         );

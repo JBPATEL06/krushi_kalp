@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/app_config.dart';
+import '../../utils/retry_helper.dart';
 
 class AppConfigService {
   static final _supabase = Supabase.instance.client;
@@ -12,7 +13,12 @@ class AppConfigService {
   static Future<void> fetchConfigs() async {
     try {
       debugPrint("AppConfig: Fetching from table 'app_config'...");
-      final response = await _supabase.from('app_config').select();
+      final response = await RetryHelper.run(
+        () => _supabase
+            .from('app_config')
+            .select()
+            .timeout(const Duration(seconds: 10)),
+      );
 
       final List<dynamic> data = response as List<dynamic>;
       debugPrint("AppConfig: Raw Data Count: ${data.length}");

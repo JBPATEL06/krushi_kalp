@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/services/auth_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../data/services/test_service.dart';
 import '../../domain/models/mock_test.dart';
@@ -19,20 +19,20 @@ class AllTestsScreen extends StatefulWidget {
 }
 
 class _AllTestsScreenState extends State<AllTestsScreen> {
-  late Stream<List<MockTest>> _testsStream;
+  late Future<List<MockTest>> _testsFuture;
   List<int> _completedTestIds = [];
 
   @override
   void initState() {
     super.initState();
-    _testsStream = TestService.streamMockTests();
+    _testsFuture = TestService.instance.fetchMockTests();
     _fetchUserResults();
   }
 
   Future<void> _fetchUserResults() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
+    final userId = AuthService.instance.currentUser?.id;
     if (userId != null) {
-      final results = await TestService.fetchUserResults(userId);
+      final results = await TestService.instance.fetchUserResults(userId);
       if (mounted) {
         setState(() {
           _completedTestIds = results.map((r) => r['test_id'] as int).toList();
@@ -62,9 +62,7 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
         const SnackBar(content: Text('Downloading Result...')),
       );
 
-      final bytes = await Supabase.instance.client.storage
-          .from('mock_test')
-          .download(bucketPath);
+      final bytes = await TestService.instance.downloadResultPdf(bucketPath);
 
       await file.writeAsBytes(bytes);
       _openPdf(file, title);
@@ -108,8 +106,8 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
         elevation: 0,
         iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
       ),
-      body: StreamBuilder<List<MockTest>>(
-        stream: _testsStream,
+      body: FutureBuilder<List<MockTest>>(
+        future: _testsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -121,7 +119,7 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
                   ? 'Unable to load tests. Check your connection.'
                   : 'Error: ${snapshot.error}',
               onRetry: () => setState(() {
-                _testsStream = TestService.streamMockTests();
+                _testsFuture = TestService.instance.fetchMockTests();
               }),
             );
           }
@@ -151,7 +149,7 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
           return RefreshIndicator(
             onRefresh: () async {
               setState(() {
-                _testsStream = TestService.streamMockTests();
+                _testsFuture = TestService.instance.fetchMockTests();
               });
               await _fetchUserResults();
             },
