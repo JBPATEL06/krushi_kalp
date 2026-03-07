@@ -144,20 +144,25 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
 
               // List
               Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _reviews.isEmpty
-                        ? _buildEmptyState()
-                        : ListView.builder(
-                            padding: EdgeInsets.only(
-                              top: 8,
-                              bottom: 8 + MediaQuery.of(context).padding.bottom,
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    await _loadReviews();
+                  },
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _reviews.isEmpty
+                          ? _buildEmptyState()
+                          : ListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding:
+                                  const EdgeInsets.only(top: AppSpacing.sm),
+                              itemCount: _reviews.length,
+                              itemBuilder: (context, index) {
+                                final review = _reviews[index];
+                                return _buildReviewRow(context, review);
+                              },
                             ),
-                            itemCount: _reviews.length,
-                            itemBuilder: (context, index) {
-                              return _buildReviewRow(context, _reviews[index]);
-                            },
-                          ),
+                ),
               ),
             ],
           ),

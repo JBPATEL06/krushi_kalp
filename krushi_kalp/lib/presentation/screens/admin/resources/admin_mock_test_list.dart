@@ -223,22 +223,37 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
             ),
           ),
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _displayTests.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        padding: EdgeInsets.only(
-                          top: AppSpacing.md,
-                          bottom: AppSpacing.md +
-                              MediaQuery.of(context).padding.bottom,
+            child: RefreshIndicator(
+              onRefresh: () async {
+                _subscription?.cancel();
+                _loadData();
+                await Future.delayed(const Duration(milliseconds: 500));
+              },
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _displayTests.isEmpty
+                      ? SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 100),
+                            child: _buildEmptyState(),
+                          ),
+                        )
+                      : ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.only(
+                            top: AppSpacing.md,
+                            bottom: AppSpacing.md +
+                                MediaQuery.of(context).padding.bottom +
+                                80, // Space for FAB
+                          ),
+                          itemCount: _displayTests.length,
+                          itemBuilder: (context, index) {
+                            return _buildMockTestRow(
+                                context, _displayTests[index]);
+                          },
                         ),
-                        itemCount: _displayTests.length,
-                        itemBuilder: (context, index) {
-                          return _buildMockTestRow(
-                              context, _displayTests[index]);
-                        },
-                      ),
+            ),
           ),
         ],
       ),

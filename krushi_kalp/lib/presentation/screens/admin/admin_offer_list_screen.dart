@@ -112,7 +112,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
     }
   }
 
-  Future<void> _bulkDeactivate(List<Offer> allOffers) async {
+  Future<void> _bulkDeactivate(List<Offer> currentOffers) async {
     if (_selectedIds.isEmpty) return;
     final confirm = await showDialog<bool>(
       context: context,
@@ -136,7 +136,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
     if (confirm == true) {
       for (var id in _selectedIds) {
         try {
-          final offer = allOffers.firstWhere((o) => o.id == id);
+          final offer = currentOffers.firstWhere((o) => o.id == id);
           if (offer.isActive) await _toggleStatus(offer, false);
         } catch (_) {}
       }
@@ -147,7 +147,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
     }
   }
 
-  List<Offer> _filterOffers(List<Offer> offers) {
+  List<Offer> _applyFilters(List<Offer> offers) {
     var filtered = List<Offer>.from(offers);
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
@@ -199,10 +199,11 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
               child: const Icon(Icons.add_rounded),
             ),
       body: StreamBuilder<List<Offer>>(
-        key: ValueKey(_streamId),
+        key: ValueKey('offers_stream_$_streamId'),
         stream: _offersStream,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              snapshot.data == null) {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
@@ -215,131 +216,138 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
           }
 
           final allOffers = snapshot.data ?? [];
-          final displayedOffers = _filterOffers(allOffers);
+          final displayedOffers = _applyFilters(allOffers);
 
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1200),
-              child: Column(
-                children: [
-                  // Search & Filter Header
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      border: Border(
-                          bottom: BorderSide(
-                              color:
-                                  colorScheme.outlineVariant.withOpacity(0.5))),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextField(
-                          controller: _searchController,
-                          decoration: const InputDecoration(
-                            hintText: 'Search by code or title...',
-                            prefixIcon: Icon(Icons.search_rounded),
-                          ),
-                          onChanged: (val) =>
-                              setState(() => _searchQuery = val),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        Row(
-                          children: [
-                            Text(
-                              "FILTER",
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: colorScheme.onSurfaceVariant,
-                                letterSpacing: 1.2,
-                              ),
+          return RefreshIndicator(
+            onRefresh: () async {
+              _refreshOffers();
+              await Future.delayed(const Duration(milliseconds: 600));
+            },
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: Column(
+                  children: [
+                    // Search & Filter Header
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        border: Border(
+                            bottom: BorderSide(
+                                color: colorScheme.outlineVariant
+                                    .withOpacity(0.5))),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextField(
+                            controller: _searchController,
+                            decoration: const InputDecoration(
+                              hintText: 'Search by code or title...',
+                              prefixIcon: Icon(Icons.search_rounded),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  children: [
-                                    _buildFilterChip(
-                                        'All',
-                                        !_showActiveOnly,
-                                        (v) => setState(
-                                            () => _showActiveOnly = false)),
-                                    const SizedBox(width: 8),
-                                    _buildFilterChip(
-                                        'Active Only',
-                                        _showActiveOnly,
-                                        (v) => setState(
-                                            () => _showActiveOnly = true)),
-                                    const SizedBox(width: 8),
-                                    _buildTypeChip(
-                                        'All',
-                                        _filterType == 'ALL',
-                                        () => setState(
-                                            () => _filterType = 'ALL')),
-                                    const SizedBox(width: 8),
-                                    _buildTypeChip(
-                                        'Coupons',
-                                        _filterType == 'COUPON',
-                                        () => setState(
-                                            () => _filterType = 'COUPON')),
-                                    const SizedBox(width: 8),
-                                    _buildTypeChip(
-                                        'Sales',
-                                        _filterType == 'SALE',
-                                        () => setState(
-                                            () => _filterType = 'SALE')),
-                                  ],
+                            onChanged: (val) =>
+                                setState(() => _searchQuery = val),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          Row(
+                            children: [
+                              Text(
+                                "FILTER",
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: colorScheme.onSurfaceVariant,
+                                  letterSpacing: 1.2,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  if (_isSelectionMode && _selectedIds.isNotEmpty)
-                    Container(
-                      width: double.infinity,
-                      color: colorScheme.primaryContainer.withOpacity(0.3),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg, vertical: 8),
-                      child: Row(
-                        children: [
-                          Text(
-                            "${_selectedIds.length} SELECTED",
-                            style: theme.textTheme.labelSmall?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: colorScheme.primary),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: [
+                                      _buildFilterChip(
+                                          'All',
+                                          !_showActiveOnly,
+                                          (v) => setState(
+                                              () => _showActiveOnly = false)),
+                                      const SizedBox(width: 8),
+                                      _buildFilterChip(
+                                          'Active Only',
+                                          _showActiveOnly,
+                                          (v) => setState(
+                                              () => _showActiveOnly = true)),
+                                      const SizedBox(width: 8),
+                                      _buildTypeChip(
+                                          'All',
+                                          _filterType == 'ALL',
+                                          () => setState(
+                                              () => _filterType = 'ALL')),
+                                      const SizedBox(width: 8),
+                                      _buildTypeChip(
+                                          'Coupons',
+                                          _filterType == 'COUPON',
+                                          () => setState(
+                                              () => _filterType = 'COUPON')),
+                                      const SizedBox(width: 8),
+                                      _buildTypeChip(
+                                          'Sales',
+                                          _filterType == 'SALE',
+                                          () => setState(
+                                              () => _filterType = 'SALE')),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const Spacer(),
-                          TextButton.icon(
-                            icon: const Icon(Icons.block_rounded, size: 14),
-                            label: const Text("DEACTIVATE"),
-                            onPressed: () => _bulkDeactivate(allOffers),
-                          )
                         ],
                       ),
                     ),
 
-                  Expanded(
-                    child: displayedOffers.isEmpty
-                        ? _buildEmptyState()
-                        : ListView.builder(
-                            padding: EdgeInsets.only(
-                              bottom:
-                                  80 + MediaQuery.of(context).padding.bottom,
+                    if (_isSelectionMode && _selectedIds.isNotEmpty)
+                      Container(
+                        width: double.infinity,
+                        color: colorScheme.primaryContainer.withOpacity(0.3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg, vertical: 8),
+                        child: Row(
+                          children: [
+                            Text(
+                              "${_selectedIds.length} SELECTED",
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  color: colorScheme.primary),
                             ),
-                            itemCount: displayedOffers.length,
-                            itemBuilder: (context, index) {
-                              return _buildOfferRow(
-                                  context, displayedOffers[index]);
-                            },
-                          ),
-                  ),
-                ],
+                            const Spacer(),
+                            TextButton.icon(
+                              icon: const Icon(Icons.block_rounded, size: 14),
+                              label: const Text("DEACTIVATE"),
+                              onPressed: () => _bulkDeactivate(allOffers),
+                            )
+                          ],
+                        ),
+                      ),
+
+                    Expanded(
+                      child: displayedOffers.isEmpty
+                          ? _buildEmptyState()
+                          : ListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: EdgeInsets.only(
+                                bottom:
+                                    80 + MediaQuery.of(context).padding.bottom,
+                              ),
+                              itemCount: displayedOffers.length,
+                              itemBuilder: (context, index) {
+                                return _buildOfferRow(
+                                    context, displayedOffers[index]);
+                              },
+                            ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -431,7 +439,6 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
                     Text(
                       offer.code ?? 'Flash Sale',
                       style: theme.textTheme.titleLarge?.copyWith(
-                        // Increased from titleMedium
                         fontWeight: FontWeight.w700,
                         color: isInactive
                             ? colorScheme.onSurfaceVariant
@@ -443,9 +450,8 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       offer.title,
-                      style:
-                          theme.textTheme.bodyMedium // Increased from bodySmall
-                              ?.copyWith(color: colorScheme.onSurfaceVariant),
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(color: colorScheme.onSurfaceVariant),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -491,17 +497,26 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
 
   Widget _buildEmptyState() {
     final colorScheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.local_offer_outlined,
-              size: 64, color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
-          const SizedBox(height: AppSpacing.md),
-          Text('No offers created yet',
-              style: TextStyle(color: colorScheme.onSurfaceVariant)),
-        ],
-      ),
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(
+          height: 400,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.local_offer_outlined,
+                    size: 64,
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+                const SizedBox(height: AppSpacing.md),
+                Text('No offers matching criteria',
+                    style: TextStyle(color: colorScheme.onSurfaceVariant)),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

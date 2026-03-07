@@ -31,86 +31,95 @@ class AdminResourcesDashboard extends StatelessWidget {
                     ? 3
                     : 2;
 
-        return SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg + MediaQuery.of(context).padding.bottom,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: crossAxisCount,
-                mainAxisSpacing: AppSpacing.md,
-                crossAxisSpacing: AppSpacing.md,
-                childAspectRatio: width > 600 ? 1.5 : 1.1,
-                children: [
-                  CategoryCard(
-                    title: 'Current Affairs',
-                    icon: Icons.newspaper_rounded,
-                    color: const Color(0xFFF97316), // Premium Orange
-                    onTap: () => _navigateTo(
-                      context,
-                      'Current Affairs',
-                      const AdminResourceList(type: ResourceType.currentAffair),
+        return RefreshIndicator(
+          onRefresh: () async {
+            // Dashboard is a menu, but we keep refresh for consistency/animation
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg + MediaQuery.of(context).padding.bottom,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: crossAxisCount,
+                  mainAxisSpacing: AppSpacing.md,
+                  crossAxisSpacing: AppSpacing.md,
+                  childAspectRatio: width > 600 ? 1.5 : 1.1,
+                  children: [
+                    CategoryCard(
+                      title: 'Current Affairs',
+                      icon: Icons.newspaper_rounded,
+                      color: const Color(0xFFF97316), // Premium Orange
+                      onTap: () => _navigateTo(
+                        context,
+                        'Current Affairs',
+                        const AdminResourceList(
+                            type: ResourceType.currentAffair),
+                      ),
+                      onLongPress: () => _showTypeStats(
+                          context, 'current_affair', 'Current Affairs'),
                     ),
-                    onLongPress: () => _showTypeStats(
-                        context, 'current_affair', 'Current Affairs'),
-                  ),
-                  CategoryCard(
-                    title: 'Quiz & Tests',
-                    icon: Icons.quiz_rounded,
-                    color: const Color(0xFF3B82F6), // Premium Blue
-                    onTap: () {
-                      // Navigate to Admin Store Tab (Index 1)
-                      Navigator.pop(context);
-                      context.read<AdminProvider>().setNavIndex(1);
-                    },
-                    onLongPress: () =>
-                        _showTypeStats(context, 'test_series', 'Test Series'),
-                  ),
-                  CategoryCard(
-                    title: 'E-Books',
-                    icon: Icons.menu_book_rounded,
-                    color: const Color(0xFF10B981), // Premium Green
-                    onTap: () => _navigateTo(
-                      context,
-                      'E-Books',
-                      const AdminResourceList(type: ResourceType.eBook),
+                    CategoryCard(
+                      title: 'Quiz & Tests',
+                      icon: Icons.quiz_rounded,
+                      color: const Color(0xFF3B82F6), // Premium Blue
+                      onTap: () {
+                        // Navigate to Admin Store Tab (Index 1)
+                        Navigator.pop(context);
+                        context.read<AdminProvider>().setNavIndex(1);
+                      },
+                      onLongPress: () =>
+                          _showTypeStats(context, 'test_series', 'Test Series'),
                     ),
-                    onLongPress: () =>
-                        _showTypeStats(context, 'ebook', 'E-Books'),
-                  ),
-                  CategoryCard(
-                    title: 'Study Material',
-                    icon: Icons.description_rounded,
-                    color: const Color(0xFF8B5CF6), // Premium Purple
-                    onTap: () => _navigateTo(
-                      context,
-                      'Study Material',
-                      const AdminResourceList(type: ResourceType.studyMaterial),
+                    CategoryCard(
+                      title: 'E-Books',
+                      icon: Icons.menu_book_rounded,
+                      color: const Color(0xFF10B981), // Premium Green
+                      onTap: () => _navigateTo(
+                        context,
+                        'E-Books',
+                        const AdminResourceList(type: ResourceType.eBook),
+                      ),
+                      onLongPress: () =>
+                          _showTypeStats(context, 'ebook', 'E-Books'),
                     ),
-                    onLongPress: () => _showTypeStats(
-                        context, 'study_material', 'Study Material'),
-                  ),
-                  CategoryCard(
-                    title: 'PYQs',
-                    icon: Icons.history_edu_rounded,
-                    color: const Color(0xFFEF4444), // Premium Red
-                    onTap: () => _navigateTo(
-                      context,
-                      'PYQs',
-                      const AdminResourceList(type: ResourceType.pyq),
+                    CategoryCard(
+                      title: 'Study Material',
+                      icon: Icons.description_rounded,
+                      color: const Color(0xFF8B5CF6), // Premium Purple
+                      onTap: () => _navigateTo(
+                        context,
+                        'Study Material',
+                        const AdminResourceList(
+                            type: ResourceType.studyMaterial),
+                      ),
+                      onLongPress: () => _showTypeStats(
+                          context, 'study_material', 'Study Material'),
                     ),
-                    onLongPress: () => _showTypeStats(context, 'pyq', 'PYQs'),
-                  ),
-                ],
-              ),
-            ],
+                    CategoryCard(
+                      title: 'PYQs',
+                      icon: Icons.history_edu_rounded,
+                      color: const Color(0xFFEF4444), // Premium Red
+                      onTap: () => _navigateTo(
+                        context,
+                        'PYQs',
+                        const AdminResourceList(type: ResourceType.pyq),
+                      ),
+                      onLongPress: () => _showTypeStats(context, 'pyq', 'PYQs'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       }),

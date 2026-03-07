@@ -59,7 +59,6 @@ class Resource {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'title': title,
       'description': description,
       'type': _typeToString(type),
@@ -67,8 +66,6 @@ class Resource {
       'file_url': fileUrl,
       'thumbnail_url': thumbnailUrl,
       'price': price,
-      'mrp': mrp,
-      'discount': discount,
       'is_active': isActive,
       'created_at': createdAt.toIso8601String(),
     };

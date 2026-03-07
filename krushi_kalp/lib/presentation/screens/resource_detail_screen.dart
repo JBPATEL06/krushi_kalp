@@ -6,14 +6,10 @@ import 'package:provider/provider.dart';
 import '../../data/services/auth_service.dart';
 import '../providers/resource_provider.dart';
 import '../providers/offer_provider.dart';
-import '../providers/cart_provider.dart';
 import '../../utils/price_calculator.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'pdf_viewer_screen.dart';
-import 'dart:io';
-import '../../data/services/download_service.dart';
 
 import '../../data/services/app_config_service.dart';
 import '../../data/services/review_service.dart';
@@ -45,8 +41,6 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
   List<Review> _reviews = [];
   Review? _userReview;
   Map<String, dynamic> _ratingStats = {'average': 0.0, 'count': 0};
-  bool _isDownloading = false;
-  bool _isAddingToCart = false;
 
   @override
   void initState() {
@@ -150,80 +144,6 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
         },
       ),
     );
-  }
-
-  Future<void> _openPdf() async {
-    if (widget.resource.fileUrl == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("PDF URL is missing")),
-      );
-      return;
-    }
-    setState(() => _isDownloading = true);
-    try {
-      final url = widget.resource.fileUrl!;
-      final filename = 'resource_${widget.resource.id}.pdf';
-      final userId = AuthService.instance.currentUser?.id;
-      final path =
-          await DownloadService().downloadFile(url, filename, userId: userId);
-      final file = File(path);
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PdfViewerScreen(
-              file: file,
-              title: widget.resource.title,
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error opening PDF: $e")),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isDownloading = false);
-    }
-  }
-
-  Future<void> _addToCart(double finalPrice) async {
-    final theme = Theme.of(context);
-    final user = AuthService.instance.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please login to purchase items.")),
-      );
-      return;
-    }
-    setState(() => _isAddingToCart = true);
-    try {
-      await context.read<CartProvider>().addToCart(
-            resourceId: widget.resource.id,
-            price: finalPrice,
-            authUserId: user.id,
-          );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("${widget.resource.title} added to cart"),
-            backgroundColor: theme.colorScheme.primary,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: theme.colorScheme.error),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isAddingToCart = false);
-    }
   }
 
   @override

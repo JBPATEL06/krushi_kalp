@@ -285,133 +285,169 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1000),
-        child: Column(
-          children: [
-            if (_isUploading)
-              LinearProgressIndicator(color: colorScheme.primary, minHeight: 2),
-            const SizedBox(height: AppSpacing.lg),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: _isUploading ? null : _uploadBanners,
-                      icon: const Icon(Icons.add_photo_alternate_rounded,
-                          size: 20),
-                      label: const Text("Upload Banners"),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 48),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+        child: RefreshIndicator(
+          onRefresh: () async {
+            // StreamBuilder will handle the data, but we force a fetch for safety/UX
+            await AppConfigService.fetchConfigs();
+          },
+          child: Column(
+            children: [
+              if (_isUploading)
+                LinearProgressIndicator(
+                    color: colorScheme.primary, minHeight: 2),
+              const SizedBox(height: AppSpacing.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _isUploading ? null : _uploadBanners,
+                        icon: const Icon(Icons.add_photo_alternate_rounded,
+                            size: 20),
+                        label: const Text("Upload Banners"),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 48),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: colorScheme.outlineVariant),
-                    ),
-                    child: IconButton(
-                      onPressed: _showSettingsDialog,
-                      icon: Icon(Icons.settings_suggest_rounded,
-                          color: colorScheme.primary),
-                      tooltip: 'Settings',
-                      style: IconButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        minimumSize: const Size(48, 48),
+                    const SizedBox(width: AppSpacing.md),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colorScheme.outlineVariant),
+                      ),
+                      child: IconButton(
+                        onPressed: () async {
+                          await AppConfigService.fetchConfigs();
+                          if (mounted) setState(() {});
+                        },
+                        icon: Icon(Icons.refresh_rounded,
+                            color: colorScheme.primary),
+                        tooltip: 'Refresh',
+                        style: IconButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          minimumSize: const Size(48, 48),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: AppSpacing.md),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: colorScheme.outlineVariant),
+                      ),
+                      child: IconButton(
+                        onPressed: _showSettingsDialog,
+                        icon: Icon(Icons.settings_suggest_rounded,
+                            color: colorScheme.primary),
+                        tooltip: 'Settings',
+                        style: IconButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          minimumSize: const Size(48, 48),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Row(
-                children: [
-                  _buildSectionHeader(context, "ACTIVE BANNERS"),
-                  const Spacer(),
-                  Text(
-                    "Tap to edit details",
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant.withOpacity(0.5),
-                      fontStyle: FontStyle.italic,
+              const SizedBox(height: AppSpacing.md),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                child: Row(
+                  children: [
+                    _buildSectionHeader(context, "ACTIVE BANNERS"),
+                    const Spacer(),
+                    Text(
+                      "Tap to edit details",
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: AppSpacing.sm),
 
-            // ── Banner List (real-time stream) ──
-            Expanded(
-              child: StreamBuilder<List<HomeBanner>>(
-                stream: BannerService.instance.streamAllBanners(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.error_outline_rounded,
-                              color: colorScheme.error, size: 48),
-                          const SizedBox(height: AppSpacing.md),
-                          Text("Error: ${snapshot.error}",
-                              style: theme.textTheme.bodySmall),
-                        ],
-                      ),
-                    );
-                  }
-
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  final banners = snapshot.data!;
-
-                  if (banners.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.image_not_supported_rounded,
-                              size: 64,
-                              color: colorScheme.onSurfaceVariant
-                                  .withOpacity(0.2)),
-                          const SizedBox(height: AppSpacing.md),
-                          Text("No banners yet",
-                              style: TextStyle(
-                                  color: colorScheme.onSurfaceVariant
-                                      .withOpacity(0.6))),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    itemCount: banners.length,
-                    itemBuilder: (context, index) {
-                      final banner = banners[index];
-                      return _BannerCard(
-                        banner: banner,
-                        index: index + 1,
-                        total: banners.length,
-                        onEdit: () => _editBanner(banner),
-                        onReplace: () => _replaceBannerImage(banner),
-                        onDelete: () => _deleteBanner(banner),
+              // ── Banner List (real-time stream) ──
+              Expanded(
+                child: StreamBuilder<List<HomeBanner>>(
+                  stream: BannerService.instance.streamAllBanners(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.error_outline_rounded,
+                                  color: colorScheme.error, size: 48),
+                              const SizedBox(height: AppSpacing.md),
+                              Text("Error: ${snapshot.error}",
+                                  style: theme.textTheme.bodySmall),
+                            ],
+                          ),
+                        ),
                       );
-                    },
-                  );
-                },
+                    }
+
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final banners = snapshot.data!;
+
+                    if (banners.isEmpty) {
+                      return Center(
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.image_not_supported_rounded,
+                                  size: 64,
+                                  color: colorScheme.onSurfaceVariant
+                                      .withOpacity(0.2)),
+                              const SizedBox(height: AppSpacing.md),
+                              Text("No banners yet",
+                                  style: TextStyle(
+                                      color: colorScheme.onSurfaceVariant
+                                          .withOpacity(0.6))),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      itemCount: banners.length,
+                      itemBuilder: (context, index) {
+                        final banner = banners[index];
+                        return _BannerCard(
+                          banner: banner,
+                          index: index + 1,
+                          total: banners.length,
+                          onEdit: () => _editBanner(banner),
+                          onReplace: () => _replaceBannerImage(banner),
+                          onDelete: () => _deleteBanner(banner),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

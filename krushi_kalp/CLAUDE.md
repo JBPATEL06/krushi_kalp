@@ -18,6 +18,44 @@ The **Admin Panel** is built into the same codebase. Admin accounts land on `Adm
 |-------|-----------|
 | Framework | Flutter (Dart) |
 | State Management | Provider (ChangeNotifier) |
+## 3. Services Layer (`lib/data/services/` & `lib/domain/services/`)
+
+Services handle the heavy lifting: database calls via Supabase, external APIs, and local logic.
+
+### Core Business Services
+
+| File | Purpose | Key Functions |
+|------|---------|---------------|
+| `auth_service.dart` | Authentication logic. | `signInWithGoogle`, `signInWithEmail`, `signOut`, `getUserRole`. |
+| `app_config_service.dart` | Global config fetching. | `fetchConfig`, `getMaintenanceMode`, `getLegalUrls`. |
+| `admin_service.dart` | Admin-only DB operations. | `fetchDashboardStats`, `fetchUserList`, `updateUserRole`. |
+| `test_service.dart` | Mock test lifecycle. | `fetchMockTests`, `submitTestResult`, `checkout`, `fetchPurchasedTestIds`. |
+| `resource_service.dart` | Resource management. | `fetchResources`, `fetchPurchasedResources`, `claimResource`. |
+| `cart_service.dart` | Shopping cart persistence. | `fetchCartItems`, `addToCart`, `removeCartItem`, `checkOwnership`. |
+
+### Infrastructure & Communication
+
+| File | Purpose | Key Functions |
+|------|---------|---------------|
+| `notification_service.dart` | Local & Stream listeners. | `initialize`, `connectUser`, `showLocalNotification`, `fetchNotificationsStream`. |
+| `fcm_service.dart` | Push notification setup. | `initialize`, `onMessage.listen`, `_saveTokenToDatabase`. |
+| `admin_notification_service.dart` | Sending FCM pushes. | `sendBroadcastNotification`, `sendPersonalNotification`. |
+| `chat_service.dart` | Real-time support chat. | `fetchMessageStream`, `sendMessage`, `getAdminConversations`. |
+| `otp_service.dart` | SMS OTP via MSG91. | `sendOtp`, `resendOtp`, `verifyOtp`. |
+| `encryption_service.dart` | Security utilities. | `encryptData`, `decryptData` (used for session IDs). |
+
+### Specialized Services
+
+| File | Purpose | Key Functions |
+|------|---------|---------------|
+| `payment_service.dart` | Razorpay integration. | `init`, `openCheckout`, `onSuccess/onFailure` callbacks. |
+| `download_service.dart` | Secure per-user storage. | `downloadFileWithProgress`, `verifyOwnership`, `migrateOldDownloads`. |
+| `offer_service.dart` | Promo code logic. | `fetchActiveSaleOffers`, `verifyCoupon`, `applyCouponToOrder`. |
+| `pdf_service.dart` | Result PDF generation. | `generateExamResultPdf`, `_loadFont` (Gujarati support). |
+| `translation_service.dart` | Automatic translations. | `translateQuestion`, `translateBatch` (Google Translate). |
+| `review_service.dart` | Rating system. | `submitReview`, `getReviewsForItem`, `getBulkRatingStats`. |
+| `banner_service.dart` | Home screen ads. | `fetchBanners`, `uploadBanner`, `deleteBanner`. |
+| `secure_file_service.dart` | Sandboxed downloads. | `downloadSecurely`, `isFileDownloaded`. |
 | Backend / DB | Supabase (PostgreSQL) |
 | Auth | Supabase Auth + Google Sign-In |
 | Payments | Razorpay Flutter (UPI-only) |
@@ -129,8 +167,16 @@ Located in `lib/presentation/screens/admin/`:
 - **Excel Upload**: Admins upload Excel → converted to JSON → pushed to Supabase Storage.
 - **Metadata Management**: Titles, categories, pricing, MRP.
 - **Signed URL Generation**: Access tokens for premium content.
+- **Cleanup**: Automatic deletion of JSON and Cover files from `mock_test` bucket on record removal.
 
-### 2. Configuration Control (`app_config`)
+### 2. Resource Management
+- **Structured Storage**: All resources follow `Resources/[type]/[subfolder]` hierarchy.
+  - `[type]` = `ebook`, `study_material`, `pyq`, `current_affair`.
+  - `[subfolder]` = `file` (PDFs) or `cover` (Thumbnails).
+- **Cleanup**: Automatic storage cleanup on resource deletion.
+- **Edit Cleanup**: Old storage artifacts are automatically removed when replacing files during an edit.
+
+### 3. Configuration Control (`app_config`)
 - **Maintenance Mode**: Toggle global lock + custom message.
 - **Feature Flags**: Enable/Disable reviews, change banner scroll speed.
 - **Contact Info**: WhatsApp, Telegram, Support Email.
@@ -307,7 +353,11 @@ flutter clean && flutter pub get && flutter run
 - **Signal 3 (ANR) Crash** (Admin): Persistent main-thread blocking during startup/dashboard transition. Partially mitigated via lazy loading in `AdminMainScreen`. **Status: Unresolved**
 - **Security**: Client-side pricing logic. **Fix needed**: Backend price validation.
 - **Payment Reliability**: No Razorpay webhooks. **Fix needed**: Server-side webhook Edge Functions.
-- **Performance**: N+1 Signed URL fetching for thumbnails. **Fix needed**: Batch URL signing + 50min TTL Cache.
+
+### Resolved (2026-03-07 Audit)
+- **Performance**: N+1 Signed URL fetching storm. **Fixed**: Added `_SignedUrlEntry` cache (22h TTL) to `TestService` and `ResourceService`.
+- **Billing**: Excessive FCM database writes. **Fixed**: Throttled FCM token updates via `SharedPreferences`.
+- **Reliability**: Google Translate rate-limiting. **Fixed**: Implemented chunked translation processing (5 items/batch).
 
 ---
 
@@ -327,13 +377,13 @@ flutter clean && flutter pub get && flutter run
 | Phase | Description | Status |
 |---|---|---|
 | **Phase 0** | Planning & Documentation | ✅ Complete |
-| **Phase 1** | Foundation — main.dart + AdminProvider + pubspec audit | ⬜ Pending |
-| **Phase 2** | Core Routing — splash_screen + admin route | ⬜ Pending |
-| **Phase 3** | Admin Screen Migration (16+ screens) | ⬜ Pending |
-| **Phase 4** | Admin Service Migration | ⬜ Pending |
-| **Phase 5** | Core/Widget Parity + db_error_helper | ⬜ Pending |
-| **Phase 6** | End-to-End Testing | ⬜ Pending |
-| **Phase 7** | Cleanup + Final CLAUDE.md Update | ⬜ Pending |
+| Phase 1 | Foundation — main.dart + AdminProvider + pubspec audit | ✅ Complete |
+| Phase 2 | Core Routing — splash_screen + admin route | ✅ Complete |
+| Phase 3 | Admin Screen Migration (16+ screens) | ✅ Complete |
+| Phase 4 | Admin Service Migration | ✅ Complete |
+| Phase 5 | Core/Widget Parity + db_error_helper | ✅ Complete |
+| Phase 6 | End-to-End Testing | 🚧 In Progress |
+| Phase 7 | Cleanup + Final CLAUDE.md Update | 🚧 In Progress |
 
 ---
 
@@ -367,6 +417,217 @@ flutter clean && flutter pub get && flutter run
 9. **Phase 9**: Premium splash screen with progress bar. Login logo at `130x130`.
 10. **Global UI Resilience**: System navigation bar overlap audit and fix across all management screens.
 
+### Unified Infrastructure Fixes (Gemini Audit 2026-03-07)
+1. **N+1 Signed URL Caching**: 22-hour in-memory cache implemented for all Storage assets. Reduces API calls by ~90% for high-volume lists.
+2. **FCM Write Throttling**: Database updates for FCM tokens now gated by local `SharedPreferences`.
+3. **Translation Batch Throttling**: Sequential chunked processing (batch size: 5) for Google Translate requests to prevent HTTP 429 rate-limits.
+4. **Dead Code Purge**: Deleted orphaned files (`theme_test_screen.dart`, `feedback_model.dart`) and 100+ lines of unused methods/imports.
+5. **Admin Stream Optimization**: Removed problematic debounce that caused UI lag; shifted reliability to the URL cache layer.
+7. **Free Material Claim Recovery**: Identified and removed non-existent `payment_id` column from `orders` table inserts in `TestService` and `ResourceService`, restoring "Claim Free" functionality.
+8. **Admin Panel Pull-to-Refresh**: Several admin screens were missing pull-to-refresh (`RefreshIndicator`). A systematic sweep was performed.
+**Status**: [COMPLETED]
+**Screens Updated**: `AdminAnalysisScreen`, `RevenueDetailsScreen`, `AdminMockTestList`, `BannerManagementTab`, `ContentManagementTab`, `FeatureControlTab`, `AdminResourcesDashboard`.
+9. **System Nav Bar Overlap Audit**: Completed audit and fix for reactive `MediaQuery` padding globally across 35+ user and admin screens to prevent gesture bar overlap.
+
 ---
 
-<!-- Updated by Gemini: System Nav Bar Overlap Audit Complete (35+ screens) — 2026-03-07 -->
+
+---
+
+# File-by-File Reference
+
+This section provides a detailed breakdown of every file in the project, intended for developers to understand the purpose, logic, and connectivity of each component.
+
+## 1. Core Layer (`lib/core/`)
+
+| File | Purpose | Key Functions/Components |
+|------|---------|-------------------------|
+| `theme/app_colors.dart` | Defines the global color palette. | `AppColors`: Primary, Secondary, Semantic (Success/Error), Gradients, Shadows. |
+| `theme/app_theme.dart` | Main theme configuration. | `AppTheme`: `light`, `dark` - Combines colors, type, and radii into a `ThemeData`. |
+| `theme/app_spacing.dart` | Defines the 8pt spacing system. | `AppSpacing`: `xs`, `sm`, `md`, `lg`, `xl` constants. |
+| `theme/app_typography.dart` | Defines text styles and fonts. | `AppTypography`: `display`, `heading`, `bodyLabel`, `bodyLarge` using Google Fonts (Inter). |
+| `theme/app_radius.dart` | Consistent corner radii. | `AppRadius`: `sm`, `md`, `lg`, `full`. |
+| `theme/app_motion.dart` | Animation & transition tokens. | `AppMotion`: `short`, `normal`, `long` durations. |
+| `utils/db_error_helper.dart` | Supabase error translation. | `DbErrorHelper.getMessage`: Converts `PostgrestException` codes into user-friendly strings. |
+
+## 2. Domain Models (`lib/domain/models/`)
+
+All models include `fromJson()` and `toJson()` methods for persistence.
+
+| File | Purpose | Key Properties |
+|------|---------|----------------|
+| `app_config.dart` | App-wide settings. | `maintenanceMode`, `contactInfo`, `legalUrls`, `featureFlags`. |
+| `home_banner.dart` | Carousel banner data. | `id`, `imageUrl`, `actionType` (external/route), `actionValue`. |
+| `message.dart` | Support chat message. | `id`, `userId`, `message`, `isFromAdmin`, `createdAt`. |
+| `mock_test.dart` | Practice exam metadata. | `id`, `title`, `price`, `mrp`, `category`, `language`, `questionsCount`. |
+| `notification.dart` | FCM record for history. | `id`, `userId`, `title`, `message`, `type` (personal/broadcast). |
+| `offer.dart` | Coupons and sales. | `id`, `code`, `discountValue`, `discountType`, `isActive`, `targetType`. |
+| `order.dart` | Purchase record. | `orderId`, `userId`, `totalAmount`, `status` (PENDING/SUCCESS). |
+| `order_item.dart` | Individual item in order. | `id`, `orderId`, `testId`, `resourceId`, `priceAtPurchase`. |
+| `question.dart` | Exam question structure. | `text`, `options` (List), `correctOptionIndex`. |
+| `resource.dart` | E-book/Material data. | `id`, `title`, `type` (ebook/study_material/etc), `fileUrl`, `thumbnailUrl`. |
+| `review.dart` | User feedback/rating. | `id`, `userId`, `itemId`, `itemType`, `rating`, `reviewText`. |
+| `test_result.dart` | Mock test attempt data. | `id`, `userId`, `testId`, `score`, `isPassed`, `attemptDate`. |
+| `transaction.dart` | Payment gateway record. | `id`, `orderId`, `gatewayId`, `amount`, `status`. |
+| `user.dart` | Profile and role data. | `id`, `email`, `username`, `role` (Admin/User), `language`. |
+
+## 3. Services Layer (`lib/data/services/` & `lib/domain/services/`)
+
+Services handle the heavy lifting: database calls via Supabase, external APIs, and local logic.
+
+| File | Purpose | Key Functions/Components |
+|------|---------|-------------------------|
+| `admin_notification_service.dart` | Sending FCM pushes. | `sendBroadcastNotification`, `sendPersonalNotification`. |
+| `admin_service.dart` | Admin-only DB operations. | `fetchDashboardStats`, `fetchUserList`, `updateUserRole`. |
+| `app_config_service.dart` | Global config fetching. | `fetchConfig`, `getMaintenanceMode`, `getLegalUrls`. |
+| `auth_service.dart` | Authentication logic. | `signInWithGoogle`, `signInWithEmail`, `signOut`, `getUserRole`. |
+| `banner_service.dart` | Home screen ads. | `fetchBanners`, `uploadBanner`, `deleteBanner`. |
+| `cart_service.dart` | Shopping cart persistence. | `fetchCartItems`, `addToCart`, `removeCartItem`. |
+| `chat_service.dart` | Real-time support chat. | `fetchMessageStream`, `sendMessage`, `getAdminConversations`. |
+| `download_service.dart` | Secure per-user storage. | `downloadFileWithProgress`, `verifyOwnership`, `migrateOldDownloads`. |
+| `encryption_service.dart` | Security utilities. | `encryptData`, `decryptData` (used for session IDs). |
+| `fcm_service.dart` | Push notification setup. | `initialize`, `onMessage.listen`, `_saveTokenToDatabase`. |
+| `notification_service.dart` | Local & Stream listeners. | `initialize`, `connectUser`, `showLocalNotification`. |
+| `offer_service.dart` | Promo code logic. | `fetchActiveSaleOffers`, `verifyCoupon`, `applyCouponToOrder`. |
+| `otp_service.dart` | SMS OTP via MSG91. | `sendOtp`, `resendOtp`, `verifyOtp`. |
+| `payment_service.dart` | Razorpay integration. | `init`, `openCheckout`, `onSuccess/onFailure` callbacks. |
+| `resource_service.dart` | Resource management. | `fetchResources`, `fetchPurchasedResources`, `claimResource`. |
+| `review_service.dart` | Rating system. | `submitReview`, `getReviewsForItem`, `getBulkRatingStats`. |
+| `secure_file_service.dart` | Sandboxed downloads. | `downloadSecurely`, `isFileDownloaded`. |
+| `test_service.dart` | Mock test lifecycle. | `fetchMockTests`, `submitTestResult`, `checkout`. |
+| `translation_service.dart` | Automatic translations. | `translateQuestion`, `translateBatch` (Google Translate). |
+| `pdf_service.dart` | Result PDF generation. | `generateExamResultPdf`, `_loadFont` (Gujarati support). |
+
+## 4. State Management (`lib/presentation/providers/`)
+
+Providers manage the application state and provide a reactive bridge between Services and the UI.
+
+| File | Purpose | Key Responsibilities |
+|------|---------|-----------------------|
+| `admin_provider.dart` | Minimal state for Admin panel. | Manages `navIndex` and `refreshCounter`. Note: Most admin data uses Streams. |
+| `auth_provider.dart` | Core authentication state. | `currentUser`, `userRole`, `isLoggedIn`, session monitoring, Google Sign-In flow. |
+| `cart_provider.dart` | User's shopping cart state. | `cartItems`, `cartCount`, `addToCart`, `removeFromCart`, signs URLs for cart items. |
+| `navigation_provider.dart` | User app navigation state. | `selectedIndex` (bottom nav), `selectedStoreCategory` for filtering. |
+| `network_provider.dart` | Global connectivity monitor. | Singleton that tracks `isConnected` status via `connectivity_plus`. |
+| `offer_provider.dart` | Active offers management. | Fetches and caches `activeOffers` for the store. |
+| `resource_provider.dart` | Resource state management. | Manages lists for `ebooks`, `studyMaterials`, etc., and user's `purchasedResources`. |
+| `test_provider.dart` | Mock test state management. | Fetches all tests, filters/sorts by category/price, tracks `purchasedTestIds`. |
+```
+## 5. User Presentation Layer (`lib/presentation/screens/`)
+
+The User App screens provide the primary educational experience. They utilize `Provider` for reactive state and various services for core library management.
+
+### App Lifecycle & Auth
+
+| File | Purpose | Key Components | Data Flow |
+|------|---------|----------------|-----------|
+| `splash_screen.dart` | Initializes the app. | `SplashScreen`: Progress bar, update & auth checks. | Routes to `LoginScreen`, `MainScreen`, or `AdminMainScreen`. |
+| `login_screen.dart` | User authentication. | `LoginScreen`: Google Sign-In, Terms agreement. | Updates `AuthProvider.currentUser` upon success. |
+| `main_screen.dart` | Primary user navigation. | `MainScreen`: Bottom navigation bar controller. | Switches between Home, Store, Library, and Profile. |
+
+### Discovery & Store
+
+| File | Purpose | Key Components | Data Flow |
+|------|---------|----------------|-----------|
+| `home_screen.dart` | User dashboard. | `BannerCarousel`, `FeaturedTestsGrid`. | Fetches banners and user profile via `BannerService` & `AuthService`. |
+| `store_screen.dart` | Marketplace for content. | `StoreScreen`: Tabbed Categories, Item search. | Streams tests/resources from `TestProvider` & `ResourceProvider`. |
+| `mock_test_detail_screen.dart` | Test purchase page. | Purchase buttons, Ratings summary. | Initiates purchase via `CartProvider` or direct checkout. |
+| `resource_detail_screen.dart` | PDF resource page. | "Claim Free" / Buy buttons, Sample preview. | Handles resource acquisition via `ResourceService`. |
+| `free_content_screen.dart` | Curated freebies list. | `FreeItemCard`, Category filters. | Pulls free items from tests and resources with "Claim" logic. |
+
+### Learning & Examination
+
+| File | Purpose | Key Components | Data Flow |
+|------|---------|----------------|-----------|
+| `exam_screen.dart` | Practice test engine. | `ExamScreen`: Timer, Nav Lock, Question cards. | Loads local JSON via `DownloadService` or signs Supabase URLs. |
+| `test_result_screen.dart` | Score summary. | Score animator, Pass/Fail badge, PDF Gen. | Submits performance via `TestService` and generates PDF via `PdfService`. |
+| `test_analysis_screen.dart` | Q&A post-test review. | `AnalysisCard`: Correct vs User answers. | Provides itemized review with optional Gujarati translation. |
+| `score_screen.dart` | User's test history. | `ScoreScreen`: Staggered list of past attempts. | Fetches persistence from `test_results` table via `TestService`. |
+| `pdf_viewer_screen.dart` | Document reader. | `PdfViewerScreen`: Night mode, Zoom, Nav. | Views secure local files or temporary network streams. |
+
+### Commerce & Library
+
+| File | Purpose | Key Components | Data Flow |
+|------|---------|----------------|-----------|
+| `cart_screen.dart` | Shopping cart. | `CartScreen`: Coupon field, Subtotal summary. | Managed by `CartProvider` and `OfferProvider`. |
+| `checkout_screen.dart` | Payment summary. | `CheckoutScreen`: Simple price breakdown. | Initiates `PaymentService` (Razorpay) for final payment. |
+| `my_library_screen.dart` | Purchased content home. | Tabs for Tests and Resources. | Switches between library sub-screens. |
+| `purchased_tests_screen.dart` | Owned mock tests list. | Download/Start primary actions. | Filters `TestProvider.allTests` for purchased items. |
+| `my_resources_screen.dart` | Owned PDF library. | Category-based PDF list. | Pulls user items from `ResourceProvider`. |
+| `downloads_screen.dart` | Offline file manager. | Storage bar, Clean up, Selection mode. | Interacts directly with `DownloadService` file system. |
+
+### Account & Support
+
+| File | Purpose | Key Components | Data Flow |
+|------|---------|----------------|-----------|
+| `profile_screen.dart` | Profile & Settings. | Language toggle, Support chat, Logout. | Reads from `AuthProvider` and `AuthService.streamUserProfile`. |
+| `edit_profile_screen.dart` | Profile editor. | Name, Phone, Language forms. | Updates `users` table via `AuthService.updateProfile`. |
+| `notifications_screen.dart` | User notification log. | Dismissible alerts list. | Streams from `notifications` table via `NotificationService`. |
+| `chat_screen.dart` | Help desk UI. | `Chat`: Real-time message thread. | Uses `ChatService` and `flutter_chat_ui` for support. |
+
+## 6. Admin Presentation Layer (`lib/presentation/screens/admin/`)
+
+The Admin Panel screens provide management interfaces for administrators. They heavily utilize `StreamBuilder` for real-time data and `AdminService` for backend mutations.
+
+### Core Layout & Dashboard
+
+| File | Purpose | Key Components | Data Flow |
+|------|---------|----------------|-----------|
+| `admin_main_screen.dart` | The root layout for admins. | `AdminMainScreen`: Responsive sidebar/rail/bottom nav. | Switches between 5 main tabs based on `AdminProvider.navIndex`. |
+| `admin_home_screen.dart` | Primary dashboard view. | `_StatCard`, `StreamBuilder` for Top Tests/Users. | Streams dashboard metrics and top performance lists from `AdminService`. |
+| `admin_analysis_screen.dart` | Visual analytics and stats. | `AdminAnalysisScreen`: Revenue and content charts. | Pulls aggregated stats via `AdminService.streamDashboardStats()`. |
+| `revenue_details_screen.dart` | Transaction audit log. | `RevenueDetailsScreen`: Filterable order list. | Fetches full order details including user/item joins via `AdminService`. |
+
+### User Management
+
+| File | Purpose | Key Components | Data Flow |
+|------|---------|----------------|-----------|
+| `admin_user_list_screen.dart` | Global user directory. | `AdminUserListScreen`: Searchable user table. | Fetches all user profiles from `AdminService`. |
+| `admin_user_details_screen.dart` | In-depth user profile. | `AdminUserDetailsScreen`: Orders, attempts, role management. | Pulls user specific orders and test results. Can promote/demote via `AdminService`. |
+| `admin_notification_screen.dart` | Push notification center. | `AdminNotificationScreen`: Broadcast form. | Sends requests to `AdminNotificationService` for bulk/personal pushes. |
+
+### Content & App Management
+
+| File | Purpose | Key Components | Data Flow |
+|------|---------|----------------|-----------|
+| `manage_app/manage_app_screen.dart` | Tabbed config center. | `ManageAppScreen`: Features/Banners/Content tabs. | Distributes sub-management to specialized tabs. |
+| `manage_app/tabs/feature_control_tab.dart` | App status & flags. | Maintenance mode toggle, version control. | Saves global flags to `app_config` via `AppConfigService`. |
+| `manage_app/tabs/banner_management_tab.dart` | Ad banner carousel. | Image picker, priority/active management. | Uploads/deletes via `BannerService` and `Supabase Storage`. |
+| `manage_app/tabs/content_management_tab.dart` | Legal & Support contact. | Contact info, legal URL fields. | Persists structured JSON to `app_config` via `AppConfigService`. |
+
+### Store & Inventory Management
+
+| File | Purpose | Key Components | Data Flow |
+|------|---------|----------------|-----------|
+| `admin_offer_list_screen.dart` | Coupons & Sales list. | `AdminOfferListScreen`: Bulk deactivate, filtering. | Streams all offers from `OfferService`. |
+| `admin_offer_manage_screen.dart` | Create/Edit offer form. | `AdminOfferManageScreen`: Advanced targeting. | Validates and saves `Offer` objects via `OfferService`. |
+| `resources/admin_resources_dashboard.dart` | Resource menu. | `CategoryCard`: E-books, PYQs, GK, etc. | Aggregates count stats via `AdminService.getResourceTypeStats`. |
+| `resources/admin_resource_list.dart` | Specific resource list. | `AdminResourceList`: PDF/Cover previews. | Fetches resources by type from `ResourceService`. |
+| `resources/admin_resource_form.dart` | Resource editor. | `AdminResourceForm`: Path logic (`Resources/[type]`). | Uploads files to storage and creates DB records via `ResourceService`. |
+| `resources/admin_mock_test_list.dart` | Mock test catalog. | `AdminMockTestList`: Filterable test list. | Streams tests from `TestService`. |
+| `resources/admin_mock_test_detail_screen.dart`| Test insights. | `AdminMockTestDetailScreen`: Performance charts. | Fetches item-specific sales stats via `AdminService.getMockTestItemStats`. |
+
+## 8. Entry Point & Global Wrappers (`lib/main.dart`)
+
+The app entry point manages critical initialization and global UI interceptors.
+
+| Component | Responsibility |
+|-----------|----------------|
+| `main()` | Bootstraps the app: `runZonedGuarded` (Crashlytics), Supabase/Firebase init, `.env` loading. |
+| `MultiProvider` | Injects all 7+ providers into the widget tree. |
+| `MyApp` | Configures `MaterialApp`, global `navigatorKey`, and `ThemeMode.system`. |
+| `NetworkAwareWrapper`| A global builder that monitors `NetworkProvider` and prevents navigation to online-only screens when offline. |
+| `ResponsiveWrapper` | Ensures consistent scaling (using `Responsive` util) across different screen sizes. |
+
+## 9. Global Utilities (`lib/utils/`)
+
+Helper classes shared across services and presentation layers.
+
+| File | Purpose | Key Logic |
+|------|---------|-----------|
+| `price_calculator.dart` | The brain of the store's pricing. | `calculateDisplayPrice`: Compares "Real" vs "Fake" offers to show the best perceived discount. |
+| `network_utils.dart` | Error signature handling. | `isNetworkError`: Identifies `SocketException`, timeouts, and DNS failures. |
+| `excel_to_json_converter.dart`| Mock test file parser. | Converts uploaded Excel bytes into structured `Question` JSON (handles A/B/C or 1/2/3 keys). |
+| `retry_helper.dart` | Resilience utility. | Provides `retry()` logic with exponential backoff for flaky API calls. |
+| `responsive.dart` | Screen scaling engine. | Extension methods on `BuildContext` (`context.w()`, `context.h()`, `context.sp()`) for relative sizing. |
+| `navigator_key.dart` | Global context access. | Provides `navigatorKey` for navigation without `BuildContext` (e.g., in services). |

@@ -382,72 +382,82 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final emerald = colorScheme.tertiary;
 
     return Scaffold(
       backgroundColor: colorScheme.background,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000),
-          child: StreamBuilder<List<Map<String, dynamic>>>(
-            stream: _ordersStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting &&
-                  snapshot.data == null) {
-                return const Center(child: CircularProgressIndicator());
-              }
+          child: RefreshIndicator(
+            onRefresh: () async {
+              setState(() {
+                _ordersStream = AdminService.streamAllOrders();
+              });
+              await Future.delayed(const Duration(milliseconds: 600));
+            },
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _ordersStream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    snapshot.data == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return NetworkErrorState(
+                    message: isNetworkError(snapshot.error)
+                        ? 'Unable to load orders. Check your connection.'
+                        : 'Error: ${snapshot.error}',
+                    onRetry: () => setState(() {
+                      _ordersStream = AdminService.streamAllOrders();
+                    }),
+                  );
+                }
 
-              if (snapshot.hasError) {
-                return NetworkErrorState(
-                  message: isNetworkError(snapshot.error)
-                      ? 'Unable to load orders. Check your connection.'
-                      : 'Error: ${snapshot.error}',
-                  onRetry: () => setState(() {
-                    _ordersStream = AdminService.streamAllOrders();
-                  }),
-                );
-              }
+                final orders = snapshot.data ?? [];
 
-              final orders = snapshot.data ?? [];
-
-              return Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      border: Border(
-                        bottom: BorderSide(color: colorScheme.outlineVariant),
+                return Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        border: Border(
+                          bottom: BorderSide(color: colorScheme.outlineVariant),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          _buildSectionHeader(context, 'TRANSACTION HISTORY'),
+                          const Spacer(),
+                          Text(
+                            '${orders.length} Total',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        _buildSectionHeader(context, 'TRANSACTION HISTORY'),
-                        const Spacer(),
-                        Text(
-                          '${orders.length} Total',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    Expanded(
+                      child: orders.isEmpty
+                          ? _buildEmptyState(context)
+                          : ListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: EdgeInsets.zero,
+                              itemCount: orders.length,
+                              itemBuilder: (context, index) {
+                                final order = orders[index];
+                                return _buildOrderRow(context, order, theme,
+                                    colorScheme, emerald);
+                              },
+                            ),
                     ),
-                  ),
-                  Expanded(
-                    child: orders.isEmpty
-                        ? _buildEmptyState(context)
-                        : ListView.builder(
-                            padding: EdgeInsets.zero,
-                            itemCount: orders.length,
-                            itemBuilder: (context, index) {
-                              final order = orders[index];
-                              return _buildOrderRow(context, order);
-                            },
-                          ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -457,15 +467,12 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
   Widget _buildSectionHeader(BuildContext context, String title) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 0.0), // Reduced
-      child: Text(
-        title,
-        style: theme.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w800,
-          color: colorScheme.onSurfaceVariant,
-          letterSpacing: 1.2,
-        ),
+    return Text(
+      title,
+      style: theme.textTheme.titleSmall?.copyWith(
+        fontWeight: FontWeight.w800,
+        color: colorScheme.onSurfaceVariant,
+        letterSpacing: 1.2,
       ),
     );
   }
@@ -491,11 +498,8 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
     );
   }
 
-  Widget _buildOrderRow(BuildContext context, Map<String, dynamic> order) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final emerald = colorScheme.tertiary;
-
+  Widget _buildOrderRow(BuildContext context, Map<String, dynamic> order,
+      ThemeData theme, ColorScheme colorScheme, Color emerald) {
     final amount = (order['total_amount'] as num).toDouble();
     final dateStr = order['created_at'] as String;
     final date = DateTime.tryParse(dateStr) ?? DateTime.now();

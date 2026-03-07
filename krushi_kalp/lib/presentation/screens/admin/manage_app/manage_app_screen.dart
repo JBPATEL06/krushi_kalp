@@ -16,7 +16,7 @@ class ManageAppScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: colorScheme.background,
         appBar: AppBar(
-          title: const Text("Manage App"),
+          toolbarHeight: 0,
           bottom: TabBar(
             labelColor: colorScheme.primary,
             unselectedLabelColor: colorScheme.onSurfaceVariant,

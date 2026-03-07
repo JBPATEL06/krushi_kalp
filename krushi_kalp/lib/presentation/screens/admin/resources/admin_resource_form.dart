@@ -115,20 +115,38 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
       String? fileUrl = _existingFileUrl;
       String? coverUrl = _existingCoverUrl;
 
+      final typeStr = widget.type == ResourceType.eBook
+          ? 'ebook'
+          : widget.type == ResourceType.currentAffair
+              ? 'current_affair'
+              : widget.type == ResourceType.studyMaterial
+                  ? 'study_material'
+                  : 'pyq';
+
       if (_fileBytes != null) {
         final cleanName = _fileName!.replaceAll(' ', '_');
         final path =
-            'files/${DateTime.now().millisecondsSinceEpoch}_$cleanName';
+            'Resources/$typeStr/file/${DateTime.now().millisecondsSinceEpoch}_$cleanName';
         fileUrl = await _resourceService.uploadFile(
             path: path, fileBytes: _fileBytes!);
+
+        // Cleanup old file if editing
+        if (widget.resource != null && _existingFileUrl != null) {
+          await _resourceService.deleteFileFromStorage(_existingFileUrl!);
+        }
       }
 
       if (_coverBytes != null) {
         final cleanCover = _coverName!.replaceAll(' ', '_');
         final path =
-            'covers/${DateTime.now().millisecondsSinceEpoch}_$cleanCover';
+            'Resources/$typeStr/cover/${DateTime.now().millisecondsSinceEpoch}_$cleanCover';
         coverUrl = await _resourceService.uploadFile(
             path: path, fileBytes: _coverBytes!);
+
+        // Cleanup old cover if editing
+        if (widget.resource != null && _existingCoverUrl != null) {
+          await _resourceService.deleteFileFromStorage(_existingCoverUrl!);
+        }
       }
 
       final newItem = Resource(
@@ -182,7 +200,6 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final showPriceAndCover = widget.type != ResourceType.currentAffair;
 
     return Scaffold(
       backgroundColor: colorScheme.background,
@@ -197,7 +214,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildSectionHeader(context, "GENERAL INFORMATION"),
-                const SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: AppSpacing.sm),
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
@@ -223,40 +240,41 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
                   prefixIcon: Icon(Icons.category_outlined),
                 ),
               ),
-              if (showPriceAndCover) ...[
-                const SizedBox(height: AppSpacing.lg),_buildSectionHeader(context, "PRICING"),
-                const SizedBox(height: AppSpacing.sm),
-                TextFormField(
-                  controller: _priceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Price (0 for Free)',
-                    prefixIcon: Icon(Icons.currency_rupee_rounded),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Required';
-                    final price = double.tryParse(v);
-                    if (price == null) return 'Invalid Number';
-                    if (price < 0) return 'Price cannot be negative';
-                    return null;
-                  },
+              const SizedBox(height: AppSpacing.lg),
+              _buildSectionHeader(context, "PRICING"),
+              const SizedBox(height: AppSpacing.sm),
+              TextFormField(
+                controller: _priceController,
+                decoration: const InputDecoration(
+                  labelText: 'Price (0 for Free)',
+                  prefixIcon: Icon(Icons.currency_rupee_rounded),
                 ),
-                const SizedBox(height: AppSpacing.lg),_buildSectionHeader(context, "COVER IMAGE"),
-                const SizedBox(height: AppSpacing.sm),
-                _buildPickerTile(
-                  context,
-                  title: _coverName ?? extractFilename(_existingCoverUrl),
-                  icon: Icons.image_outlined,
-                  onPressed: _pickCover,
-                  thumbnail: (_coverBytes != null)
-                      ? Image.memory(_coverBytes!, fit: BoxFit.cover)
-                      : (_existingCoverUrl != null)
-                          ? Image.network(_existingCoverUrl!, fit: BoxFit.cover)
-                          : null,
-                ),
-              ],
-              const SizedBox(height: AppSpacing.lg),_buildSectionHeader(context, "ATTACHMENT"),
-                const SizedBox(height: AppSpacing.sm),
+                keyboardType: TextInputType.number,
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Required';
+                  final price = double.tryParse(v);
+                  if (price == null) return 'Invalid Number';
+                  if (price < 0) return 'Price cannot be negative';
+                  return null;
+                },
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              _buildSectionHeader(context, "COVER IMAGE"),
+              const SizedBox(height: AppSpacing.sm),
+              _buildPickerTile(
+                context,
+                title: _coverName ?? extractFilename(_existingCoverUrl),
+                icon: Icons.image_outlined,
+                onPressed: _pickCover,
+                thumbnail: (_coverBytes != null)
+                    ? Image.memory(_coverBytes!, fit: BoxFit.cover)
+                    : (_existingCoverUrl != null)
+                        ? Image.network(_existingCoverUrl!, fit: BoxFit.cover)
+                        : null,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              _buildSectionHeader(context, "ATTACHMENT"),
+              const SizedBox(height: AppSpacing.sm),
               _buildPickerTile(
                 context,
                 title: _fileName ?? extractFilename(_existingFileUrl),
@@ -264,7 +282,8 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
                 onPressed: _pickFile,
                 iconColor: colorScheme.error,
               ),
-              const SizedBox(height: AppSpacing.lg),_buildSectionHeader(context, "VISIBILITY"),
+              const SizedBox(height: AppSpacing.lg),
+              _buildSectionHeader(context, "VISIBILITY"),
               const SizedBox(height: AppSpacing.sm),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,

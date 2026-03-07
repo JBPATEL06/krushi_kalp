@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../pdf_viewer_screen.dart';
 import 'admin_resource_form.dart';
 import 'admin_resource_detail_screen.dart';
+import '../../../utils/ui_helpers.dart';
 
 class AdminResourceList extends StatefulWidget {
   final ResourceType type;
@@ -42,25 +43,13 @@ class _AdminResourceListState extends State<AdminResourceList> {
   }
 
   Future<void> _deleteResource(int id) async {
-    final theme = Theme.of(context);
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Delete'),
-        content: const Text('Are you sure you want to delete this item?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style:
-                TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: 'Delete Item',
+      content: const Text(
+          'Are you sure you want to delete this item? This cannot be undone.'),
+      confirmText: 'Delete',
+      isDestructive: true,
     );
 
     if (confirmed == true) {
@@ -73,8 +62,22 @@ class _AdminResourceListState extends State<AdminResourceList> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text('Error: $e')));
+          String errorMessage = 'Error: $e';
+
+          // Handle specific PostgrestException for foreign key violation (code 23503)
+          if (e.toString().contains('23503') ||
+              e.toString().contains('violates foreign key constraint')) {
+            errorMessage =
+                'Cannot delete: This item has already been purchased or referenced by users.';
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       }
     }

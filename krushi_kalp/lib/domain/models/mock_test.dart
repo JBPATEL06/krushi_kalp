@@ -116,7 +116,6 @@ class MockTest {
 
   Map<String, dynamic> toJson() {
     return {
-      'test_id': id,
       'title': title,
       'description': description,
       'category': category,
@@ -129,8 +128,6 @@ class MockTest {
       'negative_marks_per_q': negativeMarksPerQ,
       'language': language,
       'cover_image_path': coverImagePath,
-      'discount': discount,
-      'mrp': mrp,
       'created_at': createdAt.toIso8601String(),
     };
   }

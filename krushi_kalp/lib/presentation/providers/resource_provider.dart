@@ -94,6 +94,8 @@ class ResourceProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       final resources = await _resourceService.fetchResources(type: type);
+      debugPrint(
+          'ResourceProvider: Fetched ${resources.length} items for type $type');
 
       switch (type) {
         case ResourceType.eBook:
@@ -112,7 +114,7 @@ class ResourceProvider extends ChangeNotifier {
       _errorMessage = null;
     } catch (e) {
       _errorMessage = 'Failed to load ${type.toString().split('.').last}: $e';
-      debugPrint(_errorMessage);
+      debugPrint('ResourceProvider: Error fetching $type: $e');
     } finally {
       _setLoading(false);
     }
@@ -125,9 +127,12 @@ class ResourceProvider extends ChangeNotifier {
       final resources = await _resourceService.fetchPurchasedResources(userId);
       _purchasedResources = resources;
       _purchasedResourceIds = resources.map((r) => r.id).toSet();
+      debugPrint(
+          'ResourceProvider: Updated purchasedResourceIds. Total: ${_purchasedResourceIds.length}, IDs: $_purchasedResourceIds');
       _saveToPrefs();
     } catch (e) {
-      debugPrint('Error fetching purchased resources: $e');
+      debugPrint(
+          'ResourceProvider: Error fetching purchased resources for $userId: $e');
       _errorMessage = 'Failed to load purchased resources: $e';
     } finally {
       _setLoading(false);
@@ -150,7 +155,12 @@ class ResourceProvider extends ChangeNotifier {
   }
 
   Future<void> claimResource(int resourceId, String userId) async {
-    if (_isLoading) return;
+    debugPrint(
+        'ResourceProvider: claimResource called for $resourceId (user: $userId)');
+    if (_isLoading) {
+      debugPrint('ResourceProvider: Skipping claim, already loading');
+      return;
+    }
     _setLoading(true);
     try {
       await _resourceService.claimResource(

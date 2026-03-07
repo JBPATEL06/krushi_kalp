@@ -90,100 +90,83 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000),
-          child: StreamBuilder<List<Map<String, dynamic>>>(
-            stream: _usersStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting &&
-                  snapshot.data == null) {
-                return const Center(child: CircularProgressIndicator());
-              }
+          child: RefreshIndicator(
+            onRefresh: () async {
+              setState(() {
+                _usersStream = AdminService.streamUsers();
+              });
+              await Future.delayed(const Duration(milliseconds: 600));
+            },
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _usersStream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    snapshot.data == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-              if (snapshot.hasError) {
-                return NetworkErrorState(
-                  message: isNetworkError(snapshot.error)
-                      ? 'Unable to load users. Check your connection.'
-                      : 'Error: ${snapshot.error}',
-                  onRetry: () => setState(() {
-                    _usersStream = AdminService.streamUsers();
-                  }),
-                );
-              }
+                if (snapshot.hasError) {
+                  return NetworkErrorState(
+                    message: isNetworkError(snapshot.error)
+                        ? 'Unable to load users. Check connection.'
+                        : 'Error: ${snapshot.error}',
+                    onRetry: () => setState(
+                        () => _usersStream = AdminService.streamUsers()),
+                  );
+                }
 
-              final allUsers = snapshot.data ?? [];
-              final filteredUsers = _applyFilters(allUsers);
+                final allUsers = snapshot.data ?? [];
+                final filteredUsers = _applyFilters(allUsers);
 
-              return Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      border: Border(
-                        bottom: BorderSide(color: colorScheme.outlineVariant),
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionHeader(context, "USER DIRECTORY"),
+                          const SizedBox(height: AppSpacing.md),
+                          _buildSearchBar(context, theme),
+                          const SizedBox(height: AppSpacing.md),
+                          Row(
+                            children: [
+                              _buildFilterChip(context, 'All'),
+                              const SizedBox(width: AppSpacing.sm),
+                              _buildFilterChip(context, 'New'),
+                              const SizedBox(width: AppSpacing.sm),
+                              _buildFilterChip(context, 'Active'),
+                              const Spacer(),
+                              Text(
+                                '${filteredUsers.length} Users',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionHeader(context, 'SEARCH & FILTER'),
-                const SizedBox(height: AppSpacing.sm),
-                        TextField(
-                          controller: _searchController,
-                          onChanged: (value) {
-                            setState(() {
-                              _searchQuery = value;
-                            });
-                          },
-                          decoration: InputDecoration(
-                            hintText: 'Search by name or email...',
-                            prefixIcon: Icon(Icons.search_rounded,
-                                color: colorScheme.primary),
-                            filled: true,
-                            fillColor: colorScheme.background,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                              borderSide: BorderSide.none,
+                    Expanded(
+                      child: filteredUsers.isEmpty
+                          ? _buildEmptyState(context)
+                          : ListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding:
+                                  const EdgeInsets.only(top: AppSpacing.sm),
+                              itemCount: filteredUsers.length,
+                              itemBuilder: (context, index) {
+                                final user = filteredUsers[index];
+                                return _buildUserRow(context, user);
+                              },
                             ),
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.md, vertical: 0),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        Row(
-                          children: [
-                            _buildFilterChip(context, 'All'),
-                            const SizedBox(width: AppSpacing.sm),
-                            _buildFilterChip(context, 'New'),
-                            const SizedBox(width: AppSpacing.sm),
-                            _buildFilterChip(context, 'Active'),
-                            const Spacer(),
-                            Text(
-                              '${filteredUsers.length} Users',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                     ),
-                  ),
-                  Expanded(
-                    child: filteredUsers.isEmpty
-                        ? _buildEmptyState(context)
-                        : ListView.builder(
-                            padding: const EdgeInsets.only(top: AppSpacing.sm),
-                            itemCount: filteredUsers.length,
-                            itemBuilder: (context, index) {
-                              final user = filteredUsers[index];
-                              return _buildUserRow(context, user);
-                            },
-                          ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -193,15 +176,30 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
   Widget _buildSectionHeader(BuildContext context, String title) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 0.0), // Reduced
-      child: Text(
-        title,
-        style: theme.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w800,
-          color: colorScheme.onSurfaceVariant,
-          letterSpacing: 1.2,
+    return Text(
+      title,
+      style: theme.textTheme.titleSmall?.copyWith(
+        fontWeight: FontWeight.w800,
+        color: colorScheme.onSurfaceVariant,
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+
+  Widget _buildSearchBar(BuildContext context, ThemeData theme) {
+    return TextField(
+      controller: _searchController,
+      onChanged: (v) => setState(() => _searchQuery = v),
+      decoration: InputDecoration(
+        hintText: 'Search by username or email...',
+        prefixIcon: const Icon(Icons.search_rounded),
+        filled: true,
+        fillColor: theme.colorScheme.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: BorderSide.none,
         ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       ),
     );
   }

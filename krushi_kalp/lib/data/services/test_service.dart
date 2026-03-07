@@ -16,8 +16,25 @@ class TestService {
 
   final _supabase = Supabase.instance.client;
 
-  RealtimeChannel getOffersChannel() {
-    return _supabase.channel('public:offers:realtime');
+  // --- SIGNED URL CACHE ---
+  final Map<String, _SignedUrlEntry> _urlCache = {};
+
+  Future<String?> _getSignedUrlCached(String path, String bucket,
+      {int ttlSeconds = 60 * 60 * 22}) async {
+    final cached = _urlCache[path];
+    if (cached != null && !cached.isExpired) return cached.url;
+
+    try {
+      final url = await _supabase.storage
+          .from(bucket)
+          .createSignedUrl(path, 60 * 60 * 24);
+      _urlCache[path] = _SignedUrlEntry(
+          url, DateTime.now().add(Duration(seconds: ttlSeconds)));
+      return url;
+    } catch (e) {
+      debugPrint('Error creating signed URL for $path: $e');
+      return null;
+    }
   }
 
   // --- MOCK TESTS READING ---
@@ -59,39 +76,47 @@ class TestService {
 
   Future<List<String>> fetchCategories() async {
     try {
-      final response = await _supabase.from('mock_tests').select('category');
-
-      final List<String> categories = (response as List)
-          .map((e) => e['category'] as String)
-          .toSet() // Deduplicate
-          .toList();
-
-      return categories;
+      // NOTE: Requires 'get_distinct_categories' RPC in Supabase
+      final response = await _supabase.rpc('get_distinct_categories');
+      return List<String>.from(response as List);
     } catch (e) {
-      debugPrint('Error fetching categories: $e');
-      return [];
+      debugPrint('Error fetching categories: $e. Falling back to table scan.');
+      // Fallback to legacy scan if RPC doesn't exist yet
+      final response = await _supabase.from('mock_tests').select('category');
+      return (response as List)
+          .map((e) => e['category'] as String)
+          .toSet()
+          .toList();
     }
   }
 
   Future<List<String>> fetchLanguages() async {
     try {
-      final response = await _supabase.from('mock_tests').select('language');
+      // NOTE: Requires 'get_distinct_languages' RPC in Supabase
+      final response = await _supabase.rpc('get_distinct_languages');
+      final languages = List<String>.from(response as List);
 
-      final List<String> languages = (response as List)
-          .map((e) => e['language'] as String)
-          .where((l) => l.isNotEmpty)
-          .toSet() // Deduplicate
-          .toList();
-
-      // Ensure defaults exist as requested
+      // Ensure defaults exist
       final defaults = ['English', 'Gujarati'];
       for (var d in defaults) {
         if (!languages.contains(d)) languages.add(d);
       }
       return languages;
     } catch (e) {
-      debugPrint('Error fetching languages: $e');
-      return ['English', 'Gujarati'];
+      debugPrint('Error fetching languages: $e. Falling back to table scan.');
+      final response = await _supabase.from('mock_tests').select('language');
+
+      final List<String> languages = (response as List)
+          .map((e) => e['language'] as String)
+          .where((l) => l.isNotEmpty)
+          .toSet()
+          .toList();
+
+      final defaults = ['English', 'Gujarati'];
+      for (var d in defaults) {
+        if (!languages.contains(d)) languages.add(d);
+      }
+      return languages;
     }
   }
 
@@ -350,7 +375,7 @@ class TestService {
               ascending: false);
 
       debugPrint(
-          'TestService: Found ${ordersResponse.length} orders for user $authUserId');
+          'TestService: fetchUserTests - Found ${ordersResponse.length} orders for user $authUserId');
 
       final orderIds =
           (ordersResponse as List).map((o) => o['order_id']).toList();
@@ -404,41 +429,51 @@ class TestService {
     required String authUserId,
   }) async {
     try {
+      debugPrint(
+          'TestService: Attempting to claim free test $testId for user $authUserId');
+
       // 1. Check if already purchased/claimed
       final existingOrder = await _supabase
           .from('order_items')
-          .select('order_id')
+          .select('order_id, orders!inner(user_id, status)')
           .eq('test_id', testId)
           .eq('orders.user_id', authUserId)
           .eq('orders.status', 'SUCCESS')
           .maybeSingle();
 
       if (existingOrder != null) {
-        debugPrint('TestService: Test $testId already claimed.');
+        debugPrint(
+            'TestService: Test $testId already claimed by user $authUserId. Order: ${existingOrder['order_id']}');
         return;
       }
 
       // 2. Create SUCCESS order directly
+      final timestamp = DateTime.now().toUtc().toIso8601String();
       final newOrder = await _supabase
           .from('orders')
           .insert({
             'user_id': authUserId,
             'status': 'SUCCESS',
-            'total_amount': 0,
+            'total_amount': 0.0,
             'payment_gateway_id': 'FREE_CLAIM',
-            'created_at': DateTime.now().toUtc().toIso8601String(),
+            'created_at': timestamp,
           })
           .select('order_id')
           .single();
 
       final orderId = newOrder['order_id'];
+      debugPrint('TestService: Created FREE order: $orderId');
 
       // 3. Add Item
       await _supabase.from('order_items').insert({
         'order_id': orderId,
         'test_id': testId,
-        'price_at_purchase': 0,
+        'price_at_purchase': 0.0,
+        'created_at': timestamp,
       });
+
+      debugPrint(
+          'TestService: Successfully claimed test $testId for user $authUserId');
     } catch (e) {
       debugPrint('Error claiming free test: $e');
       throw Exception('Failed to claim test: $e');
@@ -607,59 +642,30 @@ class TestService {
 
         // 1. Generate Content URL (JSON)
         if (test.filePath.isNotEmpty) {
-          try {
-            debugPrint(
-                "TestService: Generating signed URL for content path: '${test.filePath}'");
+          contentUrl = await _getSignedUrlCached(test.filePath, 'mock_test');
 
-            contentUrl = await _supabase.storage
-                .from('mock_test')
-                .createSignedUrl(test.filePath, 60 * 60 * 24);
-          } catch (e) {
-            debugPrint(
-                "Error generating content URL for ${test.title} (path: ${test.filePath}): $e");
-            // Fallback 1: Try stripping 'mock_test/' if it exists
+          // Fallback logic if cached/first attempt fails (handling legacy pathing)
+          if (contentUrl == null) {
             if (test.filePath.startsWith('mock_test/')) {
-              try {
-                final stripped = test.filePath.replaceAll('mock_test/', '');
-                debugPrint(
-                    "TestService: Retrying with stripped path: '$stripped'");
-                contentUrl = await _supabase.storage
-                    .from('mock_test')
-                    .createSignedUrl(stripped, 60 * 60 * 24);
-              } catch (_) {}
-            }
-
-            // Fallback 2: Try adding 'resources/' prefix if not there
-            if (contentUrl == null && !test.filePath.startsWith('resources/')) {
-              try {
-                final prefixed = 'resources/${test.filePath}';
-                debugPrint(
-                    "TestService: Retrying with resources/ prefix: '$prefixed'");
-                contentUrl = await _supabase.storage
-                    .from('mock_test')
-                    .createSignedUrl(prefixed, 60 * 60 * 24);
-              } catch (_) {}
+              final stripped = test.filePath.replaceAll('mock_test/', '');
+              contentUrl = await _getSignedUrlCached(stripped, 'mock_test');
+            } else if (!test.filePath.startsWith('resources/')) {
+              final prefixed = 'resources/${test.filePath}';
+              contentUrl = await _getSignedUrlCached(prefixed, 'mock_test');
             }
           }
         }
 
         // 2. Generate Image URL
         if (test.coverImagePath != null && test.coverImagePath!.isNotEmpty) {
-          try {
-            String path =
-                test.coverImagePath!.replaceAll('mock_test/', ''); // Safety
-            imageUrl = await _supabase.storage
-                .from('mock_test')
-                .createSignedUrl(path, 60 * 60 * 24);
-          } catch (e) {
-            debugPrint("Error generating image URL for ${test.title}: $e");
-          }
+          String path =
+              test.coverImagePath!.replaceAll('mock_test/', ''); // Safety
+          imageUrl = await _getSignedUrlCached(path, 'mock_test');
         }
 
         return test.copyWith(
           contentUrl: contentUrl,
-          signedUrl:
-              imageUrl, // Mapping Image URL to signedUrl for UI compatibility
+          signedUrl: imageUrl,
         );
       }),
     );
@@ -790,4 +796,13 @@ List<MockTest> _parseMockTests(List<dynamic> jsonList) {
 List<Question> _decodeAndParseQuestions(String jsonString) {
   final List<dynamic> jsonList = jsonDecode(jsonString);
   return jsonList.map((q) => Question.fromJson(q)).toList();
+}
+
+class _SignedUrlEntry {
+  final String url;
+  final DateTime expiresAt;
+
+  _SignedUrlEntry(this.url, this.expiresAt);
+
+  bool get isExpired => DateTime.now().isAfter(expiresAt);
 }

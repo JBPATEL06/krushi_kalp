@@ -21,6 +21,7 @@ class TestProvider with ChangeNotifier {
   }
 
   List<MockTest> get tests => _allTests;
+  Set<int> get purchasedTestIds => _purchasedTestIds;
   List<MockTest> get purchasedTests => _cachedTests
       .where((test) => _purchasedTestIds.contains(test.id))
       .toList();
@@ -81,14 +82,11 @@ class TestProvider with ChangeNotifier {
 
     try {
       final results = await Future.wait([
-        TestService.instance.fetchAllTestsRaw(),
+        TestService.instance.fetchMockTests(),
         fetchPurchasedStatus(),
       ]);
 
-      final response = results[0] as List<dynamic>;
-      List<MockTest> fetchedTests = await compute(_parseMockTests, response);
-
-      fetchedTests = await _signUrls(fetchedTests);
+      final fetchedTests = results[0] as List<MockTest>;
       _cachedTests = fetchedTests;
       filterAndSortTests();
     } catch (e) {
@@ -97,23 +95,6 @@ class TestProvider with ChangeNotifier {
     } finally {
       _setLoading(false);
     }
-  }
-
-  Future<List<MockTest>> _signUrls(List<MockTest> tests) async {
-    return await Future.wait(
-      tests.map((test) async {
-        if (test.coverImagePath != null) {
-          try {
-            final freshUrl = await TestService.instance
-                .getSignedUrl(test.coverImagePath!, 'mock_test');
-            return test.copyWith(signedUrl: freshUrl);
-          } catch (e) {
-            return test;
-          }
-        }
-        return test;
-      }),
-    );
   }
 
   Future<void> fetchPurchasedStatus() async {
@@ -200,9 +181,4 @@ class TestProvider with ChangeNotifier {
     _cachedTests.clear();
     super.dispose();
   }
-}
-
-// Top-level function for background isolate JSON parsing
-List<MockTest> _parseMockTests(List<dynamic> jsonList) {
-  return jsonList.map((json) => MockTest.fromJson(json)).toList();
 }

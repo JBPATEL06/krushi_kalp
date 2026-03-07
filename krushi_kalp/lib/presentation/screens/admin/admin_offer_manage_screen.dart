@@ -470,10 +470,22 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
                                   _selectedTargetIds.clear();
                                 }
                                 _codeController.clear();
+                              } else {
+                                // For Coupons, force Is Real to true
                                 _isReal = true;
                               }
                             });
                           },
+                        ),
+                        SwitchListTile(
+                          title: const Text("Is Real Offer"),
+                          subtitle: const Text(
+                              "Actually reduces price. Uncheck for display-only/fake offers."),
+                          value: _isReal,
+                          activeColor: colorScheme.primary,
+                          onChanged: !_isSale
+                              ? null // Disable for coupons (always real)
+                              : (v) => setState(() => _isReal = v),
                         ),
                         const SizedBox(height: AppSpacing.xxl),
                         SizedBox(

@@ -89,93 +89,99 @@ class _FeatureControlTabState extends State<FeatureControlTab> {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 800),
-        child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          children: [
-            _buildSectionHeader(context, "FEATURE FLAGS"),
-                const SizedBox(height: AppSpacing.sm),
-            _buildSwitchCard(
-              context,
-              title: "Show Reviews",
-              subtitle: "Show/Hide the entire review section.",
-              value: _showReviews,
-              icon: Icons.reviews_rounded,
-              onChanged: (val) {
-                setState(() => _showReviews = val);
-                _updateReviewConfig();
-              },
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _buildSwitchCard(
-              context,
-              title: "Allow Writing Reviews",
-              subtitle:
-                  "Allow users to submit reviews (independent of visibility).",
-              value: _allowWriting,
-              icon: Icons.rate_review_rounded,
-              onChanged: (val) {
-                setState(() => _allowWriting = val);
-                _updateReviewConfig();
-              },
-            ),
-            const SizedBox(height: AppSpacing.lg),_buildSectionHeader(context, "APP STATUS"),
-                const SizedBox(height: AppSpacing.sm),
-            _buildSwitchCard(
-              context,
-              title: "Maintenance Mode",
-              subtitle: "Block user access with a maintenance screen.",
-              value: _maintenanceMode,
-              icon: Icons.engineering_rounded,
-              onChanged: _toggleMaintenance,
-            ),
-            if (_maintenanceMode) ...[
+        child: RefreshIndicator(
+          onRefresh: _loadConfig,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            children: [
+              _buildSectionHeader(context, "FEATURE FLAGS"),
+              const SizedBox(height: AppSpacing.sm),
+              _buildSwitchCard(
+                context,
+                title: "Show Reviews",
+                subtitle: "Show/Hide the entire review section.",
+                value: _showReviews,
+                icon: Icons.reviews_rounded,
+                onChanged: (val) {
+                  setState(() => _showReviews = val);
+                  _updateReviewConfig();
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _buildSwitchCard(
+                context,
+                title: "Allow Writing Reviews",
+                subtitle:
+                    "Allow users to submit reviews (independent of visibility).",
+                value: _allowWriting,
+                icon: Icons.rate_review_rounded,
+                onChanged: (val) {
+                  setState(() => _allowWriting = val);
+                  _updateReviewConfig();
+                },
+              ),
               const SizedBox(height: AppSpacing.lg),
+              _buildSectionHeader(context, "APP STATUS"),
+              const SizedBox(height: AppSpacing.sm),
+              _buildSwitchCard(
+                context,
+                title: "Maintenance Mode",
+                subtitle: "Block user access with a maintenance screen.",
+                value: _maintenanceMode,
+                icon: Icons.engineering_rounded,
+                onChanged: _toggleMaintenance,
+              ),
+              if (_maintenanceMode) ...[
+                const SizedBox(height: AppSpacing.lg),
+                TextField(
+                  controller: _maintenanceMsgController,
+                  decoration: getPremiumInputDecoration(
+                    context,
+                    labelText: "Maintenance Message",
+                    prefixIcon: const Icon(Icons.message_rounded),
+                    hintText: "Reason for maintenance...",
+                  ),
+                  onSubmitted: (_) => _updateMaintenanceConfig(),
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+              const SizedBox(height: AppSpacing.lg),
+              _buildSectionHeader(context, "FORCE UPDATE"),
+              const SizedBox(height: AppSpacing.sm),
               TextField(
-                controller: _maintenanceMsgController,
+                controller: _minVersionController,
                 decoration: getPremiumInputDecoration(
                   context,
-                  labelText: "Maintenance Message",
-                  prefixIcon: const Icon(Icons.message_rounded),
-                  hintText: "Reason for maintenance...",
+                  labelText: "Minimum Required Version",
+                  hintText: "e.g. 1.2.0  (leave empty to disable)",
+                  prefixIcon: const Icon(Icons.system_update_alt_rounded),
                 ),
+                keyboardType: TextInputType.text,
                 onSubmitted: (_) => _updateMaintenanceConfig(),
               ),
               const SizedBox(height: AppSpacing.md),
-            ],
-            const SizedBox(height: AppSpacing.lg),_buildSectionHeader(context, "FORCE UPDATE"),
-                const SizedBox(height: AppSpacing.sm),
-            TextField(
-              controller: _minVersionController,
-              decoration: getPremiumInputDecoration(
-                context,
-                labelText: "Minimum Required Version",
-                hintText: "e.g. 1.2.0  (leave empty to disable)",
-                prefixIcon: const Icon(Icons.system_update_alt_rounded),
-              ),
-              keyboardType: TextInputType.text,
-              onSubmitted: (_) => _updateMaintenanceConfig(),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              'Users with an app version below this will be forced to update before they can use the app.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            FilledButton.icon(
-              onPressed: _updateMaintenanceConfig,
-              icon: const Icon(Icons.save_rounded),
-              label: const Text("Save Version & Status"),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(double.infinity, 54),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              Text(
+                'Users with an app version below this will be forced to update before they can use the app.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.4,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: AppSpacing.xl),
+              FilledButton.icon(
+                onPressed: _updateMaintenanceConfig,
+                icon: const Icon(Icons.save_rounded),
+                label: const Text("Save Version & Status"),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 54),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

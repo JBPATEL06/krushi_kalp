@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'auth_service.dart';
 import 'notification_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Background Handler (Must be top-level)
 @pragma('vm:entry-point')
@@ -12,39 +13,36 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   debugPrint("Handling a background message: ${message.messageId}");
 
-  if (true) {
-    // 1. Initialize Local Notifications Plugin in the background isolate
-    final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-        FlutterLocalNotificationsPlugin();
+  // 1. Initialize Local Notifications Plugin in the background isolate
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@drawable/ic_notification');
-    const InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@drawable/ic_notification');
+  const InitializationSettings initializationSettings =
+      InitializationSettings(android: initializationSettingsAndroid);
 
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
-    // 2. Define High Importance Channel uniquely for User App
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      'krushi_kalp_user_channel',
-      'Krushi Kalp User Notifications',
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: '@drawable/ic_notification',
-      color: Colors.white, // Requested white icon background
-    );
-    const NotificationDetails details =
-        NotificationDetails(android: androidDetails);
+  // 2. Define High Importance Channel uniquely for User App
+  const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    'krushi_kalp_user_channel',
+    'Krushi Kalp User Notifications',
+    importance: Importance.high,
+    priority: Priority.high,
+    icon: '@drawable/ic_notification',
+    color: Colors.white, // Requested white icon background
+  );
+  const NotificationDetails details =
+      NotificationDetails(android: androidDetails);
 
-    // 3. Show Notification (User App Offset: +0)
-    await flutterLocalNotificationsPlugin.show(
-      message.hashCode,
-      message.notification?.title ?? message.data['title'] ?? 'Krushi Kalp',
-      message.notification?.body ?? message.data['body'] ?? '',
-      details,
-    );
-  }
+  // 3. Show Notification (User App Offset: +0)
+  await flutterLocalNotificationsPlugin.show(
+    message.hashCode,
+    message.notification?.title ?? message.data['title'] ?? 'Krushi Kalp',
+    message.notification?.body ?? message.data['body'] ?? '',
+    details,
+  );
 }
 
 class FCMService {
@@ -136,11 +134,20 @@ class FCMService {
       debugPrint("FCM Token: $token");
 
       if (token != null) {
-        await _saveTokenToDatabase(token);
+        final prefs = await SharedPreferences.getInstance();
+        final savedToken = prefs.getString('fcm_token_saved');
+        if (savedToken != token) {
+          await _saveTokenToDatabase(token);
+          await prefs.setString('fcm_token_saved', token);
+        }
       }
 
       // Listen for token refresh
-      _firebaseMessaging.onTokenRefresh.listen(_saveTokenToDatabase);
+      _firebaseMessaging.onTokenRefresh.listen((newToken) async {
+        await _saveTokenToDatabase(newToken);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('fcm_token_saved', newToken);
+      });
     }
   }
 

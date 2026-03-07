@@ -48,7 +48,21 @@ class TranslationService {
 
   /// Translates a batch of questions (Fire and Forget or Wait)
   static Future<List<Question>> translateBatch(List<Question> questions) async {
-    final futures = questions.map((q) => translateQuestion(q));
-    return Future.wait(futures);
+    const chunkSize = 5; // Translate 5 at a time
+    final results = <Question>[];
+
+    for (int i = 0; i < questions.length; i += chunkSize) {
+      final chunk =
+          questions.sublist(i, (i + chunkSize).clamp(0, questions.length));
+      final translated =
+          await Future.wait(chunk.map((q) => translateQuestion(q)));
+      results.addAll(translated);
+
+      // Small delay to avoid rate-limiting
+      if (i + chunkSize < questions.length) {
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
+    }
+    return results;
   }
 }

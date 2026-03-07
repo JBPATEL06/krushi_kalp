@@ -5,17 +5,11 @@ import 'package:provider/provider.dart';
 import '../../data/services/payment_service.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/cart_service.dart';
-import '../../data/services/test_service.dart';
 import '../../data/services/offer_service.dart';
-import '../../data/services/resource_service.dart';
-
+import '../../data/services/test_service.dart';
 import '../../domain/models/offer.dart';
 import '../../domain/models/order_item.dart';
-import '../../domain/models/resource.dart';
-import '../../domain/models/mock_test.dart';
-
 import '../../utils/price_calculator.dart';
-import '../../utils/responsive.dart';
 import '../../core/theme/app_spacing.dart';
 
 import '../widgets/common/network_error_state.dart';

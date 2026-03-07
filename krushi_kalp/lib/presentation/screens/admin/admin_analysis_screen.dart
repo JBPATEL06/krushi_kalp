@@ -61,103 +61,113 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
                 'activeOffers': 0,
               };
 
-          return SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg + MediaQuery.of(context).padding.bottom,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSectionHeader(context, 'REVENUE & USERS'),
-                const SizedBox(height: AppSpacing.sm),
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: AppSpacing.md,
-                  mainAxisSpacing: AppSpacing.md,
-                  childAspectRatio: 1.3,
-                  children: [
-                    _buildStatCard(
-                      context,
-                      'Total Users',
-                      '${stats['totalUsers']}',
-                      Icons.people_rounded,
-                      const Color(0xFF3B82F6), // Blue
-                      onTap: () => context.read<AdminProvider>().setNavIndex(2),
-                    ),
-                    _buildStatCard(
-                      context,
-                      'Revenue',
-                      '₹${(stats['revenue'] as double).toStringAsFixed(0)}',
-                      Icons.payments_rounded,
-                      const Color(0xFF10B981), // Emerald
-                      onTap: () => Navigator.push(
+          return RefreshIndicator(
+            onRefresh: () async {
+              setState(() {
+                _statsStream = AdminService.streamDashboardStats();
+              });
+              await Future.delayed(const Duration(milliseconds: 500));
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg + MediaQuery.of(context).padding.bottom,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHeader(context, 'REVENUE & USERS'),
+                  const SizedBox(height: AppSpacing.sm),
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    crossAxisSpacing: AppSpacing.md,
+                    mainAxisSpacing: AppSpacing.md,
+                    childAspectRatio: 1.3,
+                    children: [
+                      _buildStatCard(
                         context,
-                        MaterialPageRoute(
-                            builder: (_) => const RevenueDetailsScreen()),
+                        'Total Users',
+                        '${stats['totalUsers']}',
+                        Icons.people_rounded,
+                        const Color(0xFF3B82F6), // Blue
+                        onTap: () =>
+                            context.read<AdminProvider>().setNavIndex(2),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                _buildSectionHeader(context, 'CONTENT METRICS'),
-                const SizedBox(height: AppSpacing.sm),
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: AppSpacing.md,
-                  mainAxisSpacing: AppSpacing.md,
-                  childAspectRatio: 1.3,
-                  children: [
-                    _buildStatCard(
-                      context,
-                      'Mock Tests',
-                      '${stats['totalTests']}',
-                      Icons.quiz_rounded,
-                      const Color(0xFFF59E0B), // Amber
-                      onTap: () => Navigator.push(
+                      _buildStatCard(
                         context,
-                        MaterialPageRoute(
-                            builder: (_) => const AdminStoreScreen()),
-                      ),
-                    ),
-                    _buildStatCard(
-                      context,
-                      'Test Sales',
-                      '${stats['testSales']}',
-                      Icons.shopping_cart_checkout_rounded,
-                      const Color(0xFF6366F1), // Indigo
-                    ),
-                    _buildStatCard(
-                      context,
-                      'Active Offers',
-                      '${stats['activeOffers']}',
-                      Icons.local_offer_rounded,
-                      const Color(0xFFA855F7), // Purple
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const AdminOfferListScreen(showOnlyActive: true),
+                        'Revenue',
+                        '₹${(stats['revenue'] as double).toStringAsFixed(0)}',
+                        Icons.payments_rounded,
+                        const Color(0xFF10B981), // Emerald
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const RevenueDetailsScreen()),
                         ),
                       ),
-                    ),
-                    _buildStatCard(
-                      context,
-                      'Resources',
-                      '${stats['totalResources']}',
-                      Icons.library_books_rounded,
-                      const Color(0xFF2DD4BF), // Teal
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xxl),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _buildSectionHeader(context, 'CONTENT METRICS'),
+                  const SizedBox(height: AppSpacing.sm),
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    crossAxisSpacing: AppSpacing.md,
+                    mainAxisSpacing: AppSpacing.md,
+                    childAspectRatio: 1.3,
+                    children: [
+                      _buildStatCard(
+                        context,
+                        'Mock Tests',
+                        '${stats['totalTests']}',
+                        Icons.quiz_rounded,
+                        const Color(0xFFF59E0B), // Amber
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const AdminStoreScreen()),
+                        ),
+                      ),
+                      _buildStatCard(
+                        context,
+                        'Test Sales',
+                        '${stats['testSales']}',
+                        Icons.shopping_cart_checkout_rounded,
+                        const Color(0xFF6366F1), // Indigo
+                      ),
+                      _buildStatCard(
+                        context,
+                        'Active Offers',
+                        '${stats['activeOffers']}',
+                        Icons.local_offer_rounded,
+                        const Color(0xFFA855F7), // Purple
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AdminOfferListScreen(
+                                showOnlyActive: true),
+                          ),
+                        ),
+                      ),
+                      _buildStatCard(
+                        context,
+                        'Resources',
+                        '${stats['totalResources']}',
+                        Icons.library_books_rounded,
+                        const Color(0xFF2DD4BF), // Teal
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                ],
+              ),
             ),
           );
         },

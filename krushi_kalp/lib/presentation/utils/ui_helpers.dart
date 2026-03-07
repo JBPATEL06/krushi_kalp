@@ -96,13 +96,13 @@ Future<T?> showAppDialog<T>({
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isDestructive
-                              ? Theme.of(context).colorScheme.errorContainer
+                              ? Theme.of(context).colorScheme.error
                               : Theme.of(context)
                                   .colorScheme
                                   .primary
                                   .withValues(alpha: 0.1),
                           foregroundColor: isDestructive
-                              ? Theme.of(context).colorScheme.error
+                              ? Theme.of(context).colorScheme.onError
                               : Theme.of(context).colorScheme.primary,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(

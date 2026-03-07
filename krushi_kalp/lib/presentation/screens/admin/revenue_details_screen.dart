@@ -85,109 +85,121 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000),
-          child: Column(
-            children: [
-              // Summary Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  border: Border(
-                      bottom: BorderSide(
-                          color: colorScheme.outlineVariant.withOpacity(0.5))),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'TOTAL REVENUE',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: colorScheme.onSurfaceVariant,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        '₹${totalRevenue.toStringAsFixed(2)}',
-                        style: theme.textTheme.displayLarge?.copyWith(
-                          // Increased from displayMedium
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xFF10B981), // Emerald
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                      child: Text(
-                        '${filteredOrders.length} SUCCESSFUL SALES',
+          child: RefreshIndicator(
+            onRefresh: _fetchData,
+            child: Column(
+              children: [
+                // Summary Header
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    border: Border(
+                        bottom: BorderSide(
+                            color:
+                                colorScheme.outlineVariant.withOpacity(0.5))),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'TOTAL REVENUE',
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
+                          fontWeight: FontWeight.w800,
+                          color: colorScheme.onSurfaceVariant,
+                          letterSpacing: 1.5,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    // Filter Row
-                    Row(
-                      children: [
-                        Text(
-                          "FILTER",
+                      const SizedBox(height: AppSpacing.md),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          '₹${totalRevenue.toStringAsFixed(2)}',
+                          style: theme.textTheme.displayLarge?.copyWith(
+                            // Increased from displayMedium
+                            fontWeight: FontWeight.w900,
+                            color: const Color(0xFF10B981), // Emerald
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Text(
+                          '${filteredOrders.length} SUCCESSFUL SALES',
                           style: theme.textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: colorScheme.onSurfaceVariant,
-                            letterSpacing: 1.2,
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              children: [
-                                _buildFilterChip('All'),
-                                const SizedBox(width: 8),
-                                _buildFilterChip('Today'),
-                                const SizedBox(width: 8),
-                                _buildFilterChip('Monthly'),
-                                const SizedBox(width: 8),
-                                _buildFilterChip('Yearly'),
-                              ],
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      // Filter Row
+                      Row(
+                        children: [
+                          Text(
+                            "FILTER",
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: colorScheme.onSurfaceVariant,
+                              letterSpacing: 1.2,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  _buildFilterChip('All'),
+                                  const SizedBox(width: 8),
+                                  _buildFilterChip('Today'),
+                                  const SizedBox(width: 8),
+                                  _buildFilterChip('Monthly'),
+                                  const SizedBox(width: 8),
+                                  _buildFilterChip('Yearly'),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              // Transaction List
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : filteredOrders.isEmpty
-                        ? _buildEmptyState()
-                        : ListView.builder(
-                            padding: EdgeInsets.only(
-                              bottom: MediaQuery.of(context).padding.bottom,
+                // Transaction List
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : filteredOrders.isEmpty
+                          ? SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 100),
+                                child: _buildEmptyState(),
+                              ),
+                            )
+                          : ListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: EdgeInsets.only(
+                                bottom:
+                                    MediaQuery.of(context).padding.bottom + 20,
+                              ),
+                              itemCount: filteredOrders.length,
+                              itemBuilder: (context, index) {
+                                return _buildOrderRow(filteredOrders[index]);
+                              },
                             ),
-                            itemCount: filteredOrders.length,
-                            itemBuilder: (context, index) {
-                              return _buildOrderRow(filteredOrders[index]);
-                            },
-                          ),
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

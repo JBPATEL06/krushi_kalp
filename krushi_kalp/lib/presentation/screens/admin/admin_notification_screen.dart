@@ -69,9 +69,6 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
 
     return Scaffold(
       backgroundColor: colorScheme.background,
-      appBar: AppBar(
-        title: const Text("Push Notifications"),
-      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
           AppSpacing.lg,

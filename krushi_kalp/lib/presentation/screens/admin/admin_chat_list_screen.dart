@@ -75,93 +75,82 @@ class _AdminChatListScreenState extends State<AdminChatListScreen> {
 
                     final conversations = snapshot.data ?? [];
 
-                    if (conversations.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.chat_bubble_outline_rounded,
-                                size: 64,
-                                color: colorScheme.onSurfaceVariant
-                                    .withOpacity(0.3)),
-                            const SizedBox(height: AppSpacing.md),
-                            Text('No active conversations.',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                    color: colorScheme.onSurfaceVariant)),
-                          ],
+                    return RefreshIndicator(
+                      onRefresh: () async {
+                        adminProvider.triggerRefresh();
+                        await Future.delayed(const Duration(milliseconds: 600));
+                      },
+                      child: ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.only(
+                          left: AppSpacing.md,
+                          right: AppSpacing.md,
+                          top: AppSpacing.md,
+                          bottom: AppSpacing.md +
+                              MediaQuery.of(context).padding.bottom,
                         ),
-                      );
-                    }
+                        itemCount: conversations.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: AppSpacing.md),
+                        itemBuilder: (context, index) {
+                          final chat = conversations[index];
+                          final username = chat['username'] ?? 'User';
+                          final firstChar = username.isNotEmpty
+                              ? (username as String)[0].toUpperCase()
+                              : '?';
 
-                    return ListView.separated(
-                      padding: EdgeInsets.only(
-                        left: AppSpacing.md,
-                        right: AppSpacing.md,
-                        top: AppSpacing.md,
-                        bottom: AppSpacing.md +
-                            MediaQuery.of(context).padding.bottom,
-                      ),
-                      itemCount: conversations.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: AppSpacing.md),
-                      itemBuilder: (context, index) {
-                        final chat = conversations[index];
-                        final username = chat['username'] ?? 'User';
-                        final firstChar = username.isNotEmpty
-                            ? (username as String)[0].toUpperCase()
-                            : '?';
-
-                        return ModernCard(
-                          padding: EdgeInsets.zero,
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.lg,
-                                vertical: AppSpacing.sm),
-                            leading: CircleAvatar(
-                              radius: 24,
-                              backgroundColor:
-                                  colorScheme.primary.withOpacity(0.1),
-                              child: Text(
-                                firstChar,
-                                style: TextStyle(
-                                  color: colorScheme.primary,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ),
-                            title: Text(
-                              username,
-                              style: theme.textTheme.titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 4.0),
-                              child: Text(
-                                chat['email'] ?? 'No Email',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                    color: colorScheme.onSurfaceVariant),
-                              ),
-                            ),
-                            trailing: Icon(Icons.chevron_right_rounded,
-                                color: colorScheme.onSurfaceVariant
-                                    .withOpacity(0.5),
-                                size: 20),
-                            onTap: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => AdminChatDetailScreen(
-                                    userId: chat['user_id'],
-                                    userName: chat['username'],
+                          return ModernCard(
+                            padding: EdgeInsets.zero,
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.lg,
+                                  vertical: AppSpacing.sm),
+                              leading: CircleAvatar(
+                                radius: 24,
+                                backgroundColor:
+                                    colorScheme.primary.withOpacity(0.1),
+                                child: Text(
+                                  firstChar,
+                                  style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 18,
                                   ),
                                 ),
-                              );
-                              adminProvider.triggerRefresh();
-                            },
-                          ),
-                        );
-                      },
+                              ),
+                              title: Text(
+                                username,
+                                style: theme.textTheme.titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Text(
+                                  chat['email'] ?? 'No Email',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant),
+                                ),
+                              ),
+                              trailing: Icon(Icons.chevron_right_rounded,
+                                  color: colorScheme.onSurfaceVariant
+                                      .withOpacity(0.5),
+                                  size: 20),
+                              onTap: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => AdminChatDetailScreen(
+                                      userId: chat['user_id'],
+                                      userName: chat['username'],
+                                    ),
+                                  ),
+                                );
+                                adminProvider.triggerRefresh();
+                              },
+                            ),
+                          );
+                        },
+                      ),
                     );
                   },
                 ),

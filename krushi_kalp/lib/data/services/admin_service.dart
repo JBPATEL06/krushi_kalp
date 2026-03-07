@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:krushi_kalp/data/services/test_service.dart';
 import '../../utils/network_utils.dart'; // Import NetworkUtils
 
 class AdminService {
@@ -53,20 +54,20 @@ class AdminService {
           _supabase.from('mock_tests').count(CountOption.exact),
           _supabase.from('resources').count(CountOption.exact),
           _supabase.from('users').count(CountOption.exact),
-          _supabase
-              .from('orders')
-              .select('total_amount')
-              .eq('status', 'SUCCESS'),
-          _supabase
+          // This was results[3] in the old code, now it's removed from futures
+          // _supabase.from('orders').select('total_amount').eq('status', 'SUCCESS'),
+          _supabase // This will now be results[3]
               .from('offers')
               .count(CountOption.exact)
               .eq('is_active', true),
-          _supabase.from('order_items').count(CountOption.exact),
           _supabase
+              .from('order_items')
+              .count(CountOption.exact), // This will now be results[4]
+          _supabase // This will now be results[5]
               .from('order_items')
               .count(CountOption.exact)
               .not('test_id', 'is', null),
-          _supabase
+          _supabase // This will now be results[6]
               .from('order_items')
               .count(CountOption.exact)
               .not('resource_id', 'is', null),
@@ -74,23 +75,43 @@ class AdminService {
 
         final results = await Future.wait(futures);
 
-        final testSalesCount = results[6] as int;
-        final resourceSalesCount = results[7] as int;
+        final testSalesCount = results[5] as int; // Adjusted index
+        final resourceSalesCount = results[6] as int; // Adjusted index
 
-        // Calculate Revenue (Still requires fetching rows to sum, unless RPC is used)
-        final ordersList = results[3] as List;
-        final double revenue = ordersList.fold(
-            0.0, (sum, item) => sum + (item['total_amount'] as num).toDouble());
+        // 3. Revenue & Order Length (RPC preferred)
+        double revenue = 0.0;
+        int totalPurchased = 0;
+
+        try {
+          final rpcRevenue = await _supabase.rpc('calculate_total_revenue');
+          revenue = (rpcRevenue as num).toDouble();
+
+          final ordersCount = await _supabase
+              .from('orders')
+              .count(CountOption.exact)
+              .eq('status', 'SUCCESS');
+          totalPurchased = ordersCount;
+        } catch (e) {
+          debugPrint(
+              'AdminService: Revenue RPC failed, falling back to local sum: $e');
+          final ordersList = await _supabase
+              .from('orders')
+              .select('total_amount')
+              .eq('status', 'SUCCESS');
+          totalPurchased = ordersList.length;
+          revenue = ordersList.fold(0.0,
+              (sum, item) => sum + (item['total_amount'] as num).toDouble());
+        }
 
         return {
           'totalTests': results[0] as int,
           'totalResources': results[1] as int,
           'totalUsers': results[2] as int,
-          'totalPurchased': ordersList.length,
+          'totalPurchased': totalPurchased,
           'testSales': testSalesCount,
           'resourceSales': resourceSalesCount,
           'revenue': revenue,
-          'activeOffers': results[4] as int,
+          'activeOffers': results[3] as int, // Adjusted index
         };
       } catch (e) {
         debugPrint('AdminService: Error in streamDashboardStats: $e');
@@ -288,14 +309,11 @@ class AdminService {
 
         for (var t in result) {
           final testId = t['id'];
-          try {
-            final signedUrl = await _supabase.storage
-                .from('mock_test')
-                .createSignedUrl('mock_test_cover/$testId.jpg', 60 * 60);
-            t['image_url'] = signedUrl;
-          } catch (e) {
-            t['image_url'] = null;
-          }
+          final path = 'mock_test_cover/$testId.jpg';
+          // Use TestService instance (which has the cache)
+          final signedUrl =
+              await TestService.instance.getSignedUrl(path, 'mock_test');
+          t['image_url'] = signedUrl;
         }
 
         return result;
@@ -616,7 +634,9 @@ class AdminService {
   /// Deletes a user account (Admin only)
   static Future<void> deleteUser(String userId) async {
     try {
-      await _supabase.from('users').delete().eq('id', userId);
+      // Call the comprehensive RPC that deletes from both public and auth tables
+      await _supabase
+          .rpc('admin_delete_user_data', params: {'target_user_id': userId});
     } catch (e) {
       debugPrint('AdminService: Error deleting user: $e');
       rethrow;

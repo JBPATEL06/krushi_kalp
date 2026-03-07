@@ -60,11 +60,18 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
     MockTest? test,
     Resource? resource,
   }) async {
-    if (_isProcessing) return;
-    setState(() => _isProcessing = true);
+    final String itemName = test?.title ?? resource?.title ?? 'Item';
+    debugPrint('[FreeContent] 💡 _claimItem called for $itemName');
+
+    if (_isProcessing) {
+      debugPrint('[FreeContent] ⚠️ Already processing, ignoring tap');
+      return;
+    }
+
     try {
       final user = AuthService.instance.currentUser;
       if (user == null) {
+        debugPrint('[FreeContent] ❌ No user logged in');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Please login to claim')),
@@ -73,7 +80,10 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
         return;
       }
 
+      setState(() => _isProcessing = true);
+
       if (test != null) {
+        debugPrint('[FreeContent] 🧪 Claiming test: ${test.id}');
         await TestService.instance.claimFreeTest(
           testId: test.id,
           authUserId: user.id,
@@ -81,28 +91,34 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
         if (mounted) {
           final testProvider = context.read<TestProvider>();
           await testProvider.fetchUserTests(user.id);
-          testProvider.fetchTests(forceRefresh: true);
+          await testProvider.fetchTests(forceRefresh: true);
         }
       } else if (resource != null) {
+        debugPrint('[FreeContent] 📚 Claiming resource: ${resource.id}');
         await context
             .read<ResourceProvider>()
             .claimResource(resource.id, user.id);
-        if (mounted) {
-          await context
-              .read<ResourceProvider>()
-              .fetchPurchasedResources(user.id);
-        }
+        // Provider.claimResource already calls fetchPurchasedResources
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text('Claimed ${test?.title ?? resource?.title} successfully!'),
+            content: Text('Claimed $itemName successfully!'),
             backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
-        _fetchData();
+        // No need to call _fetchData here if using Consumer,
+        // but we'll call it to ensure all state is synced
+        await _fetchData();
+      }
+    } catch (e) {
+      debugPrint('[FreeContent] ❌ Claim failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Claim failed: $e'), backgroundColor: Colors.red),
+        );
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -124,18 +140,13 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
       debugPrint(
           '[FreeContent] 📡 Fetching tests and resources from providers...');
 
-      final List<Future> futures = [
-        testProvider.fetchTests(),
-        resourceProvider.fetchAll(),
-      ];
-
-      if (user != null) {
-        futures.add(testProvider.fetchUserTests(user.id));
-        futures.add(resourceProvider.fetchPurchasedResources(user.id));
-      }
-
       // Fetch with caching support
-      await Future.wait(futures);
+      await Future.wait([
+        testProvider.fetchTests(forceRefresh: true),
+        resourceProvider.fetchAll(forceRefresh: true),
+        if (user != null) testProvider.fetchUserTests(user.id),
+        if (user != null) resourceProvider.fetchPurchasedResources(user.id),
+      ]);
 
       final testCount = testProvider.tests.length;
       final resourceCount = resourceProvider.ebooks.length +
@@ -164,18 +175,18 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
     }
   }
 
-  List<dynamic> _getFilteredItems() {
+  List<dynamic> _getFilteredItems(
+    TestProvider testProvider,
+    ResourceProvider resourceProvider,
+  ) {
     debugPrint(
         '[FreeContent] 🔧 Filtering items with filter: "$_selectedFilter", search: "$_searchQuery"');
-
-    final testProvider = context.read<TestProvider>();
-    final resourceProvider = context.read<ResourceProvider>();
 
     List<dynamic> items = [];
 
     // Gather all items based on filter
     if (_selectedFilter == 'All' || _selectedFilter == 'Tests') {
-      final purchasedTestIds = testProvider.userTests.map((t) => t.id).toSet();
+      final purchasedTestIds = testProvider.purchasedTestIds;
       items.addAll(testProvider.tests.where(
           (test) => test.price == 0 && !purchasedTestIds.contains(test.id)));
     }
@@ -368,14 +379,19 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
 
           // Content Area
           Expanded(
-            child: _buildContent(),
+            child: Consumer2<TestProvider, ResourceProvider>(
+              builder: (context, testProvider, resourceProvider, _) {
+                return _buildContent(testProvider, resourceProvider);
+              },
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(
+      TestProvider testProvider, ResourceProvider resourceProvider) {
     final theme = Theme.of(context);
     if (_isLoading) {
       debugPrint('[FreeContent] ⏳ Showing loading indicator');
@@ -419,7 +435,7 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
       );
     }
 
-    final items = _getFilteredItems();
+    final items = _getFilteredItems(testProvider, resourceProvider);
 
     if (items.isEmpty) {
       debugPrint('[FreeContent] 📭 No items to display');
@@ -468,34 +484,26 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
           Widget card;
 
           if (item is MockTest) {
-            card = _buildTestCard(item, index);
+            card = _buildTestCard(item, index, testProvider);
           } else if (item is Resource) {
-            card = _buildResourceCard(item, index);
+            card = _buildResourceCard(item, index, resourceProvider);
           } else {
             return const SizedBox.shrink();
           }
 
-          return Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.xs,
-            ),
-            child: card
-                .animate(delay: (index < 5 ? index * 100 : 0).ms)
-                .fadeIn(duration: 400.ms)
-                .slideY(begin: 0.1, end: 0),
-          );
+          return card
+              .animate(delay: (index < 5 ? index * 100 : 0).ms)
+              .fadeIn(duration: 400.ms)
+              .slideY(begin: 0.1, end: 0);
         },
       ),
     );
   }
 
-  Widget _buildTestCard(MockTest test, int index) {
+  Widget _buildTestCard(MockTest test, int index, TestProvider provider) {
     debugPrint('[FreeContent] 🧪 Building card for test: ${test.title}');
     final uniqueTag = 'test_${test.id}_$index';
-    final purchasedTestIds =
-        context.read<TestProvider>().userTests.map((t) => t.id).toSet();
-    final isPurchased = purchasedTestIds.contains(test.id);
+    final isPurchased = provider.purchasedTestIds.contains(test.id);
 
     return FreeItemCard(
       title: test.title,
@@ -523,7 +531,8 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
     );
   }
 
-  Widget _buildResourceCard(Resource resource, int index) {
+  Widget _buildResourceCard(
+      Resource resource, int index, ResourceProvider provider) {
     debugPrint(
         '[FreeContent] 📚 Building card for resource: ${resource.title}');
 
@@ -542,10 +551,8 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
         typeLabel = 'Current Affair';
         break;
     }
-
     final uniqueTag = 'resource_${resource.id}_$index';
-    final purchasedIds = context.read<ResourceProvider>().purchasedResourceIds;
-    final isPurchased = purchasedIds.contains(resource.id);
+    final isPurchased = provider.purchasedResourceIds.contains(resource.id);
 
     return FreeItemCard(
       title: resource.title,

@@ -98,51 +98,56 @@ class _ContentManagementTabState extends State<ContentManagementTab> {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 800),
-        child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          children: [
-            _buildSectionHeader(context, "CONTACT INFORMATION"),
-                const SizedBox(height: AppSpacing.sm),
-            _buildTextField(context, "WhatsApp Number", _whatsappController,
-                TextInputType.phone, Icons.phone_android_rounded),
-            const SizedBox(height: AppSpacing.md),
-            _buildTextField(context, "Support Email", _emailController,
-                TextInputType.emailAddress, Icons.alternate_email_rounded),
-            const SizedBox(height: AppSpacing.md),
-            _buildTextField(context, "Telegram Channel Link",
-                _telegramController, TextInputType.url, Icons.send_rounded),
-            const SizedBox(height: AppSpacing.lg),
-            FilledButton.icon(
-              onPressed: _saveContactInfo,
-              icon: const Icon(Icons.save_rounded),
-              label: const Text("Save Contact Info"),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(double.infinity, 54),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+        child: RefreshIndicator(
+          onRefresh: _loadConfig,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            children: [
+              _buildSectionHeader(context, "CONTACT INFORMATION"),
+              const SizedBox(height: AppSpacing.sm),
+              _buildTextField(context, "WhatsApp Number", _whatsappController,
+                  TextInputType.phone, Icons.phone_android_rounded),
+              const SizedBox(height: AppSpacing.md),
+              _buildTextField(context, "Support Email", _emailController,
+                  TextInputType.emailAddress, Icons.alternate_email_rounded),
+              const SizedBox(height: AppSpacing.md),
+              _buildTextField(context, "Telegram Channel Link",
+                  _telegramController, TextInputType.url, Icons.send_rounded),
+              const SizedBox(height: AppSpacing.lg),
+              FilledButton.icon(
+                onPressed: _saveContactInfo,
+                icon: const Icon(Icons.save_rounded),
+                label: const Text("Save Contact Info"),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 54),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),_buildSectionHeader(context, "LEGAL DOCUMENTS"),
-                const SizedBox(height: AppSpacing.sm),
-            _buildTextField(context, "Privacy Policy URL", _privacyController,
-                TextInputType.url, Icons.privacy_tip_rounded),
-            const SizedBox(height: AppSpacing.md),
-            _buildTextField(context, "Terms & Conditions URL", _termsController,
-                TextInputType.url, Icons.gavel_rounded),
-            const SizedBox(height: AppSpacing.lg),
-            FilledButton.icon(
-              onPressed: _saveLegalUrls,
-              icon: const Icon(Icons.save_rounded),
-              label: const Text("Save Legal Config"),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(double.infinity, 54),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              const SizedBox(height: AppSpacing.lg),
+              _buildSectionHeader(context, "LEGAL DOCUMENTS"),
+              const SizedBox(height: AppSpacing.sm),
+              _buildTextField(context, "Privacy Policy URL", _privacyController,
+                  TextInputType.url, Icons.privacy_tip_rounded),
+              const SizedBox(height: AppSpacing.md),
+              _buildTextField(context, "Terms & Conditions URL",
+                  _termsController, TextInputType.url, Icons.gavel_rounded),
+              const SizedBox(height: AppSpacing.lg),
+              FilledButton.icon(
+                onPressed: _saveLegalUrls,
+                icon: const Icon(Icons.save_rounded),
+                label: const Text("Save Legal Config"),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 54),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
