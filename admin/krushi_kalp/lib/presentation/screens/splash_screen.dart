@@ -1,5 +1,3 @@
-import 'package:krushi_kalp_admin/core/theme/app_colors.dart';
-
 import 'package:flutter/material.dart';
 import '../providers/auth_provider.dart';
 import '../../data/services/notification_service.dart';
@@ -9,6 +7,7 @@ import 'main_screen.dart';
 import 'admin/admin_main_screen.dart';
 import 'package:provider/provider.dart';
 import 'maintenance_screen.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:krushi_kalp_admin/presentation/widgets/common/responsive_wrapper.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -19,37 +18,62 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  // State for simulated progress
+  double _progress = 0.0;
+  String _statusText = 'Initializing system...';
+  bool _disposed = false;
+
   @override
   void initState() {
     super.initState();
+    _startProgressSimulation();
     _checkAuthAndNavigate();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  void _startProgressSimulation() {
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(milliseconds: 50));
+      if (_disposed || _progress >= 0.95) return false;
+      setState(() {
+        _progress += 0.02;
+        if (_progress > 0.4) _statusText = 'Accessing dashboards...';
+        if (_progress > 0.7) _statusText = 'Syncing records...';
+      });
+      return true;
+    });
   }
 
   Future<void> _checkAuthAndNavigate() async {
     debugPrint("Splash: Starting checks...");
 
-    // Run config fetch + notification init in parallel with a combined timeout
-    // so a slow network doesn't hang the app indefinitely.
+    // Parallel init
     await Future.wait([
       AppConfigService.fetchConfigs().catchError((e) {
-        debugPrint("Splash: Config fetch error (non-fatal): $e");
+        debugPrint("Splash: Config fetch error: $e");
         return null;
       }),
       NotificationService().initialize().catchError((e) {
-        debugPrint("Splash: Notification init error (non-fatal): $e");
+        debugPrint("Splash: Notification init error: $e");
         return null;
       }),
     ]).timeout(
-      const Duration(seconds: 3),
+      const Duration(seconds: 4),
       onTimeout: () {
-        debugPrint("Splash: Parallel init timed out — proceeding anyway.");
+        debugPrint("Splash: Initial checks timed out.");
         return [];
       },
     );
 
-    debugPrint("Splash: Parallel init done.");
+    setState(() => _progress = 1.0);
+    await Future.delayed(const Duration(milliseconds: 300));
 
-    // Wait for AuthProvider to finish its own session check (max ~4s)
+    // Wait for Auth check
     if (!mounted) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
@@ -59,16 +83,11 @@ class _SplashScreenState extends State<SplashScreen> {
       attempts++;
     }
 
-    debugPrint(
-        "Splash: AuthProvider retrieved. isLoggedIn: ${authProvider.isLoggedIn}");
-
     if (!mounted) return;
 
     // Navigation
     if (authProvider.isLoggedIn) {
       final role = authProvider.userRole;
-
-      // MAINTENANCE CHECK — admins bypass maintenance mode
       if (AppConfigService.isMaintenanceMode && role != 'Admin') {
         if (mounted) {
           Navigator.pushReplacement(
@@ -76,13 +95,10 @@ class _SplashScreenState extends State<SplashScreen> {
             MaterialPageRoute(
               builder: (context) => MaintenanceScreen(
                 error: AppConfigService.maintenanceMessage,
-                onRetry: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const SplashScreen()),
-                  );
-                },
+                onRetry: () => Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SplashScreen()),
+                ),
               ),
             ),
           );
@@ -91,7 +107,7 @@ class _SplashScreenState extends State<SplashScreen> {
       }
 
       if (role == 'Admin') {
-        NotificationService().connectAdmin(); // fire-and-forget
+        NotificationService().connectAdmin();
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -99,7 +115,7 @@ class _SplashScreenState extends State<SplashScreen> {
           );
         }
       } else {
-        NotificationService().connectUser(); // fire-and-forget
+        NotificationService().connectUser();
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -117,30 +133,154 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('SplashScreen: Building...');
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/images/playstore.png',
-              width: context.w(120),
-              height: context.h(120),
-            ),
-            SizedBox(height: context.h(24)),
-            Text(
-              'Krushi kalp',
-              style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
+      backgroundColor: colorScheme.surface,
+      body: Stack(
+        children: [
+          // Content
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Logo Box
+                Container(
+                  width: context.w(130),
+                  height: context.w(130),
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.primary.withOpacity(0.06),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
+                  child: Image.asset(
+                    'assets/images/playstore.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                SizedBox(height: context.h(40)),
+                // Title
+                Text(
+                  'Krushi Kalp',
+                  style: theme.textTheme.displaySmall?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                // Admin Tagline
+                Text(
+                  'Agri-Academic Management',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                    letterSpacing: 0.1,
+                  ),
+                ),
+                SizedBox(height: context.h(80)),
+                // Loading Section
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 56),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _statusText,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color:
+                                  colorScheme.onSurfaceVariant.withOpacity(0.5),
+                              fontSize: 11,
+                            ),
+                          ),
+                          Text(
+                            '${(_progress * 100).toInt()}%',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(100),
+                        child: LinearProgressIndicator(
+                          value: _progress,
+                          minHeight: 5,
+                          backgroundColor: colorScheme.primary.withOpacity(0.1),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              colorScheme.primary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Text(
+                  'ACADEMIC CONTROL HUB',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                    letterSpacing: 1.5,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
             ),
-            SizedBox(height: context.h(48)),
-            const CircularProgressIndicator(color: AppColors.primary),
-          ],
-        ),
+          ),
+          // Footer
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 40,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.admin_panel_settings_rounded,
+                      size: 14,
+                      color: colorScheme.primary.withOpacity(0.4),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'SECURE ACCESS',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snapshot) {
+                    final version = snapshot.data?.version ?? '1.0.0';
+                    return Text(
+                      'v$version Administrator',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant.withOpacity(0.3),
+                        fontSize: 10,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

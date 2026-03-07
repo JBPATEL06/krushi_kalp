@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 
 class Shimmer extends StatefulWidget {
   final Widget child;
-  final Color baseColor;
-  final Color highlightColor;
+  final Color? baseColor;
+  final Color? highlightColor;
 
   const Shimmer({
     super.key,
     required this.child,
-    this.baseColor = const Color(0xFFE0E0E0),
-    this.highlightColor = const Color(0xFFF5F5F5),
+    this.baseColor,
+    this.highlightColor,
   });
 
   @override
@@ -38,6 +38,12 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final base =
+        widget.baseColor ?? colorScheme.surfaceVariant.withOpacity(0.4);
+    final highlight =
+        widget.highlightColor ?? colorScheme.surfaceVariant.withOpacity(0.1);
+
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
@@ -46,17 +52,17 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
           shaderCallback: (bounds) {
             return LinearGradient(
               colors: [
-                widget.baseColor,
-                widget.highlightColor,
-                widget.baseColor,
+                base,
+                highlight,
+                base,
               ],
               stops: const [
                 0.1,
                 0.5,
                 0.9,
               ],
-              begin: Alignment(-1.0, -0.3),
-              end: Alignment(1.0, 0.3),
+              begin: const Alignment(-1.0, -0.3),
+              end: const Alignment(1.0, 0.3),
               transform: _SlidingGradientTransform(percent: _animation.value),
             ).createShader(bounds);
           },
@@ -95,11 +101,12 @@ class Skeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: color ?? Colors.grey[300],
+        color: color ?? colorScheme.surfaceVariant.withOpacity(0.3),
         borderRadius: BorderRadius.circular(borderRadius),
       ),
     );
@@ -136,7 +143,6 @@ class SkeletonItem extends StatelessWidget {
   }
 }
 
-// Helper to make it easier to wrap content
 class ShimmerLoading extends StatelessWidget {
   final bool isLoading;
   final Widget child;

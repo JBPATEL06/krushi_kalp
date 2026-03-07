@@ -3,6 +3,8 @@ import '../../domain/models/mock_test.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/test_service.dart';
 import 'purchased_tests_screen.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final MockTest test;
@@ -24,6 +26,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     setState(() => _isProcessing = true);
 
     final user = AuthService().currentUser;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('You must be logged in to purchase.')),
@@ -40,30 +45,32 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
 
       if (mounted) {
-        // Show success, then navigate
         showDialog(
           context: context,
           barrierDismissible: false,
           builder: (ctx) => AlertDialog(
+            backgroundColor: colorScheme.surface,
+            surfaceTintColor: colorScheme.surfaceTint,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg)),
             title: const Text('Success'),
-            content: const Column(
+            content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check_circle, color: Colors.green, size: 48),
-                SizedBox(height: 16),
-                Text('Purchase successful!'),
+                Icon(Icons.check_circle_rounded,
+                    color: colorScheme.tertiary, size: 48),
+                const SizedBox(height: AppSpacing.md),
+                const Text('Purchase successful!'),
               ],
             ),
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.pop(ctx); // Close dialog
-                  // Navigate to Purchased Tests
+                  Navigator.pop(ctx);
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const PurchasedTestsScreen(),
-                    ),
+                        builder: (context) => const PurchasedTestsScreen()),
                   );
                 },
                 child: const Text('View My Tests'),
@@ -74,9 +81,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Purchase failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Purchase failed: $e'),
+            backgroundColor: colorScheme.error,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -85,27 +95,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: const Text('Checkout', style: TextStyle(color: Colors.black)),
-        backgroundColor: Colors.white,
+        title: const Text('Checkout'),
+        backgroundColor: colorScheme.surface,
+        scrolledUnderElevation: 0,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black),
+          icon: Icon(Icons.close_rounded, color: colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           children: [
             // Item Summary
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(16),
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border:
+                    Border.all(color: colorScheme.outline.withOpacity(0.05)),
               ),
               child: Row(
                 children: [
@@ -113,32 +129,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: Colors.blue[100],
-                      borderRadius: BorderRadius.circular(12),
+                      color: colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
-                    child: const Icon(
-                      Icons.description,
-                      color: Colors.blue,
-                      size: 30,
-                    ),
+                    child: Icon(Icons.description_rounded,
+                        color: colorScheme.primary, size: 30),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           widget.test.title,
-                          style: const TextStyle(
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
                           ),
                         ),
                         Text(
                           widget.test.category,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -146,9 +157,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                   Text(
                     '₹${widget.test.finalPrice}',
-                    style: const TextStyle(
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -157,13 +168,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const Spacer(),
 
             // Price Breakdown
-            _buildRow('Subtotal', _subtotal),
-            const SizedBox(height: 12),
-            _buildRow('Tax (5%)', _taxes),
-            const Divider(height: 32),
-            _buildRow('Total', _total, isTotal: true),
+            _buildRow(context, 'Subtotal', _subtotal),
+            const SizedBox(height: AppSpacing.sm),
+            _buildRow(context, 'Tax (5%)', _taxes),
+            Divider(
+                height: AppSpacing.xxl,
+                color: colorScheme.outline.withOpacity(0.1)),
+            _buildRow(context, 'Total', _total, isTotal: true),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xxl),
 
             // Pay Button
             SizedBox(
@@ -172,10 +185,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: ElevatedButton(
                 onPressed: _isProcessing ? null : _handlePurchase,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
+                      borderRadius: BorderRadius.circular(AppRadius.lg)),
+                  elevation: 0,
                 ),
                 child: _isProcessing
                     ? const CircularProgressIndicator(color: Colors.white)
@@ -184,7 +198,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
                         ),
                       ),
               ),
@@ -195,25 +208,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  Widget _buildRow(String label, double amount, {bool isTotal = false}) {
+  Widget _buildRow(BuildContext context, String label, double amount,
+      {bool isTotal = false}) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: isTotal ? 18 : 14,
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            color: isTotal ? Colors.black : Colors.grey[600],
-          ),
+          style: isTotal
+              ? theme.textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold)
+              : theme.textTheme.bodyMedium
+                  ?.copyWith(color: colorScheme.onSurfaceVariant),
         ),
         Text(
           '₹${amount.toStringAsFixed(2)}',
-          style: TextStyle(
-            fontSize: isTotal ? 20 : 14,
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            color: isTotal ? Colors.black : Colors.black87,
-          ),
+          style: isTotal
+              ? theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold, color: colorScheme.primary)
+              : theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold, color: colorScheme.onSurface),
         ),
       ],
     );

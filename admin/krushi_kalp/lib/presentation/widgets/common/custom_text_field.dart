@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 
 class CustomTextField extends StatelessWidget {
@@ -30,15 +29,18 @@ class CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: AppSpacing.sm),
         TextFormField(
@@ -48,12 +50,14 @@ class CustomTextField extends StatelessWidget {
           keyboardType: keyboardType,
           maxLines: maxLines,
           onChanged: onChanged,
-          style: Theme.of(context).textTheme.bodyLarge,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: colorScheme.onSurface,
+          ),
           decoration: InputDecoration(
             hintText: hint,
             prefixIcon: prefixIcon,
             suffixIcon: suffixIcon,
-            // The rest of the decoration is handled by the Theme
+            // The rest of the decoration is handled by the Theme's inputDecorationTheme
           ),
         ),
       ],

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
 import 'main_screen.dart';
+import 'admin/admin_main_screen.dart';
 import '../../data/services/notification_service.dart';
 import '../../core/theme/app_spacing.dart';
 import '../widgets/common/primary_button.dart';
@@ -58,6 +59,11 @@ class _LoginScreenState extends State<LoginScreen>
         NotificationService().connectUser();
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const MainScreen()),
+        );
+      } else {
+        NotificationService().connectAdmin();
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const AdminMainScreen()),
         );
       }
     } else {
@@ -161,7 +167,12 @@ class _LoginScreenState extends State<LoginScreen>
 
           Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.lg),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg + MediaQuery.of(context).padding.bottom,
+              ),
               child: FadeTransition(
                 opacity: _fadeAnimation,
                 child: SlideTransition(

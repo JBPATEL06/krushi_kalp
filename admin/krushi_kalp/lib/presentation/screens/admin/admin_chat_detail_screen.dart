@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart'
     show Chat, DefaultChatTheme;
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-import 'package:krushi_kalp_admin/core/theme/app_colors.dart';
 import 'package:krushi_kalp_admin/data/services/chat_service.dart';
 import 'package:krushi_kalp_admin/domain/models/message.dart';
 import 'package:krushi_kalp_admin/data/services/notification_service.dart';
 import 'package:krushi_kalp_admin/presentation/widgets/common/network_error_state.dart';
 import 'package:krushi_kalp_admin/presentation/utils/chat_mapper.dart';
 import 'package:krushi_kalp_admin/presentation/widgets/chat/chat_input.dart';
+import 'package:krushi_kalp_admin/core/theme/app_radius.dart';
 
 class AdminChatDetailScreen extends StatefulWidget {
   final String userId;
@@ -53,6 +53,7 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
   }
 
   Future<void> _clearConversation() async {
+    final theme = Theme.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -66,8 +67,8 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Clear All',
-                style: TextStyle(color: AppColors.error)),
+            child: Text('Clear All',
+                style: TextStyle(color: theme.colorScheme.error)),
           ),
         ],
       ),
@@ -93,9 +94,7 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
 
   void _handleMessageLongPress(
       BuildContext context, types.Message message) async {
-    // Admin can delete ALL messages (their own AND user's)
-    // Removed: if (message.author.id != _adminUser.id) return;
-
+    final theme = Theme.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -108,8 +107,8 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child:
-                const Text('Delete', style: TextStyle(color: AppColors.error)),
+            child: Text('Delete',
+                style: TextStyle(color: theme.colorScheme.error)),
           ),
         ],
       ),
@@ -130,12 +129,19 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
         title: Text(widget.userName),
+        backgroundColor: colorScheme.surface,
+        scrolledUnderElevation: 0,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_sweep, color: AppColors.error),
+            icon: Icon(Icons.delete_sweep_rounded, color: colorScheme.error),
             onPressed: _clearConversation,
           ),
         ],
@@ -166,14 +172,19 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
               onSendPressed: (text) =>
                   _handleSendPressed(types.PartialText(text: text)),
             ),
-            theme: const DefaultChatTheme(
-              primaryColor: AppColors.primary,
-              secondaryColor: AppColors.neutral200, // User messages bubbles
-              inputBackgroundColor: AppColors.neutral50,
-              backgroundColor: AppColors.background,
+            theme: DefaultChatTheme(
+              primaryColor: colorScheme.primary,
+              secondaryColor: colorScheme.surfaceVariant.withOpacity(0.5),
+              inputBackgroundColor: colorScheme.surface,
+              backgroundColor: colorScheme.background,
+              receivedMessageBodyTextStyle: theme.textTheme.bodyMedium!,
+              sentMessageBodyTextStyle: theme.textTheme.bodyMedium!
+                  .copyWith(color: colorScheme.onPrimary),
+              messageBorderRadius: AppRadius.md,
+              userNameTextStyle: theme.textTheme.labelSmall!,
             ),
             showUserAvatars: true,
-            showUserNames: false, // Name is in AppBar
+            showUserNames: false,
           );
         },
       ),

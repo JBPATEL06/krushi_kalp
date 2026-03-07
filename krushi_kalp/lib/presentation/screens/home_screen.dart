@@ -147,7 +147,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       .scale(begin: const Offset(0.95, 0.95)), // Animate Banner
                   SizedBox(height: context.h(AppSpacing.xl)),
                   _buildCategoryGrid(),
-                  SizedBox(height: context.h(AppSpacing.xxl)),
+                  SizedBox(
+                      height: context.h(AppSpacing.xxl) +
+                          MediaQuery.of(context).padding.bottom),
                 ],
               ),
             ),

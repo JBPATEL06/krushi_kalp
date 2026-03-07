@@ -8,8 +8,8 @@ import 'package:provider/provider.dart';
 import '../providers/resource_provider.dart';
 import '../providers/test_provider.dart';
 import '../../data/services/download_service.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart';
 import '../utils/exam_helper.dart';
 
 class DownloadsScreen extends StatefulWidget {
@@ -21,7 +21,6 @@ class DownloadsScreen extends StatefulWidget {
 
 class _DownloadsScreenState extends State<DownloadsScreen>
     with WidgetsBindingObserver {
-  // We need to track download status for items to sort/display correctly
   Map<String, bool> _localStatus = {};
   bool _isLoading = true;
 
@@ -45,7 +44,6 @@ class _DownloadsScreenState extends State<DownloadsScreen>
     }
   }
 
-  // To avoid infinite loops or excessive checks, we track the last IDs checked
   Set<int> _lastTestIds = {};
   Set<int> _lastResourceIds = {};
 
@@ -93,7 +91,8 @@ class _DownloadsScreenState extends State<DownloadsScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Watch providers for changes
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final resourceProvider = context.watch<ResourceProvider>();
     final testProvider = context.watch<TestProvider>();
 
@@ -101,62 +100,54 @@ class _DownloadsScreenState extends State<DownloadsScreen>
     final myTests = testProvider.userTests;
     final myResources = resourceProvider.purchasedResources;
 
-    // Trigger re-check if purchase IDs changed (and we're not loading)
     final currentTestIds = myTests.map((t) => t.id).toSet();
     if (!_isLoading &&
         (!SetEquality().equals(_lastTestIds, currentTestIds) ||
             !SetEquality().equals(_lastResourceIds, purchasedResourceIds))) {
-      // Use future.microtask to avoid calling setState during build
       Future.microtask(() => _checkDownloads());
     }
 
     final displayItems = <dynamic>[];
-
     for (var r in myResources) {
       if (_localStatus['res_${r.id}'] == true) {
         displayItems.add(r);
       }
     }
-
     for (var t in myTests) {
       if (_localStatus['test_${t.id}'] == true) {
         displayItems.add(t);
       }
     }
 
-    // Sort: Downloaded first? Or Date?
-    // Let's sort by Title for now
-    // displayItems.sort((a, b) => ...);
-
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
         title: Column(
           children: [
-            Text(
-              "Downloads",
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
+            const Text("Downloads"),
             if (!_isLoading && displayItems.isNotEmpty)
               Text(
                 "${displayItems.length} item${displayItems.length == 1 ? '' : 's'}",
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                style: theme.textTheme.labelSmall
+                    ?.copyWith(color: colorScheme.onSurfaceVariant),
               ),
           ],
         ),
-        backgroundColor: AppColors.surface,
+        backgroundColor: colorScheme.surface,
+        scrolledUnderElevation: 0,
         elevation: 0,
         centerTitle: true,
+        shape: Border(
+          bottom: BorderSide(
+            color: colorScheme.outline.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
         actions: [
           IconButton(
             icon: Icon(
               Icons.refresh_rounded,
-              color: _isLoading ? AppColors.primary : AppColors.textPrimary,
+              color: _isLoading ? colorScheme.primary : colorScheme.onSurface,
             ),
             onPressed: _isLoading ? null : _checkDownloads,
             tooltip: 'Refresh',
@@ -177,38 +168,35 @@ class _DownloadsScreenState extends State<DownloadsScreen>
                           width: 120,
                           height: 120,
                           decoration: BoxDecoration(
-                            color: AppColors.neutral100,
+                            color: colorScheme.surfaceVariant.withOpacity(0.5),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             Icons.file_download_outlined,
                             size: 56,
-                            color: AppColors.neutral400,
+                            color:
+                                colorScheme.onSurfaceVariant.withOpacity(0.3),
                           ),
                         ),
                         const SizedBox(height: AppSpacing.xl),
                         Text(
                           "No Downloads Yet",
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          style: theme.textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
                           "Downloaded resources will appear here\nfor offline access",
                           textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
+                          style: theme.textTheme.bodyMedium
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
                   ),
                 )
               : RefreshIndicator(
+                  color: colorScheme.primary,
                   onRefresh: _checkDownloads,
                   child: ListView.separated(
                     padding: const EdgeInsets.all(AppSpacing.lg),
@@ -217,11 +205,10 @@ class _DownloadsScreenState extends State<DownloadsScreen>
                     itemCount: displayItems.length,
                     itemBuilder: (context, index) {
                       final item = displayItems[index];
-
                       if (item is Resource) {
-                        return _buildResourceCard(item);
+                        return _buildResourceCard(context, item);
                       } else if (item is MockTest) {
-                        return _buildTestCard(item);
+                        return _buildTestCard(context, item);
                       }
                       return const SizedBox();
                     },
@@ -230,16 +217,19 @@ class _DownloadsScreenState extends State<DownloadsScreen>
     );
   }
 
-  Widget _buildResourceCard(Resource resource) {
+  Widget _buildResourceCard(BuildContext context, Resource resource) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final filename = 'resource_${resource.id}.pdf';
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.05)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.neutral200.withValues(alpha: 0.3),
+            color: colorScheme.shadow.withOpacity(0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -262,14 +252,13 @@ class _DownloadsScreenState extends State<DownloadsScreen>
               }
             }
           },
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
               children: [
-                // Cover Image
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   child: resource.thumbnailUrl != null &&
                           resource.thumbnailUrl!.isNotEmpty
                       ? Image.network(
@@ -277,38 +266,13 @@ class _DownloadsScreenState extends State<DownloadsScreen>
                           width: 56,
                           height: 56,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius:
-                                  BorderRadius.circular(AppSpacing.radiusMd),
-                            ),
-                            child: const Icon(
-                              Icons.picture_as_pdf,
-                              color: AppColors.primary,
-                              size: 28,
-                            ),
-                          ),
+                          errorBuilder: (_, __, ___) => _buildPlaceholderIcon(
+                              context, Icons.picture_as_pdf_rounded),
                         )
-                      : Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius:
-                                BorderRadius.circular(AppSpacing.radiusMd),
-                          ),
-                          child: const Icon(
-                            Icons.picture_as_pdf,
-                            color: AppColors.primary,
-                            size: 28,
-                          ),
-                        ),
+                      : _buildPlaceholderIcon(
+                          context, Icons.picture_as_pdf_rounded),
                 ),
                 const SizedBox(width: AppSpacing.md),
-                // Content
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,29 +281,20 @@ class _DownloadsScreenState extends State<DownloadsScreen>
                         resource.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
+                        style: theme.textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Row(
                         children: [
-                          Icon(
-                            Icons.folder_outlined,
-                            size: 14,
-                            color: AppColors.textSecondary,
-                          ),
+                          Icon(Icons.folder_outlined,
+                              size: 14, color: colorScheme.onSurfaceVariant),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               resource.category ?? resource.type.name,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -348,13 +303,12 @@ class _DownloadsScreenState extends State<DownloadsScreen>
                     ],
                   ),
                 ),
-                // Actions
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.open_in_new_rounded,
-                          color: AppColors.primary, size: 20),
+                      icon: Icon(Icons.open_in_new_rounded,
+                          color: colorScheme.primary, size: 20),
                       onPressed: () async {
                         final path =
                             await DownloadService().getLocalPath(filename);
@@ -374,8 +328,8 @@ class _DownloadsScreenState extends State<DownloadsScreen>
                       visualDensity: VisualDensity.compact,
                     ),
                     IconButton(
-                      icon: const Icon(Icons.delete_outline,
-                          color: AppColors.error, size: 20),
+                      icon: Icon(Icons.delete_outline_rounded,
+                          color: colorScheme.error, size: 20),
                       onPressed: () => _confirmDelete(resource, filename),
                       tooltip: 'Delete',
                       visualDensity: VisualDensity.compact,
@@ -390,16 +344,19 @@ class _DownloadsScreenState extends State<DownloadsScreen>
     );
   }
 
-  Widget _buildTestCard(MockTest test) {
+  Widget _buildTestCard(BuildContext context, MockTest test) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final filename = 'mock_test_${test.id}.json';
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.05)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.neutral200.withValues(alpha: 0.3),
+            color: colorScheme.shadow.withOpacity(0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -413,57 +370,29 @@ class _DownloadsScreenState extends State<DownloadsScreen>
             if (await File(path).exists()) {
               if (mounted) {
                 await ExamHelper.startExam(context, test);
-                // Refresh list in case they finished it or something changed
                 _checkDownloads();
               }
             }
           },
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
               children: [
-                // Cover Image
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   child: test.signedUrl != null && test.signedUrl!.isNotEmpty
                       ? Image.network(
                           test.signedUrl!,
                           width: 56,
                           height: 56,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius:
-                                  BorderRadius.circular(AppSpacing.radiusMd),
-                            ),
-                            child: const Icon(
-                              Icons.description,
-                              color: AppColors.primary,
-                              size: 28,
-                            ),
-                          ),
+                          errorBuilder: (_, __, ___) => _buildPlaceholderIcon(
+                              context, Icons.quiz_rounded),
                         )
-                      : Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius:
-                                BorderRadius.circular(AppSpacing.radiusMd),
-                          ),
-                          child: const Icon(
-                            Icons.description,
-                            color: AppColors.primary,
-                            size: 28,
-                          ),
-                        ),
+                      : _buildPlaceholderIcon(context, Icons.quiz_rounded),
                 ),
                 const SizedBox(width: AppSpacing.md),
-                // Content
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -472,29 +401,20 @@ class _DownloadsScreenState extends State<DownloadsScreen>
                         test.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
+                        style: theme.textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Row(
                         children: [
-                          Icon(
-                            Icons.quiz_outlined,
-                            size: 14,
-                            color: AppColors.textSecondary,
-                          ),
+                          Icon(Icons.quiz_outlined,
+                              size: 14, color: colorScheme.onSurfaceVariant),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               '${test.totalQuestions} Questions • ${test.category}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -503,13 +423,12 @@ class _DownloadsScreenState extends State<DownloadsScreen>
                     ],
                   ),
                 ),
-                // Actions
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.play_circle_outline,
-                          color: AppColors.primary, size: 24),
+                      icon: Icon(Icons.play_circle_outline_rounded,
+                          color: colorScheme.primary, size: 24),
                       onPressed: () async {
                         final path =
                             await DownloadService().getLocalPath(filename);
@@ -524,8 +443,8 @@ class _DownloadsScreenState extends State<DownloadsScreen>
                       visualDensity: VisualDensity.compact,
                     ),
                     IconButton(
-                      icon: const Icon(Icons.delete_outline,
-                          color: AppColors.error, size: 20),
+                      icon: Icon(Icons.delete_outline_rounded,
+                          color: colorScheme.error, size: 20),
                       onPressed: () => _confirmDelete(test, filename),
                       tooltip: 'Delete',
                       visualDensity: VisualDensity.compact,
@@ -540,7 +459,22 @@ class _DownloadsScreenState extends State<DownloadsScreen>
     );
   }
 
+  Widget _buildPlaceholderIcon(BuildContext context, IconData icon) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Icon(icon, color: colorScheme.primary, size: 24),
+    );
+  }
+
   Future<void> _confirmDelete(dynamic item, String filename) async {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final title = item is Resource
         ? item.title
         : (item is MockTest ? item.title : 'this item');
@@ -548,6 +482,10 @@ class _DownloadsScreenState extends State<DownloadsScreen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: colorScheme.surfaceTint,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg)),
         title: const Text('Delete Download'),
         content: Text(
             'Are you sure you want to delete "$title" from your device?\n\nYou can download it again anytime.'),
@@ -558,7 +496,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(foregroundColor: colorScheme.error),
             child: const Text('Delete'),
           ),
         ],
@@ -570,18 +508,20 @@ class _DownloadsScreenState extends State<DownloadsScreen>
         await DownloadService().deleteFile(filename);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('File deleted successfully'),
-              backgroundColor: AppColors.success,
+            SnackBar(
+              content: const Text('File deleted successfully'),
+              backgroundColor: colorScheme.tertiary,
             ),
           );
-          // Refresh the list
           _checkDownloads();
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting file: $e')),
+            SnackBar(
+              content: Text('Error deleting file: $e'),
+              backgroundColor: colorScheme.error,
+            ),
           );
         }
       }

@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:krushi_kalp_admin/presentation/widgets/common/responsive_wrapper.dart';
-
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/auth_provider.dart';
 import '../providers/network_provider.dart';
 import 'score_screen.dart';
-
 import 'package:krushi_kalp_admin/presentation/screens/chat_screen.dart';
-
 import '../widgets/common/network_error_state.dart';
 import 'purchased_tests_screen.dart';
-import 'mock_test_upload_screen.dart';
 import '../../data/services/chat_service.dart';
 import '../../data/services/app_config_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -25,8 +22,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   Stream<Map<String, dynamic>?> _profileStream = Stream.empty();
-
-  String? _selectedLanguage; // Optimistic UI state
+  String? _selectedLanguage;
   bool _hadNetworkError = false;
 
   @override
@@ -51,7 +47,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _setupStream() {
-    // FIX: Use AuthProvider instead of AuthService
     final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
     if (user != null) {
       _profileStream = Supabase.instance.client
@@ -64,49 +59,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _ensureProfile(User user) async {
     try {
-      debugPrint('Profile missing for ${user.id}, creating...');
       await Supabase.instance.client.from('users').upsert({
         'id': user.id,
         'email': user.email,
         'username': user.email?.split('@')[0] ?? 'User',
         'language': 'en',
       });
-      debugPrint('Profile created.');
     } catch (e) {
       debugPrint('Error creating profile: $e');
     }
   }
 
   Future<void> _updateLanguage(String newLang) async {
-    // FIX: Use AuthProvider
     final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
     if (user == null) return;
 
-    // Optimistic Update: Update UI immediately
     setState(() {
       _selectedLanguage = newLang;
     });
 
     try {
-      final response = await Supabase.instance.client
+      await Supabase.instance.client
           .from('users')
-          .update({'language': newLang})
-          .eq('id', user.id)
-          .select();
-
-      if (response.isEmpty) {
-        // Handle creation/retry if needed (previous logic)
-        // ...
-      }
+          .update({'language': newLang}).eq('id', user.id);
     } catch (e) {
       debugPrint('Error updating language: $e');
       if (mounted) {
-        // Revert on error? Or just show snackbar
-        // ignore: use_build_context_synchronously
+        final colorScheme = Theme.of(context).colorScheme;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Failed to update language: $e'),
-              backgroundColor: Colors.red),
+            content: Text('Failed to update language: $e'),
+            backgroundColor: colorScheme.error,
+          ),
         );
       }
     }
@@ -120,7 +104,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         throw 'Could not launch $url';
       }
     } catch (e) {
-      debugPrint('Error launching URL: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Could not open link: $e')),
@@ -131,7 +114,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // FIX: Use AuthProvider
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
     final meta = user?.userMetadata ?? {};
@@ -142,8 +126,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
         meta['avatar_url'] as String? ?? meta['picture'] as String?;
 
     return Scaffold(
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-          title: Text('Profile', style: TextStyle(fontSize: context.sp(20)))),
+        title: const Text('Profile'),
+        backgroundColor: colorScheme.surface,
+        scrolledUnderElevation: 0,
+        elevation: 0,
+        shape: Border(
+          bottom: BorderSide(
+            color: colorScheme.outline.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+      ),
       body: StreamBuilder<Map<String, dynamic>?>(
         stream: _profileStream,
         builder: (context, snapshot) {
@@ -162,78 +157,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
           }
 
           final data = snapshot.data;
-          // ... null check logic ...
-          if (data == null && !snapshot.hasError) {
+          if (data == null && !snapshot.hasError && user != null) {
             return Center(
-                child: ElevatedButton(
-                    onPressed: () => _ensureProfile(user!),
-                    child: const Text("Create Profile")));
+              child: ElevatedButton(
+                onPressed: () => _ensureProfile(user),
+                child: const Text("Create Profile"),
+              ),
+            );
           }
 
-          // Use optimistic value if set, otherwise stream value
           final language =
               _selectedLanguage ?? data?['language'] as String? ?? 'en';
-          final isAdmin = (data?['role'] == 'Admin');
 
           return RefreshIndicator(
             onRefresh: () async {
-              setState(() {
-                _setupStream();
-              });
-              // Small delay to simulate refresh if stream is fast
+              _setupStream();
               await Future.delayed(const Duration(milliseconds: 500));
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.all(context.w(16.0)),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 children: [
                   CircleAvatar(
-                    radius: context.w(50),
-                    backgroundColor: Colors.grey[200],
+                    radius: 50,
+                    backgroundColor: colorScheme.surfaceVariant,
                     backgroundImage:
                         avatarUrl != null ? NetworkImage(avatarUrl) : null,
                     child: avatarUrl == null
-                        ? Icon(Icons.person, size: context.sp(50))
+                        ? Icon(Icons.person_rounded,
+                            size: 50, color: colorScheme.onSurfaceVariant)
                         : null,
                   ),
-                  SizedBox(height: context.h(16)),
-                  Text(name,
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
-                          ?.copyWith(fontSize: context.sp(24))),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    name,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
                   Text(
                     email,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyLarge?.copyWith(
-                        color: Colors.grey[600], fontSize: context.sp(16)),
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                  SizedBox(height: context.h(32)),
+                  const SizedBox(height: AppSpacing.xxl),
 
                   // Language Toggle
                   Container(
-                    padding: EdgeInsets.symmetric(
-                        horizontal: context.w(16), vertical: context.h(8)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md, vertical: AppSpacing.xs),
                     decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(context.w(12)),
-                      border: Border.all(color: Colors.blue[100]!),
+                      color: colorScheme.secondaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      border: Border.all(
+                          color: colorScheme.secondary.withOpacity(0.1)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.language,
-                                color: Colors.blue[700], size: context.sp(24)),
-                            SizedBox(width: context.w(12)),
+                            Icon(Icons.language_rounded,
+                                color: colorScheme.secondary, size: 24),
+                            const SizedBox(width: AppSpacing.md),
                             Text(
                               'Language',
-                              style: TextStyle(
-                                fontSize: context.sp(16),
+                              style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
+                                color: colorScheme.onSecondaryContainer,
                               ),
                             ),
                           ],
@@ -241,17 +235,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         DropdownButton<String>(
                           value: language,
                           underline: const SizedBox(),
-                          items: [
+                          dropdownColor: colorScheme.surface,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurface,
+                          ),
+                          items: const [
                             DropdownMenuItem(
-                                value: 'en',
-                                child: Text('English',
-                                    style:
-                                        TextStyle(fontSize: context.sp(14)))),
+                                value: 'en', child: Text('English')),
                             DropdownMenuItem(
-                                value: 'gu',
-                                child: Text('Gujarati',
-                                    style:
-                                        TextStyle(fontSize: context.sp(14)))),
+                                value: 'gu', child: Text('Gujarati')),
                           ],
                           onChanged: (val) {
                             if (val != null) _updateLanguage(val);
@@ -260,17 +252,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
-                  SizedBox(height: context.h(24)),
+                  const SizedBox(height: AppSpacing.lg),
+
                   _buildProfileOption(
                     context,
-                    icon: Icons.history,
+                    icon: Icons.history_rounded,
                     title: 'Mock Tests',
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const PurchasedTestsScreen(),
-                        ),
+                            builder: (context) => const PurchasedTestsScreen()),
                       );
                     },
                   ),
@@ -288,87 +280,93 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   _buildProfileOption(
                     context,
-                    icon: Icons.chat,
+                    icon: Icons.chat_bubble_outline_rounded,
                     title: 'App Support',
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const ChatScreen(),
-                        ),
+                            builder: (context) => const ChatScreen()),
                       );
                     },
                   ),
 
-                  SizedBox(height: context.h(24)),
+                  const SizedBox(height: AppSpacing.xl),
+                  Divider(color: colorScheme.outline.withOpacity(0.1)),
+                  const SizedBox(height: AppSpacing.md),
 
-                  // About & Support Section
-                  const Divider(),
-                  Padding(
-                      padding: EdgeInsets.all(context.w(8.0)),
-                      child: Text("About App",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: context.sp(14)))),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                      child: Text(
+                        "About App",
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+
                   _buildProfileOption(
                     context,
-                    icon: Icons.contact_support,
+                    icon: Icons.contact_support_rounded,
                     title: 'Contact Us',
-                    onTap: () {
-                      _showContactOptions(context);
-                    },
+                    onTap: () => _showContactOptions(context),
                   ),
                   _buildProfileOption(
                     context,
-                    icon: Icons.privacy_tip,
+                    icon: Icons.privacy_tip_rounded,
                     title: 'Privacy Policy',
                     onTap: () => _launchUrl(AppConfigService.privacyPolicyUrl),
                   ),
                   _buildProfileOption(
                     context,
-                    icon: Icons.description,
+                    icon: Icons.description_rounded,
                     title: 'Terms & Conditions',
                     onTap: () => _launchUrl(AppConfigService.termsUrl),
                   ),
 
-                  SizedBox(height: context.h(24)),
+                  const SizedBox(height: AppSpacing.xxl),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () async {
-                        // FIX: Use AuthProvider
                         await context.read<AuthProvider>().signOut();
                         if (context.mounted) {
-                          Navigator.of(
-                            context,
-                          ).pushNamedAndRemoveUntil('/', (route) => false);
+                          Navigator.of(context)
+                              .pushNamedAndRemoveUntil('/', (route) => false);
                         }
                       },
-                      icon: Icon(Icons.logout, size: context.sp(20)),
-                      label: Text('Logout',
-                          style: TextStyle(fontSize: context.sp(14))),
+                      icon: const Icon(Icons.logout_rounded, size: 20),
+                      label: const Text('Logout'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
-                        padding: EdgeInsets.all(context.w(16)),
+                        foregroundColor: colorScheme.error,
+                        side: BorderSide(color: colorScheme.error),
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.md)),
                       ),
                     ),
                   ),
-                  SizedBox(height: context.h(12)),
+                  const SizedBox(height: AppSpacing.md),
                   SizedBox(
                     width: double.infinity,
                     child: TextButton.icon(
                       onPressed: () => _confirmDeleteAccount(context),
-                      icon: Icon(Icons.delete_forever, size: context.sp(20)),
-                      label: Text('Delete Account',
-                          style: TextStyle(fontSize: context.sp(14))),
+                      icon: const Icon(Icons.delete_forever_rounded, size: 20),
+                      label: const Text('Delete Account'),
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.grey,
-                        padding: EdgeInsets.all(context.w(16)),
+                        foregroundColor:
+                            colorScheme.onSurfaceVariant.withOpacity(0.6),
+                        padding: const EdgeInsets.all(AppSpacing.md),
                       ),
                     ),
                   ),
-                  SizedBox(height: context.h(12)),
+                  const SizedBox(height: AppSpacing.xl),
                 ],
               ),
             ),
@@ -385,22 +383,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
     String? subtitle,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return ListTile(
-      leading: Icon(icon,
-          color: Theme.of(context).primaryColor, size: context.sp(24)),
-      title: Text(title, style: TextStyle(fontSize: context.sp(16))),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: colorScheme.primary.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        child: Icon(icon, color: colorScheme.primary, size: 22),
+      ),
+      title: Text(
+        title,
+        style: theme.textTheme.bodyLarge?.copyWith(
+          fontWeight: FontWeight.w500,
+          color: colorScheme.onSurface,
+        ),
+      ),
       subtitle: subtitle != null
-          ? Text(subtitle, style: TextStyle(fontSize: context.sp(13)))
+          ? Text(subtitle,
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: colorScheme.onSurfaceVariant))
           : null,
-      trailing: Icon(Icons.chevron_right, size: context.sp(24)),
+      trailing: Icon(Icons.chevron_right_rounded,
+          color: colorScheme.onSurfaceVariant, size: 20),
       onTap: onTap,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
     );
   }
 
   Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final colorScheme = Theme.of(context).colorScheme;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: colorScheme.surfaceTint,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg)),
         title: const Text('Delete Account Request'),
         content: const Text(
           "Your account will be deleted within 5 days and your data can't be recovered.\n\nDo you want to send a deletion request to support?",
@@ -412,7 +435,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: colorScheme.error),
             child: const Text('Send Request'),
           ),
         ],
@@ -421,44 +444,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (confirmed == true && mounted) {
       try {
-        // Show loading
         showDialog(
           context: context,
           barrierDismissible: false,
           builder: (_) => const Center(child: CircularProgressIndicator()),
         );
-
-        // Send Message to Admin via ChatService
-        // Import ChatService is already there or available via file scope if imported.
-        // It is imported as part of `chat_screen.dart` or we might need explicit import if not exposed.
-        // Looking at file imports: `import 'package:krushi_kalp_admin/presentation/screens/chat_screen.dart';`
-        // ChatService is usually in data/services.
-        // I should ensure ChatService is imported.
-        // Wait, the file has `import 'package:krushi_kalp_admin/presentation/screens/chat_screen.dart';`
-        // Does `chat_screen.dart` export `ChatService`? Unlikely.
-        // I need to add import for ChatService if it's missing.
-        // But `ProfileScreen` already has imports. Let's check imports.
-        // Explicitly, I should use `ChatService()` but if the class isn't imported, code breaks.
-        // The file `profile_screen.dart` has these imports:
-        // ...
-        // import 'package:krushi_kalp_admin/presentation/screens/chat_screen.dart';
-        // ...
-        // It does NOT import `chat_service.dart`.
-        // I will add the import in a separate tool call if needed, or I can rely on `replace_file_content` block to add it?
-        // `replace_file_content` on a block in middle of file cannot add import at top.
-        // However, I can use fully qualified name or just add the import first.
-        // Let's check if I can add the import.
-        // Actually, I'll trust that I can add the import in a separate edit or use fully qualified name if package is known.
-        // `package:krushi_kalp_admin/data/services/chat_service.dart`
-        // But wait, I'll just add the import to the top of the file in a separate step?
-        // No, I can do it in one go if I edit properly? No, `replace_file_content` is a single block.
-        // I will proceed with the method update, then check if I need to add import.
-        // Wait, if I break the build, user gets mad.
-        // Let's check imports again.
-        // `profile_screen.dart` imports `chat_screen.dart`.
-        // I will update the method first. If I need to add import, I will do it next.
-        // Actually, better to check/add import first. But I can't do parallel.
-        // I'll update the method now.
 
         await ChatService().sendMessage(
             "I need to delete account. Please process my request.");
@@ -466,9 +456,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (context.mounted) {
           Navigator.pop(context); // Pop loading
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Deletion request sent to admin support.'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: const Text('Deletion request sent to admin support.'),
+              backgroundColor: colorScheme.tertiary,
             ),
           );
         }
@@ -478,7 +468,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Error sending request: $e'),
-              backgroundColor: Colors.red,
+              backgroundColor: colorScheme.error,
             ),
           );
         }
@@ -487,23 +477,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showContactOptions(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     showModalBottomSheet(
       context: context,
+      backgroundColor: colorScheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.outline.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               "Contact Us",
-              style: Theme.of(context).textTheme.titleLarge,
+              style: theme.textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.xl),
             ListTile(
-              leading: const Icon(Icons.email, color: Colors.blue),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.email_rounded, color: Colors.blue),
+              ),
               title: const Text("Email Support"),
               onTap: () {
                 Navigator.pop(context);
@@ -512,7 +523,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.chat, color: Colors.green),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.chat_rounded, color: Colors.green),
+              ),
               title: const Text("WhatsApp"),
               onTap: () {
                 Navigator.pop(context);
@@ -522,7 +540,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.send, color: Colors.blueAccent),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.lightBlue.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.send_rounded, color: Colors.lightBlue),
+              ),
               title: const Text("Telegram"),
               onTap: () {
                 Navigator.pop(context);

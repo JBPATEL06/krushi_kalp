@@ -80,7 +80,12 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
         ),
       ),
       body: ListView.builder(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: EdgeInsets.only(
+          left: AppSpacing.lg,
+          right: AppSpacing.lg,
+          top: AppSpacing.lg,
+          bottom: AppSpacing.lg + MediaQuery.of(context).padding.bottom,
+        ),
         itemCount: widget.questions.length,
         itemBuilder: (context, index) {
           final originalQuestion = widget.questions[index];

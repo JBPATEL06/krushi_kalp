@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:krushi_kalp_admin/presentation/providers/admin_provider.dart';
 import 'package:krushi_kalp_admin/data/services/admin_service.dart';
 import 'package:krushi_kalp_admin/presentation/widgets/common/network_error_state.dart';
-import 'package:krushi_kalp_admin/core/theme/app_colors.dart';
 import 'package:krushi_kalp_admin/core/theme/app_spacing.dart';
 import 'package:krushi_kalp_admin/presentation/widgets/common/modern_card.dart';
 import 'admin_offer_list_screen.dart';
@@ -18,31 +17,32 @@ class AdminAnalysisScreen extends StatefulWidget {
 }
 
 class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
+  late Stream<Map<String, dynamic>> _statsStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _statsStream = AdminService.streamDashboardStats();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          'Analytics',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-        ),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
-      ),
+      backgroundColor: colorScheme.background,
       body: StreamBuilder<Map<String, dynamic>>(
-        stream: AdminService.streamDashboardStats(),
+        stream: _statsStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return NetworkErrorState(
               message: isNetworkError(snapshot.error)
                   ? 'Unable to load analytics. Check your connection.'
                   : 'Error: ${snapshot.error}',
-              onRetry: () => setState(() {}),
+              onRetry: () => setState(() {
+                _statsStream = AdminService.streamDashboardStats();
+              }),
             );
           }
 
@@ -66,13 +66,7 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Overview (Realtime)',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                ),
+                _buildSectionHeader(context, 'REVENUE & USERS'),
                 const SizedBox(height: AppSpacing.md),
                 GridView.count(
                   shrinkWrap: true,
@@ -86,28 +80,41 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
                       context,
                       'Total Users',
                       '${stats['totalUsers']}',
-                      Icons.people,
-                      AppColors.info,
+                      Icons.people_rounded,
+                      const Color(0xFF3B82F6), // Blue
                       onTap: () => context.read<AdminProvider>().setNavIndex(2),
                     ),
                     _buildStatCard(
                       context,
                       'Revenue',
-                      '₹${(stats['revenue'] as double).toStringAsFixed(2)}',
-                      Icons.currency_rupee_rounded,
-                      Colors.purple,
+                      '₹${(stats['revenue'] as double).toStringAsFixed(0)}',
+                      Icons.payments_rounded,
+                      const Color(0xFF10B981), // Emerald
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
                             builder: (_) => const RevenueDetailsScreen()),
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+                _buildSectionHeader(context, 'CONTENT METRICS'),
+                const SizedBox(height: AppSpacing.md),
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  crossAxisSpacing: AppSpacing.md,
+                  mainAxisSpacing: AppSpacing.md,
+                  childAspectRatio: 1.1,
+                  children: [
                     _buildStatCard(
                       context,
                       'Mock Tests',
                       '${stats['totalTests']}',
                       Icons.quiz_rounded,
-                      Colors.orange,
+                      const Color(0xFFF59E0B), // Amber
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -119,14 +126,14 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
                       'Test Sales',
                       '${stats['testSales']}',
                       Icons.shopping_cart_checkout_rounded,
-                      AppColors.success,
+                      const Color(0xFF6366F1), // Indigo
                     ),
                     _buildStatCard(
                       context,
                       'Active Offers',
                       '${stats['activeOffers']}',
                       Icons.local_offer_rounded,
-                      Colors.pink,
+                      const Color(0xFFA855F7), // Purple
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -135,12 +142,33 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
                         ),
                       ),
                     ),
+                    _buildStatCard(
+                      context,
+                      'Resources',
+                      '${stats['totalResources']}',
+                      Icons.library_books_rounded,
+                      const Color(0xFF2DD4BF), // Teal
+                    ),
                   ],
                 ),
+                const SizedBox(height: AppSpacing.xxl),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Text(
+      title,
+      style: theme.textTheme.labelSmall?.copyWith(
+        fontWeight: FontWeight.w800,
+        color: colorScheme.onSurfaceVariant,
+        letterSpacing: 1.5,
       ),
     );
   }
@@ -153,6 +181,9 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
     Color color, {
     VoidCallback? onTap,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return ModernCard(
       onTap: onTap,
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -162,7 +193,7 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
           Container(
             padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 28),
@@ -170,20 +201,19 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
           const SizedBox(height: AppSpacing.md),
           Text(
             value,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                  letterSpacing: -0.5,
-                ),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+              letterSpacing: -0.5,
+            ),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
             title,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
-                  letterSpacing: 0.2,
-                ),
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
         ],

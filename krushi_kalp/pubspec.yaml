@@ -73,6 +73,7 @@ dependencies:
   flutter_chat_ui: 1.6.12
   flutter_chat_types: ^3.6.2
   package_info_plus: ^9.0.0
+  auto_start_flutter: ^0.7.0
 
 dev_dependencies:
   flutter_test:

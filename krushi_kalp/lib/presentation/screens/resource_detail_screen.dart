@@ -478,6 +478,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                     _buildReviewsSection(isPurchased, isDark, textPrimary),
 
                     const SizedBox(height: 60),
+                    SizedBox(height: MediaQuery.of(context).padding.bottom),
                   ],
                 ),
               ),

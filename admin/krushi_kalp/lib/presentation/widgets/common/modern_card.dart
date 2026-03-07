@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:krushi_kalp_admin/core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_radius.dart';
 
 class ModernCard extends StatelessWidget {
   final Widget child;
@@ -11,6 +12,9 @@ class ModernCard extends StatelessWidget {
   final double? height;
   final VoidCallback? onTap;
   final bool animate;
+  final double? borderRadius;
+  final Color? borderColor;
+  final double? borderWidth;
 
   const ModernCard({
     super.key,
@@ -21,35 +25,59 @@ class ModernCard extends StatelessWidget {
     this.width,
     this.height,
     this.onTap,
-    this.animate = true,
+    this.animate = false,
+    this.borderRadius,
+    this.borderColor,
+    this.borderWidth,
   });
 
   @override
   Widget build(BuildContext context) {
-    Widget card = Container(
-      width: width,
-      height: height,
-      margin: margin ?? const EdgeInsets.only(bottom: 12),
-      padding: padding ?? const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: backgroundColor ?? AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.neutral200.withOpacity(0.6)),
-        boxShadow: AppShadows.soft,
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final effectiveRadius = borderRadius ?? AppRadius.lg;
+
+    final decoration = BoxDecoration(
+      color: backgroundColor ?? colorScheme.surface,
+      borderRadius: BorderRadius.circular(effectiveRadius),
+      border: Border.all(
+        color: borderColor ?? colorScheme.outline.withOpacity(0.1),
+        width: borderWidth ?? 1.0,
       ),
+      boxShadow: [
+        BoxShadow(
+          color: colorScheme.shadow.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
+
+    Widget content = Padding(
+      padding: padding ?? EdgeInsets.all(AppSpacing.lg),
       child: child,
     );
 
     if (onTap != null) {
-      card = Material(
+      content = Material(
         color: Colors.transparent,
+        borderRadius: BorderRadius.circular(effectiveRadius),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: card,
+          borderRadius: BorderRadius.circular(effectiveRadius),
+          child: content,
         ),
       );
     }
+
+    Widget card = Container(
+      width: width,
+      height: height,
+      margin: margin ?? EdgeInsets.only(bottom: AppSpacing.md),
+      decoration: decoration,
+      child: content,
+    );
 
     if (animate) {
       return card

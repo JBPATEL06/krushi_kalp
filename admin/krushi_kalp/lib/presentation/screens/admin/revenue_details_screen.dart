@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../data/services/admin_service.dart';
+import 'package:krushi_kalp_admin/core/theme/app_spacing.dart';
+import 'package:krushi_kalp_admin/core/theme/app_radius.dart';
 
 class RevenueDetailsScreen extends StatefulWidget {
   const RevenueDetailsScreen({super.key});
@@ -36,8 +38,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error loading data: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
+            backgroundColor: Theme.of(context).colorScheme.error,
             action: SnackBarAction(
               label: 'Retry',
               textColor: Colors.white,
@@ -51,8 +52,9 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Calculate total revenue from fetched data for consistency
-    // 1. Filter Logic
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     final now = DateTime.now();
     final List<Map<String, dynamic>> filteredOrders = _orders.where((order) {
       if (_selectedFilter == 'All') return true;
@@ -71,178 +73,207 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
       return true;
     }).toList();
 
-    // 2. Calculate Totals based on Filtered Data
     final double totalRevenue = filteredOrders.fold(0.0, (sum, item) {
       return sum + ((item['total_amount'] as num?)?.toDouble() ?? 0.0);
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: const Text('Revenue Details',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        centerTitle: true,
+        title: const Text('Revenue Insights'),
       ),
-      body: Column(
-        children: [
-          // Summary Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            color: Colors.white,
-            child: Column(
-              children: [
-                Text(
-                  'Total Revenue',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1000),
+          child: Column(
+            children: [
+              // Summary Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  border: Border(
+                      bottom: BorderSide(
+                          color: colorScheme.outlineVariant.withOpacity(0.5))),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  '₹${totalRevenue.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${filteredOrders.length} Successful Transactions',
-                  style: TextStyle(
-                      color: Colors.blueGrey[400], fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 16),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildFilterChip('All'),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('Today'),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('Monthly'),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('Yearly'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-
-          // Transaction List
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : filteredOrders.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.receipt_long,
-                                size: 64, color: Colors.grey[300]),
-                            const SizedBox(height: 16),
-                            Text('No transactions found',
-                                style: TextStyle(color: Colors.grey[500])),
-                          ],
-                        ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: filteredOrders.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final order = filteredOrders[index];
-                          return _buildOrderCard(order);
-                        },
+                child: Column(
+                  children: [
+                    Text(
+                      'TOTAL REVENUE',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: colorScheme.onSurfaceVariant,
+                        letterSpacing: 1.5,
                       ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        '₹${totalRevenue.toStringAsFixed(2)}',
+                        style: theme.textTheme.displayLarge?.copyWith(
+                          // Increased from displayMedium
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF10B981), // Emerald
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Text(
+                        '${filteredOrders.length} SUCCESSFUL SALES',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    // Filter Row
+                    Row(
+                      children: [
+                        Text(
+                          "FILTER",
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: colorScheme.onSurfaceVariant,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _buildFilterChip('All'),
+                                const SizedBox(width: 8),
+                                _buildFilterChip('Today'),
+                                const SizedBox(width: 8),
+                                _buildFilterChip('Monthly'),
+                                const SizedBox(width: 8),
+                                _buildFilterChip('Yearly'),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Transaction List
+              Expanded(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : filteredOrders.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.builder(
+                            padding: EdgeInsets.zero,
+                            itemCount: filteredOrders.length,
+                            itemBuilder: (context, index) {
+                              return _buildOrderRow(filteredOrders[index]);
+                            },
+                          ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildOrderCard(Map<String, dynamic> order) {
+  Widget _buildOrderRow(Map<String, dynamic> order) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final user = order['users'];
     final double amount = (order['total_amount'] as num?)?.toDouble() ?? 0.0;
     final String dateStr = order['created_at'] != null
-        ? DateFormat('MMM dd, yyyy • hh:mm a')
+        ? DateFormat('MMM dd • hh:mm a')
             .format(DateTime.parse(order['created_at']).toUtc().toLocal())
         : 'Unknown Date';
     final String username =
         user != null ? (user['username'] ?? 'Unknown') : 'Unknown User';
-    final String email = user != null ? (user['email'] ?? '') : '';
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showOrderDetailsDialog(order),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: 16),
+          decoration: BoxDecoration(
+            border: Border(
+                bottom: BorderSide(
+                    color: colorScheme.outlineVariant.withOpacity(0.5))),
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: () => _showOrderDetailsDialog(order),
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: Colors.blue[50],
-                  child: Icon(Icons.receipt_outlined,
-                      color: Colors.blue[700], size: 20),
+          child: Row(
+            children: [
+              // Icon
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        username,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      Text(email,
-                          style:
-                              TextStyle(fontSize: 12, color: Colors.grey[500])),
-                      const SizedBox(height: 4),
-                      Text(
-                        dateStr,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                child: Icon(Icons.receipt_long_rounded,
+                    color: colorScheme.primary, size: 24),
+              ),
+              const SizedBox(width: 16),
+              // User Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '+ ₹${amount.toStringAsFixed(2)}',
-                      style: const TextStyle(
+                      username,
+                      style: theme
+                          .textTheme.titleLarge // Increased from titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      dateStr,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        // Increased from bodySmall
+                        color: colorScheme.onSurfaceVariant.withOpacity(0.7),
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.green,
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios,
-                        size: 14, color: Colors.grey),
                   ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 16),
+              // Amount
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '+ ₹${amount.toStringAsFixed(2)}',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: const Color(0xFF10B981),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Icon(Icons.chevron_right_rounded,
+                      size: 16,
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -250,6 +281,8 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
   }
 
   void _showOrderDetailsDialog(Map<String, dynamic> order) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final user = order['users'];
     final offer = order['offers'];
     final items = order['order_items'] as List<dynamic>? ?? [];
@@ -264,198 +297,217 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
     String discountStr = '';
 
     if (!isDirect) {
-      final code = offer['code'] ?? 'Unknown';
+      final code = offer['code'] ?? 'Sale';
       final val = offer['discount_value'];
       final type = offer['discount_type'];
-
       if (val != null) {
         discountStr = type == 'PERCENTAGE' ? '${val}% OFF' : '₹${val} OFF';
       }
-      offerText = 'Code: $code';
+      offerText =
+          (offer['code'] == null) ? 'Store Sale Applied' : 'Coupon Code: $code';
     }
 
     showDialog(
       context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Transaction Details',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(ctx),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-              const Divider(),
-              const SizedBox(height: 10),
-
-              // Customer Info
-              _buildDetailRow(Icons.person, 'Customer',
-                  '${user?['username'] ?? 'Unknown'}\n${user?['email'] ?? ''}'),
-              const SizedBox(height: 12),
-
-              // Date
-              _buildDetailRow(Icons.calendar_today, 'Date', dateStr),
-              const SizedBox(height: 12),
-
-              // Offer Info
-              if (!isDirect) ...[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.local_offer, size: 20, color: Colors.grey[600]),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Offer Applied',
-                              style: TextStyle(
-                                  color: Colors.grey[600], fontSize: 12)),
-                          const SizedBox(height: 2),
-                          Text(offerText,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w500)),
-                          if (discountStr.isNotEmpty)
-                            Container(
-                              margin: const EdgeInsets.only(top: 4),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                  color: Colors.green[50],
-                                  borderRadius: BorderRadius.circular(4)),
-                              child: Text(discountStr,
-                                  style: TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.green[800],
-                                      fontWeight: FontWeight.bold)),
-                            )
-                        ],
-                      ),
-                    )
-                  ],
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg)),
+        contentPadding: const EdgeInsets.all(AppSpacing.lg),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Transaction Details',
+                    style: theme.textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 20),
+                  onPressed: () => Navigator.pop(ctx),
+                  style: IconButton.styleFrom(
+                      backgroundColor:
+                          colorScheme.surfaceVariant.withOpacity(0.3)),
                 ),
-                const SizedBox(height: 20),
               ],
-
-              const Text('Purchased Items',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Container(
-                constraints: const BoxConstraints(maxHeight: 150),
+            ),
+            const Divider(height: 24),
+            _buildDetailRow(context, Icons.person_rounded, 'CUSTOMER',
+                '${user?['username'] ?? 'Unknown'}\n${user?['email'] ?? ''}'),
+            const SizedBox(height: AppSpacing.md),
+            _buildDetailRow(
+                context, Icons.calendar_today_rounded, 'DATE & TIME', dateStr),
+            const SizedBox(height: AppSpacing.md),
+            if (!isDirect) ...[
+              _buildDetailRow(
+                context,
+                Icons.local_offer_rounded,
+                'OFFER APPLIED',
+                offerText,
+                extra: discountStr.isNotEmpty
+                    ? Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                            color: colorScheme.tertiary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4)),
+                        child: Text(discountStr,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.tertiary,
+                                fontWeight: FontWeight.bold)),
+                      )
+                    : null,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+            Text('PURCHASED ITEMS',
+                style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.bold)),
+            const SizedBox(height: AppSpacing.sm),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 180),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colorScheme.background,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
                 child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   child: Column(
-                    children: items.map((item) {
-                      final mockTest = item['mock_tests'];
-                      final resource = item['resources'];
-
-                      String title = 'Unknown Item';
-                      if (mockTest != null) {
-                        title = 'Test: ${mockTest['title'] ?? 'Unnamed'}';
-                      } else if (resource != null) {
-                        final type = resource['type'] ?? 'Resource';
-                        title = '$type: ${resource['title'] ?? 'Unnamed'}';
-                      } else {
-                        title =
-                            'Item #${item['test_id'] ?? item['resource_id'] ?? 'null'}';
-                      }
-
-                      final double price =
-                          (item['price_at_purchase'] as num?)?.toDouble() ??
-                              0.0;
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                                child: Text('• $title',
-                                    style: const TextStyle(fontSize: 14))),
-                            Text('₹$price',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      );
-                    }).toList(),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (int i = 0; i < items.length; i++) ...[
+                        if (i > 0) const Divider(height: 16),
+                        Builder(builder: (context) {
+                          final item = items[i];
+                          final mockTest = item['mock_tests'];
+                          final resource = item['resources'];
+                          String title = 'Unknown Item';
+                          if (mockTest != null) {
+                            title = '${mockTest['title']}';
+                          } else if (resource != null) {
+                            title = '${resource['title']}';
+                          }
+                          final double price =
+                              (item['price_at_purchase'] as num?)?.toDouble() ??
+                                  0.0;
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  title,
+                                  style: theme.textTheme.bodySmall,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '₹${price.toStringAsFixed(0)}',
+                                style: theme.textTheme.bodySmall
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          );
+                        }),
+                      ],
+                    ],
                   ),
                 ),
               ),
-              const Divider(),
-
-              // Total
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Total Paid',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  Text('₹${amount.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green)),
-                ],
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Total Paid',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+                Text('₹${amount.toStringAsFixed(2)}',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: colorScheme.tertiary)),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildFilterChip(String label) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isSelected = _selectedFilter == label;
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,
       onSelected: (bool selected) {
-        if (selected) {
-          setState(() {
-            _selectedFilter = label;
-          });
-        }
+        if (selected) setState(() => _selectedFilter = label);
       },
-      selectedColor: Colors.green,
+      selectedColor: colorScheme.primary,
+      backgroundColor: colorScheme.background,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.black,
+        color:
+            isSelected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
-      backgroundColor: Colors.grey[100],
+      side: BorderSide(
+          color: isSelected
+              ? colorScheme.primary
+              : colorScheme.outline.withOpacity(0.2)),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md)),
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value) {
+  Widget _buildDetailRow(
+      BuildContext context, IconData icon, String label, String value,
+      {Widget? extra}) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: Colors.grey[600]),
+        Icon(icon,
+            size: 20, color: colorScheme.onSurfaceVariant.withOpacity(0.6)),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant, letterSpacing: 1.1)),
               const SizedBox(height: 2),
-              Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+              Text(value,
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w600)),
+              if (extra != null) extra,
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEmptyState() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.receipt_long_rounded,
+              size: 64, color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+          const SizedBox(height: AppSpacing.md),
+          Text('No transactions found',
+              style: TextStyle(color: colorScheme.onSurfaceVariant)),
+        ],
+      ),
     );
   }
 }

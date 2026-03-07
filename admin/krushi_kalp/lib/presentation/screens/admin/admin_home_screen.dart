@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
 import 'package:krushi_kalp_admin/data/services/admin_service.dart';
-import 'package:krushi_kalp_admin/utils/network_utils.dart';
-import 'package:krushi_kalp_admin/core/theme/app_colors.dart';
 import 'package:krushi_kalp_admin/core/theme/app_spacing.dart';
+import 'package:krushi_kalp_admin/core/theme/app_radius.dart';
 import 'package:krushi_kalp_admin/presentation/widgets/common/modern_card.dart';
 
 import 'admin_offer_list_screen.dart';
-import 'admin_chat_list_screen.dart';
-import 'admin_profile_screen.dart';
 import 'resources/admin_resources_dashboard.dart';
 import 'admin_store_screen.dart';
 import 'admin_reviews_screen.dart';
@@ -54,238 +49,35 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return ModernCard(
       onTap: onTap,
       padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        leading: Consumer<AuthProvider>(
-          builder: (context, auth, _) {
-            final user = auth.currentUser;
-            final metadata = user?.userMetadata;
-            final photoUrl = metadata?['avatar_url'] ?? metadata?['picture'];
-
-            return Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const AdminProfileScreen()),
-                  );
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: CircleAvatar(
-                  radius: 18,
-                  backgroundColor: AppColors.neutral100,
-                  backgroundImage:
-                      photoUrl != null ? NetworkImage(photoUrl) : null,
-                  child: photoUrl == null
-                      ? const Icon(Icons.person,
-                          color: AppColors.textPrimary, size: 20)
-                      : null,
-                ),
-              ),
-            );
-          },
-        ),
-        title: Text(
-          'Admin Dashboard',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-        ),
-        centerTitle: true,
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AdminChatListScreen()),
-              );
-            },
-            icon: const Icon(Icons.chat_bubble_outline_rounded,
-                color: AppColors.textPrimary),
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _onRefresh,
-        color: AppColors.primary,
-        child: SingleChildScrollView(
-          key: _refreshKey,
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 36),
+              ),
+              const SizedBox(height: AppSpacing.md),
               Text(
-                'Management',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textSecondary,
-                    ),
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildDashboardCard(
-                      context,
-                      title: 'Manage Store',
-                      icon: Icons.storefront_rounded,
-                      color: AppColors.info,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const AdminStoreScreen()),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: _buildDashboardCard(
-                      context,
-                      title: 'Manage Offers',
-                      icon: Icons.local_offer_rounded,
-                      color: Colors.purple, // Kept distinct color
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const AdminOfferListScreen())),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildDashboardCard(
-                      context,
-                      title: 'Resources',
-                      icon: Icons.library_books,
-                      color: Colors.deepPurple, // Kept distinct color
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                const AdminResourcesDashboard(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: _buildDashboardCard(
-                      context,
-                      title: 'Reviews',
-                      icon: Icons.rate_review,
-                      color: AppColors.warning,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AdminReviewsScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xxl),
-
-              // Top Tests Stream
-              Text(
-                'Top Performing Mock Tests',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              StreamBuilder<List<Map<String, dynamic>>>(
-                stream: _topTestsStream,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    if (!NetworkUtils.isNetworkError(snapshot.error)) {
-                      debugPrint("Stream Error (Tests): ${snapshot.error}");
-                    }
-                    return _buildErrorState("Unable to load tests.");
-                  }
-                  final tests = snapshot.data ?? [];
-                  return _buildTopTestsList(tests);
-                },
-              ),
-
-              const SizedBox(height: AppSpacing.xxl),
-
-              // Top Users Stream
-              Text(
-                'Top Performing Users',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              StreamBuilder<List<Map<String, dynamic>>>(
-                stream: _topUsersStream,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    if (!NetworkUtils.isNetworkError(snapshot.error)) {
-                      debugPrint("Stream Error (Users): ${snapshot.error}");
-                    }
-                    return _buildErrorState("Unable to load users.");
-                  }
-                  final users = snapshot.data ?? [];
-                  return _buildTopUsersList(users);
-                },
-              ),
-              const SizedBox(height: AppSpacing.xxl),
             ],
           ),
         ),
@@ -293,35 +85,189 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  Widget _buildErrorState(String message) {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Scaffold(
+      backgroundColor: colorScheme.background,
+      body: RefreshIndicator(
+        onRefresh: _onRefresh,
+        displacement: 20,
+        color: colorScheme.primary,
+        backgroundColor: colorScheme.surface,
+        child: LayoutBuilder(builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final crossAxisCount = width > 1400
+              ? 6
+              : width > 1024
+                  ? 4
+                  : width > 700
+                      ? 3
+                      : 2;
+
+          return SingleChildScrollView(
+            key: _refreshKey,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.lg,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionHeader(context, 'MANAGEMENT QUICK ACCESS'),
+                const SizedBox(height: AppSpacing.md),
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: AppSpacing.md,
+                  mainAxisSpacing: AppSpacing.md,
+                  childAspectRatio:
+                      width > 1024 ? 2.0 : (width > 700 ? 1.5 : 1.1),
+                  children: [
+                    _buildDashboardCard(
+                      context,
+                      title: 'Store',
+                      icon: Icons.storefront_rounded,
+                      color: const Color(0xFF3B82F6),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const AdminStoreScreen()),
+                      ),
+                    ),
+                    _buildDashboardCard(
+                      context,
+                      title: 'Offers',
+                      icon: Icons.local_offer_rounded,
+                      color: const Color(0xFFA855F7),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const AdminOfferListScreen()),
+                      ),
+                    ),
+                    _buildDashboardCard(
+                      context,
+                      title: 'Resources',
+                      icon: Icons.library_books_rounded,
+                      color: const Color(0xFF6366F1),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const AdminResourcesDashboard()),
+                      ),
+                    ),
+                    _buildDashboardCard(
+                      context,
+                      title: 'Reviews',
+                      icon: Icons.rate_review_rounded,
+                      color: const Color(0xFFF59E0B),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const AdminReviewsScreen()),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+                _buildSectionHeader(context, 'TOP PERFORMING TESTS'),
+                const SizedBox(height: AppSpacing.md),
+                StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: _topTestsStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const _LoadingState();
+                    }
+                    if (snapshot.hasError) {
+                      return _buildErrorState(context, "Unable to load tests.");
+                    }
+                    final tests = snapshot.data ?? [];
+                    return _buildTopTestsList(context, tests, width);
+                  },
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+                _buildSectionHeader(context, 'TOP RANKED USERS'),
+                const SizedBox(height: AppSpacing.md),
+                StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: _topUsersStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const _LoadingState();
+                    }
+                    if (snapshot.hasError) {
+                      return _buildErrorState(context, "Unable to load users.");
+                    }
+                    final users = snapshot.data ?? [];
+                    return _buildTopUsersList(users, width);
+                  },
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Text(
+      title,
+      style: theme.textTheme.labelSmall?.copyWith(
+        fontWeight: FontWeight.w800,
+        color: colorScheme.onSurfaceVariant,
+        letterSpacing: 1.5,
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, String message) {
+    final colorScheme = Theme.of(context).colorScheme;
     return ModernCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Center(
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline_rounded, color: AppColors.error),
+            Icon(Icons.error_outline_rounded, color: colorScheme.error),
             const SizedBox(width: AppSpacing.sm),
-            Text(message, style: const TextStyle(color: AppColors.error)),
+            Text(message, style: TextStyle(color: colorScheme.error)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTopTestsList(List<Map<String, dynamic>> tests) {
+  Widget _buildTopTestsList(
+      BuildContext context, List<Map<String, dynamic>> tests, double width) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    // Calculate dynamic height based on orientation and screen size
+    final listHeight = width > 1024 ? 300.0 : 260.0;
+    final itemWidth = width > 1024 ? width * 0.2 : width * 0.45;
+
     if (tests.isEmpty) {
-      return const ModernCard(
+      return ModernCard(
         height: 150,
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.bar_chart_rounded,
-                  size: 40, color: AppColors.neutral300),
-              SizedBox(height: AppSpacing.sm),
+                  size: 40,
+                  color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+              const SizedBox(height: AppSpacing.sm),
               Text('No data yet',
-                  style: TextStyle(color: AppColors.neutral400)),
+                  style: TextStyle(
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.5))),
             ],
           ),
         ),
@@ -329,7 +275,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     }
 
     return SizedBox(
-      height: 240,
+      height: listHeight,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: tests.length,
@@ -337,12 +283,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         itemBuilder: (context, index) {
           final test = tests[index];
           return Container(
-            width: 180,
+            width: itemWidth,
             decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-              border: Border.all(color: AppColors.neutral200),
-              boxShadow: AppShadows.soft,
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: colorScheme.outline.withOpacity(0.05)),
+              boxShadow: [
+                BoxShadow(
+                  color: colorScheme.shadow.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,8 +302,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 Expanded(
                   flex: 3,
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(AppSpacing.radiusLg)),
+                    borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(AppRadius.lg)),
                     child: test['image_url'] != null
                         ? Image.network(
                             test['image_url'],
@@ -359,18 +311,23 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                             width: double.infinity,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
-                                color: AppColors.neutral100,
-                                child: const Center(
-                                    child: Icon(Icons.broken_image_rounded,
-                                        color: AppColors.neutral400)),
+                                color:
+                                    colorScheme.surfaceVariant.withOpacity(0.5),
+                                child: Center(
+                                  child: Icon(Icons.broken_image_rounded,
+                                      color: colorScheme.onSurfaceVariant
+                                          .withOpacity(0.3)),
+                                ),
                               );
                             },
                           )
                         : Container(
-                            color: AppColors.neutral100,
-                            child: const Center(
-                                child: Icon(Icons.book,
-                                    color: AppColors.primary, size: 40)),
+                            color: colorScheme.primary.withOpacity(0.05),
+                            child: Center(
+                              child: Icon(Icons.book_rounded,
+                                  color: colorScheme.primary.withOpacity(0.3),
+                                  size: 40),
+                            ),
                           ),
                   ),
                 ),
@@ -386,34 +343,25 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           test['title'] ?? 'Untitled',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style:
-                              Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
-                                  ),
+                          style: theme.textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               '${test['sales'] ?? 0} Sold',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             Text(
                               '₹${test['price'] ?? 0}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(
-                                    color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ),
@@ -429,79 +377,130 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  Widget _buildTopUsersList(List<Map<String, dynamic>> users) {
+  Widget _buildTopUsersList(List<Map<String, dynamic>> users, double width) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isLarge = width > 900;
+
     if (users.isEmpty) {
       return ModernCard(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Center(
           child: Text(
             'No active users found.',
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: AppColors.textSecondary),
+            style: theme.textTheme.bodyMedium
+                ?.copyWith(color: colorScheme.onSurfaceVariant),
           ),
         ),
       );
     }
 
-    final displayUsers = users.take(3).toList();
+    final displayUsers = users.take(5).toList();
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: displayUsers.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-      itemBuilder: (context, index) {
-        final user = displayUsers[index];
-        final totalMax = user['totalMax'] as double;
-        final totalScore = user['totalScore'] as double;
+    Widget userList = Column(
+      children: displayUsers.map((user) {
+        final totalMax = (user['totalMax'] as num).toDouble();
+        final totalScore = (user['totalScore'] as num).toDouble();
         final percentage = totalMax > 0 ? (totalScore / totalMax) * 100 : 0.0;
         final firstChar = (user['username'] as String).isNotEmpty
             ? (user['username'] as String)[0].toUpperCase()
             : '?';
 
         return ModernCard(
+          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
           padding: EdgeInsets.zero,
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                horizontal: AppSpacing.md, vertical: AppSpacing.xs),
             leading: CircleAvatar(
               radius: 20,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+              backgroundColor: colorScheme.primary.withOpacity(0.1),
               child: Text(
                 firstChar,
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(
+                    color: colorScheme.primary, fontWeight: FontWeight.bold),
               ),
             ),
             title: Text(
               user['username'],
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              '${user['testsTaken']} Tests Attempted',
+              style: theme.textTheme.labelSmall
+                  ?.copyWith(color: colorScheme.onSurfaceVariant),
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   '${percentage.toStringAsFixed(0)}%',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.textPrimary,
-                      ),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: colorScheme.primary,
+                    fontFamily: 'Inter',
+                  ),
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 const Icon(Icons.emoji_events_rounded,
-                    size: 18, color: AppColors.warning),
+                    size: 18, color: Color(0xFFF59E0B)),
               ],
             ),
           ),
         );
-      },
+      }).toList(),
+    );
+
+    if (isLarge) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: userList),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: ModernCard(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.insights_rounded,
+                      size: 48, color: colorScheme.primary.withOpacity(0.2)),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'User Performance Metrics',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Showing top 5 users based on accuracy and test volume across the platform.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return userList;
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.xl),
+        child: CircularProgressIndicator(strokeWidth: 2.5),
+      ),
     );
   }
 }

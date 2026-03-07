@@ -214,8 +214,9 @@ class _ChatScreenState extends State<ChatScreen> {
             onMessageLongPress: _handleMessageLongPress,
             onMessageTap: _handleMessageTap,
             user: _user,
-            customBottomWidget: SafeArea(
-              bottom: true,
+            customBottomWidget: Padding(
+              padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).padding.bottom),
               child: ChatInput(
                 onSendPressed: (text) =>
                     _handleSendPressed(types.PartialText(text: text)),

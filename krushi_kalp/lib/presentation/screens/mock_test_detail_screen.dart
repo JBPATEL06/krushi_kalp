@@ -512,6 +512,7 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                     const SizedBox(height: AppSpacing.md),
                     _buildReviewsSection(isActuallyPurchased),
                     const SizedBox(height: 60),
+                    SizedBox(height: MediaQuery.of(context).padding.bottom),
                   ],
                 ),
               ),

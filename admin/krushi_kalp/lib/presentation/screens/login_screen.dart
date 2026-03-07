@@ -130,10 +130,12 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isLoading = context.select<AuthProvider, bool>((p) => p.isLoading);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colorScheme.background,
       body: Stack(
         children: [
           // Background Elements
@@ -145,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen>
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: colorScheme.primary.withValues(alpha: 0.1),
               ),
             ),
           ),
@@ -157,7 +159,7 @@ class _LoginScreenState extends State<LoginScreen>
               height: 200,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.secondary.withValues(alpha: 0.1),
+                color: colorScheme.secondary.withValues(alpha: 0.1),
               ),
             ),
           ),
@@ -176,8 +178,8 @@ class _LoginScreenState extends State<LoginScreen>
                       children: [
                         Image.asset(
                           "assets/images/notification_logo.png",
-                          height: context.h(80),
-                          width: context.w(80),
+                          height: context.h(130),
+                          width: context.w(130),
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         Text(
@@ -202,7 +204,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   _agreedToTerms = value ?? false;
                                 });
                               },
-                              activeColor: AppColors.primary,
+                              activeColor: colorScheme.primary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(4),
                               ),
@@ -216,7 +218,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     TextSpan(
                                       text: 'Terms and Conditions',
                                       style: TextStyle(
-                                        color: AppColors.primary,
+                                        color: colorScheme.primary,
                                         fontWeight: FontWeight.bold,
                                         decoration: TextDecoration.underline,
                                       ),

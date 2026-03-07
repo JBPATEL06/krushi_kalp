@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../data/services/download_service.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_radius.dart';
 
 /// A dialog that shows download progress with animated progress bar
 class DownloadProgressDialog extends StatefulWidget {
@@ -56,8 +56,8 @@ class _DownloadProgressDialogState extends State<DownloadProgressDialog> {
         });
 
         if (progress.isComplete) {
-          // Show success state for 3 seconds before auto-closing
-          await Future.delayed(const Duration(seconds: 3));
+          // Show success state for 2 seconds before auto-closing
+          await Future.delayed(const Duration(seconds: 2));
           if (mounted) {
             final path = await DownloadService().getLocalPath(widget.filename);
             Navigator.of(context).pop();
@@ -92,28 +92,35 @@ class _DownloadProgressDialogState extends State<DownloadProgressDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return PopScope(
       canPop: _status != DownloadStatus.downloading,
       child: Dialog(
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: colorScheme.surfaceTint,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Icon
+              // Icon/Status Indicator
               if (_status == DownloadStatus.downloading) ...[
-                const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                CircularProgressIndicator(
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                  strokeWidth: 3,
                 ),
               ] else if (_status == DownloadStatus.error) ...[
-                const Icon(Icons.error_outline,
-                    size: 48, color: AppColors.error),
+                Icon(Icons.error_outline_rounded,
+                    size: 56, color: colorScheme.error),
               ] else if (_status == DownloadStatus.completed) ...[
-                const Icon(Icons.check_circle_outline,
-                    size: 48, color: AppColors.success),
+                Icon(Icons.check_circle_outline_rounded,
+                    size: 56, color: colorScheme.tertiary),
               ],
 
               const SizedBox(height: AppSpacing.lg),
@@ -125,14 +132,14 @@ class _DownloadProgressDialogState extends State<DownloadProgressDialog> {
                     : (_status == DownloadStatus.error
                         ? 'Download Failed'
                         : 'Download Complete!'),
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: _status == DownloadStatus.completed
-                          ? AppColors.success
-                          : (_status == DownloadStatus.error
-                              ? AppColors.error
-                              : AppColors.textPrimary),
-                    ),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: _status == DownloadStatus.completed
+                      ? colorScheme.tertiary
+                      : (_status == DownloadStatus.error
+                          ? colorScheme.error
+                          : colorScheme.onSurface),
+                ),
                 textAlign: TextAlign.center,
               ),
 
@@ -141,9 +148,9 @@ class _DownloadProgressDialogState extends State<DownloadProgressDialog> {
               // File name
               Text(
                 widget.displayName,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -154,13 +161,13 @@ class _DownloadProgressDialogState extends State<DownloadProgressDialog> {
               // Progress Bar
               if (_status == DownloadStatus.downloading) ...[
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   child: LinearProgressIndicator(
                     value: _progress / 100,
                     minHeight: 8,
-                    backgroundColor: AppColors.neutral200,
+                    backgroundColor: colorScheme.outline.withOpacity(0.1),
                     valueColor:
-                        const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                        AlwaysStoppedAnimation<Color>(colorScheme.primary),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -168,11 +175,10 @@ class _DownloadProgressDialogState extends State<DownloadProgressDialog> {
                 // Percentage
                 Text(
                   '${_progress.toStringAsFixed(0)}%',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                        fontSize: 32,
-                      ),
+                  style: theme.textTheme.displaySmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.primary,
+                  ),
                 ),
 
                 // Bytes info
@@ -180,10 +186,10 @@ class _DownloadProgressDialogState extends State<DownloadProgressDialog> {
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     '${_formatBytes(_bytesReceived)} of ${_formatBytes(_totalBytes)}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ],
@@ -193,10 +199,10 @@ class _DownloadProgressDialogState extends State<DownloadProgressDialog> {
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   'Opening file...',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.success,
-                        fontStyle: FontStyle.italic,
-                      ),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.tertiary,
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               ],
 
@@ -204,16 +210,20 @@ class _DownloadProgressDialogState extends State<DownloadProgressDialog> {
               if (_status == DownloadStatus.error && _errorMessage != null) ...[
                 Text(
                   _errorMessage!,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.error,
-                      ),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.error,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.error,
+                    backgroundColor: colorScheme.error,
+                    foregroundColor: colorScheme.onError,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
                   ),
                   child: const Text('Close'),
                 ),

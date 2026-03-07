@@ -8,8 +8,7 @@ import '../../domain/models/mock_test.dart';
 import '../widgets/active_test_card.dart';
 import '../widgets/common/network_error_state.dart';
 import 'pdf_viewer_screen.dart';
-import 'mock_test_detail_screen.dart'; // Import Detail Screen
-import '../../core/theme/app_colors.dart';
+import 'mock_test_detail_screen.dart';
 import '../../core/theme/app_spacing.dart';
 
 class AllTestsScreen extends StatefulWidget {
@@ -39,7 +38,7 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
           _completedTestIds = results.map((r) => r['test_id'] as int).toList();
         });
       }
-    } else {}
+    }
   }
 
   Future<void> _downloadAndOpenResult(int testId, String title) async {
@@ -72,8 +71,12 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
     } catch (e) {
       debugPrint('Download Error: $e');
       if (mounted) {
+        final colorScheme = Theme.of(context).colorScheme;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error downloading result: $e')),
+          SnackBar(
+            content: Text('Error downloading result: $e'),
+            backgroundColor: colorScheme.error,
+          ),
         );
       }
     }
@@ -94,19 +97,17 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: Text(
-          'All Mock Tests',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        backgroundColor: AppColors.surface,
+        title: const Text('All Mock Tests'),
+        backgroundColor: colorScheme.surface,
+        scrolledUnderElevation: 0,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        centerTitle: false,
       ),
       body: StreamBuilder<List<MockTest>>(
         stream: _testsStream,
@@ -132,14 +133,17 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.assignment_outlined,
-                      size: 64, color: AppColors.neutral400),
+                  Icon(
+                    Icons.assignment_outlined,
+                    size: 64,
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.3),
+                  ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     'No tests available.',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -147,6 +151,7 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
           }
 
           return RefreshIndicator(
+            color: colorScheme.primary,
             onRefresh: () async {
               setState(() {
                 _testsStream = TestService.streamMockTests();
@@ -173,7 +178,6 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
                     if (isCompleted) {
                       _downloadAndOpenResult(test.id, test.title);
                     } else {
-                      // Navigate to Detail Screen for purchase/start
                       Navigator.push(
                         context,
                         MaterialPageRoute(

@@ -656,8 +656,10 @@ class _StoreScreenState extends State<StoreScreen>
                           _buildMockTestsTab(
                               testProvider, offerProvider, cartProvider,
                               isFree: false),
-                          const SliverToBoxAdapter(
-                              child: SizedBox(height: AppSpacing.xl)),
+                          SliverToBoxAdapter(
+                              child: SizedBox(
+                                  height: AppSpacing.xl +
+                                      MediaQuery.of(context).padding.bottom)),
                         ],
                       ),
                     ),
@@ -669,8 +671,10 @@ class _StoreScreenState extends State<StoreScreen>
                               child: SizedBox(height: AppSpacing.sm)),
                           _buildResourcesTab(
                               resourceProvider, cartProvider, 'E-Books'),
-                          const SliverToBoxAdapter(
-                              child: SizedBox(height: AppSpacing.xl)),
+                          SliverToBoxAdapter(
+                              child: SizedBox(
+                                  height: AppSpacing.xl +
+                                      MediaQuery.of(context).padding.bottom)),
                         ],
                       ),
                     ),
@@ -682,8 +686,10 @@ class _StoreScreenState extends State<StoreScreen>
                               child: SizedBox(height: AppSpacing.sm)),
                           _buildResourcesTab(resourceProvider, cartProvider,
                               'Study Materials'),
-                          const SliverToBoxAdapter(
-                              child: SizedBox(height: AppSpacing.xl)),
+                          SliverToBoxAdapter(
+                              child: SizedBox(
+                                  height: AppSpacing.xl +
+                                      MediaQuery.of(context).padding.bottom)),
                         ],
                       ),
                     ),
@@ -695,8 +701,10 @@ class _StoreScreenState extends State<StoreScreen>
                               child: SizedBox(height: AppSpacing.sm)),
                           _buildResourcesTab(resourceProvider, cartProvider,
                               'Current Affairs'),
-                          const SliverToBoxAdapter(
-                              child: SizedBox(height: AppSpacing.xl)),
+                          SliverToBoxAdapter(
+                              child: SizedBox(
+                                  height: AppSpacing.xl +
+                                      MediaQuery.of(context).padding.bottom)),
                         ],
                       ),
                     ),
@@ -708,8 +716,10 @@ class _StoreScreenState extends State<StoreScreen>
                               child: SizedBox(height: AppSpacing.sm)),
                           _buildResourcesTab(
                               resourceProvider, cartProvider, 'PYQs'),
-                          const SliverToBoxAdapter(
-                              child: SizedBox(height: AppSpacing.xl)),
+                          SliverToBoxAdapter(
+                              child: SizedBox(
+                                  height: AppSpacing.xl +
+                                      MediaQuery.of(context).padding.bottom)),
                         ],
                       ),
                     ),

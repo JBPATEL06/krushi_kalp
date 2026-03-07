@@ -5,31 +5,28 @@ import '../../domain/models/mock_test.dart';
 import '../../data/services/test_service.dart';
 import 'mock_test_detail_screen.dart';
 import '../../domain/models/offer.dart';
-
-import 'cart_screen.dart'; // NEW
+import 'cart_screen.dart';
 import '../providers/test_provider.dart';
 import '../providers/offer_provider.dart';
 import '../providers/network_provider.dart';
 import '../providers/cart_provider.dart';
-import '../providers/navigation_provider.dart'; // Re-added
+import '../providers/navigation_provider.dart';
 import '../../utils/price_calculator.dart';
 import 'dart:async';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart'; // NEW
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart';
 import 'store/widgets/store_grid.dart';
 import '../widgets/direct_checkout_sheet.dart';
-// For Start Exam
-
 import '../providers/resource_provider.dart';
 import '../../domain/models/resource.dart';
 import 'store/widgets/store_resource_grid.dart';
 import 'store/widgets/store_current_affairs_list.dart';
 import '../widgets/resource_detail_dialog.dart';
-import 'resource_detail_screen.dart'; // NEW
+import 'resource_detail_screen.dart';
 import '../widgets/common/responsive_wrapper.dart';
-import '../../data/services/download_service.dart'; // NEW
-import 'pdf_viewer_screen.dart'; // NEW
-import 'dart:io'; // NEW
+import '../../data/services/download_service.dart';
+import 'pdf_viewer_screen.dart';
+import 'dart:io';
 
 class StoreScreen extends StatefulWidget {
   const StoreScreen({super.key});
@@ -40,11 +37,9 @@ class StoreScreen extends StatefulWidget {
 
 class _StoreScreenState extends State<StoreScreen>
     with SingleTickerProviderStateMixin {
-  // State for Filtering
   String _searchQuery = '';
   String _sortOption = 'Latest';
 
-  // Tabs: Key -> Label
   final Map<String, String> _categoryMap = {
     'Mock Tests': 'Tests',
     'E-Books': 'E-Books',
@@ -58,18 +53,13 @@ class _StoreScreenState extends State<StoreScreen>
   List<String> get _keys => _categoryMap.keys.toList();
   List<String> get _labels => _categoryMap.values.toList();
 
-  // Track if we had an error to auto-retry on reconnect
   bool _hadNetworkError = false;
-
-  // Loader Timer
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: _categoryMap.length, vsync: this);
-    // Defer loading to allow context access
     Future.microtask(() => _loadData());
-    // Listen for network reconnection to auto-retry
     NetworkProvider().addListener(_onNetworkChange);
   }
 
@@ -105,23 +95,10 @@ class _StoreScreenState extends State<StoreScreen>
   }
 
   Future<void> _loadData() async {
-    // Start timer to show retry button if loading takes too long
-    // _loadingTimer = Timer(const Duration(seconds: 10), () {
-    //   if (mounted && context.read<TestProvider>().isLoading) {
-    //     setState(() {
-    //       _showRetryButton = true;
-    //     });
-    //   }
-    // });
-
-    // NotificationService().schedulePurchaseReminder(); // Removed excessive scheduling
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (mounted) {
         final offerProvider = context.read<OfferProvider>();
         final cartProvider = context.read<CartProvider>();
-
-        // We only fetch things specific to the store functionality here.
-        // Tests and Purchased Resources are synced by MainScreen globally.
         await Future.wait([
           offerProvider.fetchActiveOffers(),
           cartProvider.fetchCart(),
@@ -144,14 +121,13 @@ class _StoreScreenState extends State<StoreScreen>
     ]);
   }
 
-  // --- ACTIONS ---
-
   Future<void> _addToCart({
     int? testId,
     int? resourceId,
     required double price,
     required String title,
   }) async {
+    final colorScheme = Theme.of(context).colorScheme;
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) {
@@ -174,14 +150,17 @@ class _StoreScreenState extends State<StoreScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Added $title to Cart'),
-            backgroundColor: AppColors.success,
+            backgroundColor: colorScheme.tertiary,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Cart Error: $e')),
+          SnackBar(
+            content: Text('Cart Error: $e'),
+            backgroundColor: colorScheme.error,
+          ),
         );
       }
     }
@@ -191,6 +170,7 @@ class _StoreScreenState extends State<StoreScreen>
     MockTest? test,
     Resource? resource,
   }) async {
+    final colorScheme = Theme.of(context).colorScheme;
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) {
@@ -221,14 +201,17 @@ class _StoreScreenState extends State<StoreScreen>
           SnackBar(
             content:
                 Text('Claimed ${test?.title ?? resource?.title} successfully!'),
-            backgroundColor: AppColors.success,
+            backgroundColor: colorScheme.tertiary,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Claim Error: $e')),
+          SnackBar(
+            content: Text('Claim Error: $e'),
+            backgroundColor: colorScheme.error,
+          ),
         );
       }
     }
@@ -277,20 +260,15 @@ class _StoreScreenState extends State<StoreScreen>
   }
 
   Future<void> _openOrDownloadResource(Resource resource) async {
-    // 1. Define filename
     final filename = 'resource_${resource.id}.pdf';
-
-    // 2. Check if exists
     final isDownloaded = await DownloadService().isFileDownloaded(filename);
 
     if (isDownloaded) {
-      // 3. Open
       final path = await DownloadService().getLocalPath(filename);
       if (mounted) {
         _openPdf(File(path), resource.title);
       }
     } else {
-      // 4. Download
       if (resource.fileUrl == null) {
         if (mounted)
           ScaffoldMessenger.of(context).showSnackBar(
@@ -298,7 +276,6 @@ class _StoreScreenState extends State<StoreScreen>
         return;
       }
 
-      // Show Progress Dialog
       if (!mounted) return;
       showDialog(
         context: context,
@@ -310,7 +287,7 @@ class _StoreScreenState extends State<StoreScreen>
         final path =
             await DownloadService().downloadFile(resource.fileUrl!, filename);
         if (mounted) {
-          Navigator.pop(context); // Close loader
+          Navigator.pop(context);
           _openPdf(File(path), resource.title);
         }
       } catch (e) {
@@ -337,7 +314,6 @@ class _StoreScreenState extends State<StoreScreen>
 
   void _openTestDetail(MockTest test) {
     final activeOffers = context.read<OfferProvider>().activeOffers;
-    // Check purchase status dynamically
     final isPurchased =
         context.read<TestProvider>().purchasedTests.any((t) => t.id == test.id);
 
@@ -363,8 +339,6 @@ class _StoreScreenState extends State<StoreScreen>
     );
   }
 
-  // --- BUILDERS ---
-
   Widget _buildMockTestsTab(TestProvider provider, OfferProvider offerProvider,
       CartProvider cartProvider,
       {bool isFree = false}) {
@@ -373,11 +347,6 @@ class _StoreScreenState extends State<StoreScreen>
     if (isFree) {
       tests = tests.where((t) => t.price == 0).toList();
     } else {
-      // Show paid tests only in "Mock Tests" tab?
-      // Or show all except free?
-      // Usually "Mock Tests" implies all or paid. Let's show all for now, maybe exclude free if they are in Free Tests?
-      // User requirement says "Free Test" is a category. So maybe exclude free from "Mock Tests"?
-      // Let's keep them in both or exclude. Usually separate is better.
       tests = tests.where((t) => t.price > 0).toList();
     }
 
@@ -388,7 +357,6 @@ class _StoreScreenState extends State<StoreScreen>
           .toList();
     }
 
-    // Sort
     if (_sortOption == 'Price: Low to High') {
       tests.sort((a, b) => a.price.compareTo(b.price));
     } else if (_sortOption == 'Price: High to Low') {
@@ -397,13 +365,9 @@ class _StoreScreenState extends State<StoreScreen>
       tests.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     }
 
-    // Get Purchased IDs
     final purchasedTestIds = provider.purchasedTests.map((t) => t.id).toSet();
-
-    // HIDE PURCHASED TESTS
     tests = tests.where((t) => !purchasedTestIds.contains(t.id)).toList();
 
-    // StoreGrid handles display
     return StoreGrid(
       tests: tests,
       isWide: ResponsiveWrapper.isWide(context),
@@ -412,8 +376,7 @@ class _StoreScreenState extends State<StoreScreen>
           .where((i) => i['test_id'] != null)
           .map((i) => i['test_id'] as int)
           .toSet(),
-      purchasedTestIds:
-          purchasedTestIds, // Pass purchased IDs (though list is filtered, good for safety)
+      purchasedTestIds: purchasedTestIds,
       onBuyTap: (test) => _buyNow(test: test),
       onCartTap: (test) {
         double finalPrice = test.price;
@@ -453,7 +416,7 @@ class _StoreScreenState extends State<StoreScreen>
               resource: item,
               isPurchased: isPurchased,
               onBuyTap: () {
-                Navigator.pop(context); // Close dialog
+                Navigator.pop(context);
                 _buyNow(resource: item);
               },
             ),
@@ -471,7 +434,6 @@ class _StoreScreenState extends State<StoreScreen>
           .toList();
     }
 
-    // HIDE PURCHASED RESOURCES
     resources = resources
         .where((r) => !provider.purchasedResourceIds.contains(r.id))
         .toList();
@@ -485,7 +447,6 @@ class _StoreScreenState extends State<StoreScreen>
           .map((i) => i['resource_id'] as int)
           .toSet(),
       onBuyTap: (r) {
-        // Fallback or for Claim
         if (provider.purchasedResourceIds.contains(r.id)) {
           _openOrDownloadResource(r);
         } else {
@@ -512,20 +473,24 @@ class _StoreScreenState extends State<StoreScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: colorScheme.background,
         elevation: 0,
         centerTitle: false,
+        scrolledUnderElevation: 0,
         title: Padding(
           padding: const EdgeInsets.only(left: AppSpacing.xs),
           child: Text(
             "Store",
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onBackground,
+            ),
           ),
         ),
         actions: [
@@ -535,7 +500,6 @@ class _StoreScreenState extends State<StoreScreen>
       ),
       body: Column(
         children: [
-          // Search Bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: _buildSearchBar(),
@@ -550,30 +514,28 @@ class _StoreScreenState extends State<StoreScreen>
             child: TabBar(
               controller: _tabController,
               isScrollable: true,
-              labelColor: Colors.white,
-              unselectedLabelColor: AppColors.textSecondary,
+              labelColor: colorScheme.onPrimary,
+              unselectedLabelColor: colorScheme.onSurfaceVariant,
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Colors.transparent,
               indicator: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(30),
+                color: colorScheme.primary,
+                borderRadius: BorderRadius.circular(AppRadius.full),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
+                    color: colorScheme.primary.withOpacity(0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              labelPadding:
-                  const EdgeInsets.symmetric(horizontal: 12), // Tighter padding
-              tabAlignment: TabAlignment.start, // Align tabs to start (left)
+              labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+              tabAlignment: TabAlignment.start,
               tabs: _labels.map((t) => Tab(text: t)).toList(),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Tab Content
           Expanded(
             child: Consumer4<TestProvider, OfferProvider, ResourceProvider,
                 CartProvider>(
@@ -586,72 +548,80 @@ class _StoreScreenState extends State<StoreScreen>
                 return TabBarView(
                   controller: _tabController,
                   children: [
-                    // ... Content
-                    RefreshIndicator(
-                      onRefresh: _refreshAll,
-                      child: CustomScrollView(
-                        slivers: [
-                          // Add top padding for content separation
-                          const SliverToBoxAdapter(
-                              child: SizedBox(height: AppSpacing.sm)),
-                          _buildMockTestsTab(
-                              testProvider, offerProvider, cartProvider,
-                              isFree: false),
-                          const SliverToBoxAdapter(
-                              child: SizedBox(height: AppSpacing.xl)),
-                        ],
+                    _buildTabContent(
+                      RefreshIndicator(
+                        onRefresh: _refreshAll,
+                        child: CustomScrollView(
+                          slivers: [
+                            const SliverToBoxAdapter(
+                                child: SizedBox(height: AppSpacing.sm)),
+                            _buildMockTestsTab(
+                                testProvider, offerProvider, cartProvider,
+                                isFree: false),
+                            const SliverToBoxAdapter(
+                                child: SizedBox(height: AppSpacing.xl)),
+                          ],
+                        ),
                       ),
                     ),
-                    RefreshIndicator(
-                      onRefresh: _refreshAll,
-                      child: CustomScrollView(
-                        slivers: [
-                          const SliverToBoxAdapter(
-                              child: SizedBox(height: AppSpacing.sm)),
-                          _buildResourcesTab(
-                              resourceProvider, cartProvider, 'E-Books'),
-                          const SliverToBoxAdapter(
-                              child: SizedBox(height: AppSpacing.xl)),
-                        ],
+                    _buildTabContent(
+                      RefreshIndicator(
+                        onRefresh: _refreshAll,
+                        child: CustomScrollView(
+                          slivers: [
+                            const SliverToBoxAdapter(
+                                child: SizedBox(height: AppSpacing.sm)),
+                            _buildResourcesTab(
+                                resourceProvider, cartProvider, 'E-Books'),
+                            const SliverToBoxAdapter(
+                                child: SizedBox(height: AppSpacing.xl)),
+                          ],
+                        ),
                       ),
                     ),
-                    RefreshIndicator(
-                      onRefresh: _refreshAll,
-                      child: CustomScrollView(
-                        slivers: [
-                          const SliverToBoxAdapter(
-                              child: SizedBox(height: AppSpacing.sm)),
-                          _buildResourcesTab(resourceProvider, cartProvider,
-                              'Study Materials'),
-                          const SliverToBoxAdapter(
-                              child: SizedBox(height: AppSpacing.xl)),
-                        ],
+                    _buildTabContent(
+                      RefreshIndicator(
+                        onRefresh: _refreshAll,
+                        child: CustomScrollView(
+                          slivers: [
+                            const SliverToBoxAdapter(
+                                child: SizedBox(height: AppSpacing.sm)),
+                            _buildResourcesTab(resourceProvider, cartProvider,
+                                'Study Materials'),
+                            const SliverToBoxAdapter(
+                                child: SizedBox(height: AppSpacing.xl)),
+                          ],
+                        ),
                       ),
                     ),
-                    RefreshIndicator(
-                      onRefresh: _refreshAll,
-                      child: CustomScrollView(
-                        slivers: [
-                          const SliverToBoxAdapter(
-                              child: SizedBox(height: AppSpacing.sm)),
-                          _buildResourcesTab(resourceProvider, cartProvider,
-                              'Current Affairs'),
-                          const SliverToBoxAdapter(
-                              child: SizedBox(height: AppSpacing.xl)),
-                        ],
+                    _buildTabContent(
+                      RefreshIndicator(
+                        onRefresh: _refreshAll,
+                        child: CustomScrollView(
+                          slivers: [
+                            const SliverToBoxAdapter(
+                                child: SizedBox(height: AppSpacing.sm)),
+                            _buildResourcesTab(resourceProvider, cartProvider,
+                                'Current Affairs'),
+                            const SliverToBoxAdapter(
+                                child: SizedBox(height: AppSpacing.xl)),
+                          ],
+                        ),
                       ),
                     ),
-                    RefreshIndicator(
-                      onRefresh: _refreshAll,
-                      child: CustomScrollView(
-                        slivers: [
-                          const SliverToBoxAdapter(
-                              child: SizedBox(height: AppSpacing.sm)),
-                          _buildResourcesTab(
-                              resourceProvider, cartProvider, 'PYQs'),
-                          const SliverToBoxAdapter(
-                              child: SizedBox(height: AppSpacing.xl)),
-                        ],
+                    _buildTabContent(
+                      RefreshIndicator(
+                        onRefresh: _refreshAll,
+                        child: CustomScrollView(
+                          slivers: [
+                            const SliverToBoxAdapter(
+                                child: SizedBox(height: AppSpacing.sm)),
+                            _buildResourcesTab(
+                                resourceProvider, cartProvider, 'PYQs'),
+                            const SliverToBoxAdapter(
+                                child: SizedBox(height: AppSpacing.xl)),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -664,20 +634,27 @@ class _StoreScreenState extends State<StoreScreen>
     );
   }
 
+  Widget _buildTabContent(Widget child) {
+    return child;
+  }
+
   Widget _buildSearchBar() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
-      height: 48, // Slightly taller
+      height: 48,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.full),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: colorScheme.shadow.withOpacity(0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
         ],
-        border: Border.all(color: AppColors.neutral200),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
       ),
       child: TextField(
         onChanged: (val) {
@@ -685,21 +662,25 @@ class _StoreScreenState extends State<StoreScreen>
             _searchQuery = val;
           });
         },
-        decoration: const InputDecoration(
+        style:
+            theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface),
+        decoration: InputDecoration(
           hintText: 'Search for tests, books...',
-          hintStyle: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-          prefixIcon: Icon(Icons.search, color: AppColors.primary),
+          hintStyle: TextStyle(
+              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+              fontSize: 14),
+          prefixIcon: Icon(Icons.search_rounded, color: colorScheme.primary),
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
         ),
       ),
     );
   }
 
   Widget _buildCartIcon() {
+    final colorScheme = Theme.of(context).colorScheme;
     return IconButton(
-      icon: const Icon(Icons.shopping_cart_outlined,
-          color: AppColors.textPrimary),
+      icon: Icon(Icons.shopping_cart_outlined, color: colorScheme.onBackground),
       onPressed: () {
         Navigator.push(
           context,

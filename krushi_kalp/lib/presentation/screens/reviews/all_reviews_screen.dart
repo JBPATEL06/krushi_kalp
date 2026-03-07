@@ -127,7 +127,13 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
           : _reviews.isEmpty
               ? const Center(child: Text("No reviews found."))
               : ListView.builder(
-                  padding: const EdgeInsets.all(AppSpacing.md),
+                  padding: EdgeInsets.only(
+                    left: AppSpacing.md,
+                    right: AppSpacing.md,
+                    top: AppSpacing.md,
+                    bottom:
+                        AppSpacing.md + MediaQuery.of(context).padding.bottom,
+                  ),
                   itemCount: _reviews.length,
                   itemBuilder: (context, index) {
                     final review = _reviews[index];

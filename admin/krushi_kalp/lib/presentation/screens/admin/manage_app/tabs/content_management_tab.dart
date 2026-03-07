@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../../data/services/app_config_service.dart';
+import 'package:krushi_kalp_admin/core/theme/app_spacing.dart';
+import '../../../../utils/ui_helpers.dart';
 
 class ContentManagementTab extends StatefulWidget {
   const ContentManagementTab({super.key});
@@ -55,13 +57,17 @@ class _ContentManagementTabState extends State<ContentManagementTab> {
         'email': _emailController.text,
         'telegram': _telegramController.text,
       });
-      if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text("Contact Info Saved")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Contact Info Saved")),
+        );
+      }
     } catch (e) {
-      if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e")),
+        );
+      }
     }
   }
 
@@ -71,13 +77,17 @@ class _ContentManagementTabState extends State<ContentManagementTab> {
         'privacy_policy': _privacyController.text,
         'terms': _termsController.text,
       });
-      if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text("Legal URLs Saved")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Legal URLs Saved")),
+        );
+      }
     } catch (e) {
-      if (mounted)
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e")),
+        );
+      }
     }
   }
 
@@ -85,57 +95,82 @@ class _ContentManagementTabState extends State<ContentManagementTab> {
   Widget build(BuildContext context) {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _buildSectionHeader("Contact Information"),
-        _buildTextField(
-            "WhatsApp Number", _whatsappController, TextInputType.phone),
-        _buildTextField(
-            "Support Email", _emailController, TextInputType.emailAddress),
-        _buildTextField(
-            "Telegram Channel Link", _telegramController, TextInputType.url),
-        const SizedBox(height: 10),
-        ElevatedButton(
-            onPressed: _saveContactInfo,
-            child: const Text("Save Contact Info")),
-        const Divider(height: 40),
-        _buildSectionHeader("Legal Documents"),
-        _buildTextField(
-            "Privacy Policy URL", _privacyController, TextInputType.url),
-        _buildTextField(
-            "Terms & Conditions URL", _termsController, TextInputType.url),
-        const SizedBox(height: 10),
-        ElevatedButton(
-            onPressed: _saveLegalUrls, child: const Text("Save Legal Config")),
-      ],
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16, top: 8),
-      child: Text(title,
-          style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.blueGrey)),
-    );
-  }
-
-  Widget _buildTextField(
-      String label, TextEditingController controller, TextInputType type) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
-        controller: controller,
-        keyboardType: type,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 800),
+        child: ListView(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          children: [
+            _buildSectionHeader(context, "CONTACT INFORMATION"),
+            const SizedBox(height: AppSpacing.md),
+            _buildTextField(context, "WhatsApp Number", _whatsappController,
+                TextInputType.phone, Icons.phone_android_rounded),
+            const SizedBox(height: AppSpacing.md),
+            _buildTextField(context, "Support Email", _emailController,
+                TextInputType.emailAddress, Icons.alternate_email_rounded),
+            const SizedBox(height: AppSpacing.md),
+            _buildTextField(context, "Telegram Channel Link",
+                _telegramController, TextInputType.url, Icons.send_rounded),
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton.icon(
+              onPressed: _saveContactInfo,
+              icon: const Icon(Icons.save_rounded),
+              label: const Text("Save Contact Info"),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(double.infinity, 54),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xxl),
+            _buildSectionHeader(context, "LEGAL DOCUMENTS"),
+            const SizedBox(height: AppSpacing.md),
+            _buildTextField(context, "Privacy Policy URL", _privacyController,
+                TextInputType.url, Icons.privacy_tip_rounded),
+            const SizedBox(height: AppSpacing.md),
+            _buildTextField(context, "Terms & Conditions URL", _termsController,
+                TextInputType.url, Icons.gavel_rounded),
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton.icon(
+              onPressed: _saveLegalUrls,
+              icon: const Icon(Icons.save_rounded),
+              label: const Text("Save Legal Config"),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(double.infinity, 54),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Text(
+      title,
+      style: theme.textTheme.labelSmall?.copyWith(
+        fontWeight: FontWeight.w800,
+        color: colorScheme.onSurfaceVariant,
+        letterSpacing: 1.5,
+      ),
+    );
+  }
+
+  Widget _buildTextField(BuildContext context, String label,
+      TextEditingController controller, TextInputType type, IconData icon) {
+    return TextField(
+      controller: controller,
+      keyboardType: type,
+      decoration: getPremiumInputDecoration(
+        context,
+        labelText: label,
+        prefixIcon: Icon(icon),
       ),
     );
   }

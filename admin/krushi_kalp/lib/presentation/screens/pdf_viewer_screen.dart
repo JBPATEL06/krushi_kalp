@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:krushi_kalp_admin/core/theme/app_spacing.dart';
 
 class PdfViewerScreen extends StatefulWidget {
   final File file;
@@ -26,13 +28,29 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
         title: Text(widget.title),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
-        actions: [],
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share_rounded),
+            onPressed: () async {
+              final xFile = XFile(widget.file.path,
+                  name: '${widget.title}.pdf', mimeType: 'application/pdf');
+              await Share.shareXFiles([xFile], text: 'PDF: ${widget.title}');
+            },
+            tooltip: 'Share/Download PDF',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Stack(
         children: <Widget>[
@@ -46,10 +64,10 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
             defaultPage: currentPage!,
             fitPolicy: FitPolicy.WIDTH,
             preventLinkNavigation: false,
-            password: widget.password, // Pass the password here
+            password: widget.password,
             onRender: (pages) {
               setState(() {
-                pages = pages;
+                this.pages = pages;
                 isReady = true;
               });
             },
@@ -78,15 +96,25 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
               });
             },
           ),
-          errorMessage.isEmpty
-              ? !isReady
-                  ? const Center(
-                      child: CircularProgressIndicator(),
-                    )
-                  : Container()
-              : Center(
-                  child: Text(errorMessage),
-                )
+          if (errorMessage.isEmpty)
+            if (!isReady)
+              Center(
+                child: CircularProgressIndicator(color: colorScheme.primary),
+              )
+            else
+              const SizedBox.shrink()
+          else
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Text(
+                  errorMessage,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: colorScheme.error),
+                ),
+              ),
+            )
         ],
       ),
     );

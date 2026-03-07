@@ -154,7 +154,12 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
               await _fetchUserResults();
             },
             child: ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.lg),
+              padding: EdgeInsets.only(
+                left: AppSpacing.lg,
+                right: AppSpacing.lg,
+                top: AppSpacing.lg,
+                bottom: AppSpacing.lg + MediaQuery.of(context).padding.bottom,
+              ),
               physics: const AlwaysScrollableScrollPhysics(),
               itemCount: tests.length,
               itemBuilder: (context, index) {

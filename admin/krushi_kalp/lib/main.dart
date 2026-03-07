@@ -19,7 +19,7 @@ import 'package:firebase_core/firebase_core.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
+  await dotenv.load();
   await Firebase.initializeApp(); // Initialize Firebase
 
   // Initialize Supabase
@@ -53,6 +53,8 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Krushi kalp',
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       builder: (context, child) => NetworkAwareWrapper(
         child: SafeArea(
           child: ResponsiveWrapper(child: child!),

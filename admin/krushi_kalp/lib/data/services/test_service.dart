@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/question.dart';
+import '../../core/utils/db_error_helper.dart';
 import 'cart_service.dart'; // NEW
 
 class TestService {
@@ -136,16 +137,9 @@ class TestService {
       }
 
       await _supabase.from('mock_tests').delete().eq('test_id', testId);
-    } on PostgrestException catch (e) {
-      if (e.code == '23503') {
-        throw Exception(
-            'Cannot delete this test because it has been purchased by one or more users.');
-      }
-      debugPrint('Error deleting mock test (Postgrest): $e');
-      throw Exception('Failed to delete test: ${e.message}');
     } catch (e) {
       debugPrint('Error deleting mock test: $e');
-      throw Exception('Failed to delete test: $e');
+      throw Exception(DbErrorHelper.translateError(e, itemName: 'mock test'));
     }
   }
 
@@ -155,7 +149,7 @@ class TestService {
       await _supabase.from('mock_tests').update(updates).eq('test_id', testId);
     } catch (e) {
       debugPrint('Error updating mock test: $e');
-      throw Exception('Failed to update test: $e');
+      throw Exception(DbErrorHelper.translateError(e, itemName: 'mock test'));
     }
   }
 

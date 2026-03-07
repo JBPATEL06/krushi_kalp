@@ -543,7 +543,9 @@ class _DownloadsScreenState extends State<DownloadsScreen>
                         },
                       ),
 
-                    SizedBox(height: context.h(AppSpacing.huge)),
+                    SizedBox(
+                        height: context.h(AppSpacing.huge) +
+                            MediaQuery.of(context).padding.bottom),
                   ],
                 ),
               ),

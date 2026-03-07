@@ -609,9 +609,11 @@ class _CartScreenState extends State<CartScreen> {
                               discountAmount: _calculateTotalDiscount(
                                 cartItems,
                               ),
-                              couponCode: null, // Logic moved global
+                              couponCode: null,
                             ),
-                            const SizedBox(height: 24),
+                            SizedBox(
+                                height:
+                                    24 + MediaQuery.of(context).padding.bottom),
                           ],
                         );
                       },

@@ -43,73 +43,68 @@ class AdminService {
   }
 
   /// Streams aggregated stats for the Analysis Page
+  /// Optimized to avoid streaming entire large tables and minimal data transfer.
   static Stream<Map<String, dynamic>> streamDashboardStats() {
-    // 1. Mock Tests Stream
-    final testsStream =
-        _supabase.from('mock_tests').stream(primaryKey: ['test_id']);
+    return Stream.periodic(const Duration(seconds: 30))
+        .startWith(null)
+        .asyncMap((_) async {
+      try {
+        final List<Future<dynamic>> futures = [
+          _supabase.from('mock_tests').count(CountOption.exact),
+          _supabase.from('resources').count(CountOption.exact),
+          _supabase.from('users').count(CountOption.exact),
+          _supabase
+              .from('orders')
+              .select('total_amount')
+              .eq('status', 'SUCCESS'),
+          _supabase
+              .from('offers')
+              .count(CountOption.exact)
+              .eq('is_active', true),
+          _supabase.from('order_items').count(CountOption.exact),
+          _supabase
+              .from('order_items')
+              .count(CountOption.exact)
+              .not('test_id', 'is', null),
+          _supabase
+              .from('order_items')
+              .count(CountOption.exact)
+              .not('resource_id', 'is', null),
+        ];
 
-    // 2. Resources Stream
-    final resourcesStream =
-        _supabase.from('resources').stream(primaryKey: ['id']);
+        final results = await Future.wait(futures);
 
-    // 3. Users Stream
-    final usersStream = _supabase.from('users').stream(primaryKey: ['id']);
+        final testSalesCount = results[6] as int;
+        final resourceSalesCount = results[7] as int;
 
-    // 4. Orders Stream (Success Only)
-    final ordersStream = _supabase
-        .from('orders')
-        .stream(primaryKey: ['order_id']).eq('status', 'SUCCESS');
+        // Calculate Revenue (Still requires fetching rows to sum, unless RPC is used)
+        final ordersList = results[3] as List;
+        final double revenue = ordersList.fold(
+            0.0, (sum, item) => sum + (item['total_amount'] as num).toDouble());
 
-    // 5. Active Offers Stream
-    final offersStream = _supabase
-        .from('offers')
-        .stream(primaryKey: ['offer_id']).eq('is_active', true);
-
-    // 6. Order Items Stream
-    final itemsStream =
-        _supabase.from('order_items').stream(primaryKey: ['item_id']);
-
-    return CombineLatestStream.list([
-      testsStream,
-      resourcesStream,
-      usersStream,
-      ordersStream,
-      offersStream,
-      itemsStream,
-    ]).map((data) {
-      final tests = data[0];
-      final resources = data[1];
-      final users = data[2];
-      final orders = data[3];
-      final offers = data[4];
-      final allItems = data[5];
-
-      // Get successful order IDs
-      final successOrderIds = orders.map((o) => o['order_id']).toSet();
-
-      // Filter items that belong to successful orders
-      final successItems =
-          allItems.where((item) => successOrderIds.contains(item['order_id']));
-
-      final testSalesCount =
-          successItems.where((item) => item['test_id'] != null).length;
-      final resourceSalesCount =
-          successItems.where((item) => item['resource_id'] != null).length;
-
-      // Calculate Revenue
-      final double revenue = orders.fold(
-          0.0, (sum, item) => sum + (item['total_amount'] as num).toDouble());
-
-      return {
-        'totalTests': tests.length,
-        'totalResources': resources.length,
-        'totalUsers': users.length,
-        'totalPurchased': orders.length,
-        'testSales': testSalesCount,
-        'resourceSales': resourceSalesCount,
-        'revenue': revenue,
-        'activeOffers': offers.length,
-      };
+        return {
+          'totalTests': results[0] as int,
+          'totalResources': results[1] as int,
+          'totalUsers': results[2] as int,
+          'totalPurchased': ordersList.length,
+          'testSales': testSalesCount,
+          'resourceSales': resourceSalesCount,
+          'revenue': revenue,
+          'activeOffers': results[4] as int,
+        };
+      } catch (e) {
+        debugPrint('AdminService: Error in streamDashboardStats: $e');
+        return {
+          'totalTests': 0,
+          'totalResources': 0,
+          'totalUsers': 0,
+          'totalPurchased': 0,
+          'testSales': 0,
+          'resourceSales': 0,
+          'revenue': 0.0,
+          'activeOffers': 0,
+        };
+      }
     });
   }
 
@@ -162,123 +157,114 @@ class AdminService {
   }
 
   /// Streams top performing users (Requires fetching results + tests + users)
-  /// Note: Complex joins in Realtime are not supported directly.
-  /// We will stream Results and fetch related data efficiently.
-  /// For "Top Users", we need: Results -> join MockTest (total_marks) & User.
+  /// Optimized to poll every 60 seconds instead of streaming entire table.
   static Stream<List<Map<String, dynamic>>> streamTopUsers() {
-    return _supabase
-        .from('results')
-        .stream(primaryKey: ['result_id']).asyncMap((results) async {
-      if (results.isEmpty) return [];
+    return Stream.periodic(const Duration(seconds: 60))
+        .startWith(null)
+        .asyncMap((_) async {
+      try {
+        // Fetch top 100 recent results to calculate rankings (don't fetch entire table)
+        final results = await _supabase
+            .from('results')
+            .select('user_id, test_id, score_obtained')
+            .order('attempt_date', ascending: false)
+            .limit(100);
 
-      // We need to fetch Users and MockTests to act as a "Join"
-      // Optimization: Fetch only unique IDs involved in these results
-      final userIds = results.map((r) => r['user_id']).toSet().toList();
-      final testIds = results.map((r) => r['test_id']).toSet().toList();
+        if (results.isEmpty) return [];
 
-      // Fetch Users
-      final usersResponse = await _supabase
-          .from('users')
-          .select('id, username, email')
-          .inFilter('id', userIds);
-      final userMap = {for (var u in usersResponse) u['id']: u};
+        final userIds = results.map((r) => r['user_id']).toSet().toList();
+        final testIds = results.map((r) => r['test_id']).toSet().toList();
 
-      // Fetch Tests (for Total Marks)
-      final testsResponse = await _supabase
-          .from('mock_tests')
-          .select('test_id, total_marks')
-          .inFilter('test_id', testIds);
-      final testMap = {for (var t in testsResponse) t['test_id']: t};
+        final usersResponse = await _supabase
+            .from('users')
+            .select('id, username, email')
+            .inFilter('id', userIds);
+        final userMap = {for (var u in usersResponse) u['id']: u};
 
-      final Map<String, Map<String, dynamic>> userStats = {};
+        final testsResponse = await _supabase
+            .from('mock_tests')
+            .select('test_id, total_marks')
+            .inFilter('test_id', testIds);
+        final testMap = {for (var t in testsResponse) t['test_id']: t};
 
-      for (var r in results) {
-        final userId = r['user_id'];
-        final testId = r['test_id'];
-        final user = userMap[userId];
-        final test = testMap[testId];
+        final Map<String, Map<String, dynamic>> userStats = {};
 
-        if (user == null) continue;
+        for (var r in results) {
+          final userId = r['user_id'];
+          final testId = r['test_id'];
+          final user = userMap[userId];
+          final test = testMap[testId];
 
-        final email = user['email'] ?? 'Unknown';
-        final username = user['username'] ?? 'User';
-        final score = (r['score_obtained'] as num).toDouble();
-        final total =
-            test != null ? (test['total_marks'] as num).toDouble() : 0.0;
+          if (user == null) continue;
 
-        if (!userStats.containsKey(email)) {
-          userStats[email] = {
-            'username': username,
-            'email': email,
-            'totalScore': 0.0,
-            'totalMax': 0.0,
-            'testsTaken': 0,
-          };
+          final email = user['email'] ?? 'Unknown';
+          final username = user['username'] ?? 'User';
+          final score = (r['score_obtained'] as num).toDouble();
+          final total =
+              test != null ? (test['total_marks'] as num).toDouble() : 0.0;
+
+          if (!userStats.containsKey(email)) {
+            userStats[email] = {
+              'username': username,
+              'email': email,
+              'totalScore': 0.0,
+              'totalMax': 0.0,
+              'testsTaken': 0,
+            };
+          }
+          userStats[email]!['totalScore'] += score;
+          userStats[email]!['totalMax'] += total;
+          userStats[email]!['testsTaken'] += 1;
         }
-        userStats[email]!['totalScore'] += score;
-        userStats[email]!['totalMax'] += total;
-        userStats[email]!['testsTaken'] += 1;
+
+        final List<Map<String, dynamic>> sortedUsers =
+            userStats.values.toList();
+        sortedUsers.sort((a, b) {
+          double pctA =
+              a['totalMax'] > 0 ? (a['totalScore'] / a['totalMax']) : 0;
+          double pctB =
+              b['totalMax'] > 0 ? (b['totalScore'] / b['totalMax']) : 0;
+          return pctB.compareTo(pctA);
+        });
+
+        return sortedUsers.take(10).toList();
+      } catch (e) {
+        debugPrint('AdminService: Error in streamTopUsers: $e');
+        return [];
       }
-
-      final List<Map<String, dynamic>> sortedUsers = userStats.values.toList();
-      sortedUsers.sort((a, b) {
-        double pctA = a['totalMax'] > 0 ? (a['totalScore'] / a['totalMax']) : 0;
-        double pctB = b['totalMax'] > 0 ? (b['totalScore'] / b['totalMax']) : 0;
-        return pctB.compareTo(pctA);
-      });
-
-      return sortedUsers.take(10).toList();
     });
   }
 
   /// Streams top performing tests (based on sales)
-  /// Listens to ORDERS stream (safer) then fetches items.
-  /// Streams top performing tests (based on sales)
-  /// Listens to ORDERS stream (safer) then fetches items.
-  /// Streams top performing tests (based on sales)
-  /// LISTENS TO ORDER_ITEMS DIRECTLY (Simpler Logic)
+  /// Optimized to poll every 60 seconds.
   static Stream<List<Map<String, dynamic>>> streamTopTests() {
-    return _supabase
-        .from('order_items')
-        .stream(primaryKey: ['item_id']).asyncMap((items) async {
-      debugPrint(
-          'AdminService: StreamTopTests: Received ${items.length} items from stream.');
-
-      if (items.isEmpty) return [];
-
-      // 1. Aggregate Sales by Test ID
-      final Map<int, int> testSalesCount = {};
-
-      for (var item in items) {
-        final tId = item['test_id'];
-        // Handle potential string/int types
-        int? id;
-        if (tId is int)
-          id = tId;
-        else if (tId is String) id = int.tryParse(tId);
-
-        if (id != null) {
-          testSalesCount[id] = (testSalesCount[id] ?? 0) + 1;
-        }
-      }
-
-      if (testSalesCount.isEmpty) {
-        debugPrint(
-            'AdminService: StreamTopTests: No valid Test IDs found in items.');
-        return [];
-      }
-
-      // 2. Identify Top 3 Test IDs
-      final sortedIDs = testSalesCount.keys.toList()
-        ..sort((a, b) => testSalesCount[b]!.compareTo(testSalesCount[a]!));
-
-      final top3IDs = sortedIDs.take(3).toList();
-      debugPrint('AdminService: StreamTopTests: Top 3 Test IDs: $top3IDs');
-
-      if (top3IDs.isEmpty) return [];
-
-      // 3. Fetch Test Details for Top 3
+    return Stream.periodic(const Duration(seconds: 60))
+        .startWith(null)
+        .asyncMap((_) async {
       try {
+        // Fetch recent 200 items to calculate top tests (much faster than entire table)
+        final items = await _supabase
+            .from('order_items')
+            .select('test_id')
+            .not('test_id', 'is', null)
+            .limit(200);
+
+        if (items.isEmpty) return [];
+
+        final Map<int, int> testSalesCount = {};
+        for (var item in items) {
+          final id = item['test_id'] as int?;
+          if (id != null) {
+            testSalesCount[id] = (testSalesCount[id] ?? 0) + 1;
+          }
+        }
+
+        final sortedIDs = testSalesCount.keys.toList()
+          ..sort((a, b) => testSalesCount[b]!.compareTo(testSalesCount[a]!));
+
+        final top3IDs = sortedIDs.take(3).toList();
+        if (top3IDs.isEmpty) return [];
+
         final testsResponse = await _supabase
             .from('mock_tests')
             .select('test_id, title, category, price')
@@ -289,11 +275,7 @@ class AdminService {
 
         for (var id in top3IDs) {
           final test = testMap[id];
-          if (test == null) {
-            debugPrint(
-                'AdminService: StreamTopTests: Warning - Test $id not found in DB.');
-            continue;
-          }
+          if (test == null) continue;
 
           result.add({
             'id': id,
@@ -304,10 +286,6 @@ class AdminService {
           });
         }
 
-        // Ensure result respects the sales order (map verification)
-        result.sort((a, b) => b['sales'].compareTo(a['sales']));
-
-        // 4. Add Image URL
         for (var t in result) {
           final testId = t['id'];
           try {
@@ -316,16 +294,13 @@ class AdminService {
                 .createSignedUrl('mock_test_cover/$testId.jpg', 60 * 60);
             t['image_url'] = signedUrl;
           } catch (e) {
-            debugPrint(
-                'AdminService: Could not generate signed URL for Test $testId: $e');
             t['image_url'] = null;
           }
         }
 
         return result;
       } catch (e) {
-        debugPrint(
-            'AdminService: StreamTopTests: Error fetching mock_tests details: $e');
+        debugPrint('AdminService: Error in streamTopTests: $e');
         return [];
       }
     });
@@ -449,37 +424,26 @@ class AdminService {
     }
   }
 
-  /// Streams all successful orders with user details (Manual Join)
+  /// Streams all successful orders
+  /// Optimized to poll every 60 seconds and limit to 50 most recent.
   static Stream<List<Map<String, dynamic>>> streamAllOrders() {
-    return _supabase
-        .from('orders')
-        .stream(primaryKey: ['order_id'])
-        .eq('status', 'SUCCESS')
-        .order('created_at', ascending: false)
-        .asyncMap((orders) async {
-          if (orders.isEmpty) return [];
+    return Stream.periodic(const Duration(seconds: 60))
+        .startWith(null)
+        .asyncMap((_) async {
+      try {
+        final orders = await _supabase
+            .from('orders')
+            .select('*, users(username, email)')
+            .eq('status', 'SUCCESS')
+            .order('created_at', ascending: false)
+            .limit(50);
 
-          final userIds = orders.map((o) => o['user_id']).toSet().toList();
-          if (userIds.isEmpty) {
-            return orders; // Should not happen if orders not empty
-          }
-
-          try {
-            final users = await _supabase
-                .from('users')
-                .select('id, email, username')
-                .inFilter('id', userIds);
-            final userMap = {for (var u in users) u['id']: u};
-
-            return orders.map((o) {
-              final user = userMap[o['user_id']];
-              return {...o, 'users': user};
-            }).toList();
-          } catch (e) {
-            // If fetching users fails, just return orders without user info to avoid stream crash
-            return orders;
-          }
-        });
+        return List<Map<String, dynamic>>.from(orders);
+      } catch (e) {
+        debugPrint('AdminService: Error in streamAllOrders poll: $e');
+        return [];
+      }
+    });
   }
 
   /// Fetches detailed user profile including phone number
@@ -553,43 +517,50 @@ class AdminService {
   }
 
   /// Streams all users with basic info
+  /// Optimized to poll every 60 seconds and limit to 100 most recent.
   static Stream<List<Map<String, dynamic>>> streamUsers() {
-    return _supabase
-        .from('users')
-        .stream(primaryKey: ['id'])
-        .order('created_at', ascending: false)
-        .asyncMap((users) async {
-          if (users.isEmpty) return [];
+    return Stream.periodic(const Duration(seconds: 60))
+        .startWith(null)
+        .asyncMap((_) async {
+      try {
+        final users = await _supabase
+            .from('users')
+            .select('id, email, username, created_at')
+            .order('created_at', ascending: false)
+            .limit(100);
 
-          final userIds = users.map((u) => u['id']).toList();
+        if (users.isEmpty) return [];
 
-          try {
-            // Batch fetch latest results for these users
-            final lastResultsResponse = await _supabase
-                .from('results')
-                .select('user_id, attempt_date')
-                .inFilter('user_id', userIds)
-                .order('attempt_date', ascending: false);
+        final userIds = users.map((u) => u['id']).toList();
 
-            final Map<String, String> lastActiveMap = {};
-            for (var res in lastResultsResponse) {
-              final uid = res['user_id'] as String;
-              if (!lastActiveMap.containsKey(uid)) {
-                lastActiveMap[uid] = res['attempt_date'] as String;
-              }
-            }
+        // Batch fetch latest results for these users
+        final lastResultsResponse = await _supabase
+            .from('results')
+            .select('user_id, attempt_date')
+            .inFilter('user_id', userIds)
+            .order('attempt_date', ascending: false);
 
-            return users.map((user) {
-              return {
-                ...user,
-                'last_active': lastActiveMap[user['id']],
-              };
-            }).toList();
-          } catch (e) {
-            debugPrint('AdminService: Error enriching stream: $e');
-            return users;
+        final Map<String, String> lastActiveMap = {};
+        for (var res in lastResultsResponse) {
+          final uid = res['id'] != null
+              ? res['id'] as String
+              : res['user_id'] as String;
+          if (!lastActiveMap.containsKey(uid)) {
+            lastActiveMap[uid] = res['attempt_date'] as String;
           }
-        });
+        }
+
+        return users.map((user) {
+          return {
+            ...user,
+            'last_active': lastActiveMap[user['id']],
+          };
+        }).toList();
+      } catch (e) {
+        debugPrint('AdminService: Error in streamUsers poll: $e');
+        return [];
+      }
+    });
   }
 
   /// Streams detailed user profile
@@ -703,6 +674,56 @@ class AdminService {
     } catch (e) {
       debugPrint('AdminService: Error fetching Item stats: $e');
       return {'price': 0.0, 'salesCount': 0};
+    }
+  }
+
+  // Get analytic stats for a specific Mock Test Item (Single item level)
+  static Future<Map<String, dynamic>> getMockTestItemStats(int testId) async {
+    try {
+      // 1. Get current price/details
+      final itemRes = await _supabase
+          .from('mock_tests')
+          .select('price')
+          .eq('test_id', testId)
+          .single();
+
+      // 2. Get sales count
+      final salesRes = await _supabase
+          .from('order_items')
+          .select('item_id')
+          .eq('test_id', testId)
+          .count(CountOption.exact);
+
+      return {
+        'price': (itemRes['price'] as num?)?.toDouble() ?? 0.0,
+        'salesCount': salesRes.count,
+      };
+    } catch (e) {
+      debugPrint('AdminService: Error fetching Mock Test stats: $e');
+      return {'price': 0.0, 'salesCount': 0};
+    }
+  }
+
+  /// Fetches a single order with full details (items, offer, user) for the detail dialog.
+  static Future<Map<String, dynamic>?> fetchOrderById(String orderId) async {
+    try {
+      final response = await _supabase.from('orders').select('''
+            *,
+            users:user_id (username, email, phonenumber),
+            offers:offer_id (code, discount_value, discount_type),
+            order_items (
+              price_at_purchase,
+              test_id,
+              resource_id,
+              mock_tests (title),
+              resources (title, type)
+            )
+          ''').eq('order_id', orderId).maybeSingle();
+      return response;
+    } catch (e) {
+      if (NetworkUtils.isNetworkError(e)) return null;
+      debugPrint('AdminService: Error fetching order by ID: $e');
+      return null;
     }
   }
 

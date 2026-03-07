@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../../data/services/admin_service.dart';
-import '../../widgets/common/app_card.dart';
 import '../../widgets/common/network_error_state.dart';
 import 'admin_chat_detail_screen.dart';
+import 'package:krushi_kalp_admin/core/theme/app_spacing.dart';
+import 'package:krushi_kalp_admin/core/theme/app_radius.dart';
+import 'package:krushi_kalp_admin/presentation/widgets/common/modern_card.dart';
 
 class AdminUserDetailsScreen extends StatefulWidget {
   final String userId;
@@ -32,6 +34,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
   }
 
   Future<void> _promoteUser() async {
+    final theme = Theme.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -45,7 +48,10 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+            ),
             child: const Text('Promote'),
           ),
         ],
@@ -85,7 +91,10 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF59E0B), // Amber
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Demote'),
           ),
         ],
@@ -112,12 +121,13 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
   }
 
   Future<void> _deleteUser() async {
+    final theme = Theme.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete User Account?'),
         content: Text(
-            'Are you sure you want to permanently delete ${widget.username}\'s account? This action cannot be undone and will remove all their data.'),
+            'Are you sure you want to permanently delete ${widget.username}\'s account? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -125,7 +135,10 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -134,7 +147,6 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
 
     if (confirm == true) {
       try {
-        // Show loading
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -164,50 +176,65 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
         title: Text(widget.username),
-        backgroundColor: Colors.white,
+        backgroundColor: colorScheme.surface,
+        scrolledUnderElevation: 0,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        titleTextStyle: const TextStyle(
-            color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
+        centerTitle: true,
       ),
-      body: Column(
-        children: [
-          _buildHeaderStream(),
-          TabBar(
-            controller: _tabController,
-            labelColor: Theme.of(context).primaryColor,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Theme.of(context).primaryColor,
-            tabs: const [
-              Tab(text: 'Purchased Tests'),
-              Tab(text: 'Attempted Tests'),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1000),
+          child: Column(
+            children: [
+              _buildHeaderStream(),
+              Container(
+                color: colorScheme.surface,
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: colorScheme.primary,
+                  unselectedLabelColor: colorScheme.onSurfaceVariant,
+                  indicatorColor: colorScheme.primary,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  dividerColor: Colors.transparent,
+                  tabs: const [
+                    Tab(text: 'Purchased Tests'),
+                    Tab(text: 'Attempted Tests'),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildPurchasesStream(),
+                    _buildAttemptsStream(),
+                  ],
+                ),
+              ),
             ],
           ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildPurchasesStream(),
-                _buildAttemptsStream(),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildHeaderStream() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return StreamBuilder<Map<String, dynamic>>(
       stream: AdminService.streamUserDetails(widget.userId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: NetworkErrorState(
               compact: true,
               message: isNetworkError(snapshot.error)
@@ -219,7 +246,8 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
         }
         if (!snapshot.hasData) {
           return const Padding(
-              padding: EdgeInsets.all(20), child: CircularProgressIndicator());
+              padding: EdgeInsets.all(AppSpacing.xxl),
+              child: Center(child: CircularProgressIndicator()));
         }
 
         final user = snapshot.data!;
@@ -237,55 +265,60 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
         }
 
         return Container(
-          padding: const EdgeInsets.all(16),
-          color: Colors.white,
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(AppRadius.lg)),
+          ),
           child: Column(
             children: [
               Row(
                 children: [
                   CircleAvatar(
-                    radius: 30,
-                    backgroundColor:
-                        Theme.of(context).primaryColor.withOpacity(0.1),
+                    radius: 40,
+                    backgroundColor: colorScheme.primary.withOpacity(0.1),
                     child: Text(
                       widget.username.isNotEmpty
                           ? widget.username[0].toUpperCase()
                           : '?',
                       style: TextStyle(
-                          fontSize: 24,
+                          fontSize: 32,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).primaryColor),
+                          color: colorScheme.primary),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.lg),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(email,
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w500)),
-                        const SizedBox(height: 4),
+                            style: theme.textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 6),
                         Row(
                           children: [
-                            const Icon(Icons.phone,
-                                size: 14, color: Colors.grey),
-                            const SizedBox(width: 4),
+                            Icon(Icons.phone_rounded,
+                                size: 16, color: colorScheme.onSurfaceVariant),
+                            const SizedBox(width: 6),
                             Text(phone,
-                                style: const TextStyle(color: Colors.grey)),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant)),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Row(
                           children: [
-                            const Icon(Icons.calendar_today,
-                                size: 14, color: Colors.grey),
-                            const SizedBox(width: 4),
+                            Icon(Icons.calendar_today_rounded,
+                                size: 16, color: colorScheme.onSurfaceVariant),
+                            const SizedBox(width: 6),
                             Text('Joined: $joined',
-                                style: const TextStyle(color: Colors.grey)),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant)),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
@@ -300,15 +333,16 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                                 ),
                               );
                             },
-                            icon:
-                                const Icon(Icons.chat_bubble_outline, size: 18),
+                            icon: const Icon(Icons.chat_bubble_outline_rounded,
+                                size: 18),
                             label: const Text('Message User'),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: Theme.of(context).primaryColor,
+                              foregroundColor: colorScheme.primary,
                               side: BorderSide(
-                                  color: Theme.of(context).primaryColor),
+                                  color: colorScheme.primary.withOpacity(0.5)),
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8)),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.md)),
                             ),
                           ),
                         ),
@@ -317,84 +351,98 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                   ),
                 ],
               ),
+              const SizedBox(height: AppSpacing.lg),
               if (isStudent) ...[
-                const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: _promoteUser,
-                        icon: const Icon(Icons.admin_panel_settings),
+                        icon: const Icon(Icons.admin_panel_settings_rounded),
                         label: const Text('Make Admin'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(context).primaryColor.withOpacity(0.1),
-                          foregroundColor: Theme.of(context).primaryColor,
+                          backgroundColor: colorScheme.primary.withOpacity(0.1),
+                          foregroundColor: colorScheme.primary,
                           elevation: 0,
+                          shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.md)),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: _deleteUser,
-                        icon: const Icon(Icons.person_remove),
+                        icon: const Icon(Icons.person_remove_rounded),
                         label: const Text('Delete User'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red.withOpacity(0.1),
-                          foregroundColor: Colors.red,
+                          backgroundColor: colorScheme.error.withOpacity(0.1),
+                          foregroundColor: colorScheme.error,
                           elevation: 0,
+                          shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.md)),
                         ),
                       ),
                     ),
                   ],
                 ),
               ] else ...[
-                const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 10, horizontal: AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: Colors.green[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green[100]!),
+                    color: const Color(0xFF10B981).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(
+                        color: const Color(0xFF10B981).withOpacity(0.2)),
                   ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.check_circle, color: Colors.green, size: 16),
+                      Icon(Icons.verified_user_rounded,
+                          color: Color(0xFF10B981), size: 18),
                       SizedBox(width: 8),
                       Text('This user is an Admin',
                           style: TextStyle(
-                              color: Colors.green,
+                              color: Color(0xFF10B981),
                               fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 Row(
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: _demoteUser,
-                        icon: const Icon(Icons.arrow_downward),
+                        icon: const Icon(Icons.person_outline_rounded),
                         label: const Text('Make Student'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange.withOpacity(0.1),
-                          foregroundColor: Colors.orange,
+                          backgroundColor:
+                              const Color(0xFFF59E0B).withOpacity(0.1),
+                          foregroundColor: const Color(0xFFF59E0B),
                           elevation: 0,
+                          shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.md)),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: _deleteUser,
-                        icon: const Icon(Icons.person_remove),
+                        icon: const Icon(Icons.person_remove_rounded),
                         label: const Text('Delete Admin'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red.withOpacity(0.1),
-                          foregroundColor: Colors.red,
+                          backgroundColor: colorScheme.error.withOpacity(0.1),
+                          foregroundColor: colorScheme.error,
                           elevation: 0,
+                          shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.md)),
                         ),
                       ),
                     ),
@@ -409,6 +457,9 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
   }
 
   Widget _buildPurchasesStream() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: AdminService.streamUserOrders(widget.userId),
       builder: (context, snapshot) {
@@ -428,27 +479,29 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
         if (orders.isEmpty) return _buildEmptyState('No purchased tests found');
 
         return ListView.separated(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.md),
           itemCount: orders.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
           itemBuilder: (context, index) {
             final order = orders[index];
             final amount = order['total_amount'];
             final date = DateTime.parse(order['created_at']);
 
-            return AppCard(
+            return ModernCard(
               child: ListTile(
-                leading: Icon(Icons.shopping_bag,
-                    color: Theme.of(context).primaryColor),
+                leading: Icon(Icons.shopping_bag_rounded,
+                    color: colorScheme.primary, size: 28),
                 title: Text('Order #${order['order_id']}',
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('${date.day}/${date.month}/${date.year}'),
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+                subtitle: Text('${date.day}/${date.month}/${date.year}',
+                    style: theme.textTheme.bodySmall),
                 trailing: Text(
                   '₹$amount',
                   style: const TextStyle(
-                      color: Colors.green,
+                      color: Color(0xFF10B981),
                       fontWeight: FontWeight.bold,
-                      fontSize: 16),
+                      fontSize: 18),
                 ),
               ),
             );
@@ -459,6 +512,9 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
   }
 
   Widget _buildAttemptsStream() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: AdminService.streamUserResults(widget.userId),
       builder: (context, snapshot) {
@@ -478,9 +534,9 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
         if (results.isEmpty) return _buildEmptyState('No test attempts found');
 
         return ListView.separated(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.md),
           itemCount: results.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
           itemBuilder: (context, index) {
             final result = results[index];
             final testName = result['mock_tests']?['title'] ?? 'Unknown Test';
@@ -488,24 +544,28 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
             final total = result['mock_tests']?['total_marks'] ?? 0;
             final date = DateTime.parse(result['attempt_date']);
 
-            return AppCard(
+            return ModernCard(
               child: ListTile(
-                leading: const Icon(Icons.assignment, color: Colors.orange),
+                leading: const Icon(Icons.assignment_rounded,
+                    color: Color(0xFFF59E0B), size: 28),
                 title: Text(testName,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('${date.day}/${date.month}/${date.year}'),
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+                subtitle: Text('${date.day}/${date.month}/${date.year}',
+                    style: theme.textTheme.bodySmall),
                 trailing: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    color: colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Text(
                     '$score / $total',
                     style: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                        fontWeight: FontWeight.bold),
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13),
                   ),
                 ),
               ),
@@ -517,13 +577,15 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
   }
 
   Widget _buildEmptyState(String message) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.inbox, size: 48, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          Text(message, style: TextStyle(color: Colors.grey[500])),
+          Icon(Icons.inbox_rounded,
+              size: 48, color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+          const SizedBox(height: AppSpacing.md),
+          Text(message, style: TextStyle(color: colorScheme.onSurfaceVariant)),
         ],
       ),
     );

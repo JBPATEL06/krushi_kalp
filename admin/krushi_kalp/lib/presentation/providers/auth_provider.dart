@@ -61,7 +61,8 @@ class AuthProvider extends ChangeNotifier {
           _currentUser = session?.user;
           if (event == AuthChangeEvent.signedIn) {
             await _fetchUserRole();
-            await _initSessionMonitoring(); // Now enabled
+            // Removed redundant _initSessionMonitoring() call here.
+            // It is already handled by _init() logic or handleAuthSuccess for explicit login.
           } else if (event == AuthChangeEvent.signedOut) {
             _userRole = null;
             _currentUser = null;
@@ -144,6 +145,11 @@ class AuthProvider extends ChangeNotifier {
             event: PostgresChangeEvent.update,
             schema: 'public',
             table: 'users',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'id',
+              value: _currentUser!.id,
+            ),
             callback: (payload) {
               debugPrint(
                   'AuthProvider: Realtime Payload Received: ${payload.toString()}');

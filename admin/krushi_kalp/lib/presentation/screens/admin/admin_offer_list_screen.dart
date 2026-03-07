@@ -3,6 +3,8 @@ import '../../../../domain/models/offer.dart';
 import '../../../../data/services/offer_service.dart';
 import '../../widgets/common/network_error_state.dart';
 import 'admin_offer_manage_screen.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_radius.dart';
 
 class AdminOfferListScreen extends StatefulWidget {
   final bool showOnlyActive;
@@ -13,22 +15,19 @@ class AdminOfferListScreen extends StatefulWidget {
 }
 
 class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
-  // Stream Management
   Stream<List<Offer>>? _offersStream;
-  int _streamId = 0; // To force rebuild
+  int _streamId = 0;
 
-  // Selection
   bool _isSelectionMode = false;
   final Set<int> _selectedIds = {};
 
-  bool _showActiveOnly = false; // Local filter
-  bool _sortByNewest = false; // Sort filter
-  String _filterType = 'ALL'; // 'ALL', 'COUPON', 'SALE'
-  String _searchQuery = ''; // Search query
+  bool _showActiveOnly = false;
+  bool _sortByNewest = false;
+  String _filterType = 'ALL';
+  String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
-  // Loading State
-  int? _updatingOfferId; // ID of offer currently being toggled
+  int? _updatingOfferId;
 
   @override
   void initState() {
@@ -51,6 +50,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
   }
 
   Future<void> _delete(int id) async {
+    final theme = Theme.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -63,7 +63,8 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text('Delete',
+                style: TextStyle(color: theme.colorScheme.error)),
           ),
         ],
       ),
@@ -76,27 +77,24 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
           if (result == 'ARCHIVED') {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text(
-                    'Offer is in use. It has been DEACTIVATED (Archived) instead.'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 4),
+                content:
+                    Text('Offer is in use. It has been DEACTIVATED instead.'),
+                backgroundColor: Color(0xFFF59E0B),
               ),
             );
-            // Refresh to show updated status
             _refreshOffers();
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Offer deleted successfully.'),
-                backgroundColor: Colors.green,
-              ),
+              const SnackBar(content: Text('Offer deleted successfully.')),
             );
           }
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+            SnackBar(
+                content: Text('Error: $e'),
+                backgroundColor: theme.colorScheme.error),
           );
         }
       }
@@ -104,30 +102,18 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
   }
 
   Future<void> _toggleStatus(Offer offer, bool newStatus) async {
-    setState(() {
-      _updatingOfferId = offer.id;
-    });
-
+    setState(() => _updatingOfferId = offer.id);
     try {
-      // Construct updated offer
       final updatedOffer = offer.copyWith(isActive: newStatus);
-
       await OfferService.updateOffer(updatedOffer);
-
-      // Force refresh since Realtime might be disabled
       _refreshOffers();
     } finally {
-      if (mounted) {
-        setState(() {
-          _updatingOfferId = null;
-        });
-      }
+      if (mounted) setState(() => _updatingOfferId = null);
     }
   }
 
   Future<void> _bulkDeactivate(List<Offer> allOffers) async {
     if (_selectedIds.isEmpty) return;
-
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -141,7 +127,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Deactivate All',
-                style: TextStyle(color: Colors.orange)),
+                style: TextStyle(color: Color(0xFFF59E0B))),
           ),
         ],
       ),
@@ -149,12 +135,9 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
 
     if (confirm == true) {
       for (var id in _selectedIds) {
-        // Find offer in current list
         try {
           final offer = allOffers.firstWhere((o) => o.id == id);
-          if (offer.isActive) {
-            await _toggleStatus(offer, false);
-          }
+          if (offer.isActive) await _toggleStatus(offer, false);
         } catch (_) {}
       }
       setState(() {
@@ -166,8 +149,6 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
 
   List<Offer> _filterOffers(List<Offer> offers) {
     var filtered = List<Offer>.from(offers);
-
-    // 1. Search
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       filtered = filtered
@@ -176,409 +157,396 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
               (o.title.toLowerCase().contains(q)))
           .toList();
     }
-
-    // 2. Filter Active
-    if (_showActiveOnly) {
-      filtered = filtered.where((o) => o.isActive).toList();
-    }
-
-    // 3. Filter Type (Coupon vs Sale)
-    if (_filterType == 'COUPON') {
+    if (_showActiveOnly) filtered = filtered.where((o) => o.isActive).toList();
+    if (_filterType == 'COUPON')
       filtered = filtered.where((o) => !o.isSale).toList();
-    } else if (_filterType == 'SALE') {
+    else if (_filterType == 'SALE')
       filtered = filtered.where((o) => o.isSale).toList();
-    }
-
-    // 4. Sort
-    if (_sortByNewest) {
-      filtered.sort((a, b) => b.id.compareTo(a.id));
-    }
-
+    if (_sortByNewest) filtered.sort((a, b) => b.id.compareTo(a.id));
     return filtered;
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
         title: _isSelectionMode
             ? Text('${_selectedIds.length} Selected')
-            : const Text('Manage Offers',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold, color: Colors.black)),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+            : const Text('Manage Offers'),
         leading: _isSelectionMode
             ? IconButton(
-                icon: const Icon(Icons.close),
+                icon: const Icon(Icons.close_rounded),
                 onPressed: () => setState(() {
-                      _selectedIds.clear();
-                      _isSelectionMode = false;
-                    }))
+                  _selectedIds.clear();
+                  _isSelectionMode = false;
+                }),
+              )
             : null,
-        actions: [
-          if (!_isSelectionMode)
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Colors.black),
-              onPressed: _refreshOffers,
-            )
-        ],
       ),
       floatingActionButton: _isSelectionMode
           ? null
-          : FloatingActionButton.extended(
-              backgroundColor: Colors.blue[800],
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text('Create Offer',
-                  style: TextStyle(color: Colors.white)),
+          : FloatingActionButton(
               onPressed: () {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (_) => const AdminOfferManageScreen()));
               },
+              child: const Icon(Icons.add_rounded),
             ),
       body: StreamBuilder<List<Offer>>(
-          key: ValueKey(_streamId), // Force rebuild on refresh
-          stream: _offersStream,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return NetworkErrorState(
-                message: isNetworkError(snapshot.error)
-                    ? 'Unable to load offers. Check your connection.'
-                    : 'Error: ${snapshot.error}',
-                onRetry: _refreshOffers,
-              );
-            }
+        key: ValueKey(_streamId),
+        stream: _offersStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return NetworkErrorState(
+              message: isNetworkError(snapshot.error)
+                  ? 'Unable to load offers.'
+                  : 'Error: ${snapshot.error}',
+              onRetry: _refreshOffers,
+            );
+          }
 
-            final allOffers = snapshot.data ?? [];
-            final displayedOffers = _filterOffers(allOffers);
+          final allOffers = snapshot.data ?? [];
+          final displayedOffers = _filterOffers(allOffers);
 
-            return Column(
-              children: [
-                if (_isSelectionMode && _selectedIds.isNotEmpty)
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: Column(
+                children: [
+                  // Search & Filter Header
                   Container(
-                    width: double.infinity,
-                    color: Colors.orange[50],
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface,
+                      border: Border(
+                          bottom: BorderSide(
+                              color:
+                                  colorScheme.outlineVariant.withOpacity(0.5))),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("${_selectedIds.length} selected"),
-                        TextButton.icon(
-                          icon: const Icon(Icons.block, color: Colors.orange),
-                          label: const Text("Deactivate Selected",
-                              style: TextStyle(color: Colors.orange)),
-                          onPressed: () => _bulkDeactivate(allOffers),
-                        )
+                        TextField(
+                          controller: _searchController,
+                          decoration: const InputDecoration(
+                            hintText: 'Search by code or title...',
+                            prefixIcon: Icon(Icons.search_rounded),
+                          ),
+                          onChanged: (val) =>
+                              setState(() => _searchQuery = val),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Row(
+                          children: [
+                            Text(
+                              "FILTER",
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: colorScheme.onSurfaceVariant,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    _buildFilterChip(
+                                        'All',
+                                        !_showActiveOnly,
+                                        (v) => setState(
+                                            () => _showActiveOnly = false)),
+                                    const SizedBox(width: 8),
+                                    _buildFilterChip(
+                                        'Active Only',
+                                        _showActiveOnly,
+                                        (v) => setState(
+                                            () => _showActiveOnly = true)),
+                                    const SizedBox(width: 8),
+                                    _buildTypeChip(
+                                        'All',
+                                        _filterType == 'ALL',
+                                        () => setState(
+                                            () => _filterType = 'ALL')),
+                                    const SizedBox(width: 8),
+                                    _buildTypeChip(
+                                        'Coupons',
+                                        _filterType == 'COUPON',
+                                        () => setState(
+                                            () => _filterType = 'COUPON')),
+                                    const SizedBox(width: 8),
+                                    _buildTypeChip(
+                                        'Sales',
+                                        _filterType == 'SALE',
+                                        () => setState(
+                                            () => _filterType = 'SALE')),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
 
-                // Filter Toggle
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  color: Colors.white,
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Search offers...',
-                          prefixIcon: const Icon(Icons.search),
-                          filled: true,
-                          fillColor: Colors.grey[100],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
+                  if (_isSelectionMode && _selectedIds.isNotEmpty)
+                    Container(
+                      width: double.infinity,
+                      color: colorScheme.primaryContainer.withOpacity(0.3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg, vertical: 8),
+                      child: Row(
+                        children: [
+                          Text(
+                            "${_selectedIds.length} SELECTED",
+                            style: theme.textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: colorScheme.primary),
                           ),
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 16),
-                        ),
-                        onChanged: (val) {
-                          setState(() {
-                            _searchQuery = val;
-                          });
-                        },
+                          const Spacer(),
+                          TextButton.icon(
+                            icon: const Icon(Icons.block_rounded, size: 14),
+                            label: const Text("DEACTIVATE"),
+                            onPressed: () => _bulkDeactivate(allOffers),
+                          )
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            const Text("Filter:",
-                                style: TextStyle(fontWeight: FontWeight.bold)),
-                            const SizedBox(width: 12),
-                            FilterChip(
-                              label: const Text('All'),
-                              selected: !_showActiveOnly,
-                              onSelected: (v) {
-                                setState(() {
-                                  _showActiveOnly = false;
-                                });
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            FilterChip(
-                              label: const Text('Active Only'),
-                              selected: _showActiveOnly,
-                              onSelected: (v) {
-                                setState(() {
-                                  _showActiveOnly = true;
-                                });
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            FilterChip(
-                              label: const Text('Newest'),
-                              selected: _sortByNewest,
-                              onSelected: (v) {
-                                setState(() {
-                                  _sortByNewest = v;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            const Text("Type:",
-                                style: TextStyle(fontWeight: FontWeight.bold)),
-                            const SizedBox(width: 12),
-                            FilterChip(
-                              label: const Text('All'),
-                              selected: _filterType == 'ALL',
-                              onSelected: (v) =>
-                                  setState(() => _filterType = 'ALL'),
-                            ),
-                            const SizedBox(width: 8),
-                            FilterChip(
-                              label: const Text('Coupons'),
-                              selected: _filterType == 'COUPON',
-                              onSelected: (v) =>
-                                  setState(() => _filterType = 'COUPON'),
-                            ),
-                            const SizedBox(width: 8),
-                            FilterChip(
-                              label: const Text('Sales'),
-                              selected: _filterType == 'SALE',
-                              onSelected: (v) =>
-                                  setState(() => _filterType = 'SALE'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
+
+                  Expanded(
+                    child: displayedOffers.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.builder(
+                            padding: const EdgeInsets.only(bottom: 80),
+                            itemCount: displayedOffers.length,
+                            itemBuilder: (context, index) {
+                              return _buildOfferRow(
+                                  context, displayedOffers[index]);
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildOfferRow(BuildContext context, Offer offer) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isSelected = _selectedIds.contains(offer.id);
+    final isInactive = !offer.isActive;
+
+    return Material(
+      color: isSelected
+          ? colorScheme.primaryContainer.withOpacity(0.1)
+          : Colors.transparent,
+      child: InkWell(
+        onLongPress: () {
+          setState(() {
+            _isSelectionMode = true;
+            _selectedIds.add(offer.id);
+          });
+        },
+        onTap: () {
+          if (_isSelectionMode) {
+            setState(() {
+              if (isSelected)
+                _selectedIds.remove(offer.id);
+              else
+                _selectedIds.add(offer.id);
+              if (_selectedIds.isEmpty) _isSelectionMode = false;
+            });
+          } else {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => AdminOfferManageScreen(offer: offer)));
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: 16),
+          decoration: BoxDecoration(
+            border: Border(
+                bottom: BorderSide(
+                    color: colorScheme.outlineVariant.withOpacity(0.5))),
+          ),
+          child: Row(
+            children: [
+              if (_isSelectionMode)
+                Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: Icon(
+                    isSelected
+                        ? Icons.check_box_rounded
+                        : Icons.check_box_outline_blank_rounded,
+                    color: colorScheme.primary,
+                    size: 20,
                   ),
                 ),
-
-                Expanded(
-                  child: displayedOffers.isEmpty
-                      ? _buildEmptyState()
-                      : ListView.separated(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: displayedOffers.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 16),
-                          itemBuilder: (context, index) {
-                            final offer = displayedOffers[index];
-                            final isExpired = !offer.isActive;
-                            final isSelected = _selectedIds.contains(offer.id);
-
-                            return InkWell(
-                              onLongPress: () {
-                                setState(() {
-                                  _isSelectionMode = true;
-                                  _selectedIds.add(offer.id);
-                                });
-                              },
-                              onTap: () {
-                                if (_isSelectionMode) {
-                                  setState(() {
-                                    if (isSelected) {
-                                      _selectedIds.remove(offer.id);
-                                    } else {
-                                      _selectedIds.add(offer.id);
-                                    }
-                                    if (_selectedIds.isEmpty) {
-                                      _isSelectionMode = false;
-                                    }
-                                  });
-                                } else {
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (_) =>
-                                              AdminOfferManageScreen(
-                                                  offer: offer)));
-                                }
-                              },
-                              borderRadius: BorderRadius.circular(20),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? Colors.blue[50]
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? Colors.blue
-                                        : (isExpired
-                                            ? Colors.grey.withOpacity(0.2)
-                                            : Colors.blue.withOpacity(0.6)),
-                                    width: isSelected ? 2 : 1.5,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.blue.withOpacity(0.08),
-                                      blurRadius: 15,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Row(
-                                    children: [
-                                      if (_isSelectionMode)
-                                        Padding(
-                                            padding: const EdgeInsets.only(
-                                                right: 12),
-                                            child: Icon(
-                                                isSelected
-                                                    ? Icons.check_box
-                                                    : Icons
-                                                        .check_box_outline_blank,
-                                                color: Colors.blue))
-                                      else
-                                        // Icon Badge
-                                        Container(
-                                          width: 50,
-                                          height: 50,
-                                          margin:
-                                              const EdgeInsets.only(right: 16),
-                                          decoration: BoxDecoration(
-                                            color: isExpired
-                                                ? Colors.grey[100]
-                                                : Colors.blue[50],
-                                            borderRadius:
-                                                BorderRadius.circular(14),
-                                          ),
-                                          child: Icon(
-                                            isExpired
-                                                ? Icons.access_time
-                                                : Icons.local_offer_rounded,
-                                            color: isExpired
-                                                ? Colors.grey
-                                                : Colors.blue[600],
-                                            size: 24,
-                                          ),
-                                        ),
-
-                                      // Content
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              offer.code ??
-                                                  'Store Sale', // Handle Null
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                                color: isExpired
-                                                    ? Colors.grey[400]
-                                                    : (offer.code == null
-                                                        ? Colors.green[700]
-                                                        : const Color(
-                                                            0xFF1E293B)),
-                                                decoration: isExpired
-                                                    ? TextDecoration.lineThrough
-                                                    : null,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              offer.title,
-                                              style: const TextStyle(
-                                                color: Color(0xFF64748B),
-                                                fontSize: 13,
-                                                height: 1.4,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Actions
-                                      Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          if (_updatingOfferId == offer.id)
-                                            const SizedBox(
-                                              width: 30,
-                                              height: 30,
-                                              child: CircularProgressIndicator(
-                                                  strokeWidth: 2),
-                                            )
-                                          else
-                                            Switch(
-                                                value: offer.isActive,
-                                                onChanged: (v) =>
-                                                    _toggleStatus(offer, v)),
-                                          IconButton(
-                                            icon: const Icon(
-                                                Icons.delete_outline_rounded,
-                                                color: Colors.redAccent,
-                                                size: 20),
-                                            onPressed: () => _delete(offer.id),
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                          ),
-                                        ],
-                                      )
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+              // Icon
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: isInactive
+                      ? colorScheme.surfaceVariant
+                      : colorScheme.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
-            );
-          }),
+                child: Icon(
+                  offer.isSale
+                      ? Icons.flash_on_rounded
+                      : Icons.local_offer_rounded,
+                  color: isInactive
+                      ? colorScheme.onSurfaceVariant
+                      : colorScheme.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      offer.code ?? 'Flash Sale',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        // Increased from titleMedium
+                        fontWeight: FontWeight.w700,
+                        color: isInactive
+                            ? colorScheme.onSurfaceVariant
+                            : colorScheme.onSurface,
+                        decoration:
+                            isInactive ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      offer.title,
+                      style:
+                          theme.textTheme.bodyMedium // Increased from bodySmall
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Status Toggle
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (_updatingOfferId == offer.id)
+                    const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                  else
+                    SizedBox(
+                      height: 24,
+                      child: Switch(
+                        value: offer.isActive,
+                        activeColor: colorScheme.primary,
+                        onChanged: (v) => _toggleStatus(offer, v),
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                  IconButton(
+                    icon: Icon(Icons.delete_outline_rounded,
+                        color: colorScheme.error.withOpacity(0.4), size: 16),
+                    onPressed: () => _delete(offer.id),
+                    constraints: const BoxConstraints(),
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildEmptyState() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.local_offer_outlined, size: 64, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          Text('No offers created yet.',
-              style: TextStyle(
-                  color: Colors.grey[500],
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500)),
+          Icon(Icons.local_offer_outlined,
+              size: 64, color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+          const SizedBox(height: AppSpacing.md),
+          Text('No offers created yet',
+              style: TextStyle(color: colorScheme.onSurfaceVariant)),
         ],
       ),
+    );
+  }
+
+  Widget _buildFilterChip(
+      String label, bool isSelected, Function(bool) onSelected) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: onSelected,
+      selectedColor: colorScheme.primary.withOpacity(0.1),
+      checkmarkColor: colorScheme.primary,
+      backgroundColor: colorScheme.surface,
+      side: BorderSide(
+          color: isSelected
+              ? colorScheme.primary
+              : colorScheme.outline.withOpacity(0.2)),
+      labelStyle: theme.textTheme.labelSmall?.copyWith(
+        color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md)),
+    );
+  }
+
+  Widget _buildTypeChip(String label, bool isSelected, VoidCallback onTap) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) => onTap(),
+      selectedColor: colorScheme.primary.withOpacity(0.1),
+      backgroundColor: colorScheme.surface,
+      side: BorderSide(
+          color: isSelected
+              ? colorScheme.primary
+              : colorScheme.outline.withOpacity(0.2)),
+      labelStyle: theme.textTheme.labelSmall?.copyWith(
+        color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md)),
     );
   }
 }

@@ -193,7 +193,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.all(context.w(16.0)),
+              padding: EdgeInsets.fromLTRB(
+                context.w(16.0),
+                context.w(16.0),
+                context.w(16.0),
+                context.w(16.0) + MediaQuery.of(context).padding.bottom,
+              ),
               child: Column(
                 children: [
                   CircleAvatar(
@@ -501,7 +506,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       builder: (context) => SafeArea(
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            20,
+            20,
+            20 + MediaQuery.of(context).padding.bottom,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

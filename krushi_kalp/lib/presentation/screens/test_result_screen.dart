@@ -490,90 +490,86 @@ class _TestResultScreenState extends State<TestResultScreen>
                       ),
                     ),
 
-                  SafeArea(
-                    bottom: true,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Discard Button (only if online and resultId exists)
-                        if (!_isOffline && widget.resultId != null)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.lg,
-                              vertical: AppSpacing.sm,
-                            ),
-                            child: _isDiscarding
-                                ? const Center(
-                                    child: Padding(
-                                      padding: EdgeInsets.all(AppSpacing.md),
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  )
-                                : SizedBox(
-                                    width: double.infinity,
-                                    child: TextButton.icon(
-                                      onPressed: _discardResult,
-                                      icon: Icon(Icons.delete_outline,
-                                          color: theme.colorScheme.error),
-                                      label: const Text(
-                                        'Discard This Result',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor:
-                                            theme.colorScheme.error,
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 16),
-                                        backgroundColor: theme.colorScheme.error
-                                            .withValues(alpha: 0.1),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                              AppSpacing.radiusXl),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                          ),
-
-                        // Bottom Button (Back to Home)
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Discard Button (only if online and resultId exists)
+                      if (!_isOffline && widget.resultId != null)
                         Padding(
-                          padding: const EdgeInsets.all(AppSpacing.xl),
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.of(context).pushAndRemoveUntil(
-                                  MaterialPageRoute(
-                                    builder: (context) => const MainScreen(),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.sm,
+                          ),
+                          child: _isDiscarding
+                              ? const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(AppSpacing.md),
+                                    child: CircularProgressIndicator(),
                                   ),
-                                  (route) => false,
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: theme.colorScheme.primary,
-                                foregroundColor: theme.colorScheme.onPrimary,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 18),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                      AppSpacing.radiusXl),
+                                )
+                              : SizedBox(
+                                  width: double.infinity,
+                                  child: TextButton.icon(
+                                    onPressed: _discardResult,
+                                    icon: Icon(Icons.delete_outline,
+                                        color: theme.colorScheme.error),
+                                    label: const Text(
+                                      'Discard This Result',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: theme.colorScheme.error,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 16),
+                                      backgroundColor: theme.colorScheme.error
+                                          .withValues(alpha: 0.1),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                            AppSpacing.radiusXl),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                                elevation: 0,
+                        ),
+
+                      // Bottom Button (Back to Home)
+                      Padding(
+                        padding: const EdgeInsets.all(AppSpacing.xl),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                  builder: (context) => const MainScreen(),
+                                ),
+                                (route) => false,
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.colorScheme.primary,
+                              foregroundColor: theme.colorScheme.onPrimary,
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppSpacing.radiusXl),
                               ),
-                              child: Text(
-                                'Back to Home',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: theme.colorScheme.onPrimary,
-                                ),
+                              elevation: 0,
+                            ),
+                            child: Text(
+                              'Back to Home',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onPrimary,
                               ),
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      SizedBox(height: MediaQuery.of(context).padding.bottom),
+                    ],
                   ),
                 ],
               ),

@@ -5,8 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/services/banner_service.dart';
 import '../../domain/models/home_banner.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart';
 import '../providers/navigation_provider.dart';
 import '../../data/services/app_config_service.dart';
 import 'login_screen.dart';
@@ -35,33 +35,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadUserData();
-    // _loadBanners(); // REMOVED
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TestProvider>().fetchTests();
-      // fetchPurchasedResources is already called by MainScreen
     });
   }
-
-  /*
-  Future<void> _loadBanners() async {
-    if (!mounted) return;
-    setState(() => _isLoadingBanners = true);
-    try {
-      final banners = await BannerService.fetchActiveBanners();
-      if (mounted) {
-        setState(() {
-          _banners = banners;
-          _isLoadingBanners = false;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error loading banners in UI: $e");
-      if (mounted) {
-        setState(() => _isLoadingBanners = false);
-      }
-    }
-  }
-  */
 
   Future<void> _loadUserData() async {
     try {
@@ -87,24 +64,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         centerTitle: true,
         scrolledUnderElevation: 0,
-        shape: const Border(
+        shape: Border(
           bottom: BorderSide(
-            color: AppColors.neutral200,
+            color: colorScheme.outline.withOpacity(0.1),
             width: 1,
           ),
         ),
         leading: Builder(
           builder: (context) => IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.menu_rounded,
-              color: AppColors.neutral900,
+              color: colorScheme.onSurface,
               size: 26,
             ),
             tooltip: 'Menu',
@@ -113,22 +93,22 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         title: Text(
           "Krushi Kalp",
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-                letterSpacing: 0.5,
-              ),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.primary,
+            letterSpacing: 0.5,
+          ),
         ),
         actions: const [
-          SizedBox(
-              width:
-                  48), // Balancing the leading menu button for true centering
+          SizedBox(width: 48),
         ],
       ),
       drawer: _buildDrawer(),
       body: Consumer<TestProvider>(
         builder: (context, provider, child) {
           return RefreshIndicator(
+            color: colorScheme.primary,
+            backgroundColor: colorScheme.surface,
             onRefresh: () async {
               await Future.wait([
                 _loadUserData(),
@@ -148,21 +128,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     child: Text(
                       'Hello, $_userName',
-                      style:
-                          Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.neutral900,
-                              ),
-                    )
-                        .animate()
-                        .fadeIn(duration: 600.ms)
-                        .slideX(begin: -0.2), // Animate Greeting
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.2),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _buildBannerCarousel()
                       .animate()
                       .fadeIn(duration: 800.ms, delay: 200.ms)
-                      .scale(begin: const Offset(0.95, 0.95)), // Animate Banner
+                      .scale(begin: const Offset(0.95, 0.95)),
                   const SizedBox(height: AppSpacing.lg),
                   _buildCategoryGrid(),
                   const SizedBox(height: AppSpacing.xl),
@@ -176,14 +152,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDrawer() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Drawer(
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
+      surfaceTintColor: colorScheme.surfaceTint,
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
+            decoration: BoxDecoration(
+              color: colorScheme.primary,
             ),
             accountName: Text(
               _userName,
@@ -192,34 +172,35 @@ class _HomeScreenState extends State<HomeScreen> {
             accountEmail: Text(_userEmail),
             currentAccountPicture: GestureDetector(
               onTap: () {
-                Navigator.pop(context); // Close drawer
-                context.read<NavigationProvider>().setIndex(4); // Goto Profile
+                Navigator.pop(context);
+                context.read<NavigationProvider>().setIndex(4);
               },
               child: CircleAvatar(
-                backgroundColor: Colors.white,
+                backgroundColor: colorScheme.onPrimary,
                 child: Text(
                   _userName.isNotEmpty ? _userName[0].toUpperCase() : 'A',
-                  style:
-                      const TextStyle(fontSize: 32, color: AppColors.primary),
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
             onDetailsPressed: () {
-              Navigator.pop(context); // Close drawer
-              context.read<NavigationProvider>().setIndex(4); // Goto Profile
+              Navigator.pop(context);
+              context.read<NavigationProvider>().setIndex(4);
             },
           ),
           ListTile(
-            leading:
-                const Icon(Icons.home_outlined, color: AppColors.neutral900),
+            leading: Icon(Icons.home_outlined, color: colorScheme.onSurface),
             title: const Text('Home'),
             onTap: () {
-              Navigator.pop(context); // Close drawer
+              Navigator.pop(context);
             },
           ),
           ListTile(
-            leading: const Icon(Icons.shopping_cart_outlined,
-                color: AppColors.neutral900),
+            leading: Icon(Icons.shopping_cart_outlined,
+                color: colorScheme.onSurface),
             title: const Text('My Cart'),
             onTap: () {
               Navigator.pop(context);
@@ -230,8 +211,8 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.emoji_events_outlined,
-                color: AppColors.neutral900),
+            leading:
+                Icon(Icons.emoji_events_outlined, color: colorScheme.onSurface),
             title: const Text('Test Results'),
             onTap: () {
               Navigator.pop(context);
@@ -242,20 +223,17 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.person_outline_rounded,
-                color: AppColors.neutral900),
+            leading: Icon(Icons.person_outline_rounded,
+                color: colorScheme.onSurface),
             title: const Text('Profile'),
             onTap: () {
               Navigator.pop(context);
-              context
-                  .read<NavigationProvider>()
-                  .setIndex(4); // Navigate to Profile
+              context.read<NavigationProvider>().setIndex(4);
             },
           ),
-          const Divider(),
+          Divider(color: colorScheme.outline.withOpacity(0.1)),
           ListTile(
-            leading:
-                const Icon(Icons.share_outlined, color: AppColors.neutral900),
+            leading: Icon(Icons.share_outlined, color: colorScheme.onSurface),
             title: const Text('Share App'),
             onTap: () {
               Navigator.pop(context);
@@ -264,14 +242,17 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.logout, color: AppColors.error),
-            title:
-                const Text('Logout', style: TextStyle(color: AppColors.error)),
+            leading: Icon(Icons.logout_rounded, color: colorScheme.error),
+            title: Text('Logout', style: TextStyle(color: colorScheme.error)),
             onTap: () async {
               Navigator.pop(context);
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
+                  backgroundColor: colorScheme.surface,
+                  surfaceTintColor: colorScheme.surfaceTint,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg)),
                   title: const Text('Logout'),
                   content: const Text('Are you sure you want to logout?'),
                   actions: [
@@ -281,8 +262,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(context, true),
-                      child: const Text('Logout',
-                          style: TextStyle(color: AppColors.error)),
+                      child: Text('Logout',
+                          style: TextStyle(color: colorScheme.error)),
                     ),
                   ],
                 ),
@@ -310,7 +291,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return StreamBuilder<List<HomeBanner>>(
       stream: BannerService.streamAllBanners(),
       builder: (context, snapshot) {
-        // Loading → show shimmer placeholder (NOT static banner)
         if (snapshot.connectionState == ConnectionState.waiting) {
           return _buildBannerShimmer();
         }
@@ -318,12 +298,10 @@ class _HomeScreenState extends State<HomeScreen> {
         final banners = snapshot.data ?? [];
         final activeBanners = banners.where((b) => b.isActive).toList();
 
-        // Only show static banner when there are literally 0 active banners
         if (activeBanners.isEmpty) {
           return _buildStaticBanner();
         }
 
-        // Hand off to isolated StatefulWidget so rebuilds don't reset the slider
         return _BannerAutoSlider(
           banners: activeBanners,
           autoScroll: AppConfigService.bannerAutoScroll,
@@ -333,52 +311,54 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Shimmer-style loading placeholder shown ONLY while waiting for stream
   Widget _buildBannerShimmer() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       height: 180,
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        color: AppColors.neutral200,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        color: colorScheme.surfaceVariant.withOpacity(0.3),
       ),
-    )
-        .animate(onPlay: (c) => c.repeat())
-        .shimmer(duration: 1200.ms, color: AppColors.neutral100);
+    ).animate(onPlay: (c) => c.repeat()).shimmer(
+        duration: 1200.ms, color: colorScheme.surfaceVariant.withOpacity(0.1));
   }
 
   Widget _buildStaticBanner() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       height: 180,
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: colorScheme.shadow.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: _buildStaticBannerImage(),
       ),
     );
   }
 
   Widget _buildStaticBannerImage() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Image.asset(
       'assets/images/homeBanner.png',
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) {
         return Container(
-          color: AppColors.primary.withOpacity(0.1),
-          child: const Center(
-            child: Icon(Icons.broken_image, color: AppColors.neutral400),
+          color: colorScheme.primary.withOpacity(0.1),
+          child: Center(
+            child: Icon(Icons.broken_image_rounded,
+                color: colorScheme.onSurfaceVariant.withOpacity(0.5), size: 40),
           ),
         );
       },
@@ -398,7 +378,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           CategoryCard(
             title: 'Daily Current Affair',
-            icon: Icons.newspaper,
+            icon: Icons.newspaper_rounded,
             color: Colors.deepOrange,
             onTap: () {
               final provider = context.read<ResourceProvider>();
@@ -419,24 +399,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 context
                     .read<NavigationProvider>()
                     .setStoreCategory('Current Affairs');
-                context.read<NavigationProvider>().setIndex(2); // Store
+                context.read<NavigationProvider>().setIndex(2);
               }
             },
           ),
           CategoryCard(
             title: 'Test Series',
-            icon: Icons.quiz_outlined,
+            icon: Icons.quiz_rounded,
             color: Colors.blue,
             onTap: () {
               final hasPurchased =
                   context.read<TestProvider>().purchasedTests.isNotEmpty;
               if (hasPurchased) {
-                context.read<NavigationProvider>().setIndex(1); // My Tests
+                context.read<NavigationProvider>().setIndex(1);
               } else {
                 context
                     .read<NavigationProvider>()
                     .setStoreCategory('Mock Tests');
-                context.read<NavigationProvider>().setIndex(2); // Store
+                context.read<NavigationProvider>().setIndex(2);
               }
             },
           ),
@@ -461,7 +441,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               } else {
                 context.read<NavigationProvider>().setStoreCategory('E-Books');
-                context.read<NavigationProvider>().setIndex(2); // Store
+                context.read<NavigationProvider>().setIndex(2);
               }
             },
           ),
@@ -488,20 +468,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 context
                     .read<NavigationProvider>()
                     .setStoreCategory('Study Materials');
-                context.read<NavigationProvider>().setIndex(2); // Store
+                context.read<NavigationProvider>().setIndex(2);
               }
             },
           ),
           CategoryCard(
             title: 'Free Material',
-            icon: Icons.card_giftcard,
+            icon: Icons.card_giftcard_rounded,
             color: Colors.amber,
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const FreeContentScreen(),
-                ),
+                    builder: (context) => const FreeContentScreen()),
               );
             },
           ),
@@ -526,23 +505,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               } else {
                 context.read<NavigationProvider>().setStoreCategory('PYQs');
-                context.read<NavigationProvider>().setIndex(2); // Store
+                context.read<NavigationProvider>().setIndex(2);
               }
             },
           ),
         ]
             .animate(interval: 100.ms)
             .fadeIn(duration: 500.ms)
-            .slideY(begin: 0.2, end: 0), // Staggered Animation
+            .slideY(begin: 0.2, end: 0),
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────
-// Isolated banner slider — owns PageController + Timer
-// so StreamBuilder rebuilds never reset position.
-// ─────────────────────────────────────────────────────────────────
 class _BannerAutoSlider extends StatefulWidget {
   final List<HomeBanner> banners;
   final bool autoScroll;
@@ -580,7 +555,7 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOut,
       );
-      if (widget.autoScroll) _startAutoPlay(); // schedule next if still enabled
+      if (widget.autoScroll) _startAutoPlay();
     });
   }
 
@@ -592,6 +567,8 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       children: [
         SizedBox(
@@ -605,30 +582,32 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: colorScheme.shadow.withOpacity(0.08),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   child: CachedNetworkImage(
                     imageUrl: banner.imageUrl,
                     fit: BoxFit.cover,
                     width: double.infinity,
                     placeholder: (context, url) => Container(
-                      color: AppColors.neutral100,
+                      color: colorScheme.surfaceVariant.withOpacity(0.3),
                       child: const Center(child: CircularProgressIndicator()),
                     ),
                     errorWidget: (context, url, error) => Container(
-                      color: AppColors.neutral200,
-                      child: const Center(
-                        child: Icon(Icons.broken_image,
-                            color: AppColors.neutral400, size: 40),
+                      color: colorScheme.surfaceVariant.withOpacity(0.3),
+                      child: Center(
+                        child: Icon(Icons.broken_image_rounded,
+                            color:
+                                colorScheme.onSurfaceVariant.withOpacity(0.5),
+                            size: 40),
                       ),
                     ),
                   ),
@@ -638,7 +617,6 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
           ),
         ),
         const SizedBox(height: 8),
-        // Dot indicators
         if (_banners.length > 1)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -651,8 +629,8 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(4),
                   color: _current == entry.key
-                      ? AppColors.primary
-                      : AppColors.neutral300,
+                      ? colorScheme.primary
+                      : colorScheme.outline.withOpacity(0.3),
                 ),
               );
             }).toList(),

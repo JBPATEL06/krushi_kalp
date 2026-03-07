@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../data/services/review_service.dart';
 import '../../../../domain/models/review.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_spacing.dart';
+import 'package:krushi_kalp_admin/core/theme/app_spacing.dart';
+import 'package:krushi_kalp_admin/core/theme/app_radius.dart';
 import 'package:intl/intl.dart';
 
 class AdminReviewsScreen extends StatefulWidget {
@@ -62,6 +62,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
   }
 
   void _confirmDelete(Review review) {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -78,7 +79,8 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
               Navigator.pop(context);
               _deleteReview(review.id);
             },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style:
+                TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
             child: const Text("Delete"),
           ),
         ],
@@ -88,180 +90,249 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
         title: const Text("Manage Reviews"),
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
       ),
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          // Filter Chips
-          SingleChildScrollView(
-            // Make horizontal scrollable
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              children: [
-                _buildFilterChip('All', 'all'),
-                const SizedBox(width: 8),
-                _buildFilterChip('Mock Tests', 'test'),
-                const SizedBox(width: 8),
-                _buildFilterChip('Resources', 'resource'),
-              ],
-            ),
-          ),
-
-          // List
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _reviews.isEmpty
-                    ? const Center(child: Text("No reviews found"))
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(
-                            AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
-                        itemCount: _reviews.length,
-                        itemBuilder: (context, index) {
-                          final review = _reviews[index];
-                          return Card(
-                            margin:
-                                const EdgeInsets.only(bottom: AppSpacing.md),
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppSpacing.radiusLg),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(AppSpacing.md),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 16,
-                                        backgroundImage:
-                                            review.userAvatarUrl != null
-                                                ? NetworkImage(
-                                                    review.userAvatarUrl!)
-                                                : null,
-                                        backgroundColor:
-                                            AppColors.primary.withOpacity(0.1),
-                                        child: review.userAvatarUrl == null
-                                            ? Text(
-                                                review.userName.isNotEmpty
-                                                    ? review.userName[0]
-                                                        .toUpperCase()
-                                                    : '?',
-                                                style: const TextStyle(
-                                                  color: AppColors.primary,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              )
-                                            : null,
-                                      ),
-                                      const SizedBox(width: AppSpacing.sm),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              review.userName.isEmpty
-                                                  ? 'Unknown User'
-                                                  : review.userName,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                            if (review.itemName != null)
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                    top: 2, bottom: 2),
-                                                child: Text(
-                                                  'for ${review.itemName}',
-                                                  style: const TextStyle(
-                                                    color: AppColors.primary,
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                              ),
-                                            Text(
-                                              DateFormat.yMMMd()
-                                                  .format(review.createdAt),
-                                              style: const TextStyle(
-                                                color: AppColors.textSecondary,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete_outline,
-                                            color: AppColors.error),
-                                        onPressed: () => _confirmDelete(review),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: AppSpacing.sm),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.star_rounded,
-                                          size: 16, color: Color(0xFFFFC107)),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        review.rating.toStringAsFixed(1),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  if (review.reviewText != null &&
-                                      review.reviewText!.isNotEmpty) ...[
-                                    const SizedBox(height: AppSpacing.sm),
-                                    Text(
-                                      review.reviewText!,
-                                      style: const TextStyle(
-                                        color: AppColors.textPrimary,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1000),
+          child: Column(
+            children: [
+              // Filter Row
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  border: Border(
+                      bottom: BorderSide(
+                          color: colorScheme.outlineVariant.withOpacity(0.5))),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      "FILTER",
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: colorScheme.onSurfaceVariant,
+                        letterSpacing: 1.2,
                       ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildFilterChip('All', 'all'),
+                            const SizedBox(width: 8),
+                            _buildFilterChip('Mock Tests', 'test'),
+                            const SizedBox(width: 8),
+                            _buildFilterChip('Resources', 'resource'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // List
+              Expanded(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _reviews.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            itemCount: _reviews.length,
+                            itemBuilder: (context, index) {
+                              return _buildReviewRow(context, _reviews[index]);
+                            },
+                          ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReviewRow(BuildContext context, Review review) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        border: Border(
+            bottom:
+                BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5))),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // User Avatar
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: review.userAvatarUrl != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Image.network(review.userAvatarUrl!,
+                            fit: BoxFit.cover),
+                      )
+                    : Center(
+                        child: Text(
+                          review.userName.isNotEmpty
+                              ? review.userName[0].toUpperCase()
+                              : '?',
+                          style: TextStyle(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18),
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 12),
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          review.userName.isEmpty
+                              ? 'Unknown User'
+                              : review.userName,
+                          style: theme.textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete_outline_rounded,
+                              color: colorScheme.error.withOpacity(0.5),
+                              size: 18),
+                          onPressed: () => _confirmDelete(review),
+                          constraints: const BoxConstraints(),
+                          padding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    ),
+                    if (review.itemName != null)
+                      Text(
+                        'on ${review.itemName}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 10,
+                          letterSpacing: 0.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    const SizedBox(height: 8),
+                    // Rating
+                    Row(
+                      children: [
+                        ...List.generate(5, (index) {
+                          return Icon(
+                            index < review.rating
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            size: 18,
+                            color: const Color(0xFFF59E0B),
+                          );
+                        }),
+                        const SizedBox(width: 8),
+                        Text(
+                          DateFormat.yMMMd().format(review.createdAt),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant
+                                  .withOpacity(0.7)),
+                        ),
+                      ],
+                    ),
+                    if (review.reviewText != null &&
+                        review.reviewText!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        review.reviewText!,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: colorScheme.onSurface.withOpacity(0.8),
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
+  Widget _buildEmptyState() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.rate_review_outlined,
+              size: 64, color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+          const SizedBox(height: AppSpacing.md),
+          Text("No reviews found",
+              style: TextStyle(color: colorScheme.onSurfaceVariant)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFilterChip(String label, String value) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isSelected = _filter == value;
+
     return FilterChip(
       label: Text(label),
       selected: isSelected,
       onSelected: (selected) {
-        if (isSelected) return; // Don't allow deselecting current
+        if (isSelected) return;
         setState(() => _filter = value);
         _loadReviews();
       },
-      selectedColor: AppColors.primary.withOpacity(0.2),
-      checkmarkColor: AppColors.primary,
-      labelStyle: TextStyle(
-        color: isSelected ? AppColors.primary : AppColors.textSecondary,
+      selectedColor: colorScheme.primary.withOpacity(0.1),
+      checkmarkColor: colorScheme.primary,
+      backgroundColor: colorScheme.surface,
+      side: BorderSide(
+        color: isSelected
+            ? colorScheme.primary
+            : colorScheme.outline.withOpacity(0.2),
+        width: isSelected ? 1.5 : 1,
+      ),
+      labelStyle: theme.textTheme.labelLarge?.copyWith(
+        color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md)),
     );
   }
 }

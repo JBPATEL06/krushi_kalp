@@ -1,10 +1,14 @@
-# Krushi Kalp — Project Context
+# Krushi Kalp — Unified Project Context
+
+> **Merged Project** — Single codebase serving both the **User App** (agricultural e-commerce, exam prep) and the **Admin Panel** (content management, monitoring). Role is determined from `users.role` column. `role == 'Admin'` → admin panel. All others → user app.
+
+---
 
 ## What Is This
 
-A Flutter-based **educational e-commerce app** for agricultural/competitive exam preparation in India. Users can browse, purchase, download, and take mock tests. Also supports e-books/resources, reviews, and a chat system. Payments via Razorpay (UPI-only). Backend is Supabase + Firebase (FCM for notifications).
+A Flutter-based **educational e-commerce app** for agricultural/competitive exam preparation in India. Users can browse, purchase, download, and take mock tests. Supports e-books/resources, reviews, and a chat system. Payments via Razorpay (UPI-only). Backend is Supabase + Firebase (FCM for notifications).
 
-There is also an **admin** project at `../admin/krushi_kalp/` that mirrors the same codebase structure but adds admin panel features.
+The **Admin Panel** is built into the same codebase. Admin accounts land on `AdminMainScreen` (sidebar navigation) after login. Regular users land on `MainScreen` (bottom navigation).
 
 ---
 
@@ -20,9 +24,11 @@ There is also an **admin** project at `../admin/krushi_kalp/` that mirrors the s
 | Push Notifications | Firebase Cloud Messaging (FCM) |
 | OTP | MSG91 via Supabase Edge Function (`/functions/v1/otp`) |
 | FCM Edge Function | Supabase Edge Function (`/functions/v1/send-fcm`) |
-| File Storage | Supabase Storage (buckets: `mock_test`, resources) |
+| File Storage | Supabase Storage (buckets: `mock_test`, `resources`) |
 | Environment | `flutter_dotenv` → `.env` file |
 | Encryption | `encrypt` package (AES-256) for session IDs |
+| Crash Reporting | Firebase Crashlytics (user app only) |
+| Excel Upload | `excel` package + custom JSON converters (admin only) |
 
 ---
 
@@ -30,53 +36,44 @@ There is also an **admin** project at `../admin/krushi_kalp/` that mirrors the s
 
 ```
 lib/
-├── core/theme/          # Design tokens (AppColors, AppSpacing, AppTypography, AppTheme)
+├── core/
+│   ├── theme/          # Design tokens (AppColors, AppSpacing, AppTypography, AppTheme, AppRadius, AppMotion)
+│   └── utils/          # db_error_helper.dart (PostgrestException translator)
 ├── data/
-│   ├── repositories/    # mock_repository.dart
-│   ├── services/        # 19 service files (API, auth, payment, download, etc.)
-│   └── sql/             # SQL migration files
+│   ├── repositories/   # mock_repository.dart
+│   ├── services/       # 19 service files (API, auth, payment, download, admin, etc.)
+│   └── sql/            # SQL migration files
 ├── domain/
-│   ├── models/          # 15 data models (MockTest, Resource, Offer, Order, etc.)
-│   └── services/        # pdf_service.dart
+│   ├── models/         # 15 data models (MockTest, Resource, Offer, Order, etc.)
+│   └── services/       # pdf_service.dart
 ├── presentation/
-│   ├── providers/       # 8 providers (Auth, Test, Cart, Resource, Offer, etc.)
-│   ├── screens/         # ~33 screens + store/widgets subfolder
-│   ├── utils/           # exam_helper, navigator_key, etc.
-│   └── widgets/         # Reusable widgets (UniversalItemCard, DownloadActionButton, etc.)
-└── utils/               # price_calculator, network_utils, excel_to_json_converter
+│   ├── providers/      # 9 providers (Auth, Test, Cart, Resource, Offer, Admin, Navigation, Network)
+│   ├── screens/
+│   │   ├── admin/      # All admin screens (AdminMainScreen, dashboard, users, offers, resources, etc.)
+│   │   └── ...         # ~33 user screens (home, store, exam, profile, etc.)
+│   ├── utils/          # exam_helper, navigator_key, etc.
+│   └── widgets/        # Reusable widgets (UniversalItemCard, DownloadActionButton, etc.)
+└── utils/              # price_calculator, network_utils, excel_to_json_converter
 ```
-
-### Key Patterns
-- **No raw values in UI** — use `AppColors`, `AppSpacing`, `AppTypography` tokens
-- **UniversalItemCard** is the standard card widget for all items (tests, resources)
-- **DownloadActionButton** dynamically shows "Download" or "Start"/"Open" based on local file status
-- **PriceCalculator** handles all price/discount/offer logic centrally
-- **ExamHelper** manages the test-start flow (language selection → download check → exam screen)
-- Services use `Supabase.instance.client` directly (no repository abstraction for most)
 
 ---
 
-## Environment Variables (.env)
+## Role-Based Routing
+
+**Entry Point:** `SplashScreen` → checks `AuthProvider.isLoggedIn` + `AuthProvider.userRole`
 
 ```
-SUPABASE_URL=...
-SUPABASE_ANON_KEY=...
-RAZORPAY_KEY_ID=...
+SplashScreen
+├── Not logged in → LoginScreen
+├── Logged in, role == 'Admin'
+│   ├── maintenance mode → MaintenanceScreen (even admin sees it? No — admin bypasses)
+│   └── → AdminMainScreen (sidebar nav: Dashboard, Analytics, Users, Alerts, Manage App)
+└── Logged in, role != 'Admin'
+    ├── maintenance mode → MaintenanceScreen
+    └── → MainScreen (bottom nav: Home, Mocks, Store, Downloads, Profile)
 ```
 
-**NEVER** commit `.env` to git. It's in `.gitignore`.
-
----
-
-## Sensitive Files (NEVER commit these)
-
-These are in `.gitignore` and must stay there:
-
-- `**/service-account.json` — Firebase service account with private keys
-- `**/firebase-service.json` — Firebase credentials
-- `*.env` — Environment variables
-- `**/google-services.json` — Android Firebase config
-- `**/diff_log.txt`, `temp_truth.ts`, `test_deno.ts`, `**/test_auth.js`
+**Login Screen** also routes based on role after successful authentication.
 
 ---
 
@@ -84,20 +81,94 @@ These are in `.gitignore` and must stay there:
 
 | Provider | Responsibility |
 |----------|---------------|
-| `AuthProvider` | Login/logout, Google Sign-In, session monitoring, role checking |
+| `AuthProvider` | Login/logout, Google Sign-In, session monitoring, role checking (`isAdmin`) |
+| `AdminProvider` | Admin panel nav index state (`navIndex`) |
 | `TestProvider` | Fetch all/purchased mock tests, purchase status tracking |
 | `ResourceProvider` | Fetch resources, purchased resources, categories |
 | `CartProvider` | Cart items, add/remove, cart total |
 | `OfferProvider` | Active offers/coupons, sale offers |
-| `NavigationProvider` | Bottom nav index, selected store category |
+| `NavigationProvider` | Bottom nav index (user), selected store category |
 | `NetworkProvider` | Online/offline status |
-| `AdminProvider` | Admin role check |
+
+---
+
+## Admin Panel Screens
+
+Located in `lib/presentation/screens/admin/`:
+
+| Screen | Purpose |
+|--------|---------|
+| `AdminMainScreen` | Sidebar layout: drawer (mobile), rail (tablet), persistent (desktop) |
+| `AdminHomeScreen` | Dashboard stats: revenue, users, tests, resources |
+| `AdminAnalysisScreen` | Revenue analytics charts |
+| `AdminUserListScreen` | All users table with search |
+| `AdminUserDetailsScreen` | User profile, orders, support history |
+| `AdminNotificationScreen` | Broadcast + personal FCM alerts |
+| `AdminOfferListScreen` | Coupon/offer list |
+| `AdminOfferManageScreen` | Create/Edit offer forms |
+| `AdminOrderListScreen` | Transaction monitor (Razorpay orders) |
+| `AdminProfileScreen` | Admin profile card |
+| `AdminReviewsScreen` | Review moderation |
+| `AdminChatListScreen` | Support conversations list |
+| `AdminChatDetailScreen` | Individual chat thread |
+| `MockTestEditScreen` | Edit test metadata (title, price, MRP) |
+| `RevenueDetailsScreen` | Transaction detail popup with items |
+| `ManageAppScreen` | AppConfig tabs (maintenance, flags, banners, legal) |
+| `AdminResourcesDashboard` | Resources section dashboard |
+| `AdminMockTestList` | Mock test list management |
+| `AdminMockTestDetailScreen` | Detail view with PDF actions |
+| `AdminResourceList` | Resource list management |
+| `AdminResourceDetailScreen` | Resource detail with share |
+| `AdminResourceForm` | Create/Edit resource form |
+
+---
+
+## Admin-Specific Capabilities
+
+### 1. Mock Test Engine
+- **Excel Upload**: Admins upload Excel → converted to JSON → pushed to Supabase Storage.
+- **Metadata Management**: Titles, categories, pricing, MRP.
+- **Signed URL Generation**: Access tokens for premium content.
+
+### 2. Configuration Control (`app_config`)
+- **Maintenance Mode**: Toggle global lock + custom message.
+- **Feature Flags**: Enable/Disable reviews, change banner scroll speed.
+- **Contact Info**: WhatsApp, Telegram, Support Email.
+- **Legal**: Privacy Policy and Terms URLs.
+
+### 3. Notification Hub
+- **Broadcasts**: Push to all users.
+- **Personal Alerts**: Push to specific user.
+- **System Integration**: Automated alerts for new tests/sales.
+
+### 4. User & Transaction Monitoring
+- **User Records**: View profiles, roles, support history.
+- **Transactions**: Monitor Razorpay SUCCESS/COMPLETED orders and items.
+- **DbErrorHelper**: Translates `PostgrestException` codes (e.g., 23503) into actionable messages.
+
+---
+
+## User App Screens (Brief)
+
+| Screen | Purpose |
+|--------|---------|
+| `HomeScreen` | Banners, quick navigation, featured tests |
+| `StoreScreen` | All tests + resources, filter by category |
+| `PurchasedTestsScreen` | User's purchased mock tests |
+| `DownloadsScreen` | Downloaded test files |
+| `ProfileScreen` | Account, settings, contact |
+| `ExamScreen` | Active mock test / exam UI |
+| `TestResultScreen` | Score, analysis, time breakdown |
+| `ResourceDetailScreen` | PDF resource detail + purchase |
+| `MockTestDetailScreen` | Test detail + purchase/download |
+| `CartScreen` | Cart management + checkout |
+| `ChatScreen` | User ↔ Admin support chat |
+| `FreeContentScreen` | Free materials browser |
 
 ---
 
 ## Database Tables (Supabase)
 
-Key tables referenced in code:
 - `users` — id, email, username, role, language, phonenumber, session_id
 - `mock_tests` — test_id, title, price, mrp, content_url, total_questions, etc.
 - `resources` — id, title, price, type, file_url, thumbnail_url, category
@@ -124,57 +195,85 @@ Stored in `app_config` table, accessed via `AppConfigService`:
 
 ## Payment Flow
 
-1. User taps "Buy Now" → `DirectCheckoutSheet` opens (or full `CartScreen` → `CheckoutScreen`)
-2. Optional coupon code entry → validated via `OfferService.verifyCoupon()`
-3. Order created in `orders` table via `TestService.createDirectOrder()`
-4. Razorpay opens with amount (UPI-only enabled)
+1. User taps "Buy Now" → `DirectCheckoutSheet` or `CartScreen` → `CheckoutScreen`
+2. Optional coupon code → `OfferService.verifyCoupon()`
+3. Order created via `TestService.createDirectOrder()`
+4. Razorpay opens (UPI-only)
 5. On success → `TestService.checkout()` updates order status to SUCCESS
-6. **Known gap:** No server-side Razorpay signature verification exists yet
+6. **Known gap:** No server-side Razorpay signature verification
 
 ---
 
 ## Download Flow (Mock Tests)
 
-1. User navigates to purchased test → sees `DownloadActionButton`
-2. Button checks `DownloadService().isFileDownloaded(filename, userId: currentUserId)`
+1. User → purchased test → `DownloadActionButton`
+2. Checks `DownloadService().isFileDownloaded(filename, userId: currentUserId)`
 3. Files stored in `getApplicationDocumentsDirectory()/user_{userId}/`
-4. If not downloaded → downloads JSON from Supabase Storage
-5. If downloaded → `ExamHelper.startExam()` → language selection → exam screen
+4. Not downloaded → downloads JSON from Supabase Storage
+5. Downloaded → `ExamHelper.startExam()` → language selection → exam screen
 
 ---
 
-## Known Issues / Technical Debt
+## Environment Variables (.env)
 
-### Audit v2.0 (March 2026) - **NEW**
-- **Architecture**: Tight coupling to Supabase. **Fix**: Implement Repository Pattern.
-- **Security**: Client-side pricing logic. **Fix**: Backend price validation.
-- **Payment Reliability**: No webhooks for Razorpay. **Fix**: Implement Server-side Webhooks.
-- **Performance**: N+1 Signed URL fetching for thumbnails. **Fix**: Batch URL signing + 50min TTL Cache.
-- **Stability**: Missing `dispose()` logic in 8+ providers; double-tap buy race conditions; **Fixed**: Synchronization Gates blocking parallel fetches in `ResourceProvider`.
-- **Garbage Code**: Identified legacy `purchaseMockTest`, `applyCouponToOrder`, and dead `AdminProvider`.
+```
+SUPABASE_URL=...
+SUPABASE_ANON_KEY=...
+RAZORPAY_KEY_ID=...
+```
 
----
-
-## 🚀 Enterprise Refactoring Roadmap
-
-| Phase | Goal | Key Action |
-|---|---|---|
-| **Phase 1** | Stability | Fix Race conditions, Memory leaks, and Dispose logic. |
-| **Phase 2** | Scalability | Standardize Service Patterns (Singletons) & Repositories. |
-| **Phase 3** | Performance | Implement Signed URL Caching & Batching. |
-| **Phase 4** | Security | Setup Razorpay Webhooks (Edge Functions). |
+**NEVER** commit `.env` to git. It's in `.gitignore`.
 
 ---
 
+## Sensitive Files (NEVER commit)
+
+- `**/service-account.json`
+- `**/firebase-service.json`
+- `*.env`
+- `**/google-services.json`
+- `**/diff_log.txt`, `temp_truth.ts`, `test_deno.ts`, `**/test_auth.js`
+
 ---
 
-## Files That Exist But Are Unused (Kept for Future Use)
+## Design System
 
-These files are not imported anywhere currently. Delete or integrate as needed:
-- **Screens:** `checkout_screen`, `my_library_screen`, `network_pdf_viewer_screen`, `test_attempt_screen`
-- **Models:** `feedback_model`, `notification`, `order`, `transaction`, `user`
-- **Services:** `admin_service.dart` (24KB), `view_options_bottom_sheet`, `responsive.dart`
-- **Widgets:** `shimmer_loading`, `custom_text_field`
+### Token Law (Anti-Gravity Rule)
+No raw values in UI. Always use tokens:
+
+```dart
+AppTheme.colors.primary       // Colors
+AppSpacing.md                 // Spacing (8pt grid)
+AppTypography.bodyLarge       // Typography
+AppRadius.md                  // Radius
+AppMotion.normal              // Animation durations
+```
+
+### Edge-to-Edge Navigation / System UI Overlaps
+For premium design, **do not** use `SafeArea(bottom: true)` as a catch-all. It creates boxy "dead zones" above the gesture bar. Instead, achieve a native edge-to-edge look by adding system padding to the bottom of the scrolling content. This ensures background colors bleed to the edge while interactive elements remain protected:
+
+```dart
+padding: EdgeInsets.fromLTRB(
+  AppSpacing.md, // Left
+  AppSpacing.md, // Top
+  AppSpacing.md, // Right
+  AppSpacing.md + MediaQuery.of(context).padding.bottom, // Bottom (Base + System)
+)
+```
+
+### The "Stitch Rule" — Store Card Math
+
+| Property | Rule |
+|---|---|
+| Card dimensions | **92%** screen width, **25%** screen height |
+| Internal split | **40%** Image / **60%** Content (horizontal) |
+| Typography | Title font size = **7%** of card height |
+| Spacing | All padding/margins = **5%** of card dimensions |
+
+### Dual Theme
+- Light: Indigo + Saffron
+- Dark: Forest Sage with Emerald Accent (#2DD4BF)
+- `ThemeMode.system` — auto-detects device setting
 
 ---
 
@@ -195,48 +294,79 @@ flutter clean && flutter pub get && flutter run
 
 ## Git Conventions
 
-- **Main branch** is the primary branch — commit directly
-- Always verify no secrets in staged files before committing
-- `.gitignore` is configured to block all sensitive files
-- `node_modules/` exists under `krushi_kalp/` (for Supabase Edge Functions tooling)
+- **Main branch** — commit directly
+- Always verify no secrets in staged files
+- `.gitignore` blocks all sensitive files
+- `node_modules/` exists under `krushi_kalp/` (Supabase Edge Functions tooling)
 
 ---
 
-## Recent Improvements (Brief)
+## Known Issues / Technical Debt
 
-1.  **Download Sandbox:** Implemented per-user storage (`user_{userId}/`) with an ownership `_manifest.json` for security.
-2.  **Global Network Gate:** A top-level `NetworkAwareWrapper` that intercepts navigation and forces a locked "No Internet" screen.
-3.  **Splash & Launch Polishing:** Sized native/flutter logos (180dp), added dark mode splash, and cut startup delays by 50%.
-4.  **Premium Dual-Theme:** Implemented Material 3 systems (Indigo+Saffron & Forest Sage) with `ThemeMode.system` auto-detection.
-5.  **Initialization Stability:** Moved all setup into `runZonedGuarded` to prevent Zone mismatch crashes.
-6.  **System-Wide SafeArea Audit:** Implemented `SafeArea` at the bottom of all interaction-heavy screens (`Exam`, `Chat`, `Cart`, `DirectCheckout`, `TestResult`) to prevent system navigation bar overlaps.
-7.  **Native PDF Theming:** Added automatic light/dark mode detection and a manual Night Mode toggle to the PDF viewers, leveraging `flutter_pdfview`'s native inversion logic.
-8.  **Timezone Compliance (UTC to Local):** Centralized UTC-to-Local conversion in the `TestResult` model. Improved time formatting with leading zeros for a consistent enterprise-grade feel.
-9.  **Icon Clarity standard:** Updated all profile and setting icons to use `theme.colorScheme.primary` tokens, ensuring high visibility and branding consistency in dark mode.
-10. **UI Polishing:** Resolved double-timer logic in `ExamScreen`, standardized button sizes in `TestResult`, and removed redundant AppBars to maximize content real estate.
-11. **Sync Gate Stabilization:** Refined Synchronization Gates in `ResourceProvider` and `TestProvider` to allow parallel background fetches (e.g., in `MainScreen`) while still preventing redundant UI rebuilds.
-12. **Free Material UI Overhaul:** Created a specialized `FreeItemCard` and redesigned the `FreeContentScreen` with an integrated Search/Filter top bar, animated pills, and surface-consistent backgrounds for a premium feel.
-13. **Real-time Cost Optimization:** Converted the "All Mock Tests" screen from `StreamBuilder` to `FutureBuilder`. This prevents persistent database connections while the user browses the test list, reducing Supabase costs.
-14. **Refresh & Startup Stability:**
-    - Added a **20-second safety timeout** and **parallelized background fetches** to the `HomeScreen` pull-to-refresh logic to prevent "infinite loading" hangs.
-    - Extended the `SplashScreen` parallel initialization timeout to **5 seconds** for more resilient cold starts.
-    - Integrated `RetryHelper` with 10s individual timeouts in `AppConfigService`.
-15. **System Nav & Contact Refinement:** Removed WhatsApp from contact options in `ProfileScreen` and implemented `SafeArea` in the "Contact Us" modal to resolve overlaps with the system navigation/gesture bar.
-16. **Dark Mode Green Accent:** Replaced red/pink accent colors with a vibrant emerald green in Dark Mode (#2DD4BF) for a more cohesive, high-trust agricultural aesthetic.
+### Active
+- **Signal 3 (ANR) Crash** (Admin): Persistent main-thread blocking during startup/dashboard transition. Partially mitigated via lazy loading in `AdminMainScreen`. **Status: Unresolved**
+- **Security**: Client-side pricing logic. **Fix needed**: Backend price validation.
+- **Payment Reliability**: No Razorpay webhooks. **Fix needed**: Server-side webhook Edge Functions.
+- **Performance**: N+1 Signed URL fetching for thumbnails. **Fix needed**: Batch URL signing + 50min TTL Cache.
 
 ---
 
-## The "Stitch Rule" — Store Card Math
+## 🚀 Enterprise Refactoring Roadmap (Post-Merge)
 
-The Store Screen (Tests/Resources) uses a strictly responsive "Stitch Math" layout:
+| Phase | Goal | Key Action |
+|---|---|---|
+| **Phase A** | Stability | Fix Race conditions, Memory leaks, Dispose logic |
+| **Phase B** | Scalability | Standardize Service Patterns (Singletons) & Repositories |
+| **Phase C** | Performance | Signed URL Caching & Batching |
+| **Phase D** | Security | Razorpay Webhooks (Edge Functions) |
 
-| Property | Rule |
-|---|---|
-| Card dimensions | **92%** screen width, **25%** screen height |
-| Internal split | **40%** Image / **60%** Content (horizontal) |
-| Typography | Title font size = **7%** of card height |
-| Spacing | All padding/margins = **5%** of card dimensions |
+---
 
-**Plan:** Replace `UniversalItemCard` in store grids with the new `StoreItemCard` widget to achieve a premium look while preserving all purchase/download logic.
+## Merge Progress Log
 
-<!-- Updated by Gemini Flash on 2026-03-07 at 01:00 AM -->
+| Phase | Description | Status |
+|---|---|---|
+| **Phase 0** | Planning & Documentation | ✅ Complete |
+| **Phase 1** | Foundation — main.dart + AdminProvider + pubspec audit | ⬜ Pending |
+| **Phase 2** | Core Routing — splash_screen + admin route | ⬜ Pending |
+| **Phase 3** | Admin Screen Migration (16+ screens) | ⬜ Pending |
+| **Phase 4** | Admin Service Migration | ⬜ Pending |
+| **Phase 5** | Core/Widget Parity + db_error_helper | ⬜ Pending |
+| **Phase 6** | End-to-End Testing | ⬜ Pending |
+| **Phase 7** | Cleanup + Final CLAUDE.md Update | ⬜ Pending |
+
+---
+
+## Historical Improvements (Brief)
+
+### User App (Pre-Merge)
+1. **Download Sandbox**: Per-user storage (`user_{userId}/`) with `_manifest.json`.
+2. **Global Network Gate**: `NetworkAwareWrapper` intercepts navigation on offline.
+3. **Premium Dual-Theme**: Material 3 (Indigo+Saffron & Forest Sage), `ThemeMode.system`.
+4. **Initialization Stability**: `runZonedGuarded` prevents Zone mismatch crashes.
+5. **System-Wide SafeArea Audit**: `SafeArea` on all interaction-heavy screens.
+6. **Native PDF Theming**: Auto light/dark + manual Night Mode toggle.
+7. **Timezone Compliance**: UTC-to-Local in `TestResult` model, IST display.
+8. **Sync Gate Stabilization**: Parallel background fetches in `ResourceProvider` + `TestProvider`.
+9. **Free Material UI Overhaul**: `FreeItemCard` + animated pills + search bar.
+10. **Real-time Cost Optimization**: `StreamBuilder` → `FutureBuilder` on "All Mock Tests".
+11. **Refresh Safety**: 20s timeout + parallelized HomeScreen pull-to-refresh.
+12. **Dark Mode Green Accent**: Emerald green (#2DD4BF) replaces red in dark mode.
+13. **Splash Screen Redesign**: Premium progress bar, playstore icon, academic branding.
+14. **System Navigation Bar Overlap Audit**: Reactive `MediaQuery` padding applied globally to 35+ screens.
+
+### Admin Panel (Pre-Merge)
+1. **Phase 1**: Core token sync, `ThemeMode.system`, light/dark themes.
+2. **Phase 2**: Token applied to all common widgets (`AppButton`, `AppCard`, etc.).
+3. **Phase 3**: All high-traffic admin screens migrated (Home, Profile, ManageApp).
+4. **Phase 4**: Global theme sweep, package imports standardized, 0 lint errors.
+5. **Phase 5**: Sidebar Navigation + Top App Bar architecture. Row-based Material 3 aesthetic.
+6. **Phase 6**: `fetchOrderById` for rich transaction joins. Interactive detail popups.
+7. **Phase 7**: Premium full-screen detail views for resources + mock tests. PDF sharing.
+8. **Phase 8**: `DbErrorHelper` for friendly PostgrestException translation.
+9. **Phase 9**: Premium splash screen with progress bar. Login logo at `130x130`.
+10. **Global UI Resilience**: System navigation bar overlap audit and fix across all management screens.
+
+---
+
+<!-- Updated by Gemini: System Nav Bar Overlap Audit Complete (35+ screens) — 2026-03-07 -->

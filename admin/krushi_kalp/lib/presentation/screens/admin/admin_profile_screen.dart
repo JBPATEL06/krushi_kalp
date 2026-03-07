@@ -4,16 +4,21 @@ import 'package:provider/provider.dart';
 // import 'package:supabase_flutter/supabase_flutter.dart'; // REMOVED (unused)
 import '../login_screen.dart';
 import 'manage_app/manage_app_screen.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_radius.dart';
 
 class AdminProfileScreen extends StatelessWidget {
   const AdminProfileScreen({super.key});
 
   Future<void> _logout(BuildContext context) async {
+    final colorScheme = Theme.of(context).colorScheme;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Logout'),
         content: const Text('Are you sure you want to logout?'),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -21,7 +26,12 @@ class AdminProfileScreen extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.error,
+              foregroundColor: colorScheme.onError,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md)),
+            ),
             child: const Text('Logout'),
           ),
         ],
@@ -41,18 +51,22 @@ class AdminProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Admin Profile',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+        title: Text('Admin Profile',
+            style: theme.textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold)),
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         centerTitle: true,
       ),
       body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(AppSpacing.xxl),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -71,35 +85,36 @@ class AdminProfileScreen extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 50,
-                        backgroundColor: Colors.blue,
+                        backgroundColor: colorScheme.primaryContainer,
                         backgroundImage:
                             photoUrl != null ? NetworkImage(photoUrl) : null,
                         child: photoUrl == null
-                            ? const Icon(Icons.admin_panel_settings,
-                                size: 50, color: Colors.white)
+                            ? Icon(Icons.admin_panel_settings,
+                                size: 50, color: colorScheme.onPrimaryContainer)
                             : null,
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: AppSpacing.xl),
                       Text(
                         name,
-                        style: const TextStyle(
-                            fontSize: 24, fontWeight: FontWeight.bold),
+                        style: theme.textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center,
                       ),
+                      SizedBox(height: AppSpacing.xs),
                       Text(
                         email,
-                        style:
-                            const TextStyle(fontSize: 16, color: Colors.grey),
+                        style: theme.textTheme.bodyMedium
+                            ?.copyWith(color: colorScheme.onSurfaceVariant),
                         textAlign: TextAlign.center,
                       ),
                     ],
                   );
                 },
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: AppSpacing.xxxl),
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 56,
                 child: ElevatedButton.icon(
                   onPressed: () {
                     Navigator.push(
@@ -111,29 +126,31 @@ class AdminProfileScreen extends StatelessWidget {
                   icon: const Icon(Icons.settings),
                   label: const Text('MANAGE APP'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[50],
-                    foregroundColor: Colors.blue,
+                    backgroundColor:
+                        colorScheme.primaryContainer.withOpacity(0.5),
+                    foregroundColor: colorScheme.primary,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: AppSpacing.lg),
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 56,
                 child: ElevatedButton.icon(
                   onPressed: () => _logout(context),
                   icon: const Icon(Icons.logout),
                   label: const Text('LOGOUT'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[50],
-                    foregroundColor: Colors.red,
+                    backgroundColor:
+                        colorScheme.errorContainer.withOpacity(0.5),
+                    foregroundColor: colorScheme.error,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
                 ),

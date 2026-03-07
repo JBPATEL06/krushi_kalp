@@ -3,9 +3,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../../data/services/banner_service.dart';
 import '../../../../../domain/models/home_banner.dart';
-import '../../../../../core/theme/app_colors.dart';
-import '../../../../../core/theme/app_spacing.dart';
+import 'package:krushi_kalp_admin/core/theme/app_spacing.dart';
 import '../../../../../data/services/app_config_service.dart';
+import '../../../../utils/ui_helpers.dart';
 
 class BannerManagementTab extends StatefulWidget {
   const BannerManagementTab({super.key});
@@ -56,88 +56,55 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
     bool tempAutoScroll = _autoScroll;
     int tempInterval = _interval;
 
-    showDialog(
+    showAppDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      title: "Banner Carousel Settings",
+      content: StatefulBuilder(
+        builder: (context, setDialogState) {
+          final colorScheme = Theme.of(context).colorScheme;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SwitchListTile(
+                title: const Text("Auto Scroll Banners"),
+                subtitle: const Text("Automatically slide through banners"),
+                value: tempAutoScroll,
+                activeColor: colorScheme.primary,
+                onChanged: (val) {
+                  setDialogState(() => tempAutoScroll = val);
+                },
+                contentPadding: EdgeInsets.zero,
               ),
-              title: const Text(
-                "Banner Carousel Settings",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: AppColors.primary,
-                ),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+              SizedBox(height: AppSpacing.sm),
+              Row(
                 children: [
-                  SwitchListTile(
-                    title: const Text("Auto Scroll Banners"),
-                    subtitle: const Text("Automatically slide through banners"),
-                    value: tempAutoScroll,
-                    activeTrackColor:
-                        Colors.black, // Dark switch color like image
-                    onChanged: (val) {
-                      setDialogState(() => tempAutoScroll = val);
-                    },
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Text("Scroll Interval:"),
-                      Expanded(
-                        child: Slider(
-                          value: tempInterval.toDouble(),
-                          min: 3,
-                          max: 60,
-                          divisions: 57,
-                          activeColor: AppColors.neutral400, // Gray slider
-                          inactiveColor: AppColors.neutral200,
-                          label: "$tempInterval s",
-                          onChanged: tempAutoScroll
-                              ? (val) {
-                                  setDialogState(
-                                      () => tempInterval = val.toInt());
-                                }
-                              : null,
-                        ),
-                      ),
-                      Text("$tempInterval s"),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context); // Close dialog
-                        _saveSettings(tempAutoScroll, tempInterval);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusMd),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: const Text("Save Settings"),
+                  const Text("Scroll Interval:"),
+                  Expanded(
+                    child: Slider(
+                      value: tempInterval.toDouble(),
+                      min: 3,
+                      max: 60,
+                      divisions: 57,
+                      activeColor: colorScheme.primary,
+                      inactiveColor: colorScheme.outline.withOpacity(0.3),
+                      label: "$tempInterval s",
+                      onChanged: tempAutoScroll
+                          ? (val) {
+                              setDialogState(() => tempInterval = val.toInt());
+                            }
+                          : null,
                     ),
                   ),
+                  Text("$tempInterval s"),
                 ],
               ),
-            );
-          },
-        );
-      },
+            ],
+          );
+        },
+      ),
+      confirmText: "Save Settings",
+      onConfirm: () => _saveSettings(tempAutoScroll, tempInterval),
     );
   }
 
@@ -223,231 +190,243 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
         TextEditingController(text: banner.priority.toString());
     bool isActive = banner.isActive;
 
-    final confirmed = await showDialog<bool>(
+    await showAppDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text("Edit Banner"),
-          content: Column(
+      title: "Edit Banner",
+      content: StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final colorScheme = Theme.of(ctx).colorScheme;
+          return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: titleController,
-                decoration: const InputDecoration(
+                decoration: getPremiumInputDecoration(
+                  ctx,
                   labelText: 'Title',
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.title_rounded),
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: AppSpacing.md),
               TextField(
                 controller: priorityController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                decoration: getPremiumInputDecoration(
+                  ctx,
                   labelText: 'Priority (higher = shown first)',
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.low_priority_rounded),
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: AppSpacing.sm),
               SwitchListTile(
                 title: const Text("Active"),
                 value: isActive,
+                activeColor: colorScheme.primary,
                 onChanged: (val) => setDialogState(() => isActive = val),
                 contentPadding: EdgeInsets.zero,
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text("Cancel")),
-            ElevatedButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text("Save")),
-          ],
-        ),
+          );
+        },
       ),
+      confirmText: "Save",
+      onConfirm: () async {
+        try {
+          await BannerService.updateBannerMeta(
+            banner.id,
+            title: titleController.text.trim(),
+            priority: int.tryParse(priorityController.text) ?? 0,
+            isActive: isActive,
+          );
+          if (mounted) {
+            ScaffoldMessenger.of(context)
+                .showSnackBar(const SnackBar(content: Text("Banner updated")));
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text("Error: $e")));
+          }
+        }
+      },
     );
-
-    if (confirmed == true) {
-      try {
-        await BannerService.updateBannerMeta(
-          banner.id,
-          title: titleController.text.trim(),
-          priority: int.tryParse(priorityController.text) ?? 0,
-          isActive: isActive,
-        );
-        if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text("Banner updated")));
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text("Error: $e")));
-        }
-      }
-    }
   }
 
   // ─── Delete Banner ───────────────────
   Future<void> _deleteBanner(HomeBanner banner) async {
-    final confirm = await showDialog<bool>(
+    await showAppDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Delete Banner"),
-        content: const Text("Are you sure? This cannot be undone."),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text("Cancel")),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text("Delete", style: TextStyle(color: Colors.red))),
-        ],
-      ),
+      title: "Delete Banner",
+      content: const Text("Are you sure? This cannot be undone."),
+      confirmText: "Delete",
+      isDestructive: true,
+      onConfirm: () async {
+        try {
+          await BannerService.deleteBanner(banner.id, banner.imageUrl);
+          if (mounted) {
+            ScaffoldMessenger.of(context)
+                .showSnackBar(const SnackBar(content: Text("Banner deleted")));
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text("Error: $e")));
+          }
+        }
+      },
     );
-
-    if (confirm == true) {
-      try {
-        await BannerService.deleteBanner(banner.id, banner.imageUrl);
-        if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text("Banner deleted")));
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text("Error: $e")));
-        }
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // ── Upload Bar and Settings Icon ──
-        if (_isUploading) const LinearProgressIndicator(),
-        const SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isUploading ? null : _uploadBanners,
-                  icon: const Icon(Icons.add_photo_alternate_outlined),
-                  label: const Text("Upload Banners"),
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusMd)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              IconButton(
-                onPressed: _showSettingsDialog,
-                icon: const Icon(Icons.settings_outlined,
-                    color: AppColors.primary),
-                tooltip: 'Banner Settings',
-                style: IconButton.styleFrom(
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
-                  minimumSize: const Size(50, 50),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            "Tap a banner to edit details. Use icons to replace image or delete.",
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(color: AppColors.textSecondary),
-          ),
-        ),
-        const SizedBox(height: 8),
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
 
-        // ── Banner List (real-time stream) ──
-        Expanded(
-          child: StreamBuilder<List<HomeBanner>>(
-            stream: BannerService.streamAllBanners(),
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.error_outline,
-                          color: Colors.red, size: 48),
-                      const SizedBox(height: 8),
-                      Text("Error: ${snapshot.error}"),
-                      const SizedBox(height: 4),
-                      const Text(
-                        "Make sure you ran the SQL script to create the banner table.",
-                        textAlign: TextAlign.center,
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1000),
+        child: Column(
+          children: [
+            if (_isUploading)
+              LinearProgressIndicator(color: colorScheme.primary, minHeight: 2),
+            const SizedBox(height: AppSpacing.lg),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: _isUploading ? null : _uploadBanners,
+                      icon: const Icon(Icons.add_photo_alternate_rounded,
+                          size: 20),
+                      label: const Text("Upload Banners"),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                       ),
-                    ],
+                    ),
                   ),
-                );
-              }
-
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              final banners = snapshot.data!;
-
-              if (banners.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.image_not_supported_outlined,
-                          size: 64, color: AppColors.neutral400),
-                      const SizedBox(height: 12),
-                      const Text("No banners yet.",
-                          style: TextStyle(fontSize: 16)),
-                      const SizedBox(height: 4),
-                      Text("Upload banners using the button above.",
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(color: AppColors.textSecondary)),
-                    ],
+                  const SizedBox(width: AppSpacing.md),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: colorScheme.outlineVariant),
+                    ),
+                    child: IconButton(
+                      onPressed: _showSettingsDialog,
+                      icon: Icon(Icons.settings_suggest_rounded,
+                          color: colorScheme.primary),
+                      tooltip: 'Settings',
+                      style: IconButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        minimumSize: const Size(48, 48),
+                      ),
+                    ),
                   ),
-                );
-              }
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Row(
+                children: [
+                  _buildSectionHeader(context, "ACTIVE BANNERS"),
+                  const Spacer(),
+                  Text(
+                    "Tap to edit details",
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
 
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: banners.length,
-                itemBuilder: (context, index) {
-                  final banner = banners[index];
-                  return _BannerCard(
-                    banner: banner,
-                    index: index + 1,
-                    total: banners.length,
-                    onEdit: () => _editBanner(banner),
-                    onReplace: () => _replaceBannerImage(banner),
-                    onDelete: () => _deleteBanner(banner),
+            // ── Banner List (real-time stream) ──
+            Expanded(
+              child: StreamBuilder<List<HomeBanner>>(
+                stream: BannerService.streamAllBanners(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.error_outline_rounded,
+                              color: colorScheme.error, size: 48),
+                          const SizedBox(height: AppSpacing.md),
+                          Text("Error: ${snapshot.error}",
+                              style: theme.textTheme.bodySmall),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final banners = snapshot.data!;
+
+                  if (banners.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.image_not_supported_rounded,
+                              size: 64,
+                              color: colorScheme.onSurfaceVariant
+                                  .withOpacity(0.2)),
+                          const SizedBox(height: AppSpacing.md),
+                          Text("No banners yet",
+                              style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant
+                                      .withOpacity(0.6))),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    itemCount: banners.length,
+                    itemBuilder: (context, index) {
+                      final banner = banners[index];
+                      return _BannerCard(
+                        banner: banner,
+                        index: index + 1,
+                        total: banners.length,
+                        onEdit: () => _editBanner(banner),
+                        onReplace: () => _replaceBannerImage(banner),
+                        onDelete: () => _deleteBanner(banner),
+                      );
+                    },
                   );
                 },
-              );
-            },
-          ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Text(
+      title,
+      style: theme.textTheme.labelSmall?.copyWith(
+        fontWeight: FontWeight.w800,
+        color: colorScheme.onSurfaceVariant,
+        letterSpacing: 1.5,
+      ),
     );
   }
 }
@@ -472,85 +451,92 @@ class _BannerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       clipBehavior: Clip.antiAlias,
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
       child: InkWell(
         onTap: onEdit,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Banner Image ──
             Stack(
               children: [
-                SizedBox(
-                  height: 160,
-                  width: double.infinity,
+                AspectRatio(
+                  aspectRatio: 21 / 9,
                   child: CachedNetworkImage(
                     imageUrl: banner.imageUrl,
                     fit: BoxFit.cover,
                     placeholder: (_, __) => Container(
-                      color: AppColors.neutral100,
-                      child: const Center(child: CircularProgressIndicator()),
+                      color: colorScheme.surfaceVariant.withOpacity(0.2),
+                      child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2)),
                     ),
                     errorWidget: (_, __, ___) => Container(
-                      color: AppColors.neutral200,
-                      child: const Center(
-                        child: Icon(Icons.broken_image,
-                            size: 40, color: AppColors.neutral400),
-                      ),
+                      color: colorScheme.errorContainer.withOpacity(0.2),
+                      child: Icon(Icons.broken_image_rounded,
+                          color: colorScheme.error),
                     ),
                   ),
                 ),
-                // Index badge
                 Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      "#$index of $total",
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12),
-                    ),
-                  ),
-                ),
-                // Active/Inactive badge
-                Positioned(
-                  top: 8,
-                  right: 8,
+                  top: 12,
+                  left: 12,
                   child: Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: banner.isActive ? Colors.green : Colors.grey,
-                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.black.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      banner.isActive ? "Active" : "Inactive",
+                      "#$index / $total",
                       style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 11),
+                          fontSize: 10),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: banner.isActive
+                          ? const Color(0xFF10B981)
+                          : colorScheme.error,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      banner.isActive ? "ACTIVE" : "INACTIVE",
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 10),
                     ),
                   ),
                 ),
               ],
             ),
-
-            // ── Banner Actions ──
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
                   Expanded(
@@ -559,46 +545,77 @@ class _BannerCard extends StatelessWidget {
                       children: [
                         Text(
                           banner.title,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 14),
+                          style: theme.textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w800),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
                         Text(
-                          "Priority: ${banner.priority}",
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(color: AppColors.textSecondary),
+                          "Priority Level: ${banner.priority}",
+                          style: theme.textTheme.labelLarge?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 12),
                         ),
                       ],
                     ),
                   ),
-                  // Replace image button
-                  IconButton(
-                    icon: const Icon(Icons.swap_horiz_rounded,
-                        color: AppColors.primary),
-                    tooltip: "Replace Image",
-                    onPressed: onReplace,
-                  ),
-                  // Edit meta button
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined,
-                        color: AppColors.neutral600),
-                    tooltip: "Edit Details",
-                    onPressed: onEdit,
-                  ),
-                  // Delete button
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    tooltip: "Delete",
-                    onPressed: onDelete,
+                  const SizedBox(width: AppSpacing.md),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildActionIcon(
+                        context,
+                        icon: Icons.image_search_rounded,
+                        onPressed: onReplace,
+                        tooltip: "Replace Image",
+                      ),
+                      const SizedBox(width: 8),
+                      _buildActionIcon(
+                        context,
+                        icon: Icons.edit_rounded,
+                        onPressed: onEdit,
+                        tooltip: "Edit details",
+                      ),
+                      const SizedBox(width: 8),
+                      _buildActionIcon(
+                        context,
+                        icon: Icons.delete_rounded,
+                        onPressed: onDelete,
+                        color: colorScheme.error,
+                        tooltip: "Delete",
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionIcon(
+    BuildContext context, {
+    required IconData icon,
+    required VoidCallback onPressed,
+    Color? color,
+    required String tooltip,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: (color ?? colorScheme.primary).withOpacity(0.08),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color ?? colorScheme.primary, size: 20),
         ),
       ),
     );

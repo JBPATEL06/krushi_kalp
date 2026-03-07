@@ -454,7 +454,12 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
     return RefreshIndicator(
       onRefresh: _fetchData,
       child: ListView.separated(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: EdgeInsets.only(
+          left: AppSpacing.md,
+          right: AppSpacing.md,
+          top: AppSpacing.md,
+          bottom: AppSpacing.md + MediaQuery.of(context).padding.bottom,
+        ),
         itemCount: items.length,
         separatorBuilder: (context, index) =>
             const SizedBox(height: AppSpacing.md),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:krushi_kalp_admin/core/theme/app_spacing.dart';
 import 'package:krushi_kalp_admin/data/services/chat_service.dart';
+import 'package:krushi_kalp_admin/presentation/widgets/common/modern_card.dart';
 import '../../widgets/common/network_error_state.dart';
 import 'admin_chat_detail_screen.dart';
 
@@ -28,18 +30,21 @@ class _AdminChatListScreenState extends State<AdminChatListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: const Text('Inbox',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+        title: const Text('Inbox'),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: colorScheme.surface,
+        scrolledUnderElevation: 0,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.black54),
+            icon: Icon(Icons.refresh_rounded,
+                color: colorScheme.onSurfaceVariant),
             onPressed: _refresh,
           ),
         ],
@@ -67,22 +72,22 @@ class _AdminChatListScreenState extends State<AdminChatListScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.chat_bubble_outline_rounded,
-                      size: 64, color: Colors.grey[300]),
-                  const SizedBox(height: 16),
+                      size: 64,
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+                  const SizedBox(height: AppSpacing.md),
                   Text('No active conversations.',
-                      style: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500)),
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(color: colorScheme.onSurfaceVariant)),
                 ],
               ),
             );
           }
 
           return ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             itemCount: conversations.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            separatorBuilder: (context, index) =>
+                const SizedBox(height: AppSpacing.md),
             itemBuilder: (context, index) {
               final chat = conversations[index];
               final username = chat['username'] ?? 'User';
@@ -90,31 +95,18 @@ class _AdminChatListScreenState extends State<AdminChatListScreen> {
                   ? (username as String)[0].toUpperCase()
                   : '?';
 
-              return Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border:
-                      Border.all(color: Colors.blue.withOpacity(0.4), width: 1),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.blue.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
+              return ModernCard(
+                padding: EdgeInsets.zero,
                 child: ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
                   leading: CircleAvatar(
                     radius: 24,
-                    backgroundColor:
-                        Theme.of(context).primaryColor.withOpacity(0.1),
+                    backgroundColor: colorScheme.primary.withOpacity(0.1),
                     child: Text(
                       firstChar,
                       style: TextStyle(
-                        color: Theme.of(context).primaryColor,
+                        color: colorScheme.primary,
                         fontWeight: FontWeight.w800,
                         fontSize: 18,
                       ),
@@ -122,30 +114,20 @@ class _AdminChatListScreenState extends State<AdminChatListScreen> {
                   ),
                   title: Text(
                     username,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Color(0xFF1E293B),
-                    ),
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 4.0),
                     child: Text(
                       chat['email'] ?? 'No Email',
-                      style: const TextStyle(
-                          color: Color(0xFF64748B),
-                          fontWeight: FontWeight.w500),
+                      style: theme.textTheme.labelSmall
+                          ?.copyWith(color: colorScheme.onSurfaceVariant),
                     ),
                   ),
-                  trailing: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.arrow_forward_ios_rounded,
-                        color: Colors.grey, size: 14),
-                  ),
+                  trailing: Icon(Icons.chevron_right_rounded,
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                      size: 20),
                   onTap: () async {
                     await Navigator.push(
                       context,

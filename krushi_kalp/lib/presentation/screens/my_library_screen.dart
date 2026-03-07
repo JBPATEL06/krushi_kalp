@@ -283,7 +283,12 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView.separated(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: EdgeInsets.only(
+          left: AppSpacing.lg,
+          right: AppSpacing.lg,
+          top: AppSpacing.lg,
+          bottom: AppSpacing.lg + MediaQuery.of(context).padding.bottom,
+        ),
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
         itemBuilder: (context, index) {

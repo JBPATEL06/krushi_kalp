@@ -195,7 +195,13 @@ class _ScoreScreenState extends State<ScoreScreen> {
                             child: AnimationLimiter(
                               child: ListView.separated(
                                 physics: const AlwaysScrollableScrollPhysics(),
-                                padding: const EdgeInsets.all(AppSpacing.lg),
+                                padding: EdgeInsets.only(
+                                  left: AppSpacing.lg,
+                                  right: AppSpacing.lg,
+                                  top: AppSpacing.lg,
+                                  bottom: AppSpacing.lg +
+                                      MediaQuery.of(context).padding.bottom,
+                                ),
                                 itemCount: _results.length,
                                 separatorBuilder: (_, __) =>
                                     const SizedBox(height: AppSpacing.md),

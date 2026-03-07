@@ -8,8 +8,8 @@ import '../../utils/excel_to_json_converter.dart';
 import '../utils/ui_helpers.dart';
 import '../../data/services/test_service.dart';
 import '../../data/services/admin_notification_service.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart';
 
 class MockTestUploadScreen extends StatefulWidget {
   const MockTestUploadScreen({super.key});
@@ -22,7 +22,6 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
-  // Form Fields
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
@@ -31,6 +30,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
   final _totalMarksController = TextEditingController();
   final _negativeMarksController = TextEditingController();
   final _customCategoryController = TextEditingController();
+
   List<String> _categories = ['Other'];
   List<String> _languages = ['English', 'Gujarati'];
   String _selectedCategory = 'Other';
@@ -64,7 +64,6 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
     }
   }
 
-  // Files
   PlatformFile? _coverImage;
   PlatformFile? _excelFile;
   Uint8List? _excelBytes;
@@ -83,8 +82,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
       if (file.size > maxImageSizeBytes) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Image must be less than 200KB')),
-          );
+              const SnackBar(content: Text('Image must be less than 200KB')));
         }
         return;
       }
@@ -114,11 +112,8 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
   Future<void> _uploadMockTest() async {
     if (!_formKey.currentState!.validate()) return;
     if (_coverImage == null || _excelFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select both Cover Image and Excel File'),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Please select both Cover Image and Excel File')));
       return;
     }
 
@@ -149,7 +144,6 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
           .insert(insertData)
           .select('test_id')
           .single();
-
       final int testId = response['test_id'];
 
       const imagePath = 'mock_test_cover/';
@@ -159,30 +153,21 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
         await supabase.storage.from('mock_test').uploadBinary(
               fullPath,
               _imageBytes!,
-              fileOptions: const FileOptions(
-                upsert: true,
-                contentType: 'image/jpeg',
-              ),
+              fileOptions:
+                  const FileOptions(upsert: true, contentType: 'image/jpeg'),
             );
-      }
-
-      if (_excelBytes == null) {
-        throw 'Failed to read Excel file';
       }
 
       final jsonList = ExcelToJsonConverter.convert(_excelBytes!);
       final jsonString = jsonEncode(jsonList);
       final jsonBytes = utf8.encode(jsonString);
-
       final jsonPath = 'mock_test_json_file/$testId.json';
 
       await supabase.storage.from('mock_test').uploadBinary(
             jsonPath,
             jsonBytes,
             fileOptions: const FileOptions(
-              upsert: true,
-              contentType: 'application/json',
-            ),
+                upsert: true, contentType: 'application/json'),
           );
 
       await supabase.from('mock_tests').update({
@@ -201,38 +186,32 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Mock Test Uploaded Successfully!')),
-        );
+            const SnackBar(content: Text('Mock Test Uploaded Successfully!')));
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error: $e'), backgroundColor: AppColors.error),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: Text(
-          'Upload Mock Test',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
+        title: const Text('Upload Mock Test'),
         centerTitle: true,
-        backgroundColor: AppColors.surface,
+        backgroundColor: colorScheme.surface,
+        scrolledUnderElevation: 0,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -241,19 +220,8 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final isWide = constraints.maxWidth > 600;
-                  return Container(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.neutral200.withValues(alpha: 0.5),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
+                  return buildFormCard(
+                    context,
                     child: Form(
                       key: _formKey,
                       child: Column(
@@ -262,34 +230,34 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                           _buildSectionTitle(context, 'Basic Info'),
                           TextFormField(
                             controller: _titleController,
-                            decoration: getPremiumInputDecoration(
-                              context,
-                              labelText: 'Title',
-                              prefixIcon: const Icon(Icons.title),
-                            ),
+                            decoration: getPremiumInputDecoration(context,
+                                labelText: 'Title',
+                                prefixIcon: const Icon(Icons.title_rounded)),
+                            style: theme.textTheme.bodyLarge,
                             validator: (v) => v!.isEmpty ? 'Required' : null,
                           ),
-                          const SizedBox(height: AppSpacing.md),
+                          const SizedBox(height: AppSpacing.lg),
                           TextFormField(
                             controller: _descriptionController,
-                            decoration: getPremiumInputDecoration(
-                              context,
-                              labelText: 'Description',
-                              prefixIcon: const Icon(Icons.description),
-                            ),
+                            decoration: getPremiumInputDecoration(context,
+                                labelText: 'Description',
+                                prefixIcon:
+                                    const Icon(Icons.description_outlined)),
+                            style: theme.textTheme.bodyLarge,
                             maxLines: 3,
                           ),
-                          const SizedBox(height: AppSpacing.md),
+                          const SizedBox(height: AppSpacing.lg),
                           DropdownButtonFormField<String>(
                             value: _selectedCategory,
                             decoration: getPremiumInputDecoration(context,
                                 labelText: 'Category',
-                                prefixIcon: const Icon(Icons.category)),
+                                prefixIcon:
+                                    const Icon(Icons.category_outlined)),
+                            dropdownColor: colorScheme.surface,
+                            style: theme.textTheme.bodyLarge,
                             items: _categories
-                                .map(
-                                  (c) => DropdownMenuItem(
-                                      value: c, child: Text(c)),
-                                )
+                                .map((c) =>
+                                    DropdownMenuItem(value: c, child: Text(c)))
                                 .toList(),
                             onChanged: (v) {
                               setState(() {
@@ -304,30 +272,30 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                               controller: _customCategoryController,
                               decoration: getPremiumInputDecoration(context,
                                   labelText: 'Enter New Category',
-                                  prefixIcon: const Icon(Icons.edit)),
+                                  prefixIcon: const Icon(Icons.edit_rounded)),
                               validator: (v) =>
                                   _isOtherCategory && (v == null || v.isEmpty)
                                       ? 'Required'
                                       : null,
                             ),
                           ],
-                          const SizedBox(height: AppSpacing.md),
+                          const SizedBox(height: AppSpacing.lg),
                           DropdownButtonFormField<String>(
                             value: _selectedLanguage,
                             decoration: getPremiumInputDecoration(context,
                                 labelText: 'Language',
-                                prefixIcon: const Icon(Icons.language)),
+                                prefixIcon: const Icon(Icons.language_rounded)),
+                            dropdownColor: colorScheme.surface,
+                            style: theme.textTheme.bodyLarge,
                             items: _languages
-                                .map(
-                                  (c) => DropdownMenuItem(
-                                      value: c, child: Text(c)),
-                                )
+                                .map((c) =>
+                                    DropdownMenuItem(value: c, child: Text(c)))
                                 .toList(),
                             onChanged: (v) =>
                                 setState(() => _selectedLanguage = v!),
                           ),
                           const SizedBox(height: AppSpacing.xl),
-                          _buildSectionTitle(context, 'Test Details'),
+                          _buildSectionTitle(context, 'Assessment Rules'),
                           if (isWide)
                             Row(
                               children: [
@@ -335,11 +303,11 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                                   child: TextFormField(
                                     controller: _priceController,
                                     decoration: getPremiumInputDecoration(
-                                      context,
-                                      labelText: 'Price',
-                                      prefixIcon:
-                                          const Icon(Icons.currency_rupee),
-                                    ),
+                                        context,
+                                        labelText: 'Price',
+                                        prefixIcon: const Icon(
+                                            Icons.attach_money_rounded)),
+                                    style: theme.textTheme.bodyLarge,
                                     keyboardType: TextInputType.number,
                                     validator: (v) =>
                                         v!.isEmpty ? 'Required' : null,
@@ -350,10 +318,11 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                                   child: TextFormField(
                                     controller: _durationController,
                                     decoration: getPremiumInputDecoration(
-                                      context,
-                                      labelText: 'Duration (mins)',
-                                      prefixIcon: const Icon(Icons.timer),
-                                    ),
+                                        context,
+                                        labelText: 'Duration (mins)',
+                                        prefixIcon:
+                                            const Icon(Icons.timer_outlined)),
+                                    style: theme.textTheme.bodyLarge,
                                     keyboardType: TextInputType.number,
                                   ),
                                 ),
@@ -362,26 +331,25 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                           else ...[
                             TextFormField(
                               controller: _priceController,
-                              decoration: getPremiumInputDecoration(
-                                context,
-                                labelText: 'Price',
-                                prefixIcon: const Icon(Icons.currency_rupee),
-                              ),
+                              decoration: getPremiumInputDecoration(context,
+                                  labelText: 'Price',
+                                  prefixIcon:
+                                      const Icon(Icons.attach_money_rounded)),
+                              style: theme.textTheme.bodyLarge,
                               keyboardType: TextInputType.number,
                               validator: (v) => v!.isEmpty ? 'Required' : null,
                             ),
-                            const SizedBox(height: AppSpacing.md),
+                            const SizedBox(height: AppSpacing.lg),
                             TextFormField(
                               controller: _durationController,
-                              decoration: getPremiumInputDecoration(
-                                context,
-                                labelText: 'Duration (mins)',
-                                prefixIcon: const Icon(Icons.timer),
-                              ),
+                              decoration: getPremiumInputDecoration(context,
+                                  labelText: 'Duration (mins)',
+                                  prefixIcon: const Icon(Icons.timer_outlined)),
+                              style: theme.textTheme.bodyLarge,
                               keyboardType: TextInputType.number,
                             ),
                           ],
-                          const SizedBox(height: AppSpacing.md),
+                          const SizedBox(height: AppSpacing.lg),
                           if (isWide)
                             Row(
                               children: [
@@ -389,10 +357,11 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                                   child: TextFormField(
                                     controller: _totalQuestionsController,
                                     decoration: getPremiumInputDecoration(
-                                      context,
-                                      labelText: 'Total Questions',
-                                      prefixIcon: const Icon(Icons.quiz),
-                                    ),
+                                        context,
+                                        labelText: 'Total Questions',
+                                        prefixIcon:
+                                            const Icon(Icons.quiz_outlined)),
+                                    style: theme.textTheme.bodyLarge,
                                     keyboardType: TextInputType.number,
                                   ),
                                 ),
@@ -401,10 +370,11 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                                   child: TextFormField(
                                     controller: _totalMarksController,
                                     decoration: getPremiumInputDecoration(
-                                      context,
-                                      labelText: 'Total Marks',
-                                      prefixIcon: const Icon(Icons.grade),
-                                    ),
+                                        context,
+                                        labelText: 'Total Marks',
+                                        prefixIcon:
+                                            const Icon(Icons.grade_outlined)),
+                                    style: theme.textTheme.bodyLarge,
                                     keyboardType: TextInputType.number,
                                   ),
                                 ),
@@ -413,120 +383,90 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                           else ...[
                             TextFormField(
                               controller: _totalQuestionsController,
-                              decoration: getPremiumInputDecoration(
-                                context,
-                                labelText: 'Total Questions',
-                                prefixIcon: const Icon(Icons.quiz),
-                              ),
+                              decoration: getPremiumInputDecoration(context,
+                                  labelText: 'Total Questions',
+                                  prefixIcon: const Icon(Icons.quiz_outlined)),
+                              style: theme.textTheme.bodyLarge,
                               keyboardType: TextInputType.number,
                             ),
-                            const SizedBox(height: AppSpacing.md),
+                            const SizedBox(height: AppSpacing.lg),
                             TextFormField(
                               controller: _totalMarksController,
-                              decoration: getPremiumInputDecoration(
-                                context,
-                                labelText: 'Total Marks',
-                                prefixIcon: const Icon(Icons.grade),
-                              ),
+                              decoration: getPremiumInputDecoration(context,
+                                  labelText: 'Total Marks',
+                                  prefixIcon: const Icon(Icons.grade_outlined)),
+                              style: theme.textTheme.bodyLarge,
                               keyboardType: TextInputType.number,
                             ),
                           ],
+                          const SizedBox(height: AppSpacing.md),
                           SwitchListTile(
-                            title: Text('Negative Marking',
-                                style: Theme.of(context).textTheme.bodyLarge),
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text('Negative Marking'),
+                            subtitle:
+                                const Text('Apply panelty for wrong answers'),
                             value: _isNegativeMarking,
+                            activeColor: colorScheme.primary,
                             onChanged: (v) =>
                                 setState(() => _isNegativeMarking = v),
-                            activeColor: AppColors.primary,
                           ),
                           if (_isNegativeMarking)
-                            TextFormField(
-                              controller: _negativeMarksController,
-                              decoration: getPremiumInputDecoration(
-                                context,
-                                labelText:
-                                    'Negative Marks per Wrong Answer (e.g. 0.25)',
-                                prefixIcon:
-                                    const Icon(Icons.remove_circle_outline),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.only(top: AppSpacing.md),
+                              child: TextFormField(
+                                controller: _negativeMarksController,
+                                decoration: getPremiumInputDecoration(context,
+                                    labelText:
+                                        'Negative Marks per Wrong Answer',
+                                    prefixIcon: const Icon(
+                                        Icons.remove_circle_outline_rounded)),
+                                style: theme.textTheme.bodyLarge,
+                                keyboardType: TextInputType.number,
                               ),
-                              keyboardType: TextInputType.number,
-                              initialValue: null,
                             ),
                           const SizedBox(height: AppSpacing.xl),
-                          _buildSectionTitle(context, 'Files'),
-
-                          // Cover Image Picker
-                          ListTile(
-                            leading:
-                                Icon(Icons.image, color: AppColors.primary),
-                            title: Text(
-                                _coverImage?.name ?? 'Select Cover Image',
-                                style: Theme.of(context).textTheme.bodyMedium),
-                            subtitle: const Text('Max size: 200KB'),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.upload_file),
-                              onPressed: _pickCoverImage,
-                              color: AppColors.primary,
-                            ),
-                            tileColor: _coverImage != null
-                                ? AppColors.success.withValues(alpha: 0.1)
-                                : null,
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppSpacing.radiusMd),
-                              side: BorderSide(color: AppColors.neutral300),
-                            ),
+                          _buildSectionTitle(context, 'Resources'),
+                          const SizedBox(height: AppSpacing.sm),
+                          _buildFileTile(
+                            context,
+                            icon: Icons.image_outlined,
+                            title: _coverImage?.name ?? 'Select Cover Image',
+                            subtitle: 'Recommended: 1200x630 (Max 200KB)',
+                            onTap: _pickCoverImage,
+                            isSelected: _coverImage != null,
                           ),
                           const SizedBox(height: AppSpacing.md),
-
-                          // Excel File Picker
-                          ListTile(
-                            leading: Icon(Icons.table_chart,
-                                color: AppColors.primary),
-                            title: Text(
-                              _excelFile?.name ?? 'Select Excel File (.xlsx)',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                            subtitle: const Text('Will be converted to JSON'),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.upload_file),
-                              onPressed: _pickExcelFile,
-                              color: AppColors.primary,
-                            ),
-                            tileColor: _excelFile != null
-                                ? AppColors.success.withValues(alpha: 0.1)
-                                : null,
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppSpacing.radiusMd),
-                              side: BorderSide(color: AppColors.neutral300),
-                            ),
+                          _buildFileTile(
+                            context,
+                            icon: Icons.table_chart_outlined,
+                            title: _excelFile?.name ??
+                                'Select Questions File (.xlsx)',
+                            subtitle: 'Excel format required',
+                            onTap: _pickExcelFile,
+                            isSelected: _excelFile != null,
                           ),
-
                           const SizedBox(height: AppSpacing.xxl),
                           SizedBox(
                             width: double.infinity,
-                            height: 50,
+                            height: 54,
                             child: ElevatedButton(
-                              onPressed: _uploadMockTest,
+                              onPressed: _isLoading ? null : _uploadMockTest,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: AppColors.onPrimary,
+                                backgroundColor: colorScheme.primary,
+                                foregroundColor: colorScheme.onPrimary,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                      AppSpacing.radiusMd),
-                                ),
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.md)),
+                                elevation: 0,
                               ),
-                              child: Text(
-                                'UPLOAD MOCK TEST',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(
-                                      color: AppColors.onPrimary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                              ),
+                              child: _isLoading
+                                  ? const CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2)
+                                  : const Text('UPLOAD ASSESSMENT',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16)),
                             ),
                           ),
                         ],
@@ -541,13 +481,84 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
 
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        title.toUpperCase(),
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.primary,
+              letterSpacing: 1.2,
             ),
+      ),
+    );
+  }
+
+  Widget _buildFileTile(BuildContext context,
+      {required IconData icon,
+      required String title,
+      required String subtitle,
+      required VoidCallback onTap,
+      required bool isSelected}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+              color: isSelected
+                  ? colorScheme.primary
+                  : colorScheme.outline.withOpacity(0.2),
+              width: isSelected ? 2 : 1),
+          color: isSelected
+              ? colorScheme.primary.withOpacity(0.05)
+              : colorScheme.surface,
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.surfaceVariant,
+                  borderRadius: BorderRadius.circular(8)),
+              child: Icon(icon,
+                  color: isSelected
+                      ? colorScheme.onPrimary
+                      : colorScheme.onSurfaceVariant,
+                  size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isSelected
+                              ? colorScheme.primary
+                              : colorScheme.onSurface)),
+                  Text(subtitle,
+                      style: Theme.of(context)
+                          .textTheme
+                          .labelSmall
+                          ?.copyWith(color: colorScheme.onSurfaceVariant)),
+                ],
+              ),
+            ),
+            Icon(
+                isSelected
+                    ? Icons.check_circle_rounded
+                    : Icons.add_circle_outline_rounded,
+                color: isSelected
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant.withOpacity(0.4)),
+          ],
+        ),
       ),
     );
   }

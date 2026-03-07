@@ -1,0 +1,474 @@
+import 'package:flutter/material.dart';
+import 'package:krushi_kalp_admin/core/theme/app_spacing.dart';
+import 'package:krushi_kalp_admin/core/theme/app_radius.dart';
+import 'package:krushi_kalp_admin/data/services/test_service.dart';
+import 'package:krushi_kalp_admin/data/services/admin_service.dart';
+import 'package:krushi_kalp_admin/domain/models/mock_test.dart';
+import '../mock_test_edit_screen.dart';
+
+class AdminMockTestDetailScreen extends StatefulWidget {
+  final MockTest test;
+
+  const AdminMockTestDetailScreen({super.key, required this.test});
+
+  @override
+  State<AdminMockTestDetailScreen> createState() =>
+      _AdminMockTestDetailScreenState();
+}
+
+class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
+  late MockTest _test;
+  Map<String, dynamic>? _stats;
+  bool _isLoadingStats = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _test = widget.test;
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final stats = await AdminService.getMockTestItemStats(_test.id);
+      if (mounted) {
+        setState(() {
+          _stats = stats;
+          _isLoadingStats = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingStats = false);
+      }
+    }
+  }
+
+  Future<void> _deleteTest() async {
+    final theme = Theme.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm Delete'),
+        content: const Text(
+            'Are you sure you want to delete this mock test? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style:
+                TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await TestService.deleteMockTest(_test.id);
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
+      }
+    }
+  }
+
+  void _navigateToEdit() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MockTestEditScreen(test: _test),
+      ),
+    );
+
+    if (result == true && mounted) {
+      // Since stream is used in list, it might not be needed here if we pop back,
+      // but if we stay on this screen we should ideally refresh.
+      // Currently, MockTestEditScreen doesn't return the updated object, so we refresh from list.
+      Navigator.pop(context, true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Scaffold(
+      backgroundColor: colorScheme.background,
+      appBar: AppBar(
+        title: const Text('Mock Test Details'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_rounded),
+            onPressed: _navigateToEdit,
+            tooltip: 'Edit',
+          ),
+          IconButton(
+            icon: Icon(Icons.delete_rounded, color: colorScheme.error),
+            onPressed: _deleteTest,
+            tooltip: 'Delete',
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Card
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.shadow.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Thumbnail
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceVariant.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: _test.signedUrl != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            child: Image.network(
+                              _test.signedUrl!,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Icon(Icons.assignment_rounded,
+                            size: 40,
+                            color:
+                                colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                  ),
+                  const SizedBox(width: AppSpacing.lg),
+                  // Info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            _test.category.toUpperCase(),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          _test.title,
+                          style: theme.textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _test.language,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Row(
+                          children: [
+                            Text(
+                              _test.price == 0
+                                  ? 'FREE'
+                                  : '₹${_test.price.toStringAsFixed(0)}',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                color: _test.price == 0
+                                    ? const Color(0xFF10B981)
+                                    : colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (_test.mrp != null &&
+                                _test.mrp! > _test.price) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                '₹${_test.mrp!.toStringAsFixed(0)}',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  decoration: TextDecoration.lineThrough,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Key Stats Row
+            Row(
+              children: [
+                Expanded(
+                  child: _buildInfoBox(
+                    context,
+                    label: 'QUESTIONS',
+                    value: '${_test.totalQuestions}',
+                    icon: Icons.help_outline_rounded,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: _buildInfoBox(
+                    context,
+                    label: 'DURATION',
+                    value: _test.time,
+                    icon: Icons.timer_outlined,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: _buildInfoBox(
+                    context,
+                    label: 'TOTAL MARKS',
+                    value: '${_test.totalMarks}',
+                    icon: Icons.emoji_events_outlined,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
+
+            // Performance Stats
+            _buildSectionHeader(context, "PERFORMANCE STATS"),
+            const SizedBox(height: AppSpacing.md),
+            _buildStatCard(
+              context,
+              label: 'Total Sales',
+              value: _isLoadingStats ? '...' : '${_stats?['salesCount'] ?? 0}',
+              icon: Icons.shopping_cart_rounded,
+              color: Colors.blue,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Settings Section
+            _buildSectionHeader(context, "TEST SETTINGS"),
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(
+                    color: colorScheme.outlineVariant.withOpacity(0.5)),
+              ),
+              child: Column(
+                children: [
+                  _buildSettingRow(
+                    context,
+                    label: 'Negative Marking',
+                    value: _test.negativeMarking ? 'Enabled' : 'Disabled',
+                    icon: Icons.remove_circle_outline_rounded,
+                    color: _test.negativeMarking
+                        ? Colors.orange
+                        : colorScheme.onSurfaceVariant,
+                  ),
+                  if (_test.negativeMarking) ...[
+                    const Divider(height: 1),
+                    _buildSettingRow(
+                      context,
+                      label: 'Marks per Incorrect',
+                      value: '-${_test.negativeMarksPerQ}',
+                      icon: Icons.trending_down_rounded,
+                      color: Colors.red,
+                    ),
+                  ],
+                  const Divider(height: 1),
+                  _buildSettingRow(
+                    context,
+                    label: 'Created On',
+                    value: _formatDate(_test.createdAt),
+                    icon: Icons.calendar_today_rounded,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Description
+            _buildSectionHeader(context, "DESCRIPTION"),
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(
+                    color: colorScheme.outlineVariant.withOpacity(0.5)),
+              ),
+              child: Text(
+                _test.description.isEmpty
+                    ? 'No description provided.'
+                    : _test.description,
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xxxl),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    return Text(
+      title,
+      style: theme.textTheme.labelSmall?.copyWith(
+        fontWeight: FontWeight.w800,
+        color: theme.colorScheme.onSurfaceVariant,
+        letterSpacing: 1.5,
+      ),
+    );
+  }
+
+  Widget _buildInfoBox(BuildContext context,
+      {required String label, required String value, required IconData icon}) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 20, color: colorScheme.primary),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: theme.textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontSize: 8,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: theme.textTheme.headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                label,
+                style: theme.textTheme.labelMedium
+                    ?.copyWith(color: colorScheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingRow(BuildContext context,
+      {required String label,
+      required String value,
+      required IconData icon,
+      required Color color}) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: AppSpacing.md),
+          Text(label, style: theme.textTheme.bodyMedium),
+          const Spacer(),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return "${date.day}/${date.month}/${date.year}";
+  }
+}

@@ -3,14 +3,14 @@ import '../../data/services/app_config_service.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/offer.dart';
 import '../../utils/price_calculator.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart';
 
 import 'package:provider/provider.dart';
 import '../providers/test_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter_animate/flutter_animate.dart'; // NEW
+import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../data/services/review_service.dart';
 import '../../domain/models/review.dart';
@@ -51,7 +51,6 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
   }
 
   Future<void> _loadData() async {
-    // Fetch fresh configs every time this screen is opened
     await AppConfigService.fetchConfigs();
     if (mounted) setState(() => _configLoaded = true);
     _loadReviews();
@@ -158,26 +157,30 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final provider = context.watch<TestProvider>();
     final isActuallyPurchased = widget.isPurchased ||
         provider.purchasedTests.any((t) => t.id == widget.test.id);
 
     return Scaffold(
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: Text(widget.test.title,
-            style: Theme.of(context).textTheme.titleLarge),
-        backgroundColor: AppColors.surface,
+        title: Text(widget.test.title),
+        backgroundColor: colorScheme.surface,
+        scrolledUnderElevation: 0,
         elevation: 0,
         centerTitle: false,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: AppColors.textPrimary, size: 24),
+          icon:
+              Icon(Icons.close_rounded, color: colorScheme.onSurface, size: 24),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        foregroundColor: AppColors.textPrimary,
       ),
       body: SafeArea(
         child: RefreshIndicator(
+          color: colorScheme.primary,
           onRefresh: () async {
             await context.read<TestProvider>().fetchPurchasedStatus();
             await _loadReviews();
@@ -198,15 +201,16 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                         imageUrl: widget.test.signedUrl!,
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(
-                          color: AppColors.neutral200,
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
+                          color: colorScheme.surfaceVariant,
+                          child:
+                              const Center(child: CircularProgressIndicator()),
                         ),
                         errorWidget: (context, url, error) => Container(
-                          color: AppColors.neutral200,
-                          child: const Icon(Icons.broken_image,
-                              size: 40, color: AppColors.neutral400),
+                          color: colorScheme.surfaceVariant,
+                          child: Icon(Icons.broken_image_rounded,
+                              size: 40,
+                              color: colorScheme.onSurfaceVariant
+                                  .withOpacity(0.3)),
                         ),
                       ),
                     ),
@@ -215,9 +219,10 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                   Container(
                     height: 200,
                     width: double.infinity,
-                    color: AppColors.neutral200,
-                    child: const Icon(Icons.image,
-                        size: 64, color: AppColors.neutral400),
+                    color: colorScheme.surfaceVariant,
+                    child: Icon(Icons.image_rounded,
+                        size: 64,
+                        color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
                   ),
                 Padding(
                   padding: const EdgeInsets.all(AppSpacing.md),
@@ -227,9 +232,10 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusLg),
+                          color: colorScheme.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          border: Border.all(
+                              color: colorScheme.outline.withOpacity(0.05)),
                         ),
                         child: Builder(builder: (context) {
                           final displayOffers = widget.activeOffers
@@ -256,13 +262,10 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                             children: [
                               Text(
                                 widget.test.title,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 22,
-                                    ),
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.onSurface,
+                                ),
                               ),
                               const SizedBox(height: AppSpacing.md),
                               Row(
@@ -273,14 +276,13 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                         displayMrp > displayPrice) ...[
                                       Text(
                                         '₹${displayMrp.toStringAsFixed(0)}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
+                                        style: theme.textTheme.titleMedium
                                             ?.copyWith(
-                                              color: AppColors.neutral500,
-                                              decoration:
-                                                  TextDecoration.lineThrough,
-                                            ),
+                                          color: colorScheme.onSurfaceVariant
+                                              .withOpacity(0.5),
+                                          decoration:
+                                              TextDecoration.lineThrough,
+                                        ),
                                       ),
                                       const SizedBox(width: AppSpacing.sm),
                                     ],
@@ -288,13 +290,11 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                       displayPrice == 0
                                           ? 'Free'
                                           : '₹${displayPrice.toStringAsFixed(0)}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headlineSmall
+                                      style: theme.textTheme.headlineSmall
                                           ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black,
-                                          ),
+                                        fontWeight: FontWeight.bold,
+                                        color: colorScheme.onSurface,
+                                      ),
                                     ),
                                     if (hasOffer && discPercent > 0) ...[
                                       const SizedBox(width: AppSpacing.md),
@@ -303,23 +303,21 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                             horizontal: AppSpacing.sm,
                                             vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: AppColors.error
-                                              .withValues(alpha: 0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(4),
+                                          color: colorScheme.errorContainer
+                                              .withOpacity(0.3),
+                                          borderRadius: BorderRadius.circular(
+                                              AppSpacing.xs),
                                           border: Border.all(
-                                              color: AppColors.error
-                                                  .withValues(alpha: 0.3)),
+                                              color: colorScheme.error
+                                                  .withOpacity(0.1)),
                                         ),
                                         child: Text(
                                           '$discPercent% OFF',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .labelSmall
+                                          style: theme.textTheme.labelSmall
                                               ?.copyWith(
-                                                color: AppColors.error,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                            color: colorScheme.error,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -328,28 +326,28 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 12, vertical: 6),
                                       decoration: BoxDecoration(
-                                        color:
-                                            AppColors.success.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(20),
+                                        color: colorScheme.tertiaryContainer
+                                            .withOpacity(0.3),
+                                        borderRadius:
+                                            BorderRadius.circular(AppRadius.xl),
                                         border: Border.all(
-                                            color: AppColors.success),
+                                            color: colorScheme.tertiary
+                                                .withOpacity(0.2)),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(Icons.check_circle,
+                                          Icon(Icons.check_circle_rounded,
                                               size: 16,
-                                              color: AppColors.success),
+                                              color: colorScheme.tertiary),
                                           const SizedBox(width: 4),
                                           Text(
                                             "Purchased",
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleMedium
+                                            style: theme.textTheme.titleSmall
                                                 ?.copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: AppColors.success,
-                                                ),
+                                              fontWeight: FontWeight.bold,
+                                              color: colorScheme.tertiary,
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -358,7 +356,6 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                 ],
                               ),
                               const SizedBox(height: AppSpacing.md),
-                              // Rating Summary — only visible if reviews are enabled
                               if (_configLoaded &&
                                   AppConfigService.areReviewsVisible)
                                 Row(
@@ -371,9 +368,10 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                     const SizedBox(width: 8),
                                     Text(
                                       '${_ratingStats['average']} (${_ratingStats['count']} reviews)',
-                                      style: const TextStyle(
+                                      style:
+                                          theme.textTheme.bodyMedium?.copyWith(
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.textSecondary,
+                                        color: colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ],
@@ -387,27 +385,28 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                         padding:
                             const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusLg),
+                          color: colorScheme.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          border: Border.all(
+                              color: colorScheme.outline.withOpacity(0.05)),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
                             _DetailItem(
-                              icon: Icons.access_time,
+                              icon: Icons.access_time_rounded,
                               label: 'Duration',
                               value: widget.test.time,
                             ),
                             _ContainerDivider(),
                             _DetailItem(
-                              icon: Icons.help_outline,
+                              icon: Icons.help_outline_rounded,
                               label: 'Questions',
                               value: '${widget.test.totalQuestions}',
                             ),
                             _ContainerDivider(),
                             _DetailItem(
-                              icon: Icons.star_border,
+                              icon: Icons.star_outline_rounded,
                               label: 'Marks',
                               value: '${widget.test.totalMarks}',
                             ),
@@ -418,35 +417,29 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusLg),
+                          color: colorScheme.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          border: Border.all(
+                              color: colorScheme.outline.withOpacity(0.05)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               "Description",
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                  ),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             Text(
                               widget.test.description.isEmpty
                                   ? "This mock test covers all important topics. Practice to improve your speed and accuracy."
                                   : widget.test.description,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    color: AppColors.textSecondary,
-                                    height: 1.5,
-                                  ),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                height: 1.5,
+                              ),
                             ),
                           ],
                         ),
@@ -455,51 +448,48 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusLg),
+                          color: colorScheme.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          border: Border.all(
+                              color: colorScheme.outline.withOpacity(0.05)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               "Test Information",
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                  ),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: AppSpacing.md),
                             _InfoRow(
-                              icon: Icons.category_outlined,
+                              icon: Icons.category_rounded,
                               label: "Category",
                               value: widget.test.category,
                             ),
                             if (widget.test.negativeMarking)
                               _InfoRow(
-                                icon: Icons.warning_amber_rounded,
+                                icon: Icons.warning_rounded,
                                 label: "Negative Marking",
                                 value:
                                     "Yes (-${widget.test.negativeMarksPerQ} per wrong)",
-                                valueColor: AppColors.error,
+                                valueColor: colorScheme.error,
                               )
                             else
-                              const _InfoRow(
-                                icon: Icons.check_circle_outline,
+                              _InfoRow(
+                                icon: Icons.check_circle_outline_rounded,
                                 label: "Negative Marking",
                                 value: "None",
-                                valueColor: AppColors.success,
+                                valueColor: colorScheme.tertiary,
                               ),
                             if (widget.test.discount != null &&
                                 widget.test.discount!.isNotEmpty)
                               _InfoRow(
-                                icon: Icons.local_offer_outlined,
+                                icon: Icons.local_offer_rounded,
                                 label: "Discount",
                                 value: widget.test.discount!,
-                                valueColor: Colors.orange[700],
+                                valueColor: colorScheme.primary,
                               ),
                           ],
                         ),
@@ -508,20 +498,21 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                       Container(
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusLg),
+                          color: colorScheme.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          border: Border.all(
+                              color: colorScheme.outline.withOpacity(0.05)),
                         ),
                         child: _buildReviewsSection(isActuallyPurchased),
                       ),
-                      const SizedBox(height: 60),
+                      const SizedBox(height: AppSpacing.xxl),
                     ],
                   ),
                 ),
               ]
                   .animate(interval: 50.ms)
                   .fadeIn(duration: 400.ms)
-                  .slideY(begin: 0.1, end: 0),
+                  .slideY(begin: 0.05, end: 0),
             ),
           ),
         ),
@@ -530,26 +521,18 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
   }
 
   Widget _buildReviewsSection(bool isPurchased) {
-    // Wait for config to be loaded before deciding visibility
-    if (!_configLoaded) return const SizedBox.shrink();
-
-    // Check if reviews are visible
-    if (!AppConfigService.areReviewsVisible) {
+    if (!_configLoaded || !AppConfigService.areReviewsVisible)
       return const SizedBox.shrink();
-    }
 
-    // Check if current user is logged in
+    final theme = Theme.of(context);
     final user = Supabase.instance.client.auth.currentUser;
     final canReview = (isPurchased || widget.test.price == 0) &&
         _userReview == null &&
         user != null &&
         AppConfigService.canWriteReviews;
 
-    // Filter for positive reviews (4 or 5 stars)
     final positiveReviews = _reviews.where((r) => r.rating >= 4).toList();
     final displayedReviews = positiveReviews.take(3).toList();
-    // Show "View All" if there are ANY reviews not currently displayed
-    // (e.g. negative reviews, or more positive reviews than the limit)
     final hasMoreReviews = _reviews.length > displayedReviews.length;
 
     return Column(
@@ -560,10 +543,8 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
           children: [
             Text(
               "Reviews",
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             if (canReview)
               TextButton(
@@ -577,41 +558,17 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
               ),
           ],
         ),
-
         const SizedBox(height: AppSpacing.md),
-
-        // Reviews List
         if (_isLoadingReviews)
           const Center(child: CircularProgressIndicator())
         else if (_reviews.isEmpty)
           const Center(
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 20),
-              child: Text(
-                "No reviews yet. Be the first to review!",
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
+              child: Text("No reviews yet. Be the first to review!"),
             ),
           )
-        else if (displayedReviews.isEmpty)
-          // If we have reviews but NONE are positive, effectively show nothing
-          // but the 'View All' button should appear if strictly following logic.
-          // However, UX-wise, it might be better to show "No positive reviews yet"
-          // or just show the "View All Reviews" button immediately.
-          // Let's just show the View All button if hasMoreReviews is true.
-          hasMoreReviews
-              ? const SizedBox
-                  .shrink() // Don't show any cards, just the button below
-              : const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Text(
-                      "No positive reviews to display.",
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  ),
-                )
-        else
+        else ...[
           ...displayedReviews.map((review) {
             final isOwnReview = user != null && review.userId == user.id;
             return Padding(
@@ -623,28 +580,26 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
               ),
             );
           }),
-
-        if (!(_isLoadingReviews) &&
-            (_reviews.isNotEmpty) &&
-            (hasMoreReviews || displayedReviews.isEmpty))
-          Center(
-            child: TextButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AllReviewsScreen(
-                      itemId: widget.test.id,
-                      itemType: 'test',
-                      itemTitle: widget.test.title,
+          if (hasMoreReviews || displayedReviews.isEmpty)
+            Center(
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AllReviewsScreen(
+                        itemId: widget.test.id,
+                        itemType: 'test',
+                        itemTitle: widget.test.title,
+                      ),
                     ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.arrow_forward, size: 16),
-              label: const Text("View All Reviews"),
+                  );
+                },
+                icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                label: const Text("View All Reviews"),
+              ),
             ),
-          ),
+        ],
       ],
     );
   }
@@ -656,7 +611,7 @@ class _ContainerDivider extends StatelessWidget {
     return Container(
       height: 40,
       width: 1,
-      color: AppColors.neutral200,
+      color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
     );
   }
 }
@@ -674,35 +629,37 @@ class _DetailItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Column(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: colorScheme.primary.withOpacity(0.05),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: AppColors.primary, size: 24),
+          child: Icon(icon, color: colorScheme.primary, size: 24),
         ),
         const SizedBox(height: 8),
         Text(
           value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        Text(label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                )),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
 }
 
-// Added missing class
 class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -718,27 +675,30 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppColors.neutral500),
+          Icon(icon,
+              size: 20, color: colorScheme.onSurfaceVariant.withOpacity(0.5)),
           const SizedBox(width: 12),
           Text(
             "$label:",
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.neutral600,
-                  fontWeight: FontWeight.w500,
-                ),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               value,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: valueColor ?? AppColors.textPrimary,
-                  ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: valueColor ?? colorScheme.onSurface,
+              ),
             ),
           ),
         ],

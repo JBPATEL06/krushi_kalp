@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-
 import '../../../data/services/download_service.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_radius.dart';
 
 class DownloadActionButton extends StatefulWidget {
   final String filename;
   final String? url;
-  final String startLabel; // e.g., "Start" or "Open"
-  final Future<void> Function()
-      onAction; // Called when Start/Open is clicked (or after download)
+  final String startLabel;
+  final Future<void> Function() onAction;
   final bool isFullWidth;
 
   const DownloadActionButton({
@@ -55,43 +54,59 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     if (_checking) {
-      return const SizedBox(
-        height: 48,
+      return SizedBox(
+        height: 52,
         child: Center(
-            child: SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(strokeWidth: 2))),
+          child: SizedBox(
+            height: 24,
+            width: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+            ),
+          ),
+        ),
       );
     }
 
     final label = _isDownloaded ? widget.startLabel : "Download";
     final icon =
-        _isDownloaded ? Icons.visibility_outlined : Icons.download_rounded;
-    final color = _isDownloaded ? AppColors.primary : AppColors.secondary;
+        _isDownloaded ? Icons.visibility_rounded : Icons.download_rounded;
+    final buttonColor =
+        _isDownloaded ? colorScheme.primary : colorScheme.secondary;
 
-    Widget button = ElevatedButton.icon(
-      onPressed: () async {
-        // Execute the action (download or open)
-        await widget.onAction();
-        // Check status again to update label (e.g. Download -> Open)
-        if (mounted) {
-          _checkStatus();
-        }
-      },
-      icon: Icon(icon, color: Colors.white),
-      label: Text(label,
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        minimumSize: Size(widget.isFullWidth ? double.infinity : 0, 48),
+    return SizedBox(
+      width: widget.isFullWidth ? double.infinity : null,
+      height: 52,
+      child: ElevatedButton.icon(
+        onPressed: () async {
+          await widget.onAction();
+          if (mounted) {
+            _checkStatus();
+          }
+        },
+        icon: Icon(icon, color: colorScheme.onPrimary, size: 20),
+        label: Text(
+          label,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: colorScheme.onPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: buttonColor,
+          foregroundColor: colorScheme.onPrimary,
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          elevation: 0,
+        ),
       ),
     );
-
-    return button;
   }
 }

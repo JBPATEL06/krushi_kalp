@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_radius.dart';
 
 enum AppButtonType { primary, secondary, outline, text }
 
@@ -9,8 +11,8 @@ class AppButton extends StatelessWidget {
   final AppButtonType type;
   final IconData? icon;
   final double? width;
-  final double? height; // NEW
-  final double? fontSize; // NEW
+  final double? height;
+  final double? fontSize;
   final Color? color;
 
   const AppButton({
@@ -21,21 +23,28 @@ class AppButton extends StatelessWidget {
     this.type = AppButtonType.primary,
     this.icon,
     this.width,
-    this.height, // NEW
-    this.fontSize, // NEW
+    this.height,
+    this.fontSize,
     this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    // 1. Loading State
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     final content = isLoading
         ? SizedBox(
-            width: (height ?? 56) * 0.4, // Scale loader
-            height: (height ?? 56) * 0.4,
-            child: const CircularProgressIndicator(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                type == AppButtonType.primary
+                    ? colorScheme.onPrimary
+                    : colorScheme.primary,
+              ),
             ),
           )
         : Row(
@@ -43,46 +52,40 @@ class AppButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: (fontSize ?? 16) * 1.25),
-                const SizedBox(width: 8),
+                Icon(icon, size: (fontSize ?? 16) * 1.2),
+                SizedBox(width: AppSpacing.sm),
               ],
               Text(
                 text,
-                style: TextStyle(
-                  fontSize: fontSize ?? 16,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontSize: fontSize ?? 15,
+                  fontWeight: FontWeight.w700,
+                  color: _getTextColor(colorScheme, isDark),
+                  letterSpacing: 0.2,
                 ),
               ),
             ],
           );
 
-    final borderRadius = BorderRadius.circular(16);
-    // If width is specified, don't force infinite width.
+    final borderRadius = BorderRadius.circular(AppRadius.lg);
     final double minWidth = width != null ? 0.0 : double.infinity;
-    // Use provided height or default 56
-    final minimumSize = Size(minWidth, height ?? 56.0);
+    final minimumSize = Size(minWidth, height ?? 52.0);
 
-    final themePrimary = Theme.of(context).primaryColor;
-
-    // 2. Button Variant
     switch (type) {
       case AppButtonType.primary:
         return SizedBox(
           width: width,
-          height: height,
+          height: height ?? 52.0,
           child: ElevatedButton(
             onPressed: isLoading ? null : onPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: color ?? themePrimary,
-              foregroundColor: Colors.white,
+              backgroundColor: color ?? colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              disabledBackgroundColor: colorScheme.onSurface.withOpacity(0.12),
               minimumSize: minimumSize,
               shape: RoundedRectangleBorder(borderRadius: borderRadius),
-              elevation: 4,
-              shadowColor: (color ?? themePrimary).withValues(alpha: 0.4),
-              padding: height != null
-                  ? EdgeInsets.zero
-                  : null, // Remove padding if fixed height
+              elevation: 0,
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             ),
             child: content,
           ),
@@ -91,68 +94,62 @@ class AppButton extends StatelessWidget {
       case AppButtonType.secondary:
         return SizedBox(
           width: width,
-          height: height,
+          height: height ?? 52.0,
           child: ElevatedButton(
             onPressed: isLoading ? null : onPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: color ?? Colors.white,
-              foregroundColor: Colors.black87,
+              backgroundColor:
+                  color ?? colorScheme.surfaceVariant.withOpacity(0.5),
+              foregroundColor: colorScheme.onSurface,
               minimumSize: minimumSize,
               shape: RoundedRectangleBorder(borderRadius: borderRadius),
-              elevation: 2,
-              padding: height != null ? EdgeInsets.zero : null,
+              elevation: 0,
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             ),
-            child: isLoading
-                ? SizedBox(
-                    width: (height ?? 56) * 0.4,
-                    height: (height ?? 56) * 0.4,
-                    child: const CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : content,
+            child: content,
           ),
         );
 
       case AppButtonType.outline:
         return SizedBox(
           width: width,
-          height: height,
+          height: height ?? 52.0,
           child: OutlinedButton(
             onPressed: isLoading ? null : onPressed,
             style: OutlinedButton.styleFrom(
-              foregroundColor: color ?? themePrimary,
-              side: BorderSide(color: color ?? themePrimary, width: 1.5),
+              foregroundColor: color ?? colorScheme.primary,
+              side: BorderSide(
+                color: (color ?? colorScheme.primary).withOpacity(0.5),
+                width: 1.5,
+              ),
               minimumSize: minimumSize,
               shape: RoundedRectangleBorder(borderRadius: borderRadius),
-              padding: height != null ? EdgeInsets.zero : null,
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             ),
-            child: isLoading
-                ? SizedBox(
-                    width: (height ?? 56) * 0.4,
-                    height: (height ?? 56) * 0.4,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor:
-                          AlwaysStoppedAnimation<Color>(color ?? themePrimary),
-                    ),
-                  )
-                : content,
+            child: content,
           ),
         );
 
       case AppButtonType.text:
         return SizedBox(
-            width: width,
-            height: height,
-            child: TextButton(
-              onPressed: isLoading ? null : onPressed,
-              style: TextButton.styleFrom(
-                foregroundColor: color ?? themePrimary,
-                shape: RoundedRectangleBorder(borderRadius: borderRadius),
-                minimumSize: minimumSize,
-                padding: height != null ? EdgeInsets.zero : null,
-              ),
-              child: content,
-            ));
+          width: width,
+          height: height ?? 52.0,
+          child: TextButton(
+            onPressed: isLoading ? null : onPressed,
+            style: TextButton.styleFrom(
+              foregroundColor: color ?? colorScheme.primary,
+              shape: RoundedRectangleBorder(borderRadius: borderRadius),
+              minimumSize: minimumSize,
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            ),
+            child: content,
+          ),
+        );
     }
+  }
+
+  Color _getTextColor(ColorScheme colorScheme, bool isDark) {
+    if (type == AppButtonType.primary) return colorScheme.onPrimary;
+    return colorScheme.onSurface;
   }
 }

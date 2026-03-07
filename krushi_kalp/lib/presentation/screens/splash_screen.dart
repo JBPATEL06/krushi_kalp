@@ -5,6 +5,7 @@ import '../../data/services/notification_service.dart';
 import '../../data/services/app_config_service.dart';
 import 'login_screen.dart';
 import 'main_screen.dart';
+import 'admin/admin_main_screen.dart';
 import 'update_required_screen.dart';
 import 'package:provider/provider.dart';
 import 'maintenance_screen.dart';
@@ -164,7 +165,7 @@ class _SplashScreenState extends State<SplashScreen> {
         if (mounted && !_disposed) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
+            MaterialPageRoute(builder: (context) => const AdminMainScreen()),
           );
         }
       }

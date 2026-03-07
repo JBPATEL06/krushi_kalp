@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../utils/excel_to_json_converter.dart';
-import '../../utils/ui_helpers.dart'; // NEW
+import '../../utils/ui_helpers.dart';
 import '../../../domain/models/mock_test.dart';
 import '../../../data/services/test_service.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_radius.dart';
 
 class MockTestEditScreen extends StatefulWidget {
   final MockTest test;
@@ -33,17 +35,15 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
   late String _selectedLanguage;
   late bool _isNegativeMarking;
 
-  // Files (Optional for edit)
   PlatformFile? _coverImage;
   PlatformFile? _excelFile;
   Uint8List? _imageBytes;
-
   Uint8List? _excelBytes;
 
-  final _customCategoryController = TextEditingController(); // NEW
-  List<String> _categories = ['Other']; // Start with only Other
-  List<String> _languages = ['English', 'Gujarati']; // UPDATED
-  bool _isOtherCategory = false; // NEW
+  final _customCategoryController = TextEditingController();
+  List<String> _categories = ['Other'];
+  List<String> _languages = ['English', 'Gujarati'];
+  bool _isOtherCategory = false;
 
   static const int maxImageSizeBytes = 200 * 1024; // 200KB
 
@@ -67,21 +67,17 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
     _selectedLanguage = t.language;
     _isNegativeMarking = t.negativeMarking;
 
-    _loadCategoriesAndTestDetails(); // UPDATED
+    _loadCategoriesAndTestDetails();
   }
 
   void _loadCategoriesAndTestDetails() async {
-    // 1. Fetch Categories & Languages
     final cats = await TestService.fetchCategories();
-    final langs = await TestService.fetchLanguages(); // NEW
-
-    // 2. Fetch Latest Test Details (Optional but requested)
+    final langs = await TestService.fetchLanguages();
     final freshTest = await TestService.fetchMockTestById(widget.test.id);
     final t = freshTest ?? widget.test;
 
     if (mounted) {
       setState(() {
-        // Update Controllers with fresh data
         _titleController.text = t.title;
         _descriptionController.text = t.description;
         _priceController.text = t.price.toString();
@@ -91,28 +87,21 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
         _negativeMarksController.text = t.negativeMarksPerQ.toString();
         _isNegativeMarking = t.negativeMarking;
         _selectedLanguage = t.language;
-        // Ensure language is valid dropdown option
-        if (!['English', 'Hindi', 'Gujarati'].contains(_selectedLanguage)) {
-          _selectedLanguage = 'English';
-        }
 
-        // Category Logic
         _categories = cats;
         _selectedCategory = t.category;
 
         if (!_categories.contains(_selectedCategory) &&
             _selectedCategory.isNotEmpty) {
-          // It's a custom category
           _isOtherCategory = true;
           _customCategoryController.text = _selectedCategory;
-          _categories.add('Other'); // Ensure 'Other' is present
-          _selectedCategory = 'Other'; // Select 'Other' in dropdown
+          _categories.add('Other');
+          _selectedCategory = 'Other';
         } else {
           _isOtherCategory = false;
           if (!_categories.contains('Other')) _categories.add('Other');
         }
 
-        // Language Logic
         _languages = langs;
         _selectedLanguage = t.language;
         if (!_languages.contains(_selectedLanguage)) {
@@ -171,7 +160,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
         'description': _descriptionController.text.trim(),
         'category': _isOtherCategory
             ? _customCategoryController.text.trim()
-            : _selectedCategory, // UPDATED
+            : _selectedCategory,
         'price': double.tryParse(_priceController.text) ?? 0.0,
         'duration_minutes': int.tryParse(_durationController.text),
         'total_questions': int.tryParse(_totalQuestionsController.text) ?? 0,
@@ -182,7 +171,6 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
         'language': _selectedLanguage,
       };
 
-      // 1. Update cover image if changed
       if (_coverImage != null && _imageBytes != null) {
         final imagePath = 'mock_test_cover/${widget.test.id}.jpg';
         await supabase.storage.from('mock_test').uploadBinary(
@@ -191,13 +179,9 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
               fileOptions:
                   const FileOptions(upsert: true, contentType: 'image/jpeg'),
             );
-        // No need to update 'cover_image_path' column if keeping same naming convention,
-        // but if the original path was different, we should update it.
-        // Let's safe update it.
         updates['cover_image_path'] = imagePath;
       }
 
-      // 2. Update Excel/JSON if changed
       if (_excelFile != null && _excelBytes != null) {
         final jsonList = ExcelToJsonConverter.convert(_excelBytes!);
         final jsonString = jsonEncode(jsonList);
@@ -213,20 +197,17 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
         updates['file_path'] = jsonPath;
       }
 
-      // 3. Update DB Row
       await TestService.updateMockTest(widget.test.id, updates);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Test Updated Successfully!')),
-        );
+            const SnackBar(content: Text('Test Updated Successfully!')));
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -235,23 +216,22 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-// ...
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
         title: const Text('Edit Mock Test'),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: colorScheme.surface,
+        scrolledUnderElevation: 0,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        titleTextStyle: const TextStyle(
-            color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final isWide = constraints.maxWidth > 600;
@@ -264,34 +244,33 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
                         children: [
                           TextFormField(
                             controller: _titleController,
-                            decoration: getPremiumInputDecoration(
-                              context,
-                              labelText: 'Title',
-                              prefixIcon: const Icon(Icons.title),
-                            ),
+                            decoration: getPremiumInputDecoration(context,
+                                labelText: 'Title',
+                                prefixIcon: const Icon(Icons.title_rounded)),
+                            style: theme.textTheme.bodyLarge,
                             validator: (v) => v!.isEmpty ? 'Required' : null,
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.lg),
                           TextFormField(
                             controller: _descriptionController,
-                            decoration: getPremiumInputDecoration(
-                              context,
-                              labelText: 'Description',
-                              prefixIcon: const Icon(Icons.description),
-                            ),
+                            decoration: getPremiumInputDecoration(context,
+                                labelText: 'Description',
+                                prefixIcon:
+                                    const Icon(Icons.description_outlined)),
+                            style: theme.textTheme.bodyLarge,
                             maxLines: 3,
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.lg),
                           DropdownButtonFormField<String>(
                             value: _categories.contains(_selectedCategory)
                                 ? _selectedCategory
                                 : null,
-                            decoration: getPremiumInputDecoration(
-                              context,
-                              labelText: 'Category',
-                              prefixIcon: const Icon(Icons.category),
-                            ),
-                            dropdownColor: Colors.white,
+                            decoration: getPremiumInputDecoration(context,
+                                labelText: 'Category',
+                                prefixIcon:
+                                    const Icon(Icons.category_outlined)),
+                            dropdownColor: colorScheme.surface,
+                            style: theme.textTheme.bodyLarge,
                             items: _categories
                                 .map((c) =>
                                     DropdownMenuItem(value: c, child: Text(c)))
@@ -301,40 +280,35 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
                                 setState(() {
                                   _selectedCategory = v;
                                   _isOtherCategory = v == 'Other';
-                                  if (_isOtherCategory) {
+                                  if (_isOtherCategory)
                                     _customCategoryController.clear();
-                                  }
                                 });
                               }
                             },
-                            validator: (v) =>
-                                (v == null || v.isEmpty) && !_isOtherCategory
-                                    ? 'Required'
-                                    : null,
                           ),
                           if (_isOtherCategory) ...[
-                            const SizedBox(height: 10),
+                            const SizedBox(height: AppSpacing.md),
                             TextFormField(
                               controller: _customCategoryController,
                               decoration: getPremiumInputDecoration(context,
                                   labelText: 'Enter New Category',
-                                  prefixIcon: const Icon(Icons.edit)),
+                                  prefixIcon: const Icon(Icons.edit_rounded)),
                               validator: (v) =>
                                   _isOtherCategory && (v == null || v.isEmpty)
                                       ? 'Required'
                                       : null,
                             ),
                           ],
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.lg),
                           DropdownButtonFormField<String>(
                             value: _languages.contains(_selectedLanguage)
                                 ? _selectedLanguage
                                 : null,
-                            decoration: getPremiumInputDecoration(
-                              context,
-                              labelText: 'Language',
-                              prefixIcon: const Icon(Icons.language),
-                            ),
+                            decoration: getPremiumInputDecoration(context,
+                                labelText: 'Language',
+                                prefixIcon: const Icon(Icons.language_rounded)),
+                            dropdownColor: colorScheme.surface,
+                            style: theme.textTheme.bodyLarge,
                             items: _languages
                                 .map((c) =>
                                     DropdownMenuItem(value: c, child: Text(c)))
@@ -342,8 +316,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
                             onChanged: (v) =>
                                 setState(() => _selectedLanguage = v!),
                           ),
-                          const SizedBox(height: 20),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: AppSpacing.xl),
                           if (isWide)
                             Row(
                               children: [
@@ -351,44 +324,41 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
                                     child: TextFormField(
                                         controller: _priceController,
                                         decoration: getPremiumInputDecoration(
-                                          context,
-                                          labelText: 'Price',
-                                          prefixIcon:
-                                              const Icon(Icons.currency_rupee),
-                                        ),
+                                            context,
+                                            labelText: 'Price',
+                                            prefixIcon: const Icon(
+                                                Icons.attach_money_rounded)),
                                         keyboardType: TextInputType.number)),
-                                const SizedBox(width: 16),
+                                const SizedBox(width: AppSpacing.md),
                                 Expanded(
                                     child: TextFormField(
                                         controller: _durationController,
                                         decoration: getPremiumInputDecoration(
-                                          context,
-                                          labelText: 'Minutes',
-                                          prefixIcon: const Icon(Icons.timer),
-                                        ),
+                                            context,
+                                            labelText: 'Duration (Mins)',
+                                            prefixIcon: const Icon(
+                                                Icons.timer_outlined)),
                                         keyboardType: TextInputType.number)),
                               ],
                             )
                           else ...[
                             TextFormField(
                                 controller: _priceController,
-                                decoration: getPremiumInputDecoration(
-                                  context,
-                                  labelText: 'Price',
-                                  prefixIcon: const Icon(Icons.currency_rupee),
-                                ),
+                                decoration: getPremiumInputDecoration(context,
+                                    labelText: 'Price',
+                                    prefixIcon:
+                                        const Icon(Icons.attach_money_rounded)),
                                 keyboardType: TextInputType.number),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: AppSpacing.lg),
                             TextFormField(
                                 controller: _durationController,
-                                decoration: getPremiumInputDecoration(
-                                  context,
-                                  labelText: 'Minutes',
-                                  prefixIcon: const Icon(Icons.timer),
-                                ),
+                                decoration: getPremiumInputDecoration(context,
+                                    labelText: 'Duration (Mins)',
+                                    prefixIcon:
+                                        const Icon(Icons.timer_outlined)),
                                 keyboardType: TextInputType.number),
                           ],
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.lg),
                           if (isWide)
                             Row(
                               children: [
@@ -396,90 +366,99 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
                                     child: TextFormField(
                                         controller: _totalQuestionsController,
                                         decoration: getPremiumInputDecoration(
-                                          context,
-                                          labelText: 'Total Questions',
-                                          prefixIcon: const Icon(Icons.quiz),
-                                        ),
+                                            context,
+                                            labelText: 'Total Questions',
+                                            prefixIcon: const Icon(
+                                                Icons.quiz_outlined)),
                                         keyboardType: TextInputType.number)),
-                                const SizedBox(width: 16),
+                                const SizedBox(width: AppSpacing.md),
                                 Expanded(
                                     child: TextFormField(
                                         controller: _totalMarksController,
                                         decoration: getPremiumInputDecoration(
-                                          context,
-                                          labelText: 'Total Marks',
-                                          prefixIcon: const Icon(Icons.grade),
-                                        ),
+                                            context,
+                                            labelText: 'Total Marks',
+                                            prefixIcon: const Icon(
+                                                Icons.grade_outlined)),
                                         keyboardType: TextInputType.number)),
                               ],
                             )
                           else ...[
                             TextFormField(
                                 controller: _totalQuestionsController,
-                                decoration: getPremiumInputDecoration(
-                                  context,
-                                  labelText: 'Total Questions',
-                                  prefixIcon: const Icon(Icons.quiz),
-                                ),
+                                decoration: getPremiumInputDecoration(context,
+                                    labelText: 'Total Questions',
+                                    prefixIcon:
+                                        const Icon(Icons.quiz_outlined)),
                                 keyboardType: TextInputType.number),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: AppSpacing.lg),
                             TextFormField(
                                 controller: _totalMarksController,
-                                decoration: getPremiumInputDecoration(
-                                  context,
-                                  labelText: 'Total Marks',
-                                  prefixIcon: const Icon(Icons.grade),
-                                ),
+                                decoration: getPremiumInputDecoration(context,
+                                    labelText: 'Total Marks',
+                                    prefixIcon:
+                                        const Icon(Icons.grade_outlined)),
                                 keyboardType: TextInputType.number),
                           ],
+                          const SizedBox(height: AppSpacing.md),
                           SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
                             title: const Text('Negative Marking'),
+                            subtitle:
+                                const Text('Apply panelty for wrong answers'),
                             value: _isNegativeMarking,
+                            activeColor: colorScheme.primary,
                             onChanged: (v) =>
                                 setState(() => _isNegativeMarking = v),
                           ),
                           if (_isNegativeMarking) ...[
-                            const SizedBox(height: 16),
+                            const SizedBox(height: AppSpacing.md),
                             TextFormField(
                               controller: _negativeMarksController,
-                              decoration: getPremiumInputDecoration(
-                                context,
-                                labelText: 'Negative Marks per Q',
-                                prefixIcon:
-                                    const Icon(Icons.remove_circle_outline),
-                              ),
+                              decoration: getPremiumInputDecoration(context,
+                                  labelText: 'Negative Marks per Q',
+                                  prefixIcon: const Icon(
+                                      Icons.remove_circle_outline_rounded)),
                               keyboardType: TextInputType.number,
                             ),
                           ],
-                          const SizedBox(height: 20),
-                          const Text('Files (Select new to replace)',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                          ListTile(
-                            leading: const Icon(Icons.image),
-                            title: Text(_coverImage?.name ??
-                                'Current: ${extractFilename(widget.test.coverImagePath)}'),
-                            trailing: IconButton(
-                                icon: const Icon(Icons.upload),
-                                onPressed: _pickCoverImage),
+                          const SizedBox(height: AppSpacing.xl),
+                          Text('Resource Files',
+                              style: theme.textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: AppSpacing.sm),
+                          _buildFilePicker(
+                            context,
+                            icon: Icons.image_outlined,
+                            title: _coverImage?.name ??
+                                'Current: ${extractFilename(widget.test.coverImagePath)}',
+                            onPick: _pickCoverImage,
                           ),
-                          ListTile(
-                            leading: const Icon(Icons.table_chart),
-                            title: Text(
-                                _excelFile?.name ?? 'Current Questions File'),
-                            trailing: IconButton(
-                                icon: const Icon(Icons.upload),
-                                onPressed: _pickExcelFile),
+                          const SizedBox(height: AppSpacing.sm),
+                          _buildFilePicker(
+                            context,
+                            icon: Icons.table_chart_outlined,
+                            title: _excelFile?.name ?? 'Current Questions File',
+                            onPick: _pickExcelFile,
                           ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: AppSpacing.xxl),
                           SizedBox(
                             width: double.infinity,
+                            height: 54,
                             child: ElevatedButton(
                               onPressed: _updateMockTest,
                               style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      Theme.of(context).primaryColor,
-                                  foregroundColor: Colors.white),
-                              child: const Text('UPDATE MOCK TEST'),
+                                backgroundColor: colorScheme.primary,
+                                foregroundColor: colorScheme.onPrimary,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.md)),
+                                elevation: 0,
+                              ),
+                              child: const Text('UPDATE MOCK TEST',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16)),
                             ),
                           ),
                         ],
@@ -489,6 +468,28 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
                 },
               ),
             ),
+    );
+  }
+
+  Widget _buildFilePicker(BuildContext context,
+      {required IconData icon,
+      required String title,
+      required VoidCallback onPick}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        leading: Icon(icon, color: colorScheme.primary),
+        title: Text(title,
+            style: Theme.of(context).textTheme.bodySmall,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis),
+        trailing: TextButton(onPressed: onPick, child: const Text('Replace')),
+      ),
     );
   }
 }

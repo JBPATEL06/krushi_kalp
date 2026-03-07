@@ -7,6 +7,7 @@ import 'presentation/screens/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/test_provider.dart';
+import 'presentation/providers/admin_provider.dart';
 
 import 'presentation/providers/offer_provider.dart';
 import 'presentation/providers/navigation_provider.dart';
@@ -44,6 +45,7 @@ Future<void> main() async {
           providers: [
             ChangeNotifierProvider(create: (_) => AuthProvider()),
             ChangeNotifierProvider(create: (_) => TestProvider()),
+            ChangeNotifierProvider(create: (_) => AdminProvider()),
             ChangeNotifierProvider(create: (_) => OfferProvider()),
             ChangeNotifierProvider(create: (_) => NavigationProvider()),
             ChangeNotifierProvider(create: (_) => CartProvider()),

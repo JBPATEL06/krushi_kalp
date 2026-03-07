@@ -122,7 +122,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               await Future.delayed(const Duration(milliseconds: 500));
             },
             child: ListView.separated(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: 16 + MediaQuery.of(context).padding.bottom,
+              ),
               physics: const AlwaysScrollableScrollPhysics(),
               itemCount: notifications.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),

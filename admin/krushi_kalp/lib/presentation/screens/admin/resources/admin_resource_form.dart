@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import '../../../../data/services/resource_service.dart';
 import '../../../../data/services/admin_notification_service.dart';
 import '../../../../domain/models/resource.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../utils/ui_helpers.dart';
+import 'package:krushi_kalp_admin/core/theme/app_spacing.dart';
 
 class AdminResourceForm extends StatefulWidget {
   final ResourceType type;
@@ -23,18 +23,16 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
 
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
-  late TextEditingController _categoryController; // New category field
+  late TextEditingController _categoryController;
   late TextEditingController _priceController;
 
   bool _isActive = true;
   bool _isLoading = false;
 
-  // File handling
   String? _fileName;
   Uint8List? _fileBytes;
   String? _existingFileUrl;
 
-  // Cover Image handling
   String? _coverName;
   Uint8List? _coverBytes;
   String? _existingCoverUrl;
@@ -105,13 +103,9 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Validate File Requirement:
-    // If it's a new entry, we MUST have a file (for current affairs/material).
-    // Unless it's just a metadata entry, but usually a "Resource" implies a file.
     if (widget.resource == null && _fileBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please attach a PDF file')),
-      );
+          const SnackBar(content: Text('Please attach a PDF file')));
       return;
     }
 
@@ -121,18 +115,16 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
       String? fileUrl = _existingFileUrl;
       String? coverUrl = _existingCoverUrl;
 
-      // Upload File if new
       if (_fileBytes != null) {
-        final cleanName = _fileName!.replaceAll(' ', '_'); // Sanitize
+        final cleanName = _fileName!.replaceAll(' ', '_');
         final path =
             'files/${DateTime.now().millisecondsSinceEpoch}_$cleanName';
         fileUrl = await _resourceService.uploadFile(
             path: path, fileBytes: _fileBytes!);
       }
 
-      // Upload Cover if new
       if (_coverBytes != null) {
-        final cleanCover = _coverName!.replaceAll(' ', '_'); // Sanitize
+        final cleanCover = _coverName!.replaceAll(' ', '_');
         final path =
             'covers/${DateTime.now().millisecondsSinceEpoch}_$cleanCover';
         coverUrl = await _resourceService.uploadFile(
@@ -156,8 +148,6 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
 
       if (widget.resource == null) {
         await _resourceService.createResource(newItem);
-
-        // --- Automatically send broadcast notification if resource is Active ---
         if (_isActive) {
           try {
             final notificationService = AdminNotificationService();
@@ -167,138 +157,207 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
             );
           } catch (e) {
             debugPrint('Error sending automatic notification: $e');
-            // We do not want to fail the resource creation if the notification fails
           }
         }
-        // -----------------------------------------------------------------------
       } else {
         await _resourceService.updateResource(newItem.id, newItem.toJson());
       }
 
       if (mounted) {
         Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Saved successfully')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Saved successfully')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error saving: $e')));
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final showExtendedFields = widget.type == ResourceType.studyMaterial ||
-        widget.type == ResourceType.eBook ||
-        widget.type == ResourceType.pyq ||
-        widget.type == ResourceType.currentAffair; // Added Current Affairs
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final showPriceAndCover = widget.type != ResourceType.currentAffair;
 
     return Scaffold(
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
         title: Text(widget.resource == null ? 'Add Resource' : 'Edit Resource'),
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Title'),
-              validator: (v) => v!.isEmpty ? 'Required' : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(labelText: 'Description'),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _categoryController,
-              decoration:
-                  const InputDecoration(labelText: 'Category (Optional)'),
-            ),
-
-            // Study Material / eBook / PYQ Specific Fields
-            if (showExtendedFields) ...[
-              const SizedBox(height: 16),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionHeader(context, "GENERAL INFORMATION"),
+              const SizedBox(height: AppSpacing.md),
               TextFormField(
-                controller: _priceController,
-                decoration:
-                    const InputDecoration(labelText: 'Price (0 for Free)'),
-                keyboardType: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Required';
-                  final price = double.tryParse(v);
-                  if (price == null) return 'Invalid Number';
-                  if (price < 0) return 'Price cannot be negative';
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              const Text('Cover Image',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: (_coverBytes != null)
-                    ? Image.memory(_coverBytes!,
-                        width: 50, height: 50, fit: BoxFit.cover)
-                    : (_existingCoverUrl != null)
-                        ? Image.network(_existingCoverUrl!,
-                            width: 50, height: 50, fit: BoxFit.cover)
-                        : const Icon(Icons.image, size: 40),
-                title: Text(_coverName ?? extractFilename(_existingCoverUrl)),
-                trailing: TextButton(
-                    onPressed: _pickCover, child: const Text('Pick Image')),
-              ),
-            ],
-
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
-            // Common File Upload
-            const Text('Attachment (PDF)',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading:
-                  const Icon(Icons.picture_as_pdf, color: Colors.deepOrange),
-              title: Text(_fileName ?? extractFilename(_existingFileUrl)),
-              trailing: TextButton(
-                  onPressed: _pickFile, child: const Text('Pick PDF')),
-            ),
-
-            const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('Is Active'),
-              value: _isActive,
-              onChanged: (v) => setState(() => _isActive = v),
-            ),
-
-            const SizedBox(height: 32),
-            SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _save,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  prefixIcon: Icon(Icons.title_rounded),
                 ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Save Resource'),
+                validator: (v) => v!.isEmpty ? 'Required' : null,
               ),
-            ),
-          ],
+              const SizedBox(height: AppSpacing.lg),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  prefixIcon: Icon(Icons.description_outlined),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              TextFormField(
+                controller: _categoryController,
+                decoration: const InputDecoration(
+                  labelText: 'Category (Optional)',
+                  prefixIcon: Icon(Icons.category_outlined),
+                ),
+              ),
+              if (showPriceAndCover) ...[
+                const SizedBox(height: AppSpacing.xxl),
+                _buildSectionHeader(context, "PRICING"),
+                const SizedBox(height: AppSpacing.md),
+                TextFormField(
+                  controller: _priceController,
+                  decoration: const InputDecoration(
+                    labelText: 'Price (0 for Free)',
+                    prefixIcon: Icon(Icons.currency_rupee_rounded),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Required';
+                    final price = double.tryParse(v);
+                    if (price == null) return 'Invalid Number';
+                    if (price < 0) return 'Price cannot be negative';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+                _buildSectionHeader(context, "COVER IMAGE"),
+                const SizedBox(height: AppSpacing.md),
+                _buildPickerTile(
+                  context,
+                  title: _coverName ?? extractFilename(_existingCoverUrl),
+                  icon: Icons.image_outlined,
+                  onPressed: _pickCover,
+                  thumbnail: (_coverBytes != null)
+                      ? Image.memory(_coverBytes!, fit: BoxFit.cover)
+                      : (_existingCoverUrl != null)
+                          ? Image.network(_existingCoverUrl!, fit: BoxFit.cover)
+                          : null,
+                ),
+              ],
+              const SizedBox(height: AppSpacing.xxl),
+              _buildSectionHeader(context, "ATTACHMENT"),
+              const SizedBox(height: AppSpacing.md),
+              _buildPickerTile(
+                context,
+                title: _fileName ?? extractFilename(_existingFileUrl),
+                icon: Icons.picture_as_pdf_outlined,
+                onPressed: _pickFile,
+                iconColor: colorScheme.error,
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+              _buildSectionHeader(context, "VISIBILITY"),
+              const SizedBox(height: AppSpacing.sm),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Visible to Users'),
+                subtitle: Text('Hidden items won\'t appear in the app',
+                    style: theme.textTheme.bodySmall),
+                value: _isActive,
+                onChanged: (v) => setState(() => _isActive = v),
+              ),
+              const SizedBox(height: AppSpacing.xxxl),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _save,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save_rounded),
+                  label: const Text('SAVE RESOURCE'),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xxxl),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    return Text(
+      title,
+      style: theme.textTheme.labelSmall?.copyWith(
+        fontWeight: FontWeight.w800,
+        color: theme.colorScheme.onSurfaceVariant,
+        letterSpacing: 1.5,
+      ),
+    );
+  }
+
+  Widget _buildPickerTile(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required VoidCallback onPressed,
+    Widget? thumbnail,
+    Color? iconColor,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: (iconColor ?? colorScheme.primary).withOpacity(0.08),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: thumbnail != null
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(8), child: thumbnail)
+              : Icon(icon, color: iconColor ?? colorScheme.primary),
+        ),
+        title: Text(
+          title,
+          style:
+              theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: FilledButton.tonal(
+          onPressed: onPressed,
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            minimumSize: const Size(0, 36),
+          ),
+          child: const Text("Change"),
         ),
       ),
     );

@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart';
 
 /// Wraps form content in a standardized "Premium Card"
 Widget buildFormCard(BuildContext context,
     {required Widget child, EdgeInsetsGeometry? padding}) {
+  final colorScheme = Theme.of(context).colorScheme;
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
   return Container(
     width: double.infinity,
-    padding: padding ?? const EdgeInsets.all(24),
+    padding: padding ?? EdgeInsets.all(AppSpacing.lg),
     decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(AppRadius.xl),
       boxShadow: [
         BoxShadow(
-          color: Theme.of(context).primaryColor.withValues(alpha: 0.08),
+          color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
           blurRadius: 20,
           offset: const Offset(0, 5),
         ),
       ],
       border: Border.all(
-          color: Theme.of(context).primaryColor.withValues(alpha: 0.1)),
+          color: colorScheme.outline.withOpacity(isDark ? 0.1 : 0.2)),
     ),
     child: child,
   );
@@ -33,20 +38,24 @@ Future<T?> showAppDialog<T>({
   bool isDestructive = false,
   List<Widget>? actions,
 }) {
+  final theme = Theme.of(context);
+  final colorScheme = theme.colorScheme;
+
   return showDialog<T>(
     context: context,
     builder: (ctx) => Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl)),
+      backgroundColor: colorScheme.surface,
       elevation: 0,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(AppSpacing.xl),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: Colors.black.withOpacity(0.1),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -58,22 +67,20 @@ Future<T?> showAppDialog<T>({
           children: [
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 20,
+              style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
+                color: colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.md),
             DefaultTextStyle(
-              style: const TextStyle(
-                fontSize: 15,
-                color: Color(0xFF64748B),
-                height: 1.4,
-              ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ) ??
+                  const TextStyle(),
               child: content,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.xl),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: actions ??
@@ -81,13 +88,13 @@ Future<T?> showAppDialog<T>({
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
                       style: TextButton.styleFrom(
-                        foregroundColor: Colors.grey[600],
+                        foregroundColor: colorScheme.onSurfaceVariant,
                         textStyle: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       child: const Text('Cancel'),
                     ),
                     if (confirmText != null) ...[
-                      const SizedBox(width: 12),
+                      SizedBox(width: AppSpacing.sm),
                       ElevatedButton(
                         onPressed: () {
                           if (onConfirm != null) onConfirm();
@@ -95,18 +102,17 @@ Future<T?> showAppDialog<T>({
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isDestructive
-                              ? Colors.red[50]
-                              : Theme.of(context)
-                                  .primaryColor
-                                  .withValues(alpha: 0.1),
+                              ? colorScheme.errorContainer
+                              : colorScheme.primary,
                           foregroundColor: isDestructive
-                              ? Colors.red
-                              : Theme.of(context).primaryColor,
+                              ? colorScheme.onErrorContainer
+                              : colorScheme.onPrimary,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg,
+                              vertical: AppSpacing.md),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
                         child: Text(confirmText),
@@ -129,38 +135,41 @@ InputDecoration getPremiumInputDecoration(
   Widget? prefixIcon,
   Widget? suffixIcon,
 }) {
+  final colorScheme = Theme.of(context).colorScheme;
+
   return InputDecoration(
     labelText: labelText,
     hintText: hintText,
     prefixIcon: prefixIcon,
     suffixIcon: suffixIcon,
     filled: true,
-    fillColor: const Color(0xFFF8FAFC), // Slate 50
-    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-    labelStyle: const TextStyle(
-        color: Color(0xFF64748B), fontWeight: FontWeight.w500), // Slate 500
-    hintStyle: const TextStyle(color: Color(0xFF94A3B8)), // Slate 400
-    floatingLabelStyle: TextStyle(
-        color: Theme.of(context).primaryColor, fontWeight: FontWeight.w600),
+    fillColor: colorScheme.surfaceVariant.withOpacity(0.3),
+    contentPadding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+    labelStyle: TextStyle(
+        color: colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500),
+    hintStyle: TextStyle(color: colorScheme.onSurfaceVariant.withOpacity(0.6)),
+    floatingLabelStyle:
+        TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w600),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
-      borderSide: BorderSide(color: Colors.blueGrey.withValues(alpha: 0.1)),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.2)),
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
-      borderSide: const BorderSide(color: Color(0xFFE2E8F0)), // Slate 200
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.2)),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
-      borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      borderSide: BorderSide(color: colorScheme.primary, width: 2),
     ),
     errorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
-      borderSide: const BorderSide(color: Colors.redAccent),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      borderSide: BorderSide(color: colorScheme.error),
     ),
     focusedErrorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
-      borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      borderSide: BorderSide(color: colorScheme.error, width: 2),
     ),
   );
 }

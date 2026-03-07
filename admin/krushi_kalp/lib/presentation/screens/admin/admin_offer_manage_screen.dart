@@ -4,7 +4,9 @@ import '../../../../domain/models/mock_test.dart';
 import '../../../../data/services/offer_service.dart';
 import '../../../../data/services/test_service.dart';
 import '../../../../data/services/admin_service.dart';
-import '../../utils/ui_helpers.dart'; // NEW
+import 'package:krushi_kalp_admin/core/theme/app_spacing.dart';
+import 'package:krushi_kalp_admin/core/theme/app_radius.dart';
+import 'package:intl/intl.dart';
 
 class AdminOfferManageScreen extends StatefulWidget {
   final Offer? offer; // If provided, Edit mode. Else, Create mode.
@@ -23,7 +25,6 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
   late TextEditingController _valueController;
   late TextEditingController _minOrderController;
   late TextEditingController _maxDiscountController;
-  // targetIdsController removed in favor of List state
 
   String _discountType = 'FLAT';
   String _targetType = 'ALL';
@@ -31,11 +32,9 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
   DateTime _endDate = DateTime.now().add(const Duration(days: 30));
   bool _isActive = true;
   bool _isReal = true;
-  bool _isSale = false; // NEW
+  bool _isSale = false;
 
-  // Selection Data
-  List<dynamic> _selectedTargetIds =
-      []; // Stores IDs (int for Tests, String for Users)
+  List<dynamic> _selectedTargetIds = [];
   List<MockTest> _availableTests = [];
   List<Map<String, dynamic>> _availableUsers = [];
   bool _isLoadingData = false;
@@ -60,7 +59,7 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
       _endDate = o.endDate ?? DateTime.now().add(const Duration(days: 30));
       _isActive = o.isActive;
       _isReal = o.isReal;
-      _isSale = o.isSale; // NEW
+      _isSale = o.isSale;
       _selectedTargetIds = List.from(o.targetIds);
     }
 
@@ -82,7 +81,6 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
   Future<void> _saveOffer() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Validation for Percentage
     final discountVal = double.tryParse(_valueController.text) ?? 0;
     if (_discountType == 'PERCENTAGE' && discountVal > 99.99) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -92,7 +90,6 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
       return;
     }
 
-    // Validation for Target Type
     if (_targetType != 'ALL' && _selectedTargetIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -102,7 +99,7 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
     }
 
     final newOffer = Offer(
-      id: widget.offer?.id ?? 0, // Ignored on Insert
+      id: widget.offer?.id ?? 0,
       code: (_isSale || _codeController.text.isEmpty)
           ? null
           : _codeController.text.toUpperCase(),
@@ -115,10 +112,10 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
       isActive: _isActive,
       targetType: _targetType,
       targetIds: _selectedTargetIds,
-      minOrderValue: double.tryParse(_minOrderController.text), // Restored
+      minOrderValue: double.tryParse(_minOrderController.text),
       maxDiscount: double.tryParse(_maxDiscountController.text),
       isReal: _isReal,
-      isSale: _isSale, // NEW
+      isSale: _isSale,
     );
 
     try {
@@ -137,6 +134,8 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
   }
 
   void _showTestSelector() async {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final selected = await showDialog<List<int>>(
       context: context,
       builder: (ctx) {
@@ -144,79 +143,56 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
             List<int>.from(_selectedTargetIds.whereType<int>());
         return StatefulBuilder(
           builder: (context, setState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('Select Tests',
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 300, // Limit height
-                      child: ListView.builder(
-                        itemCount: _availableTests.length,
-                        itemBuilder: (ctx, i) {
-                          final test = _availableTests[i];
-                          final isSelected = tempSelected.contains(test.id);
-                          return CheckboxListTile(
-                            title: Text(test.title),
-                            value: isSelected,
-                            onChanged: (v) {
-                              setState(() {
-                                if (v!) {
-                                  tempSelected.add(test.id);
-                                } else {
-                                  tempSelected.remove(test.id);
-                                }
-                              });
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: const Text('Cancel')),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(ctx, tempSelected),
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context)
-                                  .primaryColor
-                                  .withOpacity(0.1),
-                              foregroundColor: Theme.of(context).primaryColor,
-                              elevation: 0),
-                          child: const Text('Confirm'),
-                        ),
-                      ],
-                    )
-                  ],
+            return AlertDialog(
+              title: const Text('Select Tests'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _availableTests.length,
+                  itemBuilder: (ctx, i) {
+                    final test = _availableTests[i];
+                    final isSelected = tempSelected.contains(test.id);
+                    return CheckboxListTile(
+                      title: Text(test.title),
+                      value: isSelected,
+                      activeColor: colorScheme.primary,
+                      onChanged: (v) {
+                        setState(() {
+                          if (v!)
+                            tempSelected.add(test.id);
+                          else
+                            tempSelected.remove(test.id);
+                        });
+                      },
+                    );
+                  },
                 ),
               ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Cancel')),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, tempSelected),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                  ),
+                  child: const Text('Confirm'),
+                ),
+              ],
             );
           },
         );
       },
     );
-    if (selected != null) {
-      setState(() => _selectedTargetIds = selected);
-    }
+    if (selected != null) setState(() => _selectedTargetIds = selected);
   }
 
   void _showUserSelector() async {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final selectedUser = await showDialog<List<String>>(
       context: context,
       builder: (ctx) {
@@ -232,37 +208,24 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
                   name.contains(query.toLowerCase());
             }).toList();
 
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+            return AlertDialog(
+              title: const Text('Select Users'),
+              content: SizedBox(
+                width: double.maxFinite,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('Select Users',
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 16),
                     TextField(
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: 'Search',
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 12),
+                        prefixIcon: Icon(Icons.search_rounded),
                       ),
                       onChanged: (v) => setState(() => query = v),
                     ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      height: 300,
+                    const SizedBox(height: AppSpacing.md),
+                    Flexible(
                       child: ListView.builder(
+                        shrinkWrap: true,
                         itemCount: filteredUsers.length,
                         itemBuilder: (ctx, i) {
                           final user = filteredUsers[i];
@@ -272,344 +235,300 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
                             title: Text(user['username'] ?? 'User'),
                             subtitle: Text(user['email'] ?? ''),
                             value: isSelected,
+                            activeColor: colorScheme.primary,
                             onChanged: (v) {
                               setState(() {
-                                if (v!) {
+                                if (v!)
                                   tempSelected.add(uid);
-                                } else {
+                                else
                                   tempSelected.remove(uid);
-                                }
                               });
                             },
                           );
                         },
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: const Text('Cancel')),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                            onPressed: () => Navigator.pop(ctx, tempSelected),
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue[50],
-                                foregroundColor: Colors.blue[700],
-                                elevation: 0),
-                            child: const Text('Confirm')),
-                      ],
-                    )
                   ],
                 ),
               ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Cancel')),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx, tempSelected),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                  ),
+                  child: const Text('Confirm'),
+                ),
+              ],
             );
           },
         );
       },
     );
-
-    if (selectedUser != null) {
-      setState(() => _selectedTargetIds = selectedUser);
-    }
+    if (selectedUser != null) setState(() => _selectedTargetIds = selectedUser);
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: Text(widget.offer == null ? 'Create Offer' : 'Edit Offer',
-            style: const TextStyle(
-                fontWeight: FontWeight.bold, color: Colors.black)),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        title: Text(widget.offer == null ? 'Create Offer' : 'Edit Offer'),
       ),
       body: _isLoadingData
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth > 600;
-                  return buildFormCard(
-                    context,
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          TextFormField(
-                            controller: _codeController,
-                            enabled: !_isSale, // Disable if Sale
-                            decoration: getPremiumInputDecoration(
-                              context,
-                              labelText: _isSale
-                                  ? 'Coupon Code (Not Required)'
-                                  : 'Coupon Code (Unique)',
-                              hintText: 'SUMMER50',
-                              prefixIcon: const Icon(
-                                  Icons.confirmation_number_outlined),
-                            ),
-                            validator: (v) =>
-                                (!_isSale && v!.isEmpty) ? 'Required' : null,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.xl,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 800),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionHeader(context, "GENERAL INFORMATION"),
+                        const SizedBox(height: AppSpacing.lg),
+                        TextFormField(
+                          controller: _codeController,
+                          enabled: !_isSale,
+                          decoration: InputDecoration(
+                            labelText: _isSale
+                                ? "Coupon Code (N/A for Sales)"
+                                : "Unique Coupon Code",
+                            hintText: "e.g. KRUSHI50",
+                            prefixIcon:
+                                const Icon(Icons.confirmation_number_rounded),
                           ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _titleController,
-                            decoration: getPremiumInputDecoration(
-                              context,
-                              labelText: 'Title',
-                              hintText: 'Summer Sale',
-                              prefixIcon: const Icon(Icons.label_outline),
-                            ),
-                            validator: (v) => v!.isEmpty ? 'Required' : null,
+                          validator: (v) =>
+                              (!_isSale && v!.isEmpty) ? 'Required' : null,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        TextFormField(
+                          controller: _titleController,
+                          decoration: const InputDecoration(
+                            labelText: "Display Title",
+                            hintText: "e.g. Festival Special Discount",
+                            prefixIcon: Icon(Icons.label_rounded),
                           ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _descriptionController,
-                            decoration: getPremiumInputDecoration(
-                              context,
-                              labelText: 'Description',
-                              prefixIcon:
-                                  const Icon(Icons.description_outlined),
-                            ),
-                            maxLines: 2,
+                          validator: (v) => v!.isEmpty ? 'Required' : null,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        TextFormField(
+                          controller: _descriptionController,
+                          maxLines: 2,
+                          decoration: const InputDecoration(
+                            labelText: "Short Description",
+                            hintText: "Visible to users on checkout",
+                            prefixIcon: Icon(Icons.description_rounded),
                           ),
-                          const SizedBox(height: 10),
-                          const SizedBox(height: 10),
-                          if (isWide)
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: DropdownButtonFormField<String>(
-                                    initialValue: _discountType,
-                                    decoration: getPremiumInputDecoration(
-                                        context,
-                                        labelText: 'Type'),
-                                    items: ['FLAT', 'PERCENTAGE']
-                                        .map((e) => DropdownMenuItem(
-                                            value: e, child: Text(e)))
-                                        .toList(),
-                                    onChanged: (v) =>
-                                        setState(() => _discountType = v!),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _valueController,
-                                    decoration: getPremiumInputDecoration(
-                                      context,
-                                      labelText: 'Value',
-                                      prefixIcon:
-                                          const Icon(Icons.attach_money),
-                                    ),
-                                    keyboardType: TextInputType.number,
-                                    validator: (v) =>
-                                        v!.isEmpty ? 'Required' : null,
-                                  ),
-                                ),
-                              ],
-                            )
-                          else ...[
-                            DropdownButtonFormField<String>(
-                              initialValue: _discountType,
-                              decoration: getPremiumInputDecoration(context,
-                                  labelText: 'Type'),
+                        ),
+                        const SizedBox(height: AppSpacing.xxl),
+                        _buildSectionHeader(context, "DISCOUNT CONFIGURATION"),
+                        const SizedBox(height: AppSpacing.lg),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isNarrow = constraints.maxWidth < 350;
+
+                            final typeField = DropdownButtonFormField<String>(
+                              value: _discountType,
+                              isExpanded:
+                                  true, // Prevents overflow if items are long
+                              decoration: const InputDecoration(
+                                labelText: "Type",
+                                prefixIcon: Icon(Icons.percent_rounded),
+                              ),
                               items: ['FLAT', 'PERCENTAGE']
                                   .map((e) => DropdownMenuItem(
                                       value: e, child: Text(e)))
                                   .toList(),
                               onChanged: (v) =>
                                   setState(() => _discountType = v!),
-                            ),
-                            const SizedBox(height: 10),
-                            TextFormField(
+                            );
+
+                            final valueField = TextFormField(
                               controller: _valueController,
-                              decoration: getPremiumInputDecoration(
-                                context,
-                                labelText: 'Value',
-                                prefixIcon: const Icon(Icons.attach_money),
-                              ),
                               keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: "Value",
+                                prefixIcon: Icon(Icons.attach_money_rounded),
+                              ),
                               validator: (v) => v!.isEmpty ? 'Required' : null,
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-                          // Target Selection
-                          DropdownButtonFormField<String>(
-                            initialValue: _targetType,
-                            decoration: getPremiumInputDecoration(context,
-                                labelText: 'Target Type'),
-                            items: (_isSale
-                                    ? [
-                                        'ALL',
-                                        'TEST'
-                                      ] // Sale only supports these
-                                    : ['ALL', 'USER', 'TEST'])
-                                .map((e) =>
-                                    DropdownMenuItem(value: e, child: Text(e)))
-                                .toList(),
-                            onChanged: (v) {
-                              setState(() {
-                                _targetType = v!;
-                                _selectedTargetIds
-                                    .clear(); // Reset selection on type change
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 16),
+                            );
 
-                          if (_targetType == 'TEST') ...[
-                            OutlinedButton.icon(
-                                onPressed: _showTestSelector,
-                                icon: const Icon(Icons.list),
-                                label: const Text('Select Tests to Include')),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _selectedTargetIds.map((id) {
-                                final test = _availableTests.firstWhere(
-                                    (t) => t.id == id,
-                                    orElse: () => MockTest(
-                                        id: 0,
-                                        title: 'Unknown',
-                                        description: '',
-                                        category: '',
-                                        filePath: '',
-                                        price: 0,
-                                        totalQuestions: 0,
-                                        totalMarks: 0,
-                                        negativeMarking: false,
-                                        negativeMarksPerQ: 0,
-                                        language: 'en',
-                                        createdAt: DateTime.now()));
-                                return Chip(
-                                  label: Text(
-                                    test.title,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  onDeleted: () => setState(
-                                      () => _selectedTargetIds.remove(id)),
-                                );
-                              }).toList(),
-                            )
-                          ] else if (_targetType == 'USER') ...[
-                            OutlinedButton.icon(
-                                onPressed: _showUserSelector,
-                                icon: const Icon(Icons.person_search),
-                                label: const Text('Select Users to Include')),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: _selectedTargetIds.map((id) {
-                                final user = _availableUsers.firstWhere(
-                                    (u) => u['id'] == id,
-                                    orElse: () =>
-                                        {'username': 'Unknown', 'email': '?'});
-                                return Chip(
-                                  label: Text(
-                                      "${user['username']} (${user['email']})"),
-                                  onDeleted: () => setState(
-                                      () => _selectedTargetIds.remove(id)),
-                                );
-                              }).toList(),
-                            )
-                          ],
+                            if (isNarrow) {
+                              return Column(
+                                children: [
+                                  typeField,
+                                  const SizedBox(height: AppSpacing.lg),
+                                  valueField,
+                                ],
+                              );
+                            }
 
-                          const SizedBox(height: 24),
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text('Start Date'),
-                            subtitle: Text(
-                                _startDate.toLocal().toString().split(' ')[0]),
-                            trailing: const Icon(Icons.calendar_today),
-                            onTap: () async {
-                              final d = await showDatePicker(
-                                  context: context,
-                                  initialDate: _startDate,
-                                  firstDate: DateTime(2025),
-                                  lastDate: DateTime(2030));
-                              if (d != null) setState(() => _startDate = d);
-                            },
+                            return Row(
+                              children: [
+                                Expanded(child: typeField),
+                                const SizedBox(width: AppSpacing.lg),
+                                Expanded(child: valueField),
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        DropdownButtonFormField<String>(
+                          value: _targetType,
+                          decoration: const InputDecoration(
+                            labelText: "Apply To",
+                            prefixIcon: Icon(Icons.gps_fixed_rounded),
                           ),
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text('End Date'),
-                            subtitle: Text(
-                                _endDate.toLocal().toString().split(' ')[0]),
-                            trailing: const Icon(Icons.calendar_today),
-                            onTap: () async {
-                              final d = await showDatePicker(
-                                  context: context,
-                                  initialDate: _endDate,
-                                  firstDate: DateTime(2025),
-                                  lastDate: DateTime(2030));
-                              if (d != null) setState(() => _endDate = d);
-                            },
+                          items: (_isSale
+                                  ? ['ALL', 'TEST']
+                                  : ['ALL', 'USER', 'TEST'])
+                              .map((e) =>
+                                  DropdownMenuItem(value: e, child: Text(e)))
+                              .toList(),
+                          onChanged: (v) {
+                            setState(() {
+                              _targetType = v!;
+                              _selectedTargetIds.clear();
+                            });
+                          },
+                        ),
+                        if (_targetType != 'ALL') ...[
+                          const SizedBox(height: AppSpacing.lg),
+                          _buildPickerTile(
+                            context,
+                            label: _targetType == 'TEST'
+                                ? "Select Mock Tests"
+                                : "Select Targeted Users",
+                            subtitle:
+                                "${_selectedTargetIds.length} items selected",
+                            icon: _targetType == 'TEST'
+                                ? Icons.list_alt_rounded
+                                : Icons.people_rounded,
+                            onTap: _targetType == 'TEST'
+                                ? _showTestSelector
+                                : _showUserSelector,
                           ),
-                          SwitchListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: const Text('Is Active'),
-                              value: _isActive,
-                              onChanged: (v) => setState(() => _isActive = v)),
-                          SwitchListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: const Text('Real Offer? (Yes/No)'),
-                              subtitle: const Text(
-                                  'Mark this as a real offer vs test/fake.'),
-                              value: _isReal,
-                              // Requirement: If "Is Sale" is FALSE (Code-based), "Is Real" MUST be TRUE and locked.
-                              // User cannot turn off "Real" for coupon codes.
-                              onChanged: !_isSale
-                                  ? null
-                                  : (v) => setState(() => _isReal = v)),
-                          SwitchListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: const Text('Is Store Sale? (Auto-Apply)'),
-                              subtitle: const Text(
-                                  'If checked, users see this as a sale price without needing a code.'),
-                              value: _isSale,
-                              onChanged: (v) {
-                                setState(() {
-                                  _isSale = v;
-                                  if (_isSale) {
-                                    // Sale usually implies ALL or TEST, not specific USER
-                                    if (_targetType == 'USER') {
-                                      _targetType = 'ALL';
-                                      _selectedTargetIds.clear();
-                                    }
-                                    _codeController
-                                        .clear(); // Clear code for sales
-                                  } else {
-                                    // If switched TO Coupon Code (Not Sale), enforce Real = True
-                                    _isReal = true;
-                                  }
-                                });
-                              }),
-                          const SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: _saveOffer,
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context).primaryColor,
-                                foregroundColor: Colors.white,
-                                minimumSize: const Size(double.infinity, 50)),
-                            child: const Text('SAVE OFFER'),
-                          )
                         ],
-                      ),
+                        const SizedBox(height: AppSpacing.xxl),
+                        _buildSectionHeader(context, "AVAILABILITY & CONTROLS"),
+                        const SizedBox(height: AppSpacing.lg),
+                        _buildPickerTile(
+                          context,
+                          label: "Validity Window",
+                          subtitle:
+                              "${DateFormat.yMMMd().format(_startDate)} - ${DateFormat.yMMMd().format(_endDate)}",
+                          icon: Icons.calendar_today_rounded,
+                          onTap: () async {
+                            final range = await showDateRangePicker(
+                              context: context,
+                              firstDate: DateTime(2025),
+                              lastDate: DateTime(2030),
+                              initialDateRange: DateTimeRange(
+                                  start: _startDate, end: _endDate),
+                            );
+                            if (range != null) {
+                              setState(() {
+                                _startDate = range.start;
+                                _endDate = range.end;
+                              });
+                            }
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        SwitchListTile(
+                          title: const Text("Is Active"),
+                          subtitle: const Text("Enable this offer for users"),
+                          value: _isActive,
+                          onChanged: (v) => setState(() => _isActive = v),
+                        ),
+                        SwitchListTile(
+                          title: const Text("Is Store Sale"),
+                          subtitle:
+                              const Text("Auto-apply without coupon code"),
+                          value: _isSale,
+                          onChanged: (v) {
+                            setState(() {
+                              _isSale = v;
+                              if (_isSale) {
+                                if (_targetType == 'USER') {
+                                  _targetType = 'ALL';
+                                  _selectedTargetIds.clear();
+                                }
+                                _codeController.clear();
+                                _isReal = true;
+                              }
+                            });
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.xxl),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            onPressed: _saveOffer,
+                            icon: const Icon(Icons.save_rounded),
+                            label:
+                                Text(_isSale ? 'CREATE SALE' : 'SAVE COUPON'),
+                          ),
+                        ),
+                      ],
                     ),
-                  );
-                },
+                  ),
+                ),
               ),
             ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        title,
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w800,
+          color: theme.colorScheme.onSurfaceVariant,
+          letterSpacing: 1.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPickerTile(BuildContext context,
+      {required String label,
+      required String subtitle,
+      required IconData icon,
+      required VoidCallback onTap}) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return ListTile(
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        side: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      leading: Icon(icon, color: colorScheme.primary),
+      title: Text(label, style: theme.textTheme.labelLarge),
+      subtitle: Text(subtitle,
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: colorScheme.onSurfaceVariant)),
+      onTap: onTap,
+      trailing: const Icon(Icons.chevron_right_rounded, size: 20),
     );
   }
 }

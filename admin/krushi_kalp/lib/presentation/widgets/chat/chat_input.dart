@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:krushi_kalp_admin/core/theme/app_colors.dart';
 
 class ChatInput extends StatefulWidget {
   final Function(String) onSendPressed;
@@ -26,10 +25,13 @@ class _ChatInputState extends State<ChatInput> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       padding: const EdgeInsets.symmetric(
           horizontal: 16, vertical: 12), // Outer padding
-      color: Colors.white,
+      color: colorScheme.surface,
       child: SafeArea(
         // Handle bottom notch
         child: Row(
@@ -43,31 +45,32 @@ class _ChatInputState extends State<ChatInput> {
                 maxLines: 5,
                 minLines: 1,
                 textCapitalization: TextCapitalization.sentences,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: colorScheme.onSurface,
                   fontSize: 16,
                   fontFamily: 'Inter',
                 ),
                 decoration: InputDecoration(
                   hintText: 'Message',
-                  hintStyle: const TextStyle(color: AppColors.neutral400),
+                  hintStyle: TextStyle(
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.6)),
                   filled: true,
-                  fillColor: AppColors.neutral50,
+                  fillColor: colorScheme.surfaceVariant.withOpacity(0.3),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 16, // Comfort padding inside field
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8), // Square-ish (8px)
-                    borderSide: const BorderSide(color: AppColors.neutral200),
+                    borderSide: BorderSide(color: colorScheme.outlineVariant),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.neutral200),
+                    borderSide: BorderSide(color: colorScheme.outlineVariant),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.primary),
+                    borderSide: BorderSide(color: colorScheme.primary),
                   ),
                 ),
               ),
@@ -80,7 +83,7 @@ class _ChatInputState extends State<ChatInput> {
               child: IconButton(
                 onPressed: _handleSend,
                 icon: const Icon(Icons.send),
-                color: AppColors.primary,
+                color: colorScheme.primary,
                 iconSize: 28, // Slightly larger icon
                 splashRadius: 24,
                 tooltip: 'Send',
