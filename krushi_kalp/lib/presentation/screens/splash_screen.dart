@@ -38,11 +38,29 @@ class _SplashScreenState extends State<SplashScreen> {
 
   // Disposed flag to prevent navigation after widget is removed from tree
   bool _disposed = false;
+  double _progress = 0.0;
+  String _statusText = 'Initializing modules...';
 
   @override
   void initState() {
     super.initState();
+    _startProgressSimulation();
     _checkAuthAndNavigate();
+  }
+
+  void _startProgressSimulation() {
+    // Simulate loading progress for a smoother visual experience
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(milliseconds: 50));
+      if (_disposed || _progress >= 0.95) return false;
+      setState(() {
+        _progress += 0.02;
+        if (_progress > 0.3) _statusText = 'Loading preferences...';
+        if (_progress > 0.6) _statusText = 'Syncing data...';
+        if (_progress > 0.8) _statusText = 'Ready';
+      });
+      return true;
+    });
   }
 
   @override
@@ -54,8 +72,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _checkAuthAndNavigate() async {
     debugPrint("Splash: Starting checks...");
 
-    // Run config fetch + notification init in parallel with a combined timeout
-    // so a slow network doesn't hang the app indefinitely.
+    // Run config fetch + notification init in parallel
     await Future.wait([
       AppConfigService.fetchConfigs().catchError((e) {
         debugPrint("Splash: Config fetch error (non-fatal): $e");
@@ -66,26 +83,25 @@ class _SplashScreenState extends State<SplashScreen> {
         return null;
       }),
     ]).timeout(
-      const Duration(seconds: 5), // Increased from 1.5s for cold starts
+      const Duration(seconds: 5),
       onTimeout: () {
         debugPrint("Splash: Parallel init timed out — proceeding anyway.");
         return [];
       },
     );
 
+    setState(() => _progress = 1.0);
+    await Future.delayed(const Duration(milliseconds: 300));
+
     debugPrint("Splash: Parallel init done.");
 
     // ── Force Update Check ──────────────────────────────────────────────────
-    // Compare installed version vs the min_version set in Supabase app_status.
-    // If not mounted yet, skip safely.
     if (mounted) {
       final minVer = AppConfigService.minVersion;
       if (minVer != null && minVer.isNotEmpty) {
         final info = await PackageInfo.fromPlatform();
-        final current = info.version; // e.g. "1.0.0"
+        final current = info.version;
         if (_isVersionBelow(current, minVer)) {
-          debugPrint(
-              "Splash: Version $current < required $minVer — showing update screen.");
           if (mounted) {
             Navigator.pushReplacement(
               context,
@@ -97,13 +113,11 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             );
           }
-          return; // Stop here — user must update
+          return;
         }
       }
     }
-    // ───────────────────────────────────────────────────────────────────────
 
-    // Wait for AuthProvider to finish its own session check (max ~4s)
     if (!mounted) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
@@ -114,16 +128,11 @@ class _SplashScreenState extends State<SplashScreen> {
       if (_disposed) return;
     }
 
-    debugPrint(
-        "Splash: AuthProvider retrieved. isLoggedIn: ${authProvider.isLoggedIn}");
-
     if (!mounted) return;
 
-    // Navigation
+    // Final navigation
     if (authProvider.isLoggedIn) {
       final role = authProvider.userRole;
-
-      // MAINTENANCE CHECK — admins bypass maintenance mode
       if (AppConfigService.isMaintenanceMode && role != 'Admin') {
         if (mounted) {
           Navigator.pushReplacement(
@@ -131,13 +140,10 @@ class _SplashScreenState extends State<SplashScreen> {
             MaterialPageRoute(
               builder: (context) => MaintenanceScreen(
                 error: AppConfigService.maintenanceMessage,
-                onRetry: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const SplashScreen()),
-                  );
-                },
+                onRetry: () => Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SplashScreen()),
+                ),
               ),
             ),
           );
@@ -146,7 +152,6 @@ class _SplashScreenState extends State<SplashScreen> {
       }
 
       if (role != 'Admin') {
-        // Regular User → connect user notifications → go to MainScreen
         NotificationService().connectUser();
         if (mounted && !_disposed) {
           Navigator.pushReplacement(
@@ -155,8 +160,6 @@ class _SplashScreenState extends State<SplashScreen> {
           );
         }
       } else {
-        // Admin → connect admin notifications → redirect to LoginScreen
-        // (Admin user who signed in via user app gets sent to login)
         NotificationService().connectAdmin();
         if (mounted && !_disposed) {
           Navigator.pushReplacement(
@@ -175,31 +178,155 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('SplashScreen: Building...');
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              'assets/images/playstore.png',
-              width: context.w(180),
-              height: context.h(180),
-            ),
-            SizedBox(height: context.h(24)),
-            Text(
-              'Krushi kalp',
-              style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
+      backgroundColor: colorScheme.surface,
+      body: Stack(
+        children: [
+          // Main Content
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Logo Container with Soft Shadow
+                Container(
+                  width: context.w(150),
+                  height: context.w(150),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.primary.withOpacity(0.08),
+                        blurRadius: 40,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
                   ),
+                  child: Image.asset(
+                    'assets/images/playstore.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                SizedBox(height: context.h(48)),
+                // App Title
+                Text(
+                  'Krushi Kalp',
+                  style: theme.textTheme.displaySmall?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Tagline
+                Text(
+                  'Empowering Agricultural Academics',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                SizedBox(height: context.h(80)),
+                // Loading Section
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 48),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _statusText,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color:
+                                  colorScheme.onSurfaceVariant.withOpacity(0.5),
+                            ),
+                          ),
+                          Text(
+                            '${(_progress * 100).toInt()}%',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(100),
+                        child: LinearProgressIndicator(
+                          value: _progress,
+                          minHeight: 6,
+                          backgroundColor:
+                              colorScheme.primary.withOpacity(0.12),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              colorScheme.primary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'AGRICULTURAL ACADEMIC INDUSTRY',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                    letterSpacing: 1.2,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
             ),
-            SizedBox(height: context.h(48)),
-            CircularProgressIndicator(
-                color: Theme.of(context).colorScheme.primary),
-          ],
-        ),
+          ),
+          // Footer
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 40,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.verified_user_rounded,
+                      size: 14,
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'SECURE ACCESS',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snapshot) {
+                    final version = snapshot.data?.version ?? '1.0.0';
+                    final build = snapshot.data?.buildNumber ?? '1';
+                    return Text(
+                      'v$version Build $build',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant.withOpacity(0.3),
+                        fontSize: 10,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -173,8 +173,8 @@ class _LoginScreenState extends State<LoginScreen>
                       children: [
                         Image.asset(
                           "assets/images/notification_logo.png",
-                          height: context.h(80),
-                          width: context.w(80),
+                          height: context.h(130),
+                          width: context.w(130),
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         Text(
