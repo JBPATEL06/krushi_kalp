@@ -15,6 +15,7 @@ import 'main_screen.dart';
 import '../../data/services/test_service.dart';
 import '../../utils/error_utils.dart';
 import '../widgets/common/responsive_wrapper.dart'; // FIXED: Added import for responsive scaling
+import '../../data/services/performance_service.dart'; // NEW
 
 class TestResultScreen extends StatefulWidget {
   final int? resultId;
@@ -30,6 +31,7 @@ class TestResultScreen extends StatefulWidget {
   final dynamic questions; // Using dynamic for flexibility here
   final Map<int, int>? selectedAnswers;
   final String examLanguage;
+  final int timeTakenSeconds;
 
   const TestResultScreen({
     super.key,
@@ -45,6 +47,7 @@ class TestResultScreen extends StatefulWidget {
     this.questions,
     this.selectedAnswers,
     this.examLanguage = 'en',
+    this.timeTakenSeconds = 0,
   });
 
   @override
@@ -174,6 +177,15 @@ class _TestResultScreenState extends State<TestResultScreen>
       final path = 'exam_result/${widget.testId}.pdf';
       try {
         await TestService.instance.uploadResultPdf(path, file);
+
+        // MODIFIED — update streak after test attempt, fire and forget
+        PerformanceService.instance
+            .updateUserStreak(
+              userId,
+              widget.timeTakenSeconds,
+              'test_attempt',
+            )
+            .ignore();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

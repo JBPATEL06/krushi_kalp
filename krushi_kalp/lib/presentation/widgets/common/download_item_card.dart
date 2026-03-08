@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -8,14 +8,14 @@ import 'responsive_wrapper.dart';
 /// Purchased-item card used in purchased_tests_screen and my_resources_screen.
 ///
 /// Horizontal layout:
-///   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-///   â”‚        â”‚  Title (max 2 lines)                 â”‚
-///   â”‚ IMAGE  â”‚  Subtitle                            â”‚
-///   â”‚ fills  â”‚â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”‚
-///   â”‚ pane   â”‚            [ Action button ]         â”‚
-///   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+///   â”Œ──────────────────────────────────────────────â”
+///   │        │  Title (max 2 lines)                 │
+///   │ IMAGE  │  Subtitle                            │
+///   │ fills  │─────────────────────────────────────│
+///   │ pane   │            [ Action button ]         │
+///   └──────────────────────────────────────────────┘
 ///
-/// Image uses [BoxFit.cover] inside [ClipRRect] â€” fills container completely,
+/// Image uses [BoxFit.cover] inside [ClipRRect] — fills container completely,
 /// no letterboxing, no empty space.
 class DownloadItemCard extends StatelessWidget {
   final String title;
@@ -39,7 +39,7 @@ class DownloadItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Card height: 18% of screen height â€” matches StoreItemCard for visual consistency
+    // Card height: 18% of screen height — matches StoreItemCard for visual consistency
     final cardHeight = MediaQuery.of(context).size.height * 0.18;
 
     return ModernCard(
@@ -51,7 +51,7 @@ class DownloadItemCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // â”€â”€ LEFT: IMAGE PANE (flex 2 = ~40%) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── LEFT: IMAGE PANE (flex 2 = ~40%) ─────────────────────────
             Flexible(
               flex: 2,
               child: Hero(
@@ -65,7 +65,7 @@ class DownloadItemCard extends StatelessWidget {
               ),
             ),
 
-            // â”€â”€ RIGHT: CONTENT PANE (flex 3 = ~60%) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── RIGHT: CONTENT PANE (flex 3 = ~60%) ─────────────────────
             Flexible(
               flex: 3,
               child: Padding(
@@ -107,7 +107,7 @@ class DownloadItemCard extends StatelessWidget {
                       ],
                     ),
 
-                    // Action button â€” constrained so it never overflows
+                    // Action button — constrained so it never overflows
                     SizedBox(
                       height: context.h(44),
                       width: double.infinity,

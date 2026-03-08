@@ -1,10 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_spacing.dart';
 
 /// Shown when the installed app version is below the server-required minimum.
-/// The user cannot bypass this screen â€” they must update via the Play Store.
+/// The user cannot bypass this screen — they must update via the Play Store.
 class UpdateRequiredScreen extends StatelessWidget {
   final String currentVersion;
   final String requiredVersion;
@@ -78,7 +78,7 @@ class UpdateRequiredScreen extends StatelessWidget {
 
               // Version info
               Text(
-                'Your version: v$currentVersion  â€¢  Required: v$requiredVersion',
+                'Your version: v$currentVersion  •  Required: v$requiredVersion',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: context.sp(10), // FIXED

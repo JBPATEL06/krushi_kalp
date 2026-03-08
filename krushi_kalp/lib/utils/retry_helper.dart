@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'network_utils.dart';
 
 /// Wraps any async call with automatic retry on network errors.
@@ -25,7 +25,7 @@ class RetryHelper {
         final isNetwork = NetworkUtils.isNetworkError(e);
 
         if (!isNetwork || attempt > maxRetries) {
-          // Not a network error or exhausted retries â€” rethrow
+          // Not a network error or exhausted retries — rethrow
           rethrow;
         }
 

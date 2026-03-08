@@ -23,7 +23,7 @@ class CategoryCard extends StatelessWidget {
     final iconSize = context.w(28);
     final iconPadding = context.w(10);
     final spacing = context.h(8);
-    final fontSize = context.sp(12);
+    final fontSize = context.sp(14);
     final cardPadding = context.w(10);
 
     return Container(

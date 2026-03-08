@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/test_provider.dart';
@@ -21,6 +21,9 @@ import 'package:share_plus/share_plus.dart';
 import '../widgets/common/category_card.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../widgets/common/responsive_wrapper.dart';
+import '../../data/services/performance_service.dart';
+import '../../domain/models/user_performance.dart';
+import '../widgets/performance_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -299,26 +302,88 @@ class _HomeScreenState extends State<HomeScreen> {
     return StreamBuilder<List<HomeBanner>>(
       stream: BannerService.instance.streamAllBanners(),
       builder: (context, snapshot) {
-        // Loading â†’ show shimmer placeholder (NOT static banner)
+        final List<Widget> sliderItems = [
+          _buildPerformanceCard(),
+        ];
+
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildBannerShimmer();
-        }
+          sliderItems.add(_buildBannerShimmer());
+        } else {
+          final banners = snapshot.data ?? [];
+          final activeBanners = banners.where((b) => b.isActive).toList();
 
-        final banners = snapshot.data ?? [];
-        final activeBanners = banners.where((b) => b.isActive).toList();
-
-        // Only show static banner when there are literally 0 active banners
-        if (activeBanners.isEmpty) {
-          return _buildStaticBanner();
+          if (activeBanners.isEmpty) {
+            sliderItems.add(_buildStaticBanner());
+          } else {
+            for (final banner in activeBanners) {
+              sliderItems.add(_buildBannerImageCard(banner));
+            }
+          }
         }
 
         // Hand off to isolated StatefulWidget so rebuilds don't reset the slider
         return _BannerAutoSlider(
-          banners: activeBanners,
+          items: sliderItems,
           autoScroll: AppConfigService.bannerAutoScroll,
           interval: AppConfigService.bannerInterval,
         );
       },
+    );
+  }
+
+  Widget _buildPerformanceCard() {
+    final userId = context.read<AuthProvider>().currentUser?.id ?? '';
+    if (userId.isEmpty) return const SizedBox.shrink();
+    return FutureBuilder<UserPerformance>(
+      future: PerformanceService.instance.getUserPerformance(userId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return PerformanceCard(
+              data: UserPerformance.empty(), isLoading: true);
+        }
+        if (!snapshot.hasData || snapshot.hasError) {
+          return const SizedBox.shrink();
+        }
+        return PerformanceCard(data: snapshot.data!);
+      },
+    );
+  }
+
+  Widget _buildBannerImageCard(HomeBanner banner) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xs), // FIXED: AppSpacing.xs (4)
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        child: CachedNetworkImage(
+          imageUrl: banner.imageUrl,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          placeholder: (context, url) => Container(
+            color: theme.colorScheme.surfaceContainerHighest,
+            child: const Center(child: CircularProgressIndicator()),
+          ),
+          errorWidget: (context, url, error) => Container(
+            color: theme.colorScheme.surfaceContainerHighest,
+            child: Center(
+              child: Icon(Icons.broken_image,
+                  color: theme.colorScheme.outline,
+                  size: context.sp(40)), // FIXED: context.sp(40)
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -541,17 +606,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Isolated banner slider â€” owns PageController + Timer
+// ─────────────────────────────────────────────────────────────────
+// Isolated banner slider — owns PageController + Timer
 // so StreamBuilder rebuilds never reset position.
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────
 class _BannerAutoSlider extends StatefulWidget {
-  final List<HomeBanner> banners;
+  final List<Widget> items;
   final bool autoScroll;
   final int interval;
 
   const _BannerAutoSlider({
-    required this.banners,
+    required this.items,
     required this.autoScroll,
     required this.interval,
   });
@@ -563,13 +628,13 @@ class _BannerAutoSlider extends StatefulWidget {
 class _BannerAutoSliderState extends State<_BannerAutoSlider> {
   late final PageController _controller;
   int _current = 0;
-  List<HomeBanner> _banners = [];
+  List<Widget> _items = [];
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _banners = widget.banners;
+    _items = widget.items;
     _controller = PageController(viewportFraction: 0.92);
     _setupAutoPlay();
   }
@@ -578,8 +643,8 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
   void didUpdateWidget(_BannerAutoSlider oldWidget) {
     super.didUpdateWidget(oldWidget);
     // If banners change, update list
-    if (widget.banners != oldWidget.banners) {
-      _banners = widget.banners;
+    if (widget.items != oldWidget.items) {
+      _items = widget.items;
     }
 
     // If configuration changes, reset autoplay
@@ -591,10 +656,10 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
 
   void _setupAutoPlay() {
     _timer?.cancel();
-    if (_banners.length > 1 && widget.autoScroll) {
+    if (_items.length > 1 && widget.autoScroll) {
       _timer = Timer.periodic(Duration(seconds: widget.interval), (timer) {
         if (!mounted) return;
-        final next = (_current + 1) % _banners.length;
+        final next = (_current + 1) % _items.length;
         _controller.animateToPage(
           next,
           duration: const Duration(milliseconds: 500),
@@ -621,53 +686,19 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
               context.h(180), // FIXED: context.h(180) - Specified banner size
           child: PageView.builder(
             controller: _controller,
-            itemCount: _banners.length,
+            itemCount: _items.length,
             onPageChanged: (i) => setState(() => _current = i),
             itemBuilder: (context, index) {
-              final banner = _banners[index];
-              return Container(
-                margin: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xs), // FIXED: AppSpacing.xs (4)
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.shadow.withValues(alpha: 0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  child: CachedNetworkImage(
-                    imageUrl: banner.imageUrl,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    placeholder: (context, url) => Container(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      child: const Center(child: CircularProgressIndicator()),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      child: Center(
-                        child: Icon(Icons.broken_image,
-                            color: theme.colorScheme.outline,
-                            size: context.sp(40)), // FIXED: context.sp(40)
-                      ),
-                    ),
-                  ),
-                ),
-              );
+              return _items[index];
             },
           ),
         ),
         const SizedBox(height: AppSpacing.sm), // FIXED: AppSpacing.sm (8)
         // Dot indicators
-        if (_banners.length > 1)
+        if (_items.length > 1)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: _banners.asMap().entries.map((entry) {
+            children: _items.asMap().entries.map((entry) {
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 width: _current == entry.key

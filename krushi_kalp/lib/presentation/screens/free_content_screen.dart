@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart'; // NEW
 import '../../core/theme/app_spacing.dart';
@@ -134,12 +134,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
         if (user != null) resourceProvider.fetchPurchasedResources(user.id),
       ]);
 
-      final testCount = testProvider.tests.length;
-      final resourceCount = resourceProvider.ebooks.length +
-          resourceProvider.studyMaterials.length +
-          resourceProvider.pyqs.length +
-          resourceProvider.currentAffairs.length;
-
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -266,8 +260,8 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
                             )
                           : null,
                       filled: true,
-                      fillColor:
-                          theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                      fillColor: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.3),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                         borderSide: BorderSide.none,
@@ -469,7 +463,7 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
     return FreeItemCard(
       title: test.title,
       subtitle:
-          '${test.totalQuestions} Questions â€¢ ${test.totalMarks} Marks â€¢ ${test.durationMinutes ?? 0} mins',
+          '${test.totalQuestions} Questions • ${test.totalMarks} Marks • ${test.durationMinutes ?? 0} mins',
       typeLabel: 'Mock Test',
       coverUrl: test.signedUrl,
       actionLabel: 'Claim Free',

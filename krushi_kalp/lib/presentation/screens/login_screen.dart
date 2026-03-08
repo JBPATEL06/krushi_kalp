@@ -110,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen>
     final isLoading = context.select<AuthProvider, bool>((p) => p.isLoading);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Background Elements
@@ -170,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen>
                         const SizedBox(
                             height: AppSpacing.lg), // FIXED: AppSpacing.lg
                         Text(
-                          'Welcome Back',
+                          'Welcome to Krushi Kalp',
                           style: Theme.of(context)
                               .textTheme
                               .headlineMedium
@@ -246,7 +246,7 @@ class _LoginScreenState extends State<LoginScreen>
                             height: AppSpacing.lg), // FIXED: AppSpacing.lg
 
                         PrimaryButton(
-                          text: 'Sign in with Google',
+                          text: 'Continue with Google',
                           isLoading: isLoading,
                           onPressed: _handleGoogleLogin,
                         ),

@@ -26,7 +26,7 @@ class OtpWrongException implements Exception {
   String toString() => message;
 }
 
-/// MSG91 OTP Service â€” routes all calls through the Supabase Edge Function
+/// MSG91 OTP Service — routes all calls through the Supabase Edge Function
 /// so the MSG91 API key stays safely on the server and IP whitelisting works.
 /// Completely isolated from push_notification and send-fcm edge functions.
 class OtpService {

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import '../../../../data/services/test_service.dart';
@@ -155,7 +155,7 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(
@@ -377,7 +377,7 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    test.price == 0 ? 'FREE' : 'â‚¹${test.price}',
+                    test.price == 0 ? 'FREE' : '₹${test.price}',
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: test.price == 0
                           ? const Color(0xFF10B981)
@@ -445,7 +445,7 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
             });
           }
         },
-        backgroundColor: colorScheme.surface,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         selectedColor: colorScheme.primary.withValues(alpha: 0.1),
         checkmarkColor: colorScheme.primary,
         labelStyle: theme.textTheme.labelMedium?.copyWith(

@@ -1,6 +1,10 @@
 ﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:krushi_kalp/data/services/performance_service.dart';
+import 'package:krushi_kalp/presentation/utils/navigator_key.dart';
+import 'package:provider/provider.dart';
+import 'package:krushi_kalp/presentation/providers/auth_provider.dart';
 
 class PdfViewerScreen extends StatefulWidget {
   final File file;
@@ -24,6 +28,13 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   bool isReady = false;
   String errorMessage = '';
   bool _isNightMode = false;
+  DateTime? _openedAt; // NEW — tracks when PDF was opened
+
+  @override
+  void initState() {
+    super.initState();
+    _openedAt = DateTime.now(); // NEW
+  }
 
   @override
   void didChangeDependencies() {
@@ -31,6 +42,26 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
     if (pages == 0) {
       _isNightMode = Theme.of(context).brightness == Brightness.dark;
     }
+  }
+
+  @override
+  void dispose() {
+    // NEW — calculate read duration and update streak if >= 5 minutes
+    if (_openedAt != null) {
+      final durationSeconds = DateTime.now().difference(_openedAt!).inSeconds;
+      if (durationSeconds >= 300) {
+        // Get userId via global navigatorKey — safe in dispose
+        final ctx = navigatorKey.currentContext;
+        final userId =
+            ctx != null ? (ctx.read<AuthProvider>().currentUser?.id ?? '') : '';
+        if (userId.isNotEmpty) {
+          PerformanceService.instance
+              .updateUserStreak(userId, durationSeconds, 'resource_read')
+              .ignore();
+        }
+      }
+    }
+    super.dispose();
   }
 
   @override
@@ -80,22 +111,17 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
               setState(() {
                 errorMessage = error.toString();
               });
-              
             },
             onPageError: (page, error) {
               setState(() {
                 errorMessage = '$page: ${error.toString()}';
               });
-              
             },
             onViewCreated: (PDFViewController pdfViewController) {
               // controller.complete(pdfViewController);
             },
-            onLinkHandler: (String? uri) {
-              
-            },
+            onLinkHandler: (String? uri) {},
             onPageChanged: (int? page, int? total) {
-              
               setState(() {
                 currentPage = page;
               });

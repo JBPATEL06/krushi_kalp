@@ -236,6 +236,11 @@ class _ExamScreenState extends State<ExamScreen> {
 
     if (totalScore < 0) totalScore = 0;
 
+    int timeTaken = 0;
+    if (widget.test.durationMinutes != null) {
+      timeTaken = (widget.test.durationMinutes! * 60) - _remainingSeconds;
+    }
+
     if (mounted) {
       final user = AuthService.instance.currentUser;
       Future<int?>? submissionFuture;
@@ -256,6 +261,7 @@ class _ExamScreenState extends State<ExamScreen> {
             totalScore: totalScore,
             correctCount: correctCount,
             wrongCount: wrongCount,
+            timeTakenSeconds: timeTaken,
           );
         }
       } else {
@@ -266,6 +272,7 @@ class _ExamScreenState extends State<ExamScreen> {
               totalScore: totalScore,
               correctCount: correctCount,
               wrongCount: wrongCount,
+              timeTakenSeconds: timeTaken,
             );
           }
         }).catchError((e) {
@@ -275,6 +282,7 @@ class _ExamScreenState extends State<ExamScreen> {
               totalScore: totalScore,
               correctCount: correctCount,
               wrongCount: wrongCount,
+              timeTakenSeconds: timeTaken,
             );
           }
           return null;
@@ -296,6 +304,7 @@ class _ExamScreenState extends State<ExamScreen> {
     required double totalScore,
     required int correctCount,
     required int wrongCount,
+    required int timeTakenSeconds,
   }) {
     if (!mounted) return;
     Navigator.pushReplacement(
@@ -314,6 +323,7 @@ class _ExamScreenState extends State<ExamScreen> {
           questions: _questions,
           selectedAnswers: _selectedAnswers,
           examLanguage: widget.examLanguage,
+          timeTakenSeconds: timeTakenSeconds,
         ),
       ),
     );

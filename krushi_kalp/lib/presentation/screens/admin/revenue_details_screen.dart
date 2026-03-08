@@ -70,7 +70,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
     });
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Revenue Insights',
             style: TextStyle(fontSize: context.sp(20))), // FIXED
@@ -107,7 +107,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          'â‚¹${totalRevenue.toStringAsFixed(2)}',
+                          '₹${totalRevenue.toStringAsFixed(2)}',
                           style: theme.textTheme.displayLarge?.copyWith(
                             // Increased from displayMedium
                             fontWeight: FontWeight.w900,
@@ -207,7 +207,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
     final user = order['users'];
     final double amount = (order['total_amount'] as num?)?.toDouble() ?? 0.0;
     final String dateStr = order['created_at'] != null
-        ? DateFormat('MMM dd â€¢ hh:mm a')
+        ? DateFormat('MMM dd • hh:mm a')
             .format(DateTime.parse(order['created_at']).toUtc().toLocal())
         : 'Unknown Date';
     final String username =
@@ -270,7 +270,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '+ â‚¹${amount.toStringAsFixed(2)}',
+                    '+ ₹${amount.toStringAsFixed(2)}',
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w900,
                       color: const Color(0xFF10B981),
@@ -299,7 +299,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
     final items = order['order_items'] as List<dynamic>? ?? [];
     final double amount = (order['total_amount'] as num?)?.toDouble() ?? 0.0;
     final String dateStr = order['created_at'] != null
-        ? DateFormat('MMM dd, yyyy â€¢ hh:mm a')
+        ? DateFormat('MMM dd, yyyy • hh:mm a')
             .format(DateTime.parse(order['created_at']).toUtc().toLocal())
         : 'Unknown Date';
 
@@ -312,7 +312,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
       final val = offer['discount_value'];
       final type = offer['discount_type'];
       if (val != null) {
-        discountStr = type == 'PERCENTAGE' ? '$val% OFF' : 'â‚¹$val OFF';
+        discountStr = type == 'PERCENTAGE' ? '$val% OFF' : '₹$val OFF';
       }
       offerText =
           (offer['code'] == null) ? 'Store Sale Applied' : 'Coupon Code: $code';
@@ -418,7 +418,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'â‚¹${price.toStringAsFixed(0)}',
+                                '₹${price.toStringAsFixed(0)}',
                                 style: theme.textTheme.bodySmall
                                     ?.copyWith(fontWeight: FontWeight.bold),
                               ),
@@ -438,7 +438,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                 Text('Total Paid',
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.bold)),
-                Text('â‚¹${amount.toStringAsFixed(2)}',
+                Text('₹${amount.toStringAsFixed(2)}',
                     style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w900,
                         color: colorScheme.tertiary)),
@@ -461,7 +461,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
         if (selected) setState(() => _selectedFilter = label);
       },
       selectedColor: colorScheme.primary,
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       labelStyle: TextStyle(
         color:
             isSelected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,

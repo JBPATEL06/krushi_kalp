@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
@@ -52,7 +52,7 @@ class FreeItemCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // â”€â”€ IMAGE PANE (40% roughly) â”€â”€
+              // ── IMAGE PANE (40% roughly) ──
               SizedBox(
                 width: context.w(110),
                 child: Hero(
@@ -77,7 +77,7 @@ class FreeItemCard extends StatelessWidget {
                 ),
               ),
 
-              // â”€â”€ CONTENT PANE (60%) â”€â”€
+              // ── CONTENT PANE (60%) ──
               Expanded(
                 child: Padding(
                   padding: EdgeInsets.all(AppSpacing.md),

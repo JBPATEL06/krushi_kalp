@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../../data/services/admin_service.dart';
 import '../../widgets/common/network_error_state.dart';
 import 'admin_chat_detail_screen.dart';
@@ -178,10 +178,10 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(widget.username),
-        backgroundColor: colorScheme.surface,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         scrolledUnderElevation: 0,
         elevation: 0,
         centerTitle: true,
@@ -506,7 +506,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                 subtitle: Text('${date.day}/${date.month}/${date.year}',
                     style: theme.textTheme.bodySmall),
                 trailing: Text(
-                  'â‚¹$amount',
+                  '₹$amount',
                   style: const TextStyle(
                       color: Color(0xFF10B981),
                       fontWeight: FontWeight.bold,

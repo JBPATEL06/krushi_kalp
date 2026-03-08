@@ -23,11 +23,9 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
     _ordersStream = AdminService.streamAllOrders();
   }
 
-  // â”€â”€â”€ Detail Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Detail Dialog ──────────────────────────────────────────────────────────
 
   Future<void> _onRowTap(Map<String, dynamic> basicOrder) async {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final orderId = basicOrder['order_id'] as String?;
     if (orderId == null) return;
 
@@ -61,16 +59,16 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
     final double amount = (order['total_amount'] as num?)?.toDouble() ?? 0.0;
     final double discountAmount =
         (order['discount_amount'] as num?)?.toDouble() ?? 0.0;
-    final String paymentId = order['payment_id'] as String? ?? 'â€”';
-    final String orderId = order['order_id'] as String? ?? 'â€”';
+    final String paymentId = order['payment_id'] as String? ?? '—';
+    final String orderId = order['order_id'] as String? ?? '—';
     final String dateStr = order['created_at'] != null
-        ? DateFormat('MMM dd, yyyy â€¢ hh:mm a')
+        ? DateFormat('MMM dd, yyyy • hh:mm a')
             .format(DateTime.parse(order['created_at']).toUtc().toLocal())
         : 'Unknown Date';
 
     final String userName = user?['username'] ?? 'Unknown';
     final String userEmail = user?['email'] ?? '';
-    final String userPhone = user?['phonenumber'] ?? 'â€”';
+    final String userPhone = user?['phonenumber'] ?? '—';
 
     // Offer info
     String offerLabel = 'No Offer Applied';
@@ -82,7 +80,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
       final type = offer['discount_type'];
       offerLabel = code != null ? 'Coupon: $code' : 'Sale Offer';
       if (val != null) {
-        discountLabel = (type == 'PERCENTAGE') ? '$val% OFF' : 'â‚¹$val OFF';
+        discountLabel = (type == 'PERCENTAGE') ? '$val% OFF' : '₹$val OFF';
       }
     }
 
@@ -104,7 +102,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ── Header ──────────────────────────────────────────
                   Row(
                     children: [
                       Container(
@@ -155,7 +153,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   const Divider(),
                   const SizedBox(height: AppSpacing.md),
 
-                  // â”€â”€ Customer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ── Customer ────────────────────────────────────────
                   _DialogSection(
                     icon: Icons.person_rounded,
                     label: 'CUSTOMER',
@@ -169,7 +167,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                           Text(userEmail,
                               style: theme.textTheme.bodySmall?.copyWith(
                                   color: colorScheme.onSurfaceVariant)),
-                        if (userPhone != 'â€”')
+                        if (userPhone != '—')
                           Text(userPhone,
                               style: theme.textTheme.bodySmall?.copyWith(
                                   color: colorScheme.onSurfaceVariant)),
@@ -178,7 +176,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
 
-                  // â”€â”€ IDs Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ── IDs Section ─────────────────────────────────────
                   _DialogSection(
                     icon: Icons.tag_rounded,
                     label: 'ORDER INFO',
@@ -193,7 +191,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
 
-                  // â”€â”€ Offer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ── Offer ───────────────────────────────────────────
                   _DialogSection(
                     icon: Icons.local_offer_rounded,
                     label: 'OFFER',
@@ -225,7 +223,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
 
-                  // â”€â”€ Items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ── Items ───────────────────────────────────────────
                   _DialogSection(
                     icon: Icons.shopping_bag_rounded,
                     label: 'PURCHASED ITEMS (${items.length})',
@@ -315,7 +313,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                                             ),
                                             const SizedBox(width: 8),
                                             Text(
-                                              'â‚¹${price.toStringAsFixed(0)}',
+                                              '₹${price.toStringAsFixed(0)}',
                                               style: theme.textTheme.bodySmall
                                                   ?.copyWith(
                                                       fontWeight:
@@ -336,7 +334,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   const Divider(),
                   const SizedBox(height: AppSpacing.sm),
 
-                  // â”€â”€ Total â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                  // ── Total ───────────────────────────────────────────
                   if (discountAmount > 0) ...[
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -345,7 +343,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                             style: theme.textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.onSurfaceVariant)),
                         Text(
-                          '-â‚¹${discountAmount.toStringAsFixed(2)}',
+                          '-₹${discountAmount.toStringAsFixed(2)}',
                           style: theme.textTheme.bodyMedium?.copyWith(
                               color: emerald, fontWeight: FontWeight.w600),
                         ),
@@ -362,7 +360,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        'â‚¹${amount.toStringAsFixed(2)}',
+                        '₹${amount.toStringAsFixed(2)}',
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w900,
                           color: emerald,
@@ -379,7 +377,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
     );
   }
 
-  // â”€â”€â”€ Build â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Build ───────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -388,7 +386,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
     final emerald = colorScheme.tertiary;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000),
@@ -509,7 +507,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
     final dateStr = order['created_at'] as String;
     final date = DateTime.tryParse(dateStr) ?? DateTime.now();
     final formattedDate =
-        DateFormat('MMM d, yyyy â€¢ h:mm a').format(date.toLocal());
+        DateFormat('MMM d, yyyy • h:mm a').format(date.toLocal());
 
     final user = order['users'] as Map<String, dynamic>?;
     final userEmail = user?['email'] ?? 'Unknown User';
@@ -578,7 +576,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'â‚¹${amount.toStringAsFixed(0)}',
+                      '₹${amount.toStringAsFixed(0)}',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w900,
                         color: colorScheme.onSurface,
@@ -621,7 +619,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
   }
 }
 
-// â”€â”€â”€ Helper Widgets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Helper Widgets ──────────────────────────────────────────────────────────
 
 class _DialogSection extends StatelessWidget {
   final IconData icon;

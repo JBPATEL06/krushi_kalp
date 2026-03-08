@@ -153,7 +153,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
           final path =
               'Resources/$typeStr/file/${DateTime.now().millisecondsSinceEpoch}_$cleanName';
 
-          final taskId = await BackgroundUploadService().uploadFile(
+          await BackgroundUploadService().uploadFile(
             fileName: _fileName!,
             bucketName: 'mock_test',
             storagePath: path,
@@ -270,7 +270,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(widget.resource == null ? 'Add Resource' : 'Edit Resource',
             style: TextStyle(fontSize: context.sp(20))), // FIXED

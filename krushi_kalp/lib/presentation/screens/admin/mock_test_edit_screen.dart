@@ -299,12 +299,12 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Edit Mock Test',
             style: TextStyle(fontSize: context.sp(20))), // FIXED
         centerTitle: true,
-        backgroundColor: colorScheme.surface,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         scrolledUnderElevation: 0,
         elevation: 0,
       ),

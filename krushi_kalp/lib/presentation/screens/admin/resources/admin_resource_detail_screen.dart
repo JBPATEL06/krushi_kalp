@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:flutter/foundation.dart';
@@ -167,7 +167,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Resource Details',
             style: TextStyle(fontSize: context.sp(20))), // FIXED
@@ -270,7 +270,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                         Row(
                           children: [
                             Text(
-                              'â‚¹${_resource.price.toStringAsFixed(0)}',
+                              '₹${_resource.price.toStringAsFixed(0)}',
                               style: theme.textTheme.titleLarge?.copyWith(
                                 color: colorScheme.primary,
                                 fontWeight: FontWeight.bold,
@@ -281,7 +281,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                                 _resource.mrp! > _resource.price) ...[
                               const SizedBox(width: 8),
                               Text(
-                                'â‚¹${_resource.mrp!.toStringAsFixed(0)}',
+                                '₹${_resource.mrp!.toStringAsFixed(0)}',
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   decoration: TextDecoration.lineThrough,
                                   color: colorScheme.onSurfaceVariant,

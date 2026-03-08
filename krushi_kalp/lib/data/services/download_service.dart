@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -83,13 +83,13 @@ class DownloadService {
   /// Map of currently active download tasks.
   final Map<String, DownloadTask> _activeTasks = {};
 
-  // â”€â”€ INTERNAL HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── INTERNAL HELPERS ───────────────────────────────────────────────────────
 
   /// Returns the private, per-user storage directory.
   Future<Directory> _userDir(String userId) async {
     if (userId.isEmpty) {
       throw ArgumentError(
-          'userId must not be empty â€” refusing to use shared directory');
+          'userId must not be empty — refusing to use shared directory');
     }
     final root = await getApplicationDocumentsDirectory();
     final safeId = userId.replaceAll(RegExp(r'[^\w-]'), '_');
@@ -104,7 +104,7 @@ class DownloadService {
   Future<String> getLocalPath(String filename, {String? userId}) async {
     if (userId == null || userId.isEmpty) {
       throw ArgumentError(
-          'userId is required â€” always pass the authenticated user ID');
+          'userId is required — always pass the authenticated user ID');
     }
     final sanitized = filename.replaceAll(RegExp(r'[^\w\s\.-]'), '_');
     final dir = await _userDir(userId);
@@ -127,7 +127,7 @@ class DownloadService {
     }
   }
 
-  // â”€â”€ OWNERSHIP MANIFEST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── OWNERSHIP MANIFEST ─────────────────────────────────────────────────────
 
   Future<File> _manifestFile(String userId) async {
     final dir = await _userDir(userId);
@@ -172,7 +172,7 @@ class DownloadService {
     return owner == userId;
   }
 
-  // â”€â”€ BACKGROUND DOWNLOAD ENGINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── BACKGROUND DOWNLOAD ENGINE ─────────────────────────────────────────────
 
   /// Cancels all active downloads for a specific [userId].
   /// Usually called during logout or session mismatch.
@@ -289,7 +289,7 @@ class DownloadService {
     }
   }
 
-  // â”€â”€ LEGACY & COMPATIBILITY LAYER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── LEGACY & COMPATIBILITY LAYER ───────────────────────────────────────────
 
   /// Streams download progress for legacy UI components.
   Stream<DownloadProgress> downloadFileWithProgress(String url, String filename,

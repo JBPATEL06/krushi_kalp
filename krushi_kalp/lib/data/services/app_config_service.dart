@@ -134,7 +134,7 @@ class AppConfigService {
   // --- Force Update ---
 
   /// The minimum version string users must have (e.g. "1.2.0").
-  /// Returns null if no minimum is configured â€” meaning updates are not forced.
+  /// Returns null if no minimum is configured — meaning updates are not forced.
   static String? get minVersion =>
       getValue('app_status', 'min_version', defaultValue: null);
 }

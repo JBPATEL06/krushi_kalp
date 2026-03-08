@@ -92,7 +92,7 @@ class _AdminResourceListState extends State<AdminResourceList> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       floatingActionButton: FloatingActionButton(
         onPressed: () => _navigateToForm(),
         elevation: 2,

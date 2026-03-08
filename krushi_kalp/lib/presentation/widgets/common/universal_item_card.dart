@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -7,14 +7,14 @@ import 'responsive_wrapper.dart';
 /// Universal horizontal card used across the entire app.
 ///
 /// Layout:
-///   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-///   â”‚ [IMAGE]  â”‚  Title                             â”‚
-///   â”‚  fills   â”‚  Subtitle / metadata               â”‚
-///   â”‚ containerâ”‚  Rating   â”‚  Price  â”‚  Action btn  â”‚
-///   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+///   ┌──────────────────────────────────────────────┐
+///   │ [IMAGE]  │  Title                             │
+///   │  fills   │  Subtitle / metadata               │
+///   │ container│  Rating   │  Price  │  Action btn  │
+///   └──────────────────────────────────────────────┘
 ///
 /// The image pane uses [BoxFit.cover] inside a [ClipRRect] so the image
-/// always fills its container â€“ no empty space, no overflow.
+/// always fills its container – no empty space, no overflow.
 class UniversalItemCard extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -68,7 +68,7 @@ class UniversalItemCard extends StatelessWidget {
     this.enableAnimation = false,
   });
 
-  // â”€â”€â”€ Image pane width as fraction of card height â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Image pane width as fraction of card height ──────────────────────────
   // The card height is fixed.  Image pane = 38% of card width.
   // Using AspectRatio(0.72) on the image pane gives a roughly portrait thumbnail.
   static const double _imagePaneAspect = 0.72; // width / height
@@ -84,7 +84,8 @@ class UniversalItemCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.lg),
         side: BorderSide(
-          color: theme.colorScheme.outline.withValues(alpha: isDark ? 0.18 : 0.35),
+          color:
+              theme.colorScheme.outline.withValues(alpha: isDark ? 0.18 : 0.35),
         ),
       ),
       color: theme.colorScheme.surface,
@@ -96,7 +97,7 @@ class UniversalItemCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // â”€â”€ LEFT: IMAGE PANE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+              // ── LEFT: IMAGE PANE ──────────────────────────────────────────
               AspectRatio(
                 aspectRatio: _imagePaneAspect,
                 child: Hero(
@@ -104,7 +105,7 @@ class UniversalItemCard extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      // Image fills the pane completely â€“ no letterboxing
+                      // Image fills the pane completely – no letterboxing
                       _buildImage(context, theme),
 
                       // Discount badge
@@ -139,7 +140,7 @@ class UniversalItemCard extends StatelessWidget {
                 ),
               ),
 
-              // â”€â”€ RIGHT: CONTENT PANE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+              // ── RIGHT: CONTENT PANE ───────────────────────────────────────
               Expanded(
                 child: Padding(
                   padding: EdgeInsets.symmetric(
@@ -245,7 +246,7 @@ class UniversalItemCard extends StatelessWidget {
                                 if (originalPrice != null &&
                                     originalPrice! > price)
                                   Text(
-                                    'â‚¹${originalPrice!.toStringAsFixed(0)}',
+                                    '₹${originalPrice!.toStringAsFixed(0)}',
                                     style: theme.textTheme.labelSmall?.copyWith(
                                       decoration: TextDecoration.lineThrough,
                                       color: theme.colorScheme.onSurfaceVariant,
@@ -255,7 +256,7 @@ class UniversalItemCard extends StatelessWidget {
                                 Text(
                                   price == 0
                                       ? 'Free'
-                                      : 'â‚¹${price.toStringAsFixed(0)}',
+                                      : '₹${price.toStringAsFixed(0)}',
                                   style: theme.textTheme.titleSmall?.copyWith(
                                     fontWeight: FontWeight.w900,
                                     color: theme.colorScheme.primary,
@@ -271,7 +272,7 @@ class UniversalItemCard extends StatelessWidget {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // Cart icon â€“ only for purchasable, non-owned items
+                              // Cart icon – only for purchasable, non-owned items
                               if (onCartTap != null &&
                                   price > 0 &&
                                   !isPurchased)
@@ -317,7 +318,8 @@ class UniversalItemCard extends StatelessWidget {
                                               : null),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: isPurchased
-                                            ? theme.colorScheme.surfaceContainerHighest
+                                            ? theme.colorScheme
+                                                .surfaceContainerHighest
                                             : (actionColor ??
                                                 (price == 0
                                                     ? theme.colorScheme.tertiary
@@ -378,7 +380,7 @@ class UniversalItemCard extends StatelessWidget {
     );
   }
 
-  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Helpers ─────────────────────────────────────────────────────────────
 
   Widget _buildImage(BuildContext context, ThemeData theme) {
     if (coverUrl != null && coverUrl!.isNotEmpty) {
@@ -387,7 +389,8 @@ class UniversalItemCard extends StatelessWidget {
         // BoxFit.cover fills the container completely; no gaps, no overflow
         fit: BoxFit.cover,
         placeholder: (_, __) => Container(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          color:
+              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           child: Center(
             child: SizedBox(
               width: context.w(20),

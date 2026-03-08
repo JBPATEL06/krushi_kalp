@@ -23,7 +23,7 @@ class _AdminChatListScreenState extends State<AdminChatListScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Consumer<AdminProvider>(
         builder: (context, adminProvider, child) {
           return Column(

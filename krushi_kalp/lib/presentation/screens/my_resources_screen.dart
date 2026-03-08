@@ -12,6 +12,7 @@ import '../../data/services/download_service.dart';
 import '../widgets/common/download_progress_dialog.dart';
 import '../widgets/common/download_action_button.dart';
 import 'pdf_viewer_screen.dart';
+import 'resource_detail_screen.dart';
 
 class MyResourcesScreen extends StatefulWidget {
   final String title;
@@ -145,7 +146,18 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
                             displayName: resource.title, // CHANGED
                             onAction: () => _openResource(resource),
                           ),
-                          onTap: () => _openResource(resource),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ResourceDetailScreen(
+                                  resource: resource,
+                                  isPurchased: true,
+                                  heroTag: 'resource_image_${resource.id}',
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       )
                           .animate(delay: (index < 5 ? index * 100 : 0).ms)
@@ -201,8 +213,8 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
               prefixIcon:
                   Icon(Icons.search, color: theme.colorScheme.onSurfaceVariant),
               filled: true,
-              fillColor:
-                  theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              fillColor: theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.5),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                 borderSide: BorderSide.none,

@@ -170,7 +170,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: _isSelectionMode
             ? Text('${_selectedIds.length} Selected')
@@ -540,7 +540,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
       onSelected: onSelected,
       selectedColor: colorScheme.primary.withValues(alpha: 0.1),
       checkmarkColor: colorScheme.primary,
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       side: BorderSide(
           color: isSelected
               ? colorScheme.primary
@@ -563,7 +563,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
       selected: isSelected,
       onSelected: (_) => onTap(),
       selectedColor: colorScheme.primary.withValues(alpha: 0.1),
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       side: BorderSide(
           color: isSelected
               ? colorScheme.primary

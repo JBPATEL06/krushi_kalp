@@ -130,10 +130,10 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(widget.userName),
-        backgroundColor: colorScheme.surface,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         scrolledUnderElevation: 0,
         elevation: 0,
         actions: [
@@ -177,7 +177,7 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
               primaryColor: colorScheme.primary,
               secondaryColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               inputBackgroundColor: colorScheme.surface,
-              backgroundColor: colorScheme.surface,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               receivedMessageBodyTextStyle: theme.textTheme.bodyMedium!,
               sentMessageBodyTextStyle: theme.textTheme.bodyMedium!
                   .copyWith(color: colorScheme.onPrimary),

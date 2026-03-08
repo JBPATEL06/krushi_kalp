@@ -4,6 +4,8 @@ import 'package:krushi_kalp/data/services/admin_service.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:krushi_kalp/presentation/widgets/common/modern_card.dart';
+import 'package:krushi_kalp/data/services/performance_service.dart';
+import 'package:krushi_kalp/presentation/widgets/admin_performance_card.dart';
 
 import 'admin_offer_list_screen.dart';
 import 'resources/admin_resources_dashboard.dart';
@@ -20,11 +22,13 @@ class AdminHomeScreen extends StatefulWidget {
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   late Stream<List<Map<String, dynamic>>> _topTestsStream;
   late Stream<List<Map<String, dynamic>>> _topUsersStream;
+  Future<Map<String, dynamic>>? _adminPerformanceFuture;
   Key _refreshKey = UniqueKey();
 
   @override
   void initState() {
     super.initState();
+    _adminPerformanceFuture = PerformanceService.instance.getAdminPerformance();
     _initStreams();
   }
 
@@ -38,6 +42,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     if (mounted) {
       setState(() {
         _initStreams();
+        _adminPerformanceFuture =
+            PerformanceService.instance.getAdminPerformance();
         _refreshKey = UniqueKey();
       });
     }
@@ -95,12 +101,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: RefreshIndicator(
         onRefresh: _onRefresh,
         displacement: context.h(20), // FIXED: context.h(20)
         color: colorScheme.primary,
-        backgroundColor: colorScheme.surface,
+        backgroundColor: theme.scaffoldBackgroundColor,
         child: LayoutBuilder(builder: (context, constraints) {
           final width = constraints.maxWidth;
           final crossAxisCount = width > 1400
@@ -121,6 +127,27 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                FutureBuilder<Map<String, dynamic>>(
+                  future: _adminPerformanceFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                        child: AdminPerformanceCard(
+                            data: const {}, isLoading: true),
+                      );
+                    }
+                    if (!snapshot.hasData ||
+                        snapshot.hasError ||
+                        snapshot.data!.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                      child: AdminPerformanceCard(data: snapshot.data!),
+                    );
+                  },
+                ),
                 _buildSectionHeader(context, 'MANAGEMENT QUICK ACCESS'),
                 const SizedBox(height: AppSpacing.sm),
                 GridView.count(

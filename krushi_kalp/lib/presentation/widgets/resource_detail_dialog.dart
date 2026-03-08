@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../../domain/models/resource.dart';
 import '../../../../data/services/secure_file_service.dart';
@@ -198,7 +198,7 @@ class _ResourceDetailDialogState extends State<ResourceDetailDialog> {
               ElevatedButton.icon(
                 onPressed: widget.onBuyTap,
                 icon: const Icon(Icons.shopping_cart),
-                label: Text('Buy Now for â‚¹${widget.resource.price}'),
+                label: Text('Buy Now for ₹${widget.resource.price}'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,

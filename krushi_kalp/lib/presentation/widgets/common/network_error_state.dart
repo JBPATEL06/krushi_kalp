@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../providers/network_provider.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -117,7 +117,7 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
     return _buildFull(context);
   }
 
-  // â”€â”€ Compact variant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Compact variant ─────────────────────────────────────────────────────────
 
   Widget _buildCompact(BuildContext context) {
     final theme = Theme.of(context);
@@ -190,7 +190,7 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
     );
   }
 
-  // â”€â”€ Full-page variant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Full-page variant ───────────────────────────────────────────────────────
 
   Widget _buildFull(BuildContext context) {
     return FadeTransition(

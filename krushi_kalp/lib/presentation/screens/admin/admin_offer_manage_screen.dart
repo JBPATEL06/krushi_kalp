@@ -273,7 +273,7 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(widget.offer == null ? 'Create Offer' : 'Edit Offer',
             style: TextStyle(fontSize: context.sp(20))), // FIXED

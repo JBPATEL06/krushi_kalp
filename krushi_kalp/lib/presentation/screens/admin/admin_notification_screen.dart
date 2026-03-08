@@ -65,7 +65,7 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
           AppSpacing.lg,

@@ -235,6 +235,7 @@ Located in `lib/presentation/screens/admin/`:
 - `app_config` — key-value store for feature flags, maintenance mode, legal URLs
 - `home_banners` — banner images and links
 - `notifications` — push notification records
+- `user_streaks` — user_id, streak_count, last_activity_date, total_study_minutes, weekly_minutes
 
 ---
 
@@ -446,6 +447,7 @@ flutter clean && flutter pub get && flutter run
 10. **Global UI Resilience**: System navigation bar overlap audit and fix across all management screens.
 
 ### Historical Improvements (Audit & Recovery)
+- **[2026-03-08]**: Implemented User and Admin Performance Tracking. Created models, services, and UI components for tracking user streaks and study time, along with an admin dashboard card for platform-wide metrics.
 - **[2026-03-08]**: Accidental deletion of 24 core files during audit; fully restored via Git and verified with `flutter analyze`.
 - **[2026-03-08]**: Fixed "Quiz & Tests" navigation in Admin Dashboard to correctly point to `AdminStoreScreen`.
 - **[2026-03-08]**: Successfully migrated Mock Test JSON format to "tableConvert" structure.
@@ -470,7 +472,20 @@ flutter clean && flutter pub get && flutter run
     - Corrected broken relative import paths (`network_utils.dart`) across multiple management screens.
     - Standardized `NetworkErrorState` usage by migrating to the named `message` parameter.
     - Migrated 50+ instances of deprecated Material 3 members: `withOpacity()` → `.withValues(alpha: ...)`, `surfaceVariant` → `surfaceContainerHighest`, and `background` → `surface`.
-15. **Mock Test JSON Format Migration (2026-03-08)**:
+18. **Final Stabilization & 0-Error Audit (2026-03-08)**:
+    - Reached **0 Errors and 0 Warnings** in `flutter analyze`.
+    - Systematic cleanup of 100% of `unused_local_variable` warnings across the codebase.
+    - Added `analyze_output.txt` and `audit_*.txt` to `.gitignore`.
+19. **Performance Optimization & Reversal (2026-03-08)**:
+    - **Attempted**: Parallel initialization (`Future.wait`) in `main.dart` and enabling Impeller/Hardware Acceleration in the manifest.
+    - **Result**: These changes caused the app to hang/pause on target hardware (2312DRAABI) and were **deliberately reverted** to the `userv6` baseline (sequential init, software rendering) for maximum compatibility.
+20. **Critical Rendering Fix (2026-03-08)**:
+    - **Issue**: Misplaced `SliverToBoxAdapter` inside a `Column` in `splash_screen.dart` caused an immediate crash after the splash screen.
+    - **Fix**: Replaced with a proper `SizedBox`. Re-verified layout with the `userv7` responsiveness engine restored.
+21. **Global Character Encoding Fix (2026-03-08)**:
+    - **Issue**: UTF-8 characters (like Rupee `₹`, Checkmark `✓`, Bullet `•`) were corrupted into Windows-1252 equivalents (e.g., `₹`, `✓`) causing garbled text in pricing and notifications.
+    - **Fix**: Wrote and executed a global replacement script (`scripts/fix_encoding.dart`) that corrected 2,898 broken character instances across 42 files. Restored professional UI aesthetics.
+19. **Mock Test JSON Format Migration (2026-03-08)**:
     - Migrated from flat JSON format to **tableConvert format** for better admin usability.
     - Updated `Question` model: Replaced `correctOptionIndex: int` with `correctAnswer: String`.
     - Implemented **String-Based Answer Matching**: Evaluation now uses trimmed, case-insensitive string comparison.
@@ -526,6 +541,7 @@ All models include `fromJson()` and `toJson()` methods for persistence.
 | `test_result.dart` | Mock test attempt data. | `id`, `userId`, `testId`, `score`, `isPassed`, `attemptDate`. |
 | `transaction.dart` | Payment gateway record. | `id`, `orderId`, `gatewayId`, `amount`, `status`. |
 | `user.dart` | Profile and role data. | `id`, `email`, `username`, `role` (Admin/User), `language`. |
+| `user_performance.dart` | User study tracking. | `streak`, `averageScore`, `testsCompleted`, `bestScore`, `weeklyStudyMinutes`. |
 
 ## 3. Services Layer (`lib/data/services/` & `lib/domain/services/`)
 
@@ -547,6 +563,7 @@ Services handle the heavy lifting: database calls via Supabase, external APIs, a
 | `offer_service.dart` | Promo code logic. | `fetchActiveSaleOffers`, `verifyCoupon`, `applyCouponToOrder`. |
 | `otp_service.dart` | SMS OTP via MSG91. | `sendOtp`, `resendOtp`, `verifyOtp`. |
 | `payment_service.dart` | Razorpay integration. | `init`, `openCheckout`, `onSuccess/onFailure` callbacks. |
+| `performance_service.dart` | Streak and stats logic. | `getUserPerformance`, `getAdminPerformance`, `updateUserStreak`. |
 | `resource_service.dart` | Resource management. | `fetchResources`, `fetchPurchasedResources`, `claimResource`. |
 | `review_service.dart` | Rating system. | `submitReview`, `getReviewsForItem`, `getBulkRatingStats`. |
 | `secure_file_service.dart` | Sandboxed downloads. | `downloadSecurely`, `isFileDownloaded`. |
@@ -717,3 +734,25 @@ Helper classes shared across services and presentation layers.
 - **Negative Penalty**: `if (test.negative_marking)` → `penalty = wrongCount * negativeMarksPerQ`.
 - **Final Score**: `(Positive - Penalty)`, clamped to a minimum of **0**.
 - **Persistence**: Results are saved to `test_results` table including score, counts, and language meta for PDF regeneration.
+
+---
+
+## Recent UI & UX Optimization (2026-03-09)
+
+### 1. Admin Panel Personalization
+- **Refactoring**: Updated `AdminMainScreen` to use `Consumer2<AdminProvider, AuthProvider>` to access live admin profile data.
+- **Drawer Header**: Now displays the logged-in admin's **Name** and **Email ID** with improved readability (opacity increased to 0.7 for the sub-label).
+- **Navigation Resilience**: Implemented proactive screen initialization within the `build` method of `AdminMainScreen`. This guarantees that quick-links from the Dashboard (like Users, Quizzes, or Tests) correctly initialize the target screen even on a fresh app install.
+
+### 2. Branding & Onboarding Polish
+- **Splash & Login Backgrounds**: Unified `splash_screen.dart` and `login_screen.dart` background colors to match `theme.scaffoldBackgroundColor`, eliminating visual flickering during app entry.
+- **Login Rebranding**: Updated texts to **"Welcome to Krushi Kalp"** and **"Continue with Google"** for a friendlier and more inviting user experience.
+
+### 3. Font & Legibility Enhancements
+- **Manage Resources**: Increased font size in `CategoryCard` (used globally in resource dashboards) from `12sp` to **`14sp`** for better accessibility.
+- **Performance Dashboards**: Increased font sizes for Titles (**22sp**) and Stats (**18sp**) in `performance_card.dart` and `admin_performance_card.dart`.
+- **UX Smoothness**: Increased shimmer loading animation duration to **1500ms** to provide a calmer, premium feel.
+
+### 4. Technical Improvements
+- **Fixed Provider Mismatch**: Resolved a naming error where `AdminMainScreen` incorrectly attempted to pull user data from `AdminProvider` instead of `AuthProvider`.
+- **Async Safety**: Added `mounted` and `navigator.context.mounted` checks in `AdminMainScreen` for logout and other async operations to prevent "context used across async gaps" warnings.

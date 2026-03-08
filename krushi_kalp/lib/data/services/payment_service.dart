@@ -1,4 +1,4 @@
-﻿import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class PaymentService {
@@ -26,7 +26,7 @@ class PaymentService {
 
   late Razorpay _razorpay;
 
-  // Key read from .env â€” never hardcoded in source code
+  // Key read from .env — never hardcoded in source code
   static String get _razorpayKey => dotenv.env['RAZORPAY_KEY_ID'] ?? '';
 
   final Function(PaymentSuccessResponse) onSuccess;

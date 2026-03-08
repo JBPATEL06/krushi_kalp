@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../widgets/common/responsive_wrapper.dart';
 
@@ -65,7 +65,7 @@ class CartOrderSummary extends StatelessWidget {
                 ),
               ),
               Text(
-                'â‚¹${total.toStringAsFixed(2)}',
+                '₹${total.toStringAsFixed(2)}',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: context.sp(22),
@@ -101,8 +101,8 @@ class CartOrderSummary extends StatelessWidget {
         ),
         Text(
           amount == 0 && !isDiscount
-              ? 'â‚¹0.00'
-              : '${isDiscount ? "-" : ""}â‚¹${amount.abs().toStringAsFixed(2)}',
+              ? '₹0.00'
+              : '${isDiscount ? "-" : ""}₹${amount.abs().toStringAsFixed(2)}',
           style: TextStyle(
             color: isDiscount
                 ? theme.colorScheme.primary

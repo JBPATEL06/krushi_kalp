@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/auth_provider.dart';
@@ -90,7 +90,7 @@ class _SplashScreenState extends State<SplashScreen> {
     setState(() => _progress = 1.0);
     await Future.delayed(const Duration(milliseconds: 300));
 
-    // â”€â”€ Force Update Check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Force Update Check ──────────────────────────────────────────────────
     if (!mounted) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
@@ -104,7 +104,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
     final role = authProvider.userRole;
 
-    // â”€â”€ App Status Checks (Skip for Admins) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── App Status Checks (Skip for Admins) ──────────────────────────────────
     if (role != 'Admin') {
       // 1. Force Update Check
       final minVer = AppConfigService.minVersion;
@@ -180,7 +180,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Main Content
@@ -194,9 +194,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   height: context.w(140), // FIXED
                   fit: BoxFit.contain,
                 ),
-                SliverToBoxAdapter(
-                    child: SizedBox(
-                        height: context.h(48))), // FIXED: Using context.h(48)
+                SizedBox(height: context.h(48)), // FIXED: Using context.h(48)
                 // App Title
                 Text(
                   'Krushi Kalp',

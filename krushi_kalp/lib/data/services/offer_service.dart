@@ -29,10 +29,9 @@ class OfferService {
       return data.map((e) => Offer.fromJson(e)).toList();
     } catch (e) {
       if (NetworkUtils.isNetworkError(e)) {
-        
         return [];
       }
-      
+
       return [];
     }
   }
@@ -49,7 +48,6 @@ class OfferService {
   // Fetch claim counts for all offers
   Future<Map<int, int>> getOfferClaimCounts() async {
     try {
-      
       final response =
           await _supabase.from('offer_redemptions').select('offer_id');
 
@@ -66,14 +64,13 @@ class OfferService {
 
         counts[id] = (counts[id] ?? 0) + 1;
       }
-      
+
       return counts;
     } catch (e) {
       if (NetworkUtils.isNetworkError(e)) {
-        
         return {};
       }
-      
+
       return {};
     }
   }
@@ -94,7 +91,7 @@ class OfferService {
       return data.map((e) => Offer.fromJson(e)).toList();
     } catch (e) {
       if (NetworkUtils.isNetworkError(e)) return [];
-      
+
       return [];
     }
   }
@@ -104,7 +101,6 @@ class OfferService {
       // Add a 5-minute grace period to account for slight clock drift
       final now = DateTime.now().toUtc();
       final adjustedNow = now.add(const Duration(minutes: 5)).toIso8601String();
-      
 
       // Use or() to include offers where dates are null or within range
       final response = await _supabase
@@ -115,20 +111,15 @@ class OfferService {
           .or('end_date.is.null,end_date.gte.${now.toIso8601String()}');
 
       final List<dynamic> data = response;
-      
 
       final offers = data.map((e) => Offer.fromJson(e)).toList();
-      for (var o in offers) {
-        
-      }
 
       return offers;
     } catch (e) {
       if (NetworkUtils.isNetworkError(e)) {
-        
         return [];
       }
-      
+
       return [];
     }
   }
@@ -156,7 +147,6 @@ class OfferService {
           .eq('user_id', userId);
       return count < limit;
     } catch (e) {
-      
       return true; // Allow if check fails to prevent blocking? Or fail? Fail safe preferred.
     }
   }
@@ -176,7 +166,7 @@ class OfferService {
       if (NetworkUtils.isNetworkError(e)) {
         throw Exception('Network Error: Please check your connection.');
       }
-      
+
       throw Exception('$e');
     }
   }
@@ -205,7 +195,7 @@ class OfferService {
       if (NetworkUtils.isNetworkError(e)) {
         throw Exception('Network Error: Please check your connection.');
       }
-      
+
       throw Exception('$e');
     }
   }
@@ -220,7 +210,6 @@ class OfferService {
       // Check for Postgres Error Code 23503 (Foreign Key Violation)
       if (e.toString().contains('23503') ||
           e.toString().contains('violates foreign key constraint')) {
-        
         // Soft Delete: Deactivate
         await _supabase
             .from('offers')
@@ -248,7 +237,7 @@ class OfferService {
       return Offer.fromJson(response);
     } catch (e) {
       if (NetworkUtils.isNetworkError(e)) return null;
-      
+
       return null;
     }
   }
@@ -264,7 +253,6 @@ class OfferService {
         'updated_at': DateTime.now().toUtc().toIso8601String()
       }).eq('order_id', orderId);
     } catch (e) {
-      
       throw Exception('Failed to apply coupon');
     }
   }
@@ -275,8 +263,6 @@ class OfferService {
         'offer_id': null,
         'updated_at': DateTime.now().toIso8601String()
       }).eq('order_id', orderId);
-    } catch (e) {
-      
-    }
+    } catch (e) {}
   }
 }

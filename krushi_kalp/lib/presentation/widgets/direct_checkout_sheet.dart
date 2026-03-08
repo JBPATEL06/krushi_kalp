@@ -72,7 +72,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
 
   void _applyInitialOffer() {
     final user = AuthService.instance.currentUser;
-    
+
     final priceData = PriceCalculator.calculateDisplayPrice(
       basePrice: _basePrice,
       baseMrp: (widget.resource?.mrp ?? widget.test?.mrp)?.toDouble(),
@@ -86,8 +86,6 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
 
     // Check if the Sale actually applied successfully
     _hasAutoSale = _appliedOffer != null && _appliedOffer!.isSale;
-
-    
   }
 
   @override
@@ -126,7 +124,6 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
             );
             _appliedOffer = offer;
             _finalPrice = priceData['finalPrice'];
-            
           });
         } else {
           setState(() => _couponError = "Coupon not valid for this item/order");
@@ -168,8 +165,6 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
     setState(() => _isProcessing = true);
 
     try {
-      
-
       // Fire off profile fetch in parallel to hide network latency
       Future<Map<String, dynamic>?> profileFuture = Future.value(null);
       if (user.phone == null || user.phone!.isEmpty) {
@@ -193,12 +188,9 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
         );
       }
 
-      
-
       if (!mounted) return; // PRO FIX: Check mounted after async DB call
 
       if (_finalPrice <= 0) {
-        
         _pendingOrderId = orderId;
         await _completeCheckout(
             "FREE_CLAIM_${DateTime.now().millisecondsSinceEpoch}");
@@ -248,7 +240,6 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
     }
 
     try {
-      
       await TestService.instance.checkout(
         orderId: _pendingOrderId!,
         paymentId: paymentId,
@@ -257,7 +248,6 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
         discountAmount: (_basePrice - _finalPrice),
         userId: user.id,
       );
-      
 
       if (mounted) {
         setState(() {
@@ -266,7 +256,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
 
         Navigator.pop(context); // Close sheet
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text("Purchase Successful! ðŸŽ‰",
+            content: Text("Purchase Successful! 🎉",
                 style: TextStyle(
                     color: Theme.of(context).colorScheme.onPrimaryContainer)),
             backgroundColor: Theme.of(context).colorScheme.primaryContainer));
@@ -402,7 +392,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
-                      "âœ¨ Store sale discounts are already active.",
+                      "✨ Store sale discounts are already active.",
                       style: TextStyle(
                         color: const Color(0xFF10B981), // Success Emerald
                         fontSize: 12,
@@ -431,7 +421,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text("Subtotal"),
-                    Text("â‚¹${_basePrice.toStringAsFixed(2)}"),
+                    Text("₹${_basePrice.toStringAsFixed(2)}"),
                   ],
                 ),
                 if (_appliedOffer != null && (_basePrice - _finalPrice) > 0)
@@ -440,7 +430,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                     children: [
                       Text("Discount",
                           style: TextStyle(color: theme.colorScheme.primary)),
-                      Text("-â‚¹${(_basePrice - _finalPrice).toStringAsFixed(2)}",
+                      Text("-₹${(_basePrice - _finalPrice).toStringAsFixed(2)}",
                           style: TextStyle(color: theme.colorScheme.primary)),
                     ],
                   ),
@@ -451,7 +441,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                     const Text("Total To Pay",
                         style: TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text("â‚¹${_finalPrice.toStringAsFixed(2)}",
+                    Text("₹${_finalPrice.toStringAsFixed(2)}",
                         style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,

@@ -18,6 +18,11 @@ import '../widgets/reviews/review_card.dart';
 import '../widgets/reviews/review_dialog.dart';
 import '../widgets/reviews/rate_stars.dart';
 import 'reviews/all_reviews_screen.dart';
+import '../widgets/common/download_action_button.dart';
+import '../../data/services/download_service.dart';
+import 'pdf_viewer_screen.dart';
+import 'dart:io';
+import '../widgets/common/download_progress_dialog.dart';
 
 class ResourceDetailScreen extends StatefulWidget {
   final Resource resource;
@@ -140,6 +145,81 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                 SnackBar(content: Text('Failed to delete: $e')),
               );
             }
+          }
+        },
+      ),
+    );
+  }
+
+  Future<void> _openResource(Resource resource) async {
+    final filename = 'resource_${resource.id}.pdf';
+    final userId = AuthService.instance.currentUser?.id;
+    if (userId == null) return;
+
+    final isDownloaded =
+        await DownloadService().isFileDownloaded(filename, userId: userId);
+
+    if (isDownloaded) {
+      final path =
+          await DownloadService().getLocalPath(filename, userId: userId);
+      if (await File(path).exists()) {
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PdfViewerScreen(
+                file: File(path),
+                title: resource.title,
+              ),
+            ),
+          );
+        }
+      }
+    } else {
+      if (resource.fileUrl == null || resource.fileUrl!.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('File URL not available')),
+          );
+        }
+        return;
+      }
+      if (!mounted) return;
+      _downloadAndOpen(resource, filename, userId);
+    }
+  }
+
+  Future<void> _downloadAndOpen(
+      Resource resource, String filename, String userId) async {
+    if (!mounted) return;
+    final outerContext = context;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => DownloadProgressDialog(
+        url: resource.fileUrl!,
+        filename: filename,
+        displayName: resource.title,
+        userId: userId,
+        onComplete: (path) {
+          if (!outerContext.mounted) return;
+          Navigator.push(
+            outerContext,
+            MaterialPageRoute(
+              builder: (_) => PdfViewerScreen(
+                file: File(path),
+                title: resource.title,
+              ),
+            ),
+          );
+        },
+        onError: () {
+          if (mounted) {
+            ScaffoldMessenger.of(outerContext).showSnackBar(
+              const SnackBar(
+                  content: Text('Download failed. Please try again.')),
+            );
           }
         },
       ),
@@ -313,16 +393,19 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                                 ],
                               ),
                             ),
-                          ] else ...[
-                            Text(
-                              "Free",
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineSmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: theme.colorScheme.primary,
-                                  ),
+                          ],
+
+                          if (isPurchased) ...[
+                            const SizedBox(height: AppSpacing.lg),
+                            DownloadActionButton(
+                              testId: resource.id.toString(),
+                              filename: 'resource_${resource.id}.pdf',
+                              url: resource.fileUrl,
+                              startLabel: "Open PDF",
+                              isFullWidth: true,
+                              userId: AuthService.instance.currentUser?.id,
+                              displayName: resource.title,
+                              onAction: () => _openResource(resource),
                             ),
                           ],
 
@@ -482,7 +565,6 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
     final displayedReviews = positiveReviews.take(3).toList();
     final hasMoreReviews = _reviews.length > displayedReviews.length;
     final canReview = (isPurchased || widget.resource.price == 0) &&
-        _userReview == null &&
         user != null &&
         AppConfigService.canWriteReviews;
 

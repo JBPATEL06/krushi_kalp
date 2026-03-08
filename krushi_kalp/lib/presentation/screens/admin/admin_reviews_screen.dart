@@ -92,7 +92,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("Manage Reviews"),
       ),
@@ -313,7 +313,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
       },
       selectedColor: colorScheme.primary.withValues(alpha: 0.1),
       checkmarkColor: colorScheme.primary,
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       side: BorderSide(
         color: isSelected
             ? colorScheme.primary

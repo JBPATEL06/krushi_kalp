@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -31,7 +31,7 @@ class TestService {
 
   final _supabase = Supabase.instance.client;
 
-  // â”€â”€ MOCK TESTS READING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── MOCK TESTS READING ───────────────────────────────────────────────────
 
   /// Fetches all available mock tests from the database.
   Future<List<MockTest>> fetchMockTests() async {
@@ -46,7 +46,6 @@ class TestService {
 
       return await _populateSignedUrls(tests);
     } catch (e) {
-      
       throw Exception('Failed to load tests: $e');
     }
   }
@@ -65,7 +64,6 @@ class TestService {
       final List<MockTest> withUrl = await _populateSignedUrls([test]);
       return withUrl.first;
     } catch (e) {
-      
       return null;
     }
   }
@@ -76,7 +74,6 @@ class TestService {
       final response = await _supabase.rpc('get_distinct_categories');
       return List<String>.from(response as List);
     } catch (e) {
-      
       final response = await _supabase.from('mock_tests').select('category');
       return (response as List)
           .map((e) => e['category'] as String)
@@ -96,7 +93,6 @@ class TestService {
       }
       return languages;
     } catch (e) {
-      
       final response = await _supabase.from('mock_tests').select('language');
       final List<String> languages = (response as List)
           .map((e) => e['language'] as String)
@@ -119,12 +115,11 @@ class TestService {
       final String jsonString = utf8.decode(fileBytes);
       return await compute(_decodeAndParseQuestions, jsonString);
     } catch (e) {
-      
       throw Exception('Failed to load questions: $e');
     }
   }
 
-  // â”€â”€ MOCK TESTS ADMIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── MOCK TESTS ADMIN ─────────────────────────────────────────────────────
 
   /// Creates a new mock test. Sanitizes storage paths before insertion.
   Future<void> createMockTest(MockTest test) async {
@@ -143,14 +138,11 @@ class TestService {
 
       try {
         await AdminNotificationService().sendBroadcast(
-          title: 'ðŸ†• New Mock Test Available!',
+          title: '🆕 New Mock Test Available!',
           body: 'Check out the new test: ${test.title}',
         );
-      } catch (notiErr) {
-        
-      }
+      } catch (notiErr) {}
     } catch (e) {
-      
       throw Exception('Failed to create test: $e');
     }
   }
@@ -212,7 +204,7 @@ class TestService {
     }
   }
 
-  // â”€â”€ RESULTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── RESULTS ──────────────────────────────────────────────────────────────
 
   /// Replaces storage paths with signed URLs for UI consumption.
   Future<List<MockTest>> _populateSignedUrls(List<MockTest> tests) async {
@@ -284,7 +276,7 @@ class TestService {
     }
   }
 
-  // â”€â”€ PURCHASES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── PURCHASES ────────────────────────────────────────────────────────────
 
   Future<Set<int>> fetchPurchasedTestIds(String userId) async {
     try {
@@ -513,7 +505,7 @@ class TestService {
         try {
           await AdminNotificationService().sendToTopic(
             topic: 'admin_updates',
-            title: 'ðŸŽ‰ New Sale! (â‚¹$amount)',
+            title: '🎉 New Sale! (₹$amount)',
             body: 'Order #$orderId has been completed.',
             data: {
               'type': 'sale_alert',
@@ -679,7 +671,7 @@ class TestService {
   }
 }
 
-// â”€â”€ ISOLATED PARSERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── ISOLATED PARSERS ───────────────────────────────────────────────────────
 
 List<MockTest> _parseMockTests(List<dynamic> jsonList) {
   return jsonList.map((json) => MockTest.fromJson(json)).toList();

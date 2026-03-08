@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../../domain/models/offer.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../widgets/common/responsive_wrapper.dart';
@@ -107,7 +107,7 @@ class CartItemWidget extends StatelessWidget {
                 Row(
                   children: [
                     if (isDiscounted) ...[
-                      Text("â‚¹${strikethroughPrice.toStringAsFixed(0)}",
+                      Text("₹${strikethroughPrice.toStringAsFixed(0)}",
                           style: TextStyle(
                               decoration: TextDecoration.lineThrough,
                               color: theme.colorScheme.onSurfaceVariant
@@ -116,7 +116,7 @@ class CartItemWidget extends StatelessWidget {
                       SizedBox(width: context.w(6)),
                     ],
                     Text(
-                      'â‚¹${finalItemPrice.toStringAsFixed(2)}',
+                      '₹${finalItemPrice.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontSize: context.sp(16),
                         fontWeight: FontWeight.bold,

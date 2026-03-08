@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart'; // NEW
 import '../../core/theme/app_spacing.dart';
@@ -298,7 +298,7 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
           if (item is MockTest) {
             card = UniversalItemCard(
               title: item.title,
-              subtitle: 'Mock Test â€¢ ${item.totalQuestions} Qs',
+              subtitle: 'Mock Test • ${item.totalQuestions} Qs',
               time: item.time,
               price: -1,
               coverUrl: item.signedUrl,

@@ -27,7 +27,6 @@ class ReviewService {
           .from('reviews')
           .upsert(data, onConflict: 'user_id, item_id, item_type');
     } catch (e) {
-      
       throw Exception('Failed to submit review');
     }
   }
@@ -72,7 +71,6 @@ class ReviewService {
 
       return reviewsData.map((e) => Review.fromJson(e)).toList();
     } catch (e) {
-      
       return [];
     }
   }
@@ -92,7 +90,6 @@ class ReviewService {
       if (response == null) return null;
       return Review.fromJson(response);
     } catch (e) {
-      
       return null;
     }
   }
@@ -130,7 +127,7 @@ class ReviewService {
   }
 
   /// Fetch rating stats for multiple items in a single DB round-trip.
-  /// Returns a map of itemId â†’ {'average': double, 'count': int}
+  /// Returns a map of itemId → {'average': double, 'count': int}
   static Future<Map<int, Map<String, dynamic>>> getBulkRatingStats(
     List<int> itemIds,
     String itemType,
@@ -167,7 +164,6 @@ class ReviewService {
       }
       return result;
     } catch (e) {
-      
       return {};
     }
   }
@@ -217,7 +213,6 @@ class ReviewService {
 
       return reviewsData.map((json) => Review.fromJson(json)).toList();
     } catch (e) {
-      
       return [];
     }
   }
@@ -230,7 +225,6 @@ class ReviewService {
           .delete()
           .eq('id', reviewId);
     } catch (e) {
-      
       rethrow;
     }
   }

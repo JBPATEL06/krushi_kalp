@@ -56,8 +56,16 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Consumer<AdminProvider>(
-      builder: (context, provider, child) {
+    return Consumer2<AdminProvider, AuthProvider>(
+      builder: (context, adminProvider, authProvider, child) {
+        // Ensure the current tab is marked as initialized
+        // This fixes the bug where jumping via quick-links left the screen black
+        if (!_initializedScreens[adminProvider.navIndex]) {
+          // Note: we can't setState during build, but we can safely mutate the local array
+          // since the Consumer is already building the new index anyway.
+          _initializedScreens[adminProvider.navIndex] = true;
+        }
+
         return LayoutBuilder(builder: (context, constraints) {
           final isLargeScreen = constraints.maxWidth > 1024;
           final isTablet =
@@ -67,23 +75,25 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
             canPop: false,
             onPopInvokedWithResult: (didPop, result) {
               if (didPop) return;
-              if (provider.navIndex != 0) {
-                provider.setNavIndex(0);
+              if (adminProvider.navIndex != 0) {
+                adminProvider.setNavIndex(0);
                 return;
               }
             },
             child: Scaffold(
-              backgroundColor: colorScheme.surface,
+              backgroundColor: theme.scaffoldBackgroundColor,
               appBar: AppBar(
                 leading: isLargeScreen ? const SizedBox.shrink() : null,
-                title: Text(_getAppBarTitle(provider.navIndex),
+                title: Text(_getAppBarTitle(adminProvider.navIndex),
                     style: TextStyle(fontSize: context.sp(20))), // FIXED
                 actions: [
                   _buildRoleBadge(context),
                   const SizedBox(width: AppSpacing.md),
                 ],
               ),
-              drawer: isLargeScreen ? null : _buildDrawer(context, provider),
+              drawer: isLargeScreen
+                  ? null
+                  : _buildDrawer(context, adminProvider, authProvider),
               body: Row(
                 children: [
                   if (isLargeScreen || isTablet)
@@ -95,12 +105,12 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                           right: BorderSide(color: colorScheme.outlineVariant),
                         ),
                       ),
-                      child: _buildDrawer(context, provider,
+                      child: _buildDrawer(context, adminProvider, authProvider,
                           isPersistent: true, isRail: isTablet),
                     ),
                   Expanded(
                     child: IndexedStack(
-                      index: provider.navIndex,
+                      index: adminProvider.navIndex,
                       children: _buildScreens(),
                     ),
                   ),
@@ -161,13 +171,14 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
     );
   }
 
-  Widget _buildDrawer(BuildContext context, AdminProvider provider,
+  Widget _buildDrawer(BuildContext context, AdminProvider adminProvider,
+      AuthProvider authProvider,
       {bool isPersistent = false, bool isRail = false}) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     if (isRail) {
-      return _buildRail(context, provider);
+      return _buildRail(context, adminProvider);
     }
 
     Widget drawerContent = Column(
@@ -194,7 +205,9 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Krushi Kalp',
+                      authProvider.currentUser?.userMetadata?['name'] ??
+                          'Krushi Kalp',
+                      overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: colorScheme.onSurface,
@@ -202,10 +215,11 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                       ),
                     ),
                     Text(
-                      'Admin Panel',
+                      authProvider.currentUser?.email ?? 'Admin Panel',
+                      overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.1),
+                          color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.7), // Increased opacity for readability
                           fontSize: context.sp(12)), // FIXED
                     ),
                   ],
@@ -225,9 +239,11 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                 icon: Icons.dashboard_outlined,
                 selectedIcon: Icons.dashboard_rounded,
                 label: 'Dashboard',
-                currentIndex: provider.navIndex,
+                currentIndex: adminProvider.navIndex,
                 onTap: () => _onTabSelected(
-                    index: 0, provider: provider, isPersistent: isPersistent),
+                    index: 0,
+                    provider: adminProvider,
+                    isPersistent: isPersistent),
               ),
               _buildDrawerItem(
                 context,
@@ -235,9 +251,11 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                 icon: Icons.analytics_outlined,
                 selectedIcon: Icons.analytics_rounded,
                 label: 'Analytics',
-                currentIndex: provider.navIndex,
+                currentIndex: adminProvider.navIndex,
                 onTap: () => _onTabSelected(
-                    index: 1, provider: provider, isPersistent: isPersistent),
+                    index: 1,
+                    provider: adminProvider,
+                    isPersistent: isPersistent),
               ),
               _buildDrawerItem(
                 context,
@@ -245,9 +263,11 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                 icon: Icons.people_outline_rounded,
                 selectedIcon: Icons.people_rounded,
                 label: 'Users',
-                currentIndex: provider.navIndex,
+                currentIndex: adminProvider.navIndex,
                 onTap: () => _onTabSelected(
-                    index: 2, provider: provider, isPersistent: isPersistent),
+                    index: 2,
+                    provider: adminProvider,
+                    isPersistent: isPersistent),
               ),
               _buildDrawerItem(
                 context,
@@ -255,9 +275,11 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                 icon: Icons.forum_outlined,
                 selectedIcon: Icons.forum_rounded,
                 label: 'Inbox',
-                currentIndex: provider.navIndex,
+                currentIndex: adminProvider.navIndex,
                 onTap: () => _onTabSelected(
-                    index: 3, provider: provider, isPersistent: isPersistent),
+                    index: 3,
+                    provider: adminProvider,
+                    isPersistent: isPersistent),
               ),
               _buildDrawerItem(
                 context,
@@ -265,9 +287,11 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                 icon: Icons.notifications_active_outlined,
                 selectedIcon: Icons.notifications_active_rounded,
                 label: 'Alerts',
-                currentIndex: provider.navIndex,
+                currentIndex: adminProvider.navIndex,
                 onTap: () => _onTabSelected(
-                    index: 4, provider: provider, isPersistent: isPersistent),
+                    index: 4,
+                    provider: adminProvider,
+                    isPersistent: isPersistent),
               ),
               _buildDrawerItem(
                 context,
@@ -275,9 +299,11 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                 icon: Icons.settings_applications_outlined,
                 selectedIcon: Icons.settings_applications_rounded,
                 label: 'Manage App',
-                currentIndex: provider.navIndex,
+                currentIndex: adminProvider.navIndex,
                 onTap: () => _onTabSelected(
-                    index: 5, provider: provider, isPersistent: isPersistent),
+                    index: 5,
+                    provider: adminProvider,
+                    isPersistent: isPersistent),
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
@@ -311,10 +337,9 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                   );
 
                   if (confirm == true) {
-                    await context.read<AuthProvider>().signOut();
+                    await authProvider.signOut();
                     if (mounted) {
-                      Navigator.pushAndRemoveUntil(
-                        context,
+                      Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(builder: (_) => const LoginScreen()),
                         (route) => false,
                       );
@@ -388,8 +413,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
             // Sign out logic repeated or extracted
             await context.read<AuthProvider>().signOut();
             if (mounted) {
-              Navigator.pushAndRemoveUntil(
-                context,
+              Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (_) => const LoginScreen()),
                 (route) => false,
               );

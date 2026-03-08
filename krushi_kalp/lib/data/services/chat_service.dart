@@ -36,7 +36,6 @@ class ChatService {
   // ==========================================
 
   Stream<List<Map<String, dynamic>>> getConversationsStream() {
-    
     _ensureRealtimeListener();
     refreshConversations();
     return _conversationsController.stream;
@@ -44,8 +43,6 @@ class ChatService {
 
   void _ensureRealtimeListener() {
     if (_isRealtimeConnected) return;
-
-    
 
     // Listen to ALL messages table changes
     final channel = _supabase.channel('public:messages:global');
@@ -55,8 +52,6 @@ class ChatService {
       schema: 'public',
       table: 'messages',
       callback: (payload) {
-        
-
         // 1. Refresh Conversation List
         Future.delayed(const Duration(milliseconds: 500), () {
           refreshConversations();
@@ -71,7 +66,6 @@ class ChatService {
     )
         .subscribe((status, error) {
       if (status == RealtimeSubscribeStatus.subscribed) {
-        
         _isRealtimeConnected = true;
       }
     });
@@ -85,7 +79,6 @@ class ChatService {
       }
     } catch (e) {
       if (NetworkUtils.isNetworkError(e)) return;
-      
     }
   }
 
@@ -114,8 +107,6 @@ class ChatService {
   // ==========================================
 
   Stream<List<Message>> getAdminMessagesStream(String userId) {
-    
-
     // Create or reuse controller for this specific user chat
     StreamController<List<Message>> controller;
 
@@ -155,7 +146,6 @@ class ChatService {
       }
     } catch (e) {
       if (NetworkUtils.isNetworkError(e)) return;
-      
     }
   }
 
@@ -192,8 +182,6 @@ class ChatService {
     final user = AuthService.instance.currentUser;
     if (user == null) return Stream.value([]);
 
-    
-
     // Ensure realtime listener is active (user might benefit from global listener too)
     _ensureRealtimeListener();
 
@@ -229,29 +217,26 @@ class ChatService {
   // ==========================================
 
   Future<void> deleteMessage(String messageId) async {
-    
     try {
       await deleteMessages([messageId]);
     } catch (e) {
-      
       rethrow;
     }
   }
 
   Future<void> deleteMessages(List<String> messageIds) async {
     if (messageIds.isEmpty) return;
-    
+
     try {
       // Note: checking count might be good but requires different syntax
-      final response = await _supabase
+      await _supabase
           .from('messages')
           .delete()
           .inFilter('id', messageIds)
           .select();
-      
+
       _notifyRefresh();
     } catch (e) {
-      
       // If error is RLS related, it often throws or returns 0 rows if using select()
       // Note: .delete() by itself returns void/dynamic, adding .select() returns deleted rows.
       // If RLS blocks it, response might be empty.
@@ -343,7 +328,7 @@ class ChatService {
       }).toList();
     } catch (e) {
       if (NetworkUtils.isNetworkError(e)) return [];
-      
+
       return [];
     }
   }

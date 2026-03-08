@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:krushi_kalp/presentation/providers/admin_provider.dart';
 import 'package:krushi_kalp/data/services/admin_service.dart';
@@ -31,7 +31,7 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: StreamBuilder<Map<String, dynamic>>(
         stream: _statsStream,
         builder: (context, snapshot) {
@@ -101,7 +101,7 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
                       _buildStatCard(
                         context,
                         'Revenue',
-                        'â‚¹${(stats['revenue'] as double).toStringAsFixed(0)}',
+                        '₹${(stats['revenue'] as double).toStringAsFixed(0)}',
                         Icons.payments_rounded,
                         const Color(0xFF10B981), // Emerald
                         onTap: () => Navigator.push(

@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -80,7 +80,7 @@ class _NetworkAwareWrapperState extends State<NetworkAwareWrapper> {
     if (!_isNoInternetVisible) return;
     _isNoInternetVisible = false;
 
-    // Pop only the NoInternet route â€” leave everything below intact.
+    // Pop only the NoInternet route — leave everything below intact.
     final nav = navigatorKey.currentState;
     if (nav != null && nav.canPop()) {
       nav.popUntil((route) => route.settings.name != _kNoInternetRoute);

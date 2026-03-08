@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
@@ -134,7 +134,7 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Mock Test Details',
             style: TextStyle(fontSize: context.sp(20))), // FIXED
@@ -237,7 +237,7 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
                             Text(
                               _test.price == 0
                                   ? 'FREE'
-                                  : 'â‚¹${_test.price.toStringAsFixed(0)}',
+                                  : '₹${_test.price.toStringAsFixed(0)}',
                               style: theme.textTheme.titleLarge?.copyWith(
                                 color: _test.price == 0
                                     ? const Color(0xFF10B981)
@@ -250,7 +250,7 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
                                 _test.mrp! > _test.price) ...[
                               const SizedBox(width: 8),
                               Text(
-                                'â‚¹${_test.mrp!.toStringAsFixed(0)}',
+                                '₹${_test.mrp!.toStringAsFixed(0)}',
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   decoration: TextDecoration.lineThrough,
                                   color: colorScheme.onSurfaceVariant,

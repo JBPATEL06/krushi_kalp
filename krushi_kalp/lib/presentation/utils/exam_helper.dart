@@ -1,4 +1,4 @@
-﻿import 'dart:io'; // NEW
+import 'dart:io'; // NEW
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/services/auth_service.dart';
@@ -23,7 +23,7 @@ class ExamHelper {
         await downloadService.isFileDownloaded(filename, userId: user.id);
 
     if (!isDownloaded) {
-      // â”€â”€ File not on device: download first, then ask language â”€â”€
+      // ── File not on device: download first, then ask language ──
       if (test.contentUrl == null) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -45,7 +45,7 @@ class ExamHelper {
           displayName: test.title,
           userId: user.id,
           onComplete: (path) async {
-            // Use outer context â€” dialog ctx is stale after dialog pops itself
+            // Use outer context — dialog ctx is stale after dialog pops itself
             if (!outerContext.mounted) return;
             final lang = await _askLanguage(outerContext, user.id);
             if (lang == null) return; // user cancelled
@@ -57,7 +57,7 @@ class ExamHelper {
       return;
     }
 
-    // â”€â”€ File already on device: ask language, then start â”€â”€
+    // ── File already on device: ask language, then start ──
     if (!context.mounted) return;
     final lang = await _askLanguage(context, user.id);
     if (lang == null) return; // user cancelled
@@ -147,7 +147,7 @@ class ExamHelper {
                 TextButton(
                   onPressed: () {
                     Navigator.pop(
-                        context); // cancelled â€” selectedLanguage stays null
+                        context); // cancelled — selectedLanguage stays null
                   },
                   child: const Text("Cancel"),
                 ),

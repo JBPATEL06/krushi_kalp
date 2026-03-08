@@ -239,7 +239,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
     final filename = 'resource_${resource.id}.pdf';
     final ds = DownloadService();
 
-    // 1. Ownership check â€” manifest must confirm this user downloaded the file
+    // 1. Ownership check — manifest must confirm this user downloaded the file
     final owned = await ds.verifyOwnership(filename, userId: uid);
     if (!owned) {
       if (mounted) {
@@ -254,7 +254,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
       return;
     }
 
-    // 2. Purchase check â€” current user must have this resource purchased
+    // 2. Purchase check — current user must have this resource purchased
     final resourceProvider = context.read<ResourceProvider>();
     if (!resourceProvider.purchasedResourceIds.contains(resource.id)) {
       if (mounted) {
@@ -305,7 +305,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
       return;
     }
 
-    // 2. Purchase check â€” current user must have this test purchased
+    // 2. Purchase check — current user must have this test purchased
     final testProvider = context.read<TestProvider>();
     final isPurchased = testProvider.userTests.any((t) => t.id == test.id);
     if (!isPurchased) {
@@ -675,7 +675,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
                   ),
                   SizedBox(height: context.h(2)),
                   Text(
-                    "${resource.category ?? 'PDF'} â€¢ PDF",
+                    "${resource.category ?? 'PDF'} • PDF",
                     style: TextStyle(
                       color: theme.colorScheme.onSurfaceVariant,
                       fontSize: context.sp(11),

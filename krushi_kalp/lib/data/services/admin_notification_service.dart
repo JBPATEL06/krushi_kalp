@@ -33,7 +33,6 @@ class AdminNotificationService {
             'notification_id': record['id'].toString(),
           });
     } catch (e) {
-      
       // throw Exception("Failed to send broadcast: $e");
     }
   }
@@ -75,12 +74,8 @@ class AdminNotificationService {
           'type': 'personal', // Important for routing
           'notification_id': record['id'].toString(),
         });
-      } else {
-        
-      }
-    } catch (e) {
-      
-    }
+      } else {}
+    } catch (e) {}
   }
 
   // Send a CHAT REPLY notification (type = 'chat' so it can be suppressed when chat is open)
@@ -116,12 +111,8 @@ class AdminNotificationService {
           'type': 'chat',
           'notification_id': record['id'].toString(),
         });
-      } else {
-        
-      }
-    } catch (e) {
-      
-    }
+      } else {}
+    } catch (e) {}
   }
 
   // Send to Generic Topic (e.g. Admin Updates)
@@ -138,9 +129,7 @@ class AdminNotificationService {
         topic: topic,
         data: data,
       );
-    } catch (e) {
-      
-    }
+    } catch (e) {}
   }
 
   Future<void> _callEdgeFunction({
@@ -153,11 +142,10 @@ class AdminNotificationService {
     try {
       final session = _supabase.auth.currentSession;
       if (session == null) {
-        
         return;
       }
 
-      final response = await _supabase.functions.invoke(
+      await _supabase.functions.invoke(
         'send-fcm',
         headers: {
           'Authorization': 'Bearer ${session.accessToken}',
@@ -170,10 +158,7 @@ class AdminNotificationService {
           if (data != null) 'data': data,
         },
       );
-
-      
     } catch (e) {
-      
       // Optional: Check if token is expired and force refresh?
       // _supabase.auth.refreshSession();
     }

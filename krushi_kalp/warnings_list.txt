@@ -1,0 +1,345 @@
+﻿
+   info - Empty catch block - lib\data\services\ad
+min_notification_service.dart:81:17 - 
+empty_catches
+   info - Empty catch block - lib\data\services\ad
+min_notification_service.dart:122:17 - 
+empty_catches
+   info - Empty catch block - lib\data\services\ad
+min_notification_service.dart:141:17 - 
+empty_catches
+warning - The value of the local variable 
+'response' isn't used - lib\data\services\admin_no
+tification_service.dart:160:13 - 
+unused_local_variable
+   info - Empty catch block - 
+lib\data\services\app_config_service.dart:34:17 - 
+empty_catches
+   info - Empty catch block - 
+lib\data\services\auth_service.dart:183:17 - 
+empty_catches
+   info - Empty catch block - 
+lib\data\services\auth_service.dart:198:17 - 
+empty_catches
+   info - Empty catch block - 
+lib\data\services\auth_service.dart:231:17 - 
+empty_catches
+   info - Empty catch block - 
+lib\data\services\auth_service.dart:298:17 - 
+empty_catches
+   info - Empty catch block - 
+lib\data\services\banner_service.dart:179:17 - 
+empty_catches
+warning - The value of the local variable 
+'response' isn't used - 
+lib\data\services\chat_service.dart:246:13 - 
+unused_local_variable
+   info - Empty catch block - 
+lib\data\services\download_service.dart:154:17 - 
+empty_catches
+   info - Empty catch block - 
+lib\data\services\download_service.dart:471:17 - 
+empty_catches
+   info - Empty catch block - 
+lib\data\services\fcm_service.dart:164:17 - 
+empty_catches
+   info - Empty catch block - 
+lib\data\services\fcm_service.dart:181:19 - 
+empty_catches
+   info - Empty catch block - lib\data\services\no
+tification_service.dart:124:17 - empty_catches
+   info - Empty catch block - lib\data\services\no
+tification_service.dart:151:17 - empty_catches
+   info - Empty catch block - lib\data\services\no
+tification_service.dart:267:17 - empty_catches
+   info - Empty catch block - lib\data\services\no
+tification_service.dart:304:17 - empty_catches
+   info - Empty catch block - lib\data\services\no
+tification_service.dart:375:27 - empty_catches
+   info - Empty catch block - lib\data\services\no
+tification_service.dart:381:17 - empty_catches
+warning - The value of the local variable 'o' 
+isn't used - 
+lib\data\services\offer_service.dart:121:16 - 
+unused_local_variable
+   info - Empty catch block - 
+lib\data\services\offer_service.dart:278:17 - 
+empty_catches
+   info - Empty catch block - 
+lib\data\services\payment_service.dart:81:17 - 
+empty_catches
+   info - Empty catch block - 
+lib\data\services\resource_service.dart:157:25 - 
+empty_catches
+   info - Empty catch block - 
+lib\data\services\resource_service.dart:218:17 - 
+empty_catches
+   info - Empty catch block - 
+lib\data\services\test_service.dart:149:25 - 
+empty_catches
+   info - The constant name 'Student' isn't a 
+lowerCamelCase identifier - 
+lib\domain\models\user.dart:2:3 - 
+constant_identifier_names
+   info - The constant name 'Admin' isn't a 
+lowerCamelCase identifier - 
+lib\domain\models\user.dart:3:3 - 
+constant_identifier_names
+   info - Empty catch block - 
+lib\domain\services\pdf_service.dart:434:19 - 
+empty_catches
+   info - Empty catch block - 
+lib\domain\services\pdf_service.dart:464:17 - 
+empty_catches
+   info - Empty catch block - lib\presentation\pro
+viders\auth_provider.dart:66:21 - empty_catches
+   info - Empty catch block - lib\presentation\pro
+viders\auth_provider.dart:139:17 - empty_catches
+   info - Empty catch block - lib\presentation\pro
+viders\auth_provider.dart:164:17 - empty_catches
+   info - Empty catch block - lib\presentation\pro
+viders\auth_provider.dart:308:17 - empty_catches
+   info - Empty catch block - lib\presentation\pro
+viders\resource_provider.dart:162:19 - 
+empty_catches
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\admin\admin_chat_detail_scr
+een.dart:121:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps - lib\presentation\screens\admin\admin_main_s
+creen.dart:314:27 - 
+use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\admin\admin_main_screen.dar
+t:317:25 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\admin\admin_main_screen.dar
+t:392:17 - use_build_context_synchronously
+   info - Statements in an if should be enclosed 
+in a block - lib\presentation\screens\admin\admin_
+offer_list_screen.dart:162:7 - 
+curly_braces_in_flow_control_structures
+warning - The value of the local variable 
+'colorScheme' isn't used - lib\presentation\screen
+s\admin\admin_order_list_screen.dart:30:11 - 
+unused_local_variable
+   info - Don't use 'BuildContext's across async 
+gaps - lib\presentation\screens\admin\admin_user_d
+etails_screen.dart:151:11 - 
+use_build_context_synchronously
+   info - Empty catch block - lib\presentation\scr
+eens\admin\resources\admin_resource_form.dart:84:1
+7 - empty_catches
+   info - Empty catch block - lib\presentation\scr
+eens\admin\resources\admin_resource_form.dart:100:
+17 - empty_catches
+warning - The value of the local variable 
+'taskId' isn't used - lib\presentation\screens\adm
+in\resources\admin_resource_form.dart:156:17 - 
+unused_local_variable
+   info - Don't use 'BuildContext's across async 
+gaps - lib\presentation\screens\all_tests_screen.d
+art:61:28 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - 
+lib\presentation\screens\chat_screen.dart:134:32 
+- use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps - lib\presentation\screens\downloads_screen.d
+art:258:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps - lib\presentation\screens\downloads_screen.d
+art:309:26 - use_build_context_synchronously
+warning - The value of the local variable 
+'testCount' isn't used - lib\presentation\screens\
+free_content_screen.dart:137:13 - 
+unused_local_variable
+warning - The value of the local variable 
+'resourceCount' isn't used - lib\presentation\scre
+ens\free_content_screen.dart:138:13 - 
+unused_local_variable
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\mock_test_detail_screen.dar
+t:124:34 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\mock_test_detail_screen.dar
+t:130:34 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\mock_test_detail_screen.dar
+t:140:34 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\mock_test_detail_screen.dar
+t:146:34 - use_build_context_synchronously
+   info - Empty catch block - lib\presentation\scr
+eens\mock_test_upload_screen.dart:231:19 - 
+empty_catches
+   info - Empty catch block - lib\presentation\scr
+eens\notifications_screen.dart:51:17 - 
+empty_catches
+   info - Empty catch block - lib\presentation\scr
+eens\profile_screen.dart:67:17 - empty_catches
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\profile_screen.dart:442:11 
+- use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\resource_detail_screen.dart
+:114:36 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\resource_detail_screen.dart
+:121:36 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\resource_detail_screen.dart
+:132:36 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\resource_detail_screen.dart
+:139:36 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and 
+shouldn't be used. Use .withValues() to avoid 
+precision loss - lib\presentation\screens\resource
+_detail_screen.dart:263:44 - deprecated_member_use
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\reviews\all_reviews_screen.
+dart:78:36 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\reviews\all_reviews_screen.
+dart:85:36 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\reviews\all_reviews_screen.
+dart:95:36 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\reviews\all_reviews_screen.
+dart:102:36 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps - 
+lib\presentation\screens\score_screen.dart:100:28 
+- use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps - 
+lib\presentation\screens\splash_screen.dart:171:9 
+- use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\test_attempt_screen.dart:13
+7:24 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\test_attempt_screen.dart:15
+5:30 - use_build_context_synchronously
+   info - Empty catch block - lib\presentation\scr
+eens\test_result_screen.dart:154:21 - 
+empty_catches
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\test_result_screen.dart:798
+:34 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async 
+gaps, guarded by an unrelated 'mounted' check - li
+b\presentation\screens\test_result_screen.dart:803
+:34 - use_build_context_synchronously
+   info - 'groupValue' is deprecated and 
+shouldn't be used. Use a RadioGroup ancestor to 
+manage group value instead. This feature was 
+deprecated after v3.32.0-0.0.pre - 
+lib\presentation\utils\exam_helper.dart:124:23 - 
+deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't 
+be used. Use RadioGroup to handle value change 
+instead. This feature was deprecated after 
+v3.32.0-0.0.pre - 
+lib\presentation\utils\exam_helper.dart:125:23 - 
+deprecated_member_use
+   info - 'groupValue' is deprecated and 
+shouldn't be used. Use a RadioGroup ancestor to 
+manage group value instead. This feature was 
+deprecated after v3.32.0-0.0.pre - 
+lib\presentation\utils\exam_helper.dart:132:23 - 
+deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't 
+be used. Use RadioGroup to handle value change 
+instead. This feature was deprecated after 
+v3.32.0-0.0.pre - 
+lib\presentation\utils\exam_helper.dart:133:23 - 
+deprecated_member_use
+   info - Don't use 'BuildContext's across async 
+gaps - lib\presentation\widgets\common\download_pr
+ogress_dialog.dart:65:26 - 
+use_build_context_synchronously
+   info - Empty catch block - 
+lib\utils\crashlytics_service.dart:35:17 - 
+empty_catches
+   info - Empty catch block - 
+lib\utils\crashlytics_service.dart:46:17 - 
+empty_catches
+   info - Empty catch block - 
+lib\utils\crashlytics_service.dart:71:17 - 
+empty_catches
+   info - Empty catch block - 
+lib\utils\supabase_url_helper.dart:87:17 - 
+empty_catches
+   info - Empty catch block - 
+lib\utils\supabase_url_helper.dart:138:19 - 
+empty_catches
+   info - Empty catch block - 
+lib\utils\supabase_url_helper.dart:161:17 - 
+empty_catches
+   info - Empty catch block - 
+lib\utils\supabase_url_helper.dart:183:17 - 
+empty_catches
+   info - Don't invoke 'print' in production code 
+- scripts\audit_responsive.dart:6:5 - avoid_print
+   info - Don't invoke 'print' in production code 
+- scripts\audit_responsive.dart:10:3 - avoid_print
+   info - String literals shouldn't be 
+concatenated by the '+' operator - 
+scripts\audit_responsive.dart:20:9 - 
+prefer_adjacent_string_concatenation
+   info - Don't invoke 'print' in production code 
+- scripts\audit_responsive.dart:64:9 - avoid_print
+   info - Don't invoke 'print' in production code 
+- scripts\audit_responsive.dart:70:3 - avoid_print
+   info - Don't invoke 'print' in production code 
+- scripts\audit_responsive.dart:71:3 - avoid_print
+   info - Don't invoke 'print' in production code 
+- scripts\audit_unused.dart:6:5 - avoid_print
+   info - Don't invoke 'print' in production code 
+- scripts\audit_unused.dart:10:3 - avoid_print
+   info - String literals shouldn't be 
+concatenated by the '+' operator - 
+scripts\audit_unused.dart:27:57 - 
+prefer_adjacent_string_concatenation
+   info - Don't invoke 'print' in production code 
+- scripts\audit_unused.dart:59:7 - avoid_print
+   info - Don't invoke 'print' in production code 
+- scripts\audit_unused.dart:64:3 - avoid_print
+   info - Don't invoke 'print' in production code 
+- scripts\audit_unused.dart:65:3 - avoid_print
+   info - Don't invoke 'print' in production code 
+- scripts\clean_logs.dart:6:5 - avoid_print
+   info - Don't invoke 'print' in production code 
+- scripts\clean_logs.dart:34:11 - avoid_print
+   info - Don't invoke 'print' in production code 
+- scripts\clean_logs.dart:40:3 - avoid_print
+   info - Don't invoke 'print' in production code 
+- scripts\clean_logs.dart:41:3 - avoid_print
+   info - Don't invoke 'print' in production code 
+- scripts\clean_logs.dart:42:3 - avoid_print
+   info - Don't invoke 'print' in production code 
+- scripts\clean_logs.dart:43:3 - avoid_print
+
+

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:file_picker/file_picker.dart';
@@ -29,7 +29,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
     _interval = AppConfigService.bannerInterval;
   }
 
-  // â”€â”€â”€ Save Banner Settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Save Banner Settings ─────────────────────────
   Future<void> _saveSettings(bool autoScroll, int interval) async {
     try {
       await AppConfigService.updateConfig('banner_settings', {
@@ -50,7 +50,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
     }
   }
 
-  // â”€â”€â”€ Show Settings Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Show Settings Dialog ──────────────────────────
   void _showSettingsDialog() {
     bool tempAutoScroll = _autoScroll;
     int tempInterval = _interval;
@@ -107,7 +107,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
     );
   }
 
-  // â”€â”€â”€ Upload Multiple New Banners â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Upload Multiple New Banners ───────────────────
   Future<void> _uploadBanners() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -145,7 +145,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
     }
   }
 
-  // â”€â”€â”€ Replace Image at a Specific Banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Replace Image at a Specific Banner ───────────────────
   Future<void> _replaceBannerImage(HomeBanner banner) async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -176,7 +176,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
     }
   }
 
-  // â”€â”€â”€ Edit Banner Meta (Title, Priority, Active) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Edit Banner Meta (Title, Priority, Active) ───────────────────
   Future<void> _editBanner(HomeBanner banner) async {
     final titleController = TextEditingController(text: banner.title);
     final priorityController =
@@ -245,7 +245,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
     );
   }
 
-  // â”€â”€â”€ Delete Banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Delete Banner ───────────────────
   Future<void> _deleteBanner(HomeBanner banner) async {
     await showAppDialog(
       context: context,
@@ -378,7 +378,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
               ),
               const SizedBox(height: AppSpacing.sm),
 
-              // â”€â”€ Banner List (real-time stream) â”€â”€
+              // ── Banner List (real-time stream) ──
               Expanded(
                 child: StreamBuilder<List<HomeBanner>>(
                   stream: BannerService.instance.streamAllBanners(),
@@ -473,7 +473,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
   }
 }
 
-// â”€â”€â”€ Reusable Banner Card Widget â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Reusable Banner Card Widget ───────────────────────────────────────────
 class _BannerCard extends StatelessWidget {
   final HomeBanner banner;
   final int index;

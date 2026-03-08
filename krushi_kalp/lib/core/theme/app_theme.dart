@@ -1,20 +1,20 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'premium_palettes.dart';
 import 'app_spacing.dart';
 import 'app_radius.dart';
 import 'app_motion.dart';
 
-/// ðŸŒŒ ANTI-GRAVITY Unified Theme (v2.0)
+/// 🌌 ANTI-GRAVITY Unified Theme (v2.0)
 /// "Clarity Defines Structure. Design Defines Trust."
 class AppTheme {
   AppTheme._();
 
-  // â”€â”€ Theme Data â”€â”€
+  // ── Theme Data ──
   static ThemeData get lightTheme => _buildTheme(Brightness.light);
   static ThemeData get darkTheme => _buildTheme(Brightness.dark);
 
-  // â”€â”€ Standard Tokens (Static Access) â”€â”€
+  // ── Standard Tokens (Static Access) ──
   static const spacing = AppSpacing;
   static const radius = AppRadius;
   static const motion = AppMotion;
@@ -56,10 +56,10 @@ class AppTheme {
       cardColor: surfaceColor,
       dividerColor: colorScheme.outlineVariant,
 
-      // â”€â”€ Typography â”€â”€
+      // ── Typography ──
       textTheme: _buildTextTheme(colorScheme),
 
-      // â”€â”€ AppBar â”€â”€
+      // ── AppBar ──
       appBarTheme: AppBarTheme(
         backgroundColor: surfaceColor,
         foregroundColor: colorScheme.onSurface,
@@ -78,7 +78,7 @@ class AppTheme {
         toolbarHeight: 64,
       ),
 
-      // â”€â”€ Navigation â”€â”€
+      // ── Navigation ──
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: surfaceColor,
         indicatorColor: colorScheme.primary.withValues(alpha: 0.12),
@@ -105,7 +105,7 @@ class AppTheme {
         }),
       ),
 
-      // â”€â”€ Cards & Surfaces â”€â”€
+      // ── Cards & Surfaces ──
       cardTheme: CardThemeData(
         color: surfaceColor,
         elevation: 0,
@@ -118,7 +118,7 @@ class AppTheme {
         margin: EdgeInsets.all(AppSpacing.xs),
       ),
 
-      // â”€â”€ Buttons â”€â”€
+      // ── Buttons ──
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: colorScheme.primary,
@@ -133,7 +133,7 @@ class AppTheme {
         ),
       ),
 
-      // â”€â”€ Inputs â”€â”€
+      // ── Inputs ──
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: isDark
@@ -142,11 +142,13 @@ class AppTheme {
         contentPadding: EdgeInsets.all(AppSpacing.lg),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.5)),
+          borderSide:
+              BorderSide(color: colorScheme.outline.withValues(alpha: 0.5)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.5)),
+          borderSide:
+              BorderSide(color: colorScheme.outline.withValues(alpha: 0.5)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),

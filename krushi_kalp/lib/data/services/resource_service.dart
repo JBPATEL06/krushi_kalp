@@ -150,13 +150,11 @@ class ResourceService {
       // Send broadcast notification for new content
       try {
         await AdminNotificationService().sendBroadcast(
-          title: 'ðŸ“– New Resource Published!',
+          title: '📖 New Resource Published!',
           body:
               'New ${resource.type.name}: ${resource.title} is now available.',
         );
-      } catch (notiErr) {
-        
-      }
+      } catch (notiErr) {}
     } catch (e) {
       throw Exception('Failed to create resource: $e');
     }
@@ -214,10 +212,7 @@ class ResourceService {
       }
 
       await _client.storage.from(bucket).remove([path]);
-      
-    } catch (e) {
-      
-    }
+    } catch (e) {}
   }
 
   /// Uploads a binary file to Supabase Storage.
