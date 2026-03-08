@@ -445,12 +445,27 @@ flutter clean && flutter pub get && flutter run
 9. **Phase 9**: Premium splash screen with progress bar. Login logo at `130x130`. Splash logo size increased for better branding.
 10. **Global UI Resilience**: System navigation bar overlap audit and fix across all management screens.
 
-### Unified Infrastructure Fixes (Gemini Audit 2026-03-08)
-12. **Store UI Consistency**: Fixed the "GK & CA" (Current Affairs) tab rendering logic in `StoreScreen` to correctly use the uniform `StoreResourceGrid` card layout, ensuring visual consistency with E-Books and Study Materials rather than displaying a mismatched primitive list tile.
-13. **Centralized Error Handling Refactor**:
-    - Implementation of `ErrorUtils.showError(context, e)` as the unified gateway for all user-facing errors.
-    - Integration of `DbErrorHelper` to translate `PostgrestException` codes (e.g., 23503) into friendly, actionable messages.
-14. **Admin UI Global Stabilization**:
+### Historical Improvements (Audit & Recovery)
+- **[2026-03-08]**: Accidental deletion of 24 core files during audit; fully restored via Git and verified with `flutter analyze`.
+- **[2026-03-08]**: Fixed "Quiz & Tests" navigation in Admin Dashboard to correctly point to `AdminStoreScreen`.
+- **[2026-03-08]**: Successfully migrated Mock Test JSON format to "tableConvert" structure.
+- **[2026-03-08]**: Updated `Question` model to use string-based `correctAnswer` for better resilience and multi-language support.
+- **[2026-03-08]**: Broad scoring logic update: All screens (`ExamScreen`, `TestAnalysisScreen`, `TestAttemptScreen`) now use trimmed, case-insensitive string matching.
+- **[2026-03-08]**: Updated `PdfService` to use string-based correct answer identification in generated reports.
+- **[2026-03-08]**: Enhanced `DownloadActionButton` UX: fixed RenderFlex overflow and enabled human-readable notification titles.
+14. **Global Responsiveness Audit & Fixes (2026-03-08)**:
+    - Conducted a full project audit for hardcoded pixel dimensions and layout overflows.
+    - **Batched Implementation**: Migrated all 10 batches (55+ screens) to use `context.sp()`, `AppSpacing`, and `AppRadius` tokens.
+    - **User App**: Fixed Home, Store, Cart, Checkout, Exam, Results, Analysis, and Profile screens.
+    - **Admin Panel**: Fixed Dashboard, Analytics, User Management, Content Management, Orders, Notifications, and Profile screens.
+    - **Edge-to-Edge Strategy**: Applied reactive `MediaQuery.padding.bottom` to all scrolling content for native gesture bar support.
+    - **Constraint Enforcement**: Added `Flexible`/`Expanded` to all potentially overflowing Rows and `FittedBox` for dynamic currency displays.
+15. **Post-Audit Stabilization (2026-03-08)**:
+    - Unified responsiveness extensions into `lib/utils/responsive.dart` for centralized scaling.
+    - Cleaned up 380+ analyze errors caused by missing imports and `const` keyword violations.
+    - Updated `AppRadius` tokens to include `xs: 2.0` for checkbox and small component scaling.
+    - Standardized `ResponsiveWrapper` to export `responsive.dart`, ensuring backward compatibility for legacy screens.
+16. **Admin UI Global Stabilization**:
     - Resolved structural syntax errors in `AdminMainScreen` and `AdminUserDetailsScreen`.
     - Corrected broken relative import paths (`network_utils.dart`) across multiple management screens.
     - Standardized `NetworkErrorState` usage by migrating to the named `message` parameter.

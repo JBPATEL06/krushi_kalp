@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/theme/app_radius.dart';
 
 enum AppButtonType { primary, secondary, outline, text }
@@ -100,7 +100,7 @@ class AppButton extends StatelessWidget {
           child: ElevatedButton(
             onPressed: isLoading ? null : onPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: color ?? theme.colorScheme.surfaceVariant,
+              backgroundColor: color ?? theme.colorScheme.surfaceContainerHighest,
               foregroundColor: theme.colorScheme.onSurfaceVariant,
               minimumSize: minimumSize,
               shape: RoundedRectangleBorder(borderRadius: borderRadius),

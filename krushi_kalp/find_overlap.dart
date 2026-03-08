@@ -32,11 +32,11 @@ void main() {
   StringBuffer sb = StringBuffer();
   sb.writeln("### Screens at Risk of Bottom Navigation Bar Overlap");
   sb.writeln(
-      "Total potentially affected screens: " + riskyScreens.length.toString());
+      "Total potentially affected screens: ${riskyScreens.length}");
   sb.writeln();
 
   for (var screen in riskyScreens) {
-    sb.writeln("- " + screen);
+    sb.writeln("- $screen");
   }
 
   out.writeAsStringSync(sb.toString());

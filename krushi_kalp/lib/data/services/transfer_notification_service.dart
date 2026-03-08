@@ -1,4 +1,4 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+﻿import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../utils/crashlytics_service.dart';
 
 /// A unified service for managing local notifications related to file transfers
@@ -66,7 +66,7 @@ class TransferNotificationService {
     }
   }
 
-  // ── UPLOAD NOTIFICATIONS (ADMIN) ──────────────────────────────────────────
+  // â”€â”€ UPLOAD NOTIFICATIONS (ADMIN) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Shows or updates an upload progress notification.
   Future<void> showUploadProgress({
@@ -119,7 +119,7 @@ class TransferNotificationService {
 
     await _plugin!.show(
       id,
-      'Upload Complete ✓',
+      'Upload Complete âœ“',
       '$fileName uploaded successfully',
       NotificationDetails(
         android: AndroidNotificationDetails(
@@ -152,7 +152,7 @@ class TransferNotificationService {
 
     await _plugin!.show(
       id,
-      'Upload Failed ✗',
+      'Upload Failed âœ—',
       '$fileName could not be uploaded. Tap to retry.',
       NotificationDetails(
         android: AndroidNotificationDetails(
@@ -174,7 +174,7 @@ class TransferNotificationService {
     );
   }
 
-  // ── DOWNLOAD NOTIFICATIONS (USER) ─────────────────────────────────────────
+  // â”€â”€ DOWNLOAD NOTIFICATIONS (USER) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Shows or updates a download progress notification.
   Future<void> showDownloadProgress({
@@ -189,7 +189,7 @@ class TransferNotificationService {
     await _plugin!.show(
       id,
       'Downloading $fileName',
-      '$percent% — Tap to open app',
+      '$percent% â€” Tap to open app',
       NotificationDetails(
         android: AndroidNotificationDetails(
           _downloadChannelId,
@@ -227,7 +227,7 @@ class TransferNotificationService {
 
     await _plugin!.show(
       id,
-      'Download Complete ✓',
+      'Download Complete âœ“',
       '$fileName is ready. Tap to start exam.',
       NotificationDetails(
         android: AndroidNotificationDetails(
@@ -274,7 +274,7 @@ class TransferNotificationService {
 
     await _plugin!.show(
       id,
-      'Download Failed ✗',
+      'Download Failed âœ—',
       '$fileName failed. Tap to retry.',
       NotificationDetails(
         android: AndroidNotificationDetails(

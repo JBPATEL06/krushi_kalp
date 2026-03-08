@@ -1,5 +1,4 @@
-import 'dart:async';
-import 'package:flutter/foundation.dart';
+﻿import 'dart:async';
 import 'network_utils.dart';
 
 /// Wraps any async call with automatic retry on network errors.
@@ -10,7 +9,7 @@ import 'network_utils.dart';
 /// ```
 class RetryHelper {
   /// Retries [action] up to [maxRetries] times on network failure.
-  /// Uses exponential backoff: 1s → 2s → 4s between retries.
+  /// Uses exponential backoff: 1s â†’ 2s â†’ 4s between retries.
   static Future<T> run<T>(
     Future<T> Function() action, {
     int maxRetries = 2,
@@ -26,7 +25,7 @@ class RetryHelper {
         final isNetwork = NetworkUtils.isNetworkError(e);
 
         if (!isNetwork || attempt > maxRetries) {
-          // Not a network error or exhausted retries — rethrow
+          // Not a network error or exhausted retries â€” rethrow
           rethrow;
         }
 

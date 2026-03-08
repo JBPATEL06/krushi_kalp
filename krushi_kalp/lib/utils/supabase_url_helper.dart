@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// A centralized utility to manage signed URLs from Supabase Storage.
@@ -36,7 +35,7 @@ class SupabaseUrlHelper {
     // Replace characters that might be problematic in preference keys
     final sanitizedPath =
         path.replaceAll('/', '__SLASH__').replaceAll('.', '__DOT__');
-    return '${_prefPrefix}${bucket}__$sanitizedPath';
+    return '$_prefPrefix${bucket}__$sanitizedPath';
   }
 
   // --- PUBLIC API ---

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'resources/admin_mock_test_list.dart';
 
 class AdminStoreScreen extends StatelessWidget {
@@ -10,7 +10,7 @@ class AdminStoreScreen extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('Manage Store'),
       ),

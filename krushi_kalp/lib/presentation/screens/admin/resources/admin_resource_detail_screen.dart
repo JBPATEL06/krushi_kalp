@@ -1,5 +1,6 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
@@ -166,9 +167,10 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Resource Details'),
+        title: Text('Resource Details',
+            style: TextStyle(fontSize: context.sp(20))), // FIXED
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_rounded),
@@ -195,7 +197,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                 borderRadius: BorderRadius.circular(AppRadius.lg),
                 boxShadow: [
                   BoxShadow(
-                    color: colorScheme.shadow.withOpacity(0.05),
+                    color: colorScheme.shadow.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -206,10 +208,11 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                 children: [
                   // Thumbnail
                   Container(
-                    width: 100,
-                    height: 140,
+                    width: context.sp(100), // FIXED
+                    height: context.sp(140), // FIXED
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceVariant.withOpacity(0.5),
+                      color: colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: _resource.thumbnailUrl != null
@@ -221,9 +224,9 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                             ),
                           )
                         : Icon(Icons.insert_drive_file_rounded,
-                            size: 48,
-                            color:
-                                colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                            size: context.sp(48), // FIXED
+                            color: colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.5)),
                   ),
                   const SizedBox(width: AppSpacing.lg),
                   // Info
@@ -235,7 +238,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: colorScheme.primary.withOpacity(0.1),
+                            color: colorScheme.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -250,8 +253,9 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                         const SizedBox(height: AppSpacing.sm),
                         Text(
                           _resource.title,
-                          style: theme.textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: context.sp(24)), // FIXED
                         ),
                         if (_resource.category != null) ...[
                           const SizedBox(height: 4),
@@ -266,17 +270,18 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                         Row(
                           children: [
                             Text(
-                              '₹${_resource.price.toStringAsFixed(0)}',
+                              'â‚¹${_resource.price.toStringAsFixed(0)}',
                               style: theme.textTheme.titleLarge?.copyWith(
                                 color: colorScheme.primary,
                                 fontWeight: FontWeight.bold,
+                                fontSize: context.sp(20), // FIXED
                               ),
                             ),
                             if (_resource.mrp != null &&
                                 _resource.mrp! > _resource.price) ...[
                               const SizedBox(width: 8),
                               Text(
-                                '₹${_resource.mrp!.toStringAsFixed(0)}',
+                                'â‚¹${_resource.mrp!.toStringAsFixed(0)}',
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   decoration: TextDecoration.lineThrough,
                                   color: colorScheme.onSurfaceVariant,
@@ -337,7 +342,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                 color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(
-                    color: colorScheme.outlineVariant.withOpacity(0.5)),
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
               ),
               child: Text(
                 _resource.description ?? 'No description provided.',
@@ -355,7 +360,8 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                   child: ElevatedButton.icon(
                     onPressed: () => _handlePdfAction(isDownload: false),
                     icon: const Icon(Icons.visibility_rounded),
-                    label: const Text('VIEW PDF'),
+                    label: Text('VIEW PDF',
+                        style: TextStyle(fontSize: context.sp(14))), // FIXED
                     style: ElevatedButton.styleFrom(
                       padding:
                           const EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -367,7 +373,8 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () => _handlePdfAction(isDownload: true),
                     icon: const Icon(Icons.share_rounded),
-                    label: const Text('SHARE'),
+                    label: Text('SHARE',
+                        style: TextStyle(fontSize: context.sp(14))), // FIXED
                     style: OutlinedButton.styleFrom(
                       padding:
                           const EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -394,6 +401,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
           fontWeight: FontWeight.w800,
           color: colorScheme.onSurfaceVariant,
           letterSpacing: 1.2,
+          fontSize: context.sp(12), // FIXED
         ),
       ),
     );
@@ -414,17 +422,18 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
+        border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 20),
+          Icon(icon, color: color, size: context.sp(20)), // FIXED
           const SizedBox(height: 8),
           Text(
             value,
-            style: theme.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold, fontSize: context.sp(20)), // FIXED
           ),
           Text(
             label,

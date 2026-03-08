@@ -1,4 +1,4 @@
-import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+﻿import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import '../../domain/models/message.dart';
 
 class ChatMapper {

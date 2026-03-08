@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
+import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../../data/services/banner_service.dart';
@@ -27,7 +29,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
     _interval = AppConfigService.bannerInterval;
   }
 
-  // ─── Save Banner Settings ─────────────────────────
+  // â”€â”€â”€ Save Banner Settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _saveSettings(bool autoScroll, int interval) async {
     try {
       await AppConfigService.updateConfig('banner_settings', {
@@ -48,7 +50,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
     }
   }
 
-  // ─── Show Settings Dialog ──────────────────────────
+  // â”€â”€â”€ Show Settings Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _showSettingsDialog() {
     bool tempAutoScroll = _autoScroll;
     int tempInterval = _interval;
@@ -67,7 +69,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
                 title: const Text("Auto Scroll Banners"),
                 subtitle: const Text("Automatically slide through banners"),
                 value: tempAutoScroll,
-                activeColor: colorScheme.primary,
+                activeThumbColor: colorScheme.primary,
                 onChanged: (val) {
                   setDialogState(() => tempAutoScroll = val);
                 },
@@ -105,12 +107,12 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
     );
   }
 
-  // ─── Upload Multiple New Banners ───────────────────
+  // â”€â”€â”€ Upload Multiple New Banners â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _uploadBanners() async {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.image,
-        allowMultiple: true, // ← Multiple files
+        allowMultiple: true, // â† Multiple files
         withData: true,
       );
 
@@ -143,7 +145,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
     }
   }
 
-  // ─── Replace Image at a Specific Banner ───────────────────
+  // â”€â”€â”€ Replace Image at a Specific Banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _replaceBannerImage(HomeBanner banner) async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -174,7 +176,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
     }
   }
 
-  // ─── Edit Banner Meta (Title, Priority, Active) ───────────────────
+  // â”€â”€â”€ Edit Banner Meta (Title, Priority, Active) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _editBanner(HomeBanner banner) async {
     final titleController = TextEditingController(text: banner.title);
     final priorityController =
@@ -212,7 +214,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
               SwitchListTile(
                 title: const Text("Active"),
                 value: isActive,
-                activeColor: colorScheme.primary,
+                activeThumbColor: colorScheme.primary,
                 onChanged: (val) => setDialogState(() => isActive = val),
                 contentPadding: EdgeInsets.zero,
               ),
@@ -243,7 +245,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
     );
   }
 
-  // ─── Delete Banner ───────────────────
+  // â”€â”€â”€ Delete Banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _deleteBanner(HomeBanner banner) async {
     await showAppDialog(
       context: context,
@@ -296,11 +298,15 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
                         onPressed: _isUploading ? null : _uploadBanners,
                         icon: const Icon(Icons.add_photo_alternate_rounded,
                             size: 20),
-                        label: const Text("Upload Banners"),
+                        label: Text("Upload Banners",
+                            style:
+                                TextStyle(fontSize: context.sp(14))), // FIXED
                         style: FilledButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 48),
+                          minimumSize:
+                              Size(double.infinity, context.h(48)), // FIXED
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.md)), // FIXED
                         ),
                       ),
                     ),
@@ -321,8 +327,10 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
                         tooltip: 'Refresh',
                         style: IconButton.styleFrom(
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          minimumSize: const Size(48, 48),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.md)), // FIXED
+                          minimumSize:
+                              Size(context.sp(48), context.sp(48)), // FIXED
                         ),
                       ),
                     ),
@@ -340,8 +348,10 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
                         tooltip: 'Settings',
                         style: IconButton.styleFrom(
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          minimumSize: const Size(48, 48),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.md)), // FIXED
+                          minimumSize:
+                              Size(context.sp(48), context.sp(48)), // FIXED
                         ),
                       ),
                     ),
@@ -368,7 +378,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
               ),
               const SizedBox(height: AppSpacing.sm),
 
-              // ── Banner List (real-time stream) ──
+              // â”€â”€ Banner List (real-time stream) â”€â”€
               Expanded(
                 child: StreamBuilder<List<HomeBanner>>(
                   stream: BannerService.instance.streamAllBanners(),
@@ -456,13 +466,14 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
           fontWeight: FontWeight.w800,
           color: colorScheme.onSurfaceVariant,
           letterSpacing: 1.2,
+          fontSize: context.sp(12), // FIXED
         ),
       ),
     );
   }
 }
 
-// ─── Reusable Banner Card Widget ───────────────────────────────────────────
+// â”€â”€â”€ Reusable Banner Card Widget â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _BannerCard extends StatelessWidget {
   final HomeBanner banner;
   final int index;
@@ -577,8 +588,9 @@ class _BannerCard extends StatelessWidget {
                       children: [
                         Text(
                           banner.title,
-                          style: theme.textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w800),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              fontSize: context.sp(16)), // FIXED
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -587,7 +599,7 @@ class _BannerCard extends StatelessWidget {
                           "Priority Level: ${banner.priority}",
                           style: theme.textTheme.labelLarge?.copyWith(
                               color: colorScheme.onSurfaceVariant,
-                              fontSize: 12),
+                              fontSize: context.sp(11)), // FIXED
                         ),
                       ],
                     ),
@@ -642,12 +654,14 @@ class _BannerCard extends StatelessWidget {
         onTap: onPressed,
         borderRadius: BorderRadius.circular(8),
         child: Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(context.sp(8)), // FIXED
           decoration: BoxDecoration(
             color: (color ?? colorScheme.primary).withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm), // FIXED
           ),
-          child: Icon(icon, color: color ?? colorScheme.primary, size: 20),
+          child: Icon(icon,
+              color: color ?? colorScheme.primary,
+              size: context.sp(20)), // FIXED
         ),
       ),
     );

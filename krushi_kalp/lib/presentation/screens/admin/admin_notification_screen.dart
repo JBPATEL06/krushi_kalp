@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import '../../../data/services/admin_notification_service.dart';
 import '../../../utils/error_utils.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
@@ -64,7 +65,7 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
           AppSpacing.lg,
@@ -81,16 +82,20 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 "Send push notifications to all registered users simultaneously.",
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: context.sp(12)), // FIXED
               ),
               const SizedBox(height: AppSpacing.xl),
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: "Notification Title",
+                  labelStyle: TextStyle(fontSize: context.sp(14)), // FIXED
                   hintText: "e.g. New Mock Test Available!",
-                  prefixIcon: Icon(Icons.title_rounded),
+                  hintStyle: TextStyle(fontSize: context.sp(14)), // FIXED
+                  prefixIcon:
+                      Icon(Icons.title_rounded, size: context.sp(20)), // FIXED
                 ),
                 validator: (v) => v!.isEmpty ? "Title is required" : null,
               ),
@@ -98,10 +103,13 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
               TextFormField(
                 controller: _messageController,
                 maxLines: 4,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: "Message Body",
+                  labelStyle: TextStyle(fontSize: context.sp(14)), // FIXED
                   hintText: "Enter your message here...",
-                  prefixIcon: Icon(Icons.message_rounded),
+                  hintStyle: TextStyle(fontSize: context.sp(14)), // FIXED
+                  prefixIcon: Icon(Icons.message_rounded,
+                      size: context.sp(20)), // FIXED
                 ),
                 validator: (v) => v!.isEmpty ? "Message is required" : null,
               ),
@@ -118,7 +126,8 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
                               strokeWidth: 2, color: Colors.white),
                         )
                       : const Icon(Icons.send_rounded),
-                  label: const Text("SEND BROADCAST"),
+                  label: Text("SEND BROADCAST",
+                      style: TextStyle(fontSize: context.sp(14))), // FIXED
                 ),
               ),
             ],
@@ -137,7 +146,8 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
         title,
         style: theme.textTheme.titleSmall?.copyWith(
           fontWeight: FontWeight.w800,
-          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.1),
+          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+          fontSize: context.sp(10), // FIXED
         ),
       ),
     );

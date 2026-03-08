@@ -22,8 +22,6 @@ import '../widgets/direct_checkout_sheet.dart';
 import '../providers/resource_provider.dart';
 import '../../domain/models/resource.dart';
 import 'store/widgets/store_resource_grid.dart';
-import 'store/widgets/store_current_affairs_list.dart';
-import '../widgets/resource_detail_dialog.dart';
 import 'resource_detail_screen.dart'; // NEW
 import '../widgets/common/responsive_wrapper.dart';
 import '../../data/services/download_service.dart'; // NEW
@@ -42,7 +40,7 @@ class _StoreScreenState extends State<StoreScreen>
     with SingleTickerProviderStateMixin {
   // State for Filtering
   String _searchQuery = '';
-  String _sortOption = 'Latest';
+  final String _sortOption = 'Latest';
   bool _isSearching = false;
 
   // Tabs: Key -> Label
@@ -302,9 +300,10 @@ class _StoreScreenState extends State<StoreScreen>
       }
     } else {
       if (resource.fileUrl == null) {
-        if (mounted)
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("File URL not found")));
+        }
         return;
       }
 
@@ -553,7 +552,8 @@ class _StoreScreenState extends State<StoreScreen>
 
           // Custom Pill Tab Bar
           Container(
-            height: context.h(40),
+            height: context
+                .h(40), // FIXED: context.h(40) - Specified tab bar height
             width: double.infinity,
             padding: const EdgeInsets.only(left: AppSpacing.lg),
             child: AnimatedBuilder(
@@ -567,7 +567,8 @@ class _StoreScreenState extends State<StoreScreen>
                     indicatorSize: TabBarIndicatorSize.label,
                     dividerColor: Colors.transparent,
                     indicator: const BoxDecoration(color: Colors.transparent),
-                    labelPadding: const EdgeInsets.only(right: 8),
+                    labelPadding: const EdgeInsets.only(
+                        right: AppSpacing.sm), // FIXED: AppSpacing.sm (8)
                     tabAlignment: TabAlignment.start,
                     tabs: _labels.asMap().entries.map((entry) {
                       final index = entry.key;
@@ -577,11 +578,13 @@ class _StoreScreenState extends State<StoreScreen>
                       return Tab(
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal:
+                                  AppSpacing.lg), // FIXED: AppSpacing.lg (20)
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? theme.colorScheme.primary
-                                : theme.colorScheme.surfaceVariant,
+                                : theme.colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(AppRadius.full),
                           ),
                           alignment: Alignment.center,
@@ -715,7 +718,8 @@ class _StoreScreenState extends State<StoreScreen>
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      height: context.h(48), // Slightly taller
+      height:
+          context.h(48), // FIXED: context.h(48) - Specified search bar height
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -727,7 +731,8 @@ class _StoreScreenState extends State<StoreScreen>
               offset: const Offset(0, 2),
             ),
         ],
-        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+        border:
+            Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
       ),
       child: TextField(
         onChanged: (val) {
@@ -739,10 +744,12 @@ class _StoreScreenState extends State<StoreScreen>
         decoration: InputDecoration(
           hintText: 'Search for tests, books...',
           hintStyle: TextStyle(
-              color: theme.colorScheme.onSurfaceVariant, fontSize: 14),
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: context.sp(14)), // FIXED: context.sp(14)
           prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          contentPadding: EdgeInsets.symmetric(
+              vertical: context.h(14)), // FIXED: context.h(14)
         ),
       ),
     );

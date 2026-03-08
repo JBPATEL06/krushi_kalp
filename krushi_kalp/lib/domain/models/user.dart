@@ -1,4 +1,4 @@
-enum UserRole {
+﻿enum UserRole {
   Student, // Capitalized to match DB string often, though exact string matching handles case
   Admin
 }

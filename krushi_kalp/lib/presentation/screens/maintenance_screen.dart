@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../core/theme/app_spacing.dart';
 import '../widgets/common/responsive_wrapper.dart';
 
@@ -35,7 +35,7 @@ class MaintenanceScreen extends StatelessWidget {
                 ),
                 child: Icon(
                   Icons.engineering_rounded,
-                  size: 64,
+                  size: context.sp(64), // FIXED
                   color: colorScheme.primary,
                 ),
               ),
@@ -47,6 +47,7 @@ class MaintenanceScreen extends StatelessWidget {
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: colorScheme.onSurface,
+                  fontSize: context.sp(24), // FIXED
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -60,6 +61,7 @@ class MaintenanceScreen extends StatelessWidget {
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                   height: 1.5,
+                  fontSize: context.sp(14), // FIXED
                 ),
               ),
               const SizedBox(height: AppSpacing.xxl),
@@ -69,8 +71,10 @@ class MaintenanceScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: onRetry,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Check Again'),
+                  icon: Icon(Icons.refresh_rounded,
+                      size: context.sp(18)), // FIXED
+                  label: Text('Check Again',
+                      style: TextStyle(fontSize: context.sp(14))), // FIXED
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colorScheme.primary,
                     foregroundColor: colorScheme.onPrimary,
@@ -89,7 +93,9 @@ class MaintenanceScreen extends StatelessWidget {
                     Navigator.of(context).popUntil((route) => route.isFirst),
                 child: Text(
                   'Back to Start',
-                  style: TextStyle(color: colorScheme.primary),
+                  style: TextStyle(
+                      color: colorScheme.primary,
+                      fontSize: context.sp(14)), // FIXED
                 ),
               ),
             ],

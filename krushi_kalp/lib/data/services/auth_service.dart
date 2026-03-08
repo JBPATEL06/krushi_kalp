@@ -1,7 +1,5 @@
-import 'package:flutter/foundation.dart'; // For kIsWeb
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:supabase/supabase.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../utils/crashlytics_service.dart';

@@ -1,20 +1,20 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'premium_palettes.dart';
 import 'app_spacing.dart';
 import 'app_radius.dart';
 import 'app_motion.dart';
 
-/// 🌌 ANTI-GRAVITY Unified Theme (v2.0)
+/// ðŸŒŒ ANTI-GRAVITY Unified Theme (v2.0)
 /// "Clarity Defines Structure. Design Defines Trust."
 class AppTheme {
   AppTheme._();
 
-  // ── Theme Data ──
+  // â”€â”€ Theme Data â”€â”€
   static ThemeData get lightTheme => _buildTheme(Brightness.light);
   static ThemeData get darkTheme => _buildTheme(Brightness.dark);
 
-  // ── Standard Tokens (Static Access) ──
+  // â”€â”€ Standard Tokens (Static Access) â”€â”€
   static const spacing = AppSpacing;
   static const radius = AppRadius;
   static const motion = AppMotion;
@@ -37,7 +37,7 @@ class AppTheme {
       tertiary: isDark ? AppColorsV2.tertiaryDark : AppColorsV2.tertiary,
       onTertiary: Colors.white,
       error: const Color(0xFFEF4444),
-      onError: Colors.white, // ← Critical for visibility on red buttons
+      onError: Colors.white, // â† Critical for visibility on red buttons
       outline: isDark ? const Color(0xFF4A4A4A) : const Color(0xFFCBD5E1),
       outlineVariant:
           isDark ? const Color(0xFF383838) : const Color(0xFFE2E8F0),
@@ -56,10 +56,10 @@ class AppTheme {
       cardColor: surfaceColor,
       dividerColor: colorScheme.outlineVariant,
 
-      // ── Typography ──
+      // â”€â”€ Typography â”€â”€
       textTheme: _buildTextTheme(colorScheme),
 
-      // ── AppBar ──
+      // â”€â”€ AppBar â”€â”€
       appBarTheme: AppBarTheme(
         backgroundColor: surfaceColor,
         foregroundColor: colorScheme.onSurface,
@@ -78,10 +78,10 @@ class AppTheme {
         toolbarHeight: 64,
       ),
 
-      // ── Navigation ──
+      // â”€â”€ Navigation â”€â”€
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: surfaceColor,
-        indicatorColor: colorScheme.primary.withOpacity(0.12),
+        indicatorColor: colorScheme.primary.withValues(alpha: 0.12),
         elevation: 3,
         height: 80,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -105,20 +105,20 @@ class AppTheme {
         }),
       ),
 
-      // ── Cards & Surfaces ──
+      // â”€â”€ Cards & Surfaces â”€â”€
       cardTheme: CardThemeData(
         color: surfaceColor,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
           side: BorderSide(
-              color: colorScheme.outline.withOpacity(isDark ? 0.2 : 0.4)),
+              color: colorScheme.outline.withValues(alpha: isDark ? 0.2 : 0.4)),
         ),
         clipBehavior: Clip.antiAlias,
         margin: EdgeInsets.all(AppSpacing.xs),
       ),
 
-      // ── Buttons ──
+      // â”€â”€ Buttons â”€â”€
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: colorScheme.primary,
@@ -133,20 +133,20 @@ class AppTheme {
         ),
       ),
 
-      // ── Inputs ──
+      // â”€â”€ Inputs â”€â”€
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: isDark
-            ? colorScheme.surfaceVariant.withOpacity(0.3)
-            : colorScheme.surfaceVariant.withOpacity(0.5),
+            ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         contentPadding: EdgeInsets.all(AppSpacing.lg),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
+          borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.5)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          borderSide: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
+          borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.5)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),

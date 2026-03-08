@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:krushi_kalp/data/services/test_service.dart';
@@ -133,9 +134,10 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Mock Test Details'),
+        title: Text('Mock Test Details',
+            style: TextStyle(fontSize: context.sp(20))), // FIXED
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_rounded),
@@ -162,7 +164,7 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
                 borderRadius: BorderRadius.circular(AppRadius.lg),
                 boxShadow: [
                   BoxShadow(
-                    color: colorScheme.shadow.withOpacity(0.05),
+                    color: colorScheme.shadow.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -173,10 +175,11 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
                 children: [
                   // Thumbnail
                   Container(
-                    width: 100,
-                    height: 100,
+                    width: context.sp(100), // FIXED
+                    height: context.sp(100), // FIXED
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceVariant.withOpacity(0.5),
+                      color: colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: _test.signedUrl != null
@@ -188,9 +191,9 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
                             ),
                           )
                         : Icon(Icons.assignment_rounded,
-                            size: 40,
-                            color:
-                                colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                            size: context.sp(40), // FIXED
+                            color: colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.5)),
                   ),
                   const SizedBox(width: AppSpacing.lg),
                   // Info
@@ -202,7 +205,7 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: colorScheme.primary.withOpacity(0.1),
+                            color: colorScheme.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -217,8 +220,9 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
                         const SizedBox(height: AppSpacing.sm),
                         Text(
                           _test.title,
-                          style: theme.textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: context.sp(24)), // FIXED
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -233,19 +237,20 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
                             Text(
                               _test.price == 0
                                   ? 'FREE'
-                                  : '₹${_test.price.toStringAsFixed(0)}',
+                                  : 'â‚¹${_test.price.toStringAsFixed(0)}',
                               style: theme.textTheme.titleLarge?.copyWith(
                                 color: _test.price == 0
                                     ? const Color(0xFF10B981)
                                     : colorScheme.primary,
                                 fontWeight: FontWeight.bold,
+                                fontSize: context.sp(20), // FIXED
                               ),
                             ),
                             if (_test.mrp != null &&
                                 _test.mrp! > _test.price) ...[
                               const SizedBox(width: 8),
                               Text(
-                                '₹${_test.mrp!.toStringAsFixed(0)}',
+                                'â‚¹${_test.mrp!.toStringAsFixed(0)}',
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   decoration: TextDecoration.lineThrough,
                                   color: colorScheme.onSurfaceVariant,
@@ -315,7 +320,7 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
                 color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(
-                    color: colorScheme.outlineVariant.withOpacity(0.5)),
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
               ),
               child: Column(
                 children: [
@@ -359,7 +364,7 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
                 color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(
-                    color: colorScheme.outlineVariant.withOpacity(0.5)),
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
               ),
               child: ListTile(
                 leading: Icon(Icons.description_outlined,
@@ -386,7 +391,7 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
                 color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(
-                    color: colorScheme.outlineVariant.withOpacity(0.5)),
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
               ),
               child: Text(
                 _test.description.isEmpty
@@ -413,6 +418,7 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
           fontWeight: FontWeight.w800,
           color: colorScheme.onSurfaceVariant,
           letterSpacing: 1.2,
+          fontSize: context.sp(12), // FIXED
         ),
       ),
     );
@@ -428,21 +434,22 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
+        border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Column(
         children: [
-          Icon(icon, size: 20, color: colorScheme.primary),
+          Icon(icon, size: context.sp(20), color: colorScheme.primary), // FIXED
           const SizedBox(height: 8),
           Text(
             value,
-            style: theme.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold, fontSize: context.sp(16)), // FIXED
           ),
           Text(
             label,
             style: theme.textTheme.labelSmall?.copyWith(
-              fontSize: 8,
+              fontSize: context.sp(8), // FIXED
               fontWeight: FontWeight.bold,
               color: colorScheme.onSurfaceVariant,
             ),
@@ -467,17 +474,18 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
+        border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(icon, color: color, size: context.sp(24)), // FIXED
           ),
           const SizedBox(width: AppSpacing.lg),
           Column(
@@ -485,8 +493,9 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
             children: [
               Text(
                 value,
-                style: theme.textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: context.sp(24)), // FIXED
               ),
               Text(
                 label,
@@ -510,7 +519,7 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: color),
+          Icon(icon, size: context.sp(20), color: color), // FIXED
           const SizedBox(width: AppSpacing.md),
           Text(label, style: theme.textTheme.bodyMedium),
           const Spacer(),

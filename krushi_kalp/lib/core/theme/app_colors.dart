@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class AppColors {
   // Brand Palette - Academic Navy & Slate
@@ -46,9 +46,9 @@ class AppColors {
   static const Color textDisabled = neutral400;
 }
 
-// ── Dark Mode Palette ─────────────────────────────────────────────────────────
+// â”€â”€ Dark Mode Palette â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class AppColorsDark {
-  // Brand — Accent Color for buttons (Keep the nice indigo)
+  // Brand â€” Accent Color for buttons (Keep the nice indigo)
   static const Color primary = Color(0xFF818CF8);
   static const Color primaryHover = Color(0xFF6366F1);
   static const Color onPrimary = Colors.white;
@@ -61,7 +61,7 @@ class AppColorsDark {
   static const Color surface = Color(0xFF2E2E2E); // dark grey card
   static const Color surfaceHigh = Color(0xFF2E2E2E); // elevated sheet
 
-  // Neutral scale — true greys
+  // Neutral scale â€” true greys
   static const Color neutral50 = Color(0xFF242424);
   static const Color neutral100 = Color(0xFF2A2A2A);
   static const Color neutral200 = Color(0xFF383838);
@@ -122,7 +122,7 @@ class AppGradients {
 class AppShadows {
   static final List<BoxShadow> soft = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.05),
+      color: Colors.black.withValues(alpha: 0.05),
       blurRadius: 10,
       offset: const Offset(0, 4),
     ),
@@ -130,7 +130,7 @@ class AppShadows {
 
   static final List<BoxShadow> medium = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.08),
+      color: Colors.black.withValues(alpha: 0.08),
       blurRadius: 15,
       offset: const Offset(0, 6),
     ),
@@ -138,7 +138,7 @@ class AppShadows {
 
   static final List<BoxShadow> floating = [
     BoxShadow(
-      color: AppColors.primary.withOpacity(0.2),
+      color: AppColors.primary.withValues(alpha: 0.2),
       blurRadius: 20,
       offset: const Offset(0, 10),
     ),

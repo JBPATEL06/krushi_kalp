@@ -1,9 +1,8 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../utils/supabase_url_helper.dart';
 import '../../utils/crashlytics_service.dart';
@@ -84,13 +83,13 @@ class DownloadService {
   /// Map of currently active download tasks.
   final Map<String, DownloadTask> _activeTasks = {};
 
-  // ── INTERNAL HELPERS ───────────────────────────────────────────────────────
+  // â”€â”€ INTERNAL HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Returns the private, per-user storage directory.
   Future<Directory> _userDir(String userId) async {
     if (userId.isEmpty) {
       throw ArgumentError(
-          'userId must not be empty — refusing to use shared directory');
+          'userId must not be empty â€” refusing to use shared directory');
     }
     final root = await getApplicationDocumentsDirectory();
     final safeId = userId.replaceAll(RegExp(r'[^\w-]'), '_');
@@ -105,7 +104,7 @@ class DownloadService {
   Future<String> getLocalPath(String filename, {String? userId}) async {
     if (userId == null || userId.isEmpty) {
       throw ArgumentError(
-          'userId is required — always pass the authenticated user ID');
+          'userId is required â€” always pass the authenticated user ID');
     }
     final sanitized = filename.replaceAll(RegExp(r'[^\w\s\.-]'), '_');
     final dir = await _userDir(userId);
@@ -128,7 +127,7 @@ class DownloadService {
     }
   }
 
-  // ── OWNERSHIP MANIFEST ─────────────────────────────────────────────────────
+  // â”€â”€ OWNERSHIP MANIFEST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<File> _manifestFile(String userId) async {
     final dir = await _userDir(userId);
@@ -173,7 +172,7 @@ class DownloadService {
     return owner == userId;
   }
 
-  // ── BACKGROUND DOWNLOAD ENGINE ─────────────────────────────────────────────
+  // â”€â”€ BACKGROUND DOWNLOAD ENGINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Cancels all active downloads for a specific [userId].
   /// Usually called during logout or session mismatch.
@@ -290,7 +289,7 @@ class DownloadService {
     }
   }
 
-  // ── LEGACY & COMPATIBILITY LAYER ───────────────────────────────────────────
+  // â”€â”€ LEGACY & COMPATIBILITY LAYER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Streams download progress for legacy UI components.
   Stream<DownloadProgress> downloadFileWithProgress(String url, String filename,

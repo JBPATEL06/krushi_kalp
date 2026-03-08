@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../data/services/app_config_service.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/offer.dart';
 import '../../utils/price_calculator.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart'; // FIXED: Added import for radius tokens
 
 import 'package:provider/provider.dart';
 import '../providers/test_provider.dart';
@@ -88,7 +89,6 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
         });
       }
     } catch (e) {
-      
       if (mounted) setState(() => _isLoadingReviews = false);
     }
   }
@@ -120,36 +120,32 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
               reviewText: text,
             );
 
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Review submitted successfully!')),
-              );
-              _loadReviews();
-            }
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Review submitted successfully!')),
+            );
+            _loadReviews();
           } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to submit: $e')),
-              );
-            }
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to submit: $e')),
+            );
           }
         },
         onDelete: () async {
           if (_userReview == null) return;
           try {
             await ReviewService.deleteReview(_userReview!.id);
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Review deleted successfully')),
-              );
-              _loadReviews();
-            }
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Review deleted successfully')),
+            );
+            _loadReviews();
           } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to delete: $e')),
-              );
-            }
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to delete: $e')),
+            );
           }
         },
       ),
@@ -166,19 +162,23 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
     final surfaceColor = theme.colorScheme.surface;
     final textPrimary = theme.colorScheme.onSurface;
     final textSecondary = theme.colorScheme.onSurfaceVariant;
-    final neutral200 = theme.colorScheme.surfaceVariant;
+    final neutral200 = theme.colorScheme.surfaceContainerHighest;
     final neutral400 = theme.colorScheme.outline;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.test.title,
-            style: Theme.of(context).textTheme.titleLarge),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontSize: context.sp(18), // FIXED: context.sp(18)
+                )),
         backgroundColor: surfaceColor,
         elevation: 0,
         centerTitle: false,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          icon: Icon(Icons.close, color: textPrimary, size: 24),
+          icon: Icon(Icons.close,
+              color: textPrimary,
+              size: context.sp(24)), // FIXED: context.sp(24)
           onPressed: () => Navigator.of(context).pop(),
         ),
         foregroundColor: textPrimary,
@@ -198,7 +198,7 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                 Hero(
                   tag: widget.heroTag ?? 'test_image_${widget.test.id}',
                   child: SizedBox(
-                    height: context.h(250),
+                    height: context.h(250), // FIXED: context.h(250)
                     width: double.infinity,
                     child: CachedNetworkImage(
                       imageUrl: widget.test.signedUrl!,
@@ -212,17 +212,20 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                       errorWidget: (context, url, error) => Container(
                         color: neutral200,
                         child: Icon(Icons.broken_image,
-                            size: 40, color: neutral400),
+                            size: context.sp(40),
+                            color: neutral400), // FIXED: context.sp(40)
                       ),
                     ),
                   ),
                 )
               else
                 Container(
-                  height: 200,
+                  height: context.h(200), // FIXED: context.h(200)
                   width: double.infinity,
                   color: neutral200,
-                  child: Icon(Icons.image, size: 64, color: neutral400),
+                  child: Icon(Icons.image,
+                      size: context.sp(64),
+                      color: neutral400), // FIXED: context.sp(64)
                 ),
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
@@ -233,8 +236,8 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                       padding: const EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
                         color: surfaceColor,
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusLg),
+                        borderRadius: BorderRadius.circular(
+                            AppRadius.lg), // FIXED: AppRadius.lg
                       ),
                       child: Builder(builder: (context) {
                         final displayOffers = widget.activeOffers
@@ -264,10 +267,13 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                   .headlineMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: context.sp(22),
+                                    fontSize:
+                                        context.sp(22), // FIXED: context.sp(22)
                                   ),
                             ),
-                            const SizedBox(height: AppSpacing.md),
+                            SizedBox(
+                                height: context.h(AppSpacing
+                                    .md)), // FIXED: context.h(AppSpacing.md)
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
@@ -283,9 +289,13 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                             color: textSecondary,
                                             decoration:
                                                 TextDecoration.lineThrough,
+                                            fontSize: context.sp(
+                                                14), // FIXED: context.sp(14)
                                           ),
                                     ),
-                                    const SizedBox(width: AppSpacing.sm),
+                                    SizedBox(
+                                        width: context.w(AppSpacing
+                                            .sm)), // FIXED: context.w(AppSpacing.sm)
                                   ],
                                   Text(
                                     displayPrice == 0
@@ -297,19 +307,27 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                         ?.copyWith(
                                           fontWeight: FontWeight.bold,
                                           color: textPrimary,
+                                          fontSize: context
+                                              .sp(20), // FIXED: context.sp(20)
                                         ),
                                   ),
                                   if (hasOffer && discPercent > 0) ...[
-                                    const SizedBox(width: AppSpacing.md),
+                                    SizedBox(
+                                        width: context.w(AppSpacing
+                                            .md)), // FIXED: context.w(AppSpacing.md)
                                     Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: AppSpacing.sm,
-                                          vertical: 4),
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: context.w(AppSpacing
+                                              .sm), // FIXED: context.w(AppSpacing.sm)
+                                          vertical: context
+                                              .h(4)), // FIXED: context.h(4)
                                       decoration: BoxDecoration(
                                         color: theme
                                             .colorScheme.primaryContainer
                                             .withValues(alpha: 0.2),
-                                        borderRadius: BorderRadius.circular(4),
+                                        borderRadius: BorderRadius.circular(
+                                            AppRadius
+                                                .sm), // FIXED: AppRadius.sm
                                         border: Border.all(
                                             color: theme.colorScheme.primary
                                                 .withValues(alpha: 0.3)),
@@ -322,19 +340,25 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                             ?.copyWith(
                                               color: theme.colorScheme.primary,
                                               fontWeight: FontWeight.bold,
+                                              fontSize: context.sp(
+                                                  10), // FIXED: context.sp(10)
                                             ),
                                       ),
                                     ),
                                   ],
                                 ] else ...[
                                   Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 6),
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: context.w(12),
+                                        vertical: context.h(
+                                            6)), // FIXED: context.w(12), context.h(6)
                                     decoration: BoxDecoration(
                                       color: theme
                                           .colorScheme.secondaryContainer
                                           .withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(
+                                          AppRadius
+                                              .xxl), // FIXED: AppRadius.xxl
                                       border: Border.all(
                                           color: theme.colorScheme.secondary),
                                     ),
@@ -342,9 +366,12 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(Icons.check_circle,
-                                            size: 16,
+                                            size: context.sp(
+                                                16), // FIXED: context.sp(16)
                                             color: theme.colorScheme.secondary),
-                                        const SizedBox(width: 4),
+                                        SizedBox(
+                                            width: context
+                                                .w(4)), // FIXED: context.w(4)
                                         Text(
                                           "Purchased",
                                           style: Theme.of(context)
@@ -354,6 +381,8 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                                 fontWeight: FontWeight.bold,
                                                 color:
                                                     theme.colorScheme.secondary,
+                                                fontSize: context.sp(
+                                                    14), // FIXED: context.sp(14)
                                               ),
                                         ),
                                       ],
@@ -362,7 +391,9 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                 ],
                               ],
                             ),
-                            const SizedBox(height: AppSpacing.md),
+                            SizedBox(
+                                height: context.h(AppSpacing
+                                    .md)), // FIXED: context.h(AppSpacing.md)
                             // Rating Summary — only visible if reviews are enabled
                             if (_configLoaded &&
                                 AppConfigService.areReviewsVisible)
@@ -371,14 +402,19 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                   RateStars(
                                     rating: (_ratingStats['average'] as num)
                                         .toDouble(),
-                                    size: 18,
+                                    size:
+                                        context.sp(18), // FIXED: context.sp(18)
                                   ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                      width:
+                                          context.w(8)), // FIXED: context.w(8)
                                   Text(
                                     '${_ratingStats['average']} (${_ratingStats['count']} reviews)',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: textSecondary,
+                                      fontSize: context
+                                          .sp(14), // FIXED: context.sp(14)
                                     ),
                                   ),
                                 ],
@@ -387,14 +423,17 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                         );
                       }),
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    SizedBox(
+                        height: context.h(
+                            AppSpacing.md)), // FIXED: context.h(AppSpacing.md)
                     Container(
-                      padding:
-                          const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                      padding: EdgeInsets.symmetric(
+                          vertical: context.h(AppSpacing
+                              .lg)), // FIXED: context.h(AppSpacing.lg)
                       decoration: BoxDecoration(
                         color: surfaceColor,
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusLg),
+                        borderRadius: BorderRadius.circular(
+                            AppRadius.lg), // FIXED: AppRadius.lg
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -419,13 +458,15 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    SizedBox(
+                        height: context.h(
+                            AppSpacing.md)), // FIXED: context.h(AppSpacing.md)
                     Container(
                       padding: const EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
                         color: surfaceColor,
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusLg),
+                        borderRadius: BorderRadius.circular(
+                            AppRadius.lg), // FIXED: AppRadius.lg
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -437,10 +478,13 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                 .titleLarge
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: context.sp(18),
+                                  fontSize:
+                                      context.sp(18), // FIXED: context.sp(18)
                                 ),
                           ),
-                          const SizedBox(height: AppSpacing.sm),
+                          SizedBox(
+                              height: context.h(AppSpacing
+                                  .sm)), // FIXED: context.h(AppSpacing.sm)
                           Text(
                             widget.test.description.isEmpty
                                 ? "This mock test covers all important topics. Practice to improve your speed and accuracy."
@@ -451,18 +495,22 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                 ?.copyWith(
                                   color: textSecondary,
                                   height: 1.5,
+                                  fontSize:
+                                      context.sp(14), // FIXED: context.sp(14)
                                 ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    SizedBox(
+                        height: context.h(
+                            AppSpacing.md)), // FIXED: context.h(AppSpacing.md)
                     Container(
                       padding: const EdgeInsets.all(AppSpacing.lg),
                       decoration: BoxDecoration(
                         color: surfaceColor,
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusLg),
+                        borderRadius: BorderRadius.circular(
+                            AppRadius.lg), // FIXED: AppRadius.lg
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -474,10 +522,13 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                                 .titleLarge
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 18,
+                                  fontSize:
+                                      context.sp(18), // FIXED: context.sp(18)
                                 ),
                           ),
-                          const SizedBox(height: AppSpacing.md),
+                          SizedBox(
+                              height: context.h(AppSpacing
+                                  .md)), // FIXED: context.h(AppSpacing.md)
                           _InfoRow(
                             icon: Icons.category_outlined,
                             label: "Category",
@@ -509,10 +560,16 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    SizedBox(
+                        height: context.h(
+                            AppSpacing.md)), // FIXED: context.h(AppSpacing.md)
                     _buildReviewsSection(isActuallyPurchased),
-                    const SizedBox(height: 60),
-                    SizedBox(height: MediaQuery.of(context).padding.bottom),
+                    SizedBox(height: context.h(60)), // FIXED: context.h(60)
+                    SizedBox(
+                        height: AppSpacing.md +
+                            MediaQuery.of(context)
+                                .padding
+                                .bottom), // FIXED: Standard bottom padding
                   ],
                 ),
               ),
@@ -560,7 +617,7 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
               "Reviews",
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                    fontSize: context.sp(18), // FIXED: context.sp(18)
                   ),
             ),
             if (canReview)
@@ -571,12 +628,16 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                   padding: EdgeInsets.zero,
                 ),
                 child: Text(
-                    _userReview != null ? "Edit Review" : "Write a Review"),
+                    _userReview != null ? "Edit Review" : "Write a Review",
+                    style: TextStyle(
+                        fontSize: context.sp(14))), // FIXED: context.sp(14)
               ),
           ],
         ),
 
-        const SizedBox(height: AppSpacing.md),
+        SizedBox(
+            height:
+                context.h(AppSpacing.md)), // FIXED: context.h(AppSpacing.md)
 
         // Reviews List
         if (_isLoadingReviews)
@@ -584,10 +645,14 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
         else if (_reviews.isEmpty)
           Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
+              padding: EdgeInsets.symmetric(
+                  vertical: context.h(20)), // FIXED: context.h(20)
               child: Text(
                 "No reviews yet. Be the first to review!",
-                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: context.sp(14), // FIXED: context.sp(14)
+                ),
               ),
             ),
           )
@@ -602,11 +667,14 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                   .shrink() // Don't show any cards, just the button below
               : Center(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    padding: EdgeInsets.symmetric(
+                        vertical: context.h(20)), // FIXED: context.h(20)
                     child: Text(
                       "No positive reviews to display.",
-                      style:
-                          TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontSize: context.sp(14), // FIXED: context.sp(14)
+                      ),
                     ),
                   ),
                 )
@@ -614,7 +682,9 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
           ...displayedReviews.map((review) {
             final isOwnReview = user != null && review.userId == user.id;
             return Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              padding: EdgeInsets.only(
+                  bottom: context
+                      .h(AppSpacing.md)), // FIXED: context.h(AppSpacing.md)
               child: ReviewCard(
                 review: review,
                 isOwnReview: isOwnReview,
@@ -640,8 +710,11 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
                   ),
                 );
               },
-              icon: const Icon(Icons.arrow_forward, size: 16),
-              label: const Text("View All Reviews"),
+              icon: Icon(Icons.arrow_forward,
+                  size: context.sp(16)), // FIXED: context.sp(16)
+              label: Text("View All Reviews",
+                  style: TextStyle(
+                      fontSize: context.sp(14))), // FIXED: context.sp(14)
             ),
           ),
       ],
@@ -653,7 +726,7 @@ class _ContainerDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 40,
+      height: context.h(40), // FIXED: context.h(40)
       width: 1,
       color: Theme.of(context).colorScheme.outlineVariant,
     );
@@ -677,25 +750,28 @@ class _DetailItem extends StatelessWidget {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(context.w(8)), // FIXED: context.w(8)
           decoration: BoxDecoration(
             color: theme.colorScheme.primary.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: theme.colorScheme.primary, size: 24),
+          child: Icon(icon,
+              color: theme.colorScheme.primary,
+              size: context.sp(24)), // FIXED: context.sp(24)
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: context.h(8)), // FIXED: context.h(8)
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontSize: context.sp(16), // FIXED: context.sp(16)
               ),
         ),
         Text(label,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
+              fontSize: context.sp(12), // FIXED: context.sp(12)
             )),
       ],
     );
@@ -720,25 +796,31 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: EdgeInsets.only(
+          bottom: context.h(AppSpacing.sm)), // FIXED: context.h(AppSpacing.sm)
       child: Row(
         children: [
-          Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 12),
+          Icon(icon,
+              size: context.sp(20),
+              color:
+                  theme.colorScheme.onSurfaceVariant), // FIXED: context.sp(20)
+          SizedBox(width: context.w(12)), // FIXED: context.w(12)
           Text(
             "$label:",
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
+              fontSize: context.sp(14), // FIXED: context.sp(14)
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: context.w(8)), // FIXED: context.w(8)
           Expanded(
             child: Text(
               value,
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: valueColor ?? theme.colorScheme.onSurface,
+                fontSize: context.sp(14), // FIXED: context.sp(14)
               ),
             ),
           ),

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/app_config.dart';
 import '../../utils/retry_helper.dart';
@@ -7,7 +6,7 @@ class AppConfigService {
   static final _supabase = Supabase.instance.client;
 
   // Cache to avoid hitting DB constantly
-  static Map<String, AppConfig> _configCache = {};
+  static final Map<String, AppConfig> _configCache = {};
 
   /// Fetch all configs and update cache
   static Future<void> fetchConfigs() async {
@@ -135,7 +134,7 @@ class AppConfigService {
   // --- Force Update ---
 
   /// The minimum version string users must have (e.g. "1.2.0").
-  /// Returns null if no minimum is configured — meaning updates are not forced.
+  /// Returns null if no minimum is configured â€” meaning updates are not forced.
   static String? get minVersion =>
       getValue('app_status', 'min_version', defaultValue: null);
 }

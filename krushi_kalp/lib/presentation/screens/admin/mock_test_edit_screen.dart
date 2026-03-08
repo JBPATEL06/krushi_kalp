@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:share_plus/share_plus.dart';
@@ -298,9 +299,10 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Edit Mock Test'),
+        title: Text('Edit Mock Test',
+            style: TextStyle(fontSize: context.sp(20))), // FIXED
         centerTitle: true,
         backgroundColor: colorScheme.surface,
         scrolledUnderElevation: 0,
@@ -345,9 +347,10 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
                           ),
                           const SizedBox(height: AppSpacing.lg),
                           DropdownButtonFormField<String>(
-                            value: _categories.contains(_selectedCategory)
-                                ? _selectedCategory
-                                : null,
+                            initialValue:
+                                _categories.contains(_selectedCategory)
+                                    ? _selectedCategory
+                                    : null,
                             decoration: getPremiumInputDecoration(context,
                                 labelText: 'Category',
                                 prefixIcon:
@@ -363,8 +366,9 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
                                 setState(() {
                                   _selectedCategory = v;
                                   _isOtherCategory = v == 'Other';
-                                  if (_isOtherCategory)
+                                  if (_isOtherCategory) {
                                     _customCategoryController.clear();
+                                  }
                                 });
                               }
                             },
@@ -384,7 +388,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
                           ],
                           const SizedBox(height: AppSpacing.lg),
                           DropdownButtonFormField<String>(
-                            value: _languages.contains(_selectedLanguage)
+                            initialValue: _languages.contains(_selectedLanguage)
                                 ? _selectedLanguage
                                 : null,
                             decoration: getPremiumInputDecoration(context,
@@ -490,7 +494,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
                             subtitle:
                                 const Text('Apply panelty for wrong answers'),
                             value: _isNegativeMarking,
-                            activeColor: colorScheme.primary,
+                            activeThumbColor: colorScheme.primary,
                             onChanged: (v) =>
                                 setState(() => _isNegativeMarking = v),
                           ),
@@ -507,8 +511,9 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
                           ],
                           const SizedBox(height: AppSpacing.xl),
                           Text('Resource Files',
-                              style: theme.textTheme.titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.bold)),
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: context.sp(14))), // FIXED
                           const SizedBox(height: AppSpacing.sm),
                           _buildFilePicker(
                             context,
@@ -540,10 +545,10 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
                                         BorderRadius.circular(AppRadius.md)),
                                 elevation: 0,
                               ),
-                              child: const Text('UPDATE MOCK TEST',
+                              child: Text('UPDATE MOCK TEST',
                                   style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 16)),
+                                      fontSize: context.sp(16))), // FIXED
                             ),
                           ),
                         ],
@@ -564,14 +569,18 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-        leading: Icon(icon, color: colorScheme.primary),
+        leading: Icon(icon,
+            color: colorScheme.primary, size: context.sp(24)), // FIXED
         title: Text(title,
-            style: Theme.of(context).textTheme.bodySmall,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(fontSize: context.sp(12)), // FIXED
             maxLines: 1,
             overflow: TextOverflow.ellipsis),
         trailing: Row(
@@ -581,10 +590,13 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
               IconButton(
                 onPressed: onDownload,
                 icon: Icon(Icons.download_rounded,
-                    color: colorScheme.primary, size: 20),
+                    color: colorScheme.primary, size: context.sp(20)), // FIXED
                 tooltip: 'Download Original JSON',
               ),
-            TextButton(onPressed: onPick, child: const Text('Replace')),
+            TextButton(
+                onPressed: onPick,
+                child: Text('Replace',
+                    style: TextStyle(fontSize: context.sp(14)))), // FIXED
           ],
         ),
       ),

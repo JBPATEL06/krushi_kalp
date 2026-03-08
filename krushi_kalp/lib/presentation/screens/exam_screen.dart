@@ -1,5 +1,5 @@
-import 'dart:io'; // NEW
-import 'dart:convert'; // NEW
+﻿import 'dart:io';
+import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
 
@@ -9,20 +9,22 @@ import '../../data/services/test_service.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/translation_service.dart';
 import '../widgets/common/network_error_state.dart';
+import '../widgets/common/responsive_wrapper.dart'; // FIXED: Added import for responsive utilities
 import 'test_result_screen.dart';
 import 'main_screen.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart'; // FIXED: Added import for radius tokens
 
 class ExamScreen extends StatefulWidget {
   final MockTest test;
   final String examLanguage;
-  final File? localFile; // NEW
+  final File? localFile;
 
   const ExamScreen({
     super.key,
     required this.test,
     this.examLanguage = 'en',
-    this.localFile, // NEW
+    this.localFile,
   });
 
   @override
@@ -151,12 +153,14 @@ class _ExamScreenState extends State<ExamScreen> {
     if (!_scrollController.hasClients) return;
 
     // Item Width (40) + Separator (8) = 48
-    double itemWidth = 48.0;
+    double itemWidth = context.w(48.0); // FIXED: Responsive width
     double screenWidth = MediaQuery.of(context).size.width;
 
     // Calculate target offset to center the item
     // Start with padding (16) + item position (index * 48) + half item (24)
-    double itemCenter = 16.0 + (index * itemWidth) + (itemWidth / 2);
+    double itemCenter = AppSpacing.lg +
+        (index * itemWidth) +
+        (itemWidth / 2); // FIXED: Using AppSpacing.lg
 
     // We want this center to be at the middle of the screen
     double offset = itemCenter - (screenWidth / 2);
@@ -201,7 +205,6 @@ class _ExamScreenState extends State<ExamScreen> {
   }
 
   void _submitTest({bool autoSubmit = false}) {
-    // ... (rest of method is same, just needed to close _changePage first)
     _timer?.cancel();
 
     // Calculate Score
@@ -213,12 +216,11 @@ class _ExamScreenState extends State<ExamScreen> {
       final selected = _selectedAnswers[i];
 
       if (selected != null) {
-        // CHANGED: Use string-based comparison instead of index
         if (q.options[selected].trim().toLowerCase() ==
             q.correctAnswer.trim().toLowerCase()) {
-          correctCount++; // CHANGED
+          correctCount++;
         } else {
-          wrongCount++; // CHANGED
+          wrongCount++;
         }
       }
     }
@@ -385,9 +387,9 @@ class _ExamScreenState extends State<ExamScreen> {
               value: _questions.isEmpty
                   ? 0
                   : (_currentQuestionIndex + 1) / _questions.length,
-              backgroundColor: theme.colorScheme.surfaceVariant,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
               valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
-              minHeight: 4,
+              minHeight: 4, // FIXED: Standard height, left as raw 4
             ),
 
             Padding(
@@ -403,13 +405,15 @@ class _ExamScreenState extends State<ExamScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md, vertical: 6),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: context.h(6)), // FIXED: Responsive height
                     decoration: BoxDecoration(
                       color: _remainingSeconds < 60
                           ? theme.colorScheme.error.withValues(alpha: 0.1)
                           : theme.colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(
+                          AppRadius.xl), // FIXED: AppRadius.xl
                     ),
                     child: Row(
                       children: [
@@ -420,7 +424,8 @@ class _ExamScreenState extends State<ExamScreen> {
                               ? theme.colorScheme.error
                               : theme.colorScheme.primary,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(
+                            width: AppSpacing.xs), // FIXED: AppSpacing.xs
                         Text(
                           _formatTime(_remainingSeconds),
                           style: TextStyle(
@@ -474,7 +479,7 @@ class _ExamScreenState extends State<ExamScreen> {
             // Pagination
             if (_questions.isNotEmpty)
               Container(
-                height: 50,
+                height: context.h(50), // FIXED: Responsive height
                 margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: ListView.separated(
                   controller: _scrollController,
@@ -491,8 +496,8 @@ class _ExamScreenState extends State<ExamScreen> {
                     return GestureDetector(
                       onTap: () => _changePage(index),
                       child: Container(
-                        width: 40,
-                        height: 40,
+                        width: context.w(40), // FIXED: Responsive width
+                        height: context.h(40), // FIXED: Responsive height
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: isCurrent
@@ -501,7 +506,8 @@ class _ExamScreenState extends State<ExamScreen> {
                                   ? theme.colorScheme.primary
                                       .withValues(alpha: 0.1)
                                   : theme.colorScheme.surface),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(
+                              AppRadius.md), // FIXED: AppRadius.md
                           border: Border.all(
                             color: isCurrent
                                 ? theme.colorScheme.primary
@@ -548,9 +554,11 @@ class _ExamScreenState extends State<ExamScreen> {
                             ? () => _changePage(_currentQuestionIndex - 1)
                             : null,
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 16), // FIXED: Standard vertical padding
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppSpacing.md),
+                            borderRadius: BorderRadius.circular(
+                                AppRadius.md), // FIXED: AppRadius.md
                           ),
                           side: BorderSide(
                               color: theme.colorScheme.outlineVariant),
@@ -560,7 +568,8 @@ class _ExamScreenState extends State<ExamScreen> {
                           children: [
                             Icon(Icons.arrow_back,
                                 size: 18, color: theme.colorScheme.onSurface),
-                            const SizedBox(width: 8),
+                            const SizedBox(
+                                width: AppSpacing.sm), // FIXED: AppSpacing.sm
                             Text(
                               'Previous',
                               style: theme.textTheme.labelLarge?.copyWith(
@@ -582,11 +591,13 @@ class _ExamScreenState extends State<ExamScreen> {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 16), // FIXED: Standard vertical padding
                           backgroundColor: theme.colorScheme.primary,
                           foregroundColor: theme.colorScheme.onPrimary,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppSpacing.md),
+                            borderRadius: BorderRadius.circular(
+                                AppRadius.md), // FIXED: AppRadius.md
                           ),
                           elevation: 0,
                         ),
@@ -602,7 +613,8 @@ class _ExamScreenState extends State<ExamScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(
+                                width: AppSpacing.sm), // FIXED: AppSpacing.sm
                             Icon(
                               Icons.arrow_forward,
                               size: 18,
@@ -640,7 +652,7 @@ class _ExamScreenState extends State<ExamScreen> {
             q.text,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  height: 1.3,
+                  height: 1.3, // FIXED: standard line-height
                 ),
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -654,7 +666,8 @@ class _ExamScreenState extends State<ExamScreen> {
                 color: isSelected
                     ? theme.colorScheme.primary.withValues(alpha: 0.1)
                     : theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(AppSpacing.md),
+                borderRadius:
+                    BorderRadius.circular(AppRadius.md), // FIXED: AppRadius.md
                 border: Border.all(
                   color: isSelected
                       ? theme.colorScheme.primary
@@ -680,7 +693,8 @@ class _ExamScreenState extends State<ExamScreen> {
                       _selectedAnswers[index] = optIndex;
                     });
                   },
-                  borderRadius: BorderRadius.circular(AppSpacing.md),
+                  borderRadius: BorderRadius.circular(
+                      AppRadius.md), // FIXED: AppRadius.md
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     child: Row(
@@ -688,8 +702,8 @@ class _ExamScreenState extends State<ExamScreen> {
                       children: [
                         AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
-                          width: 24,
-                          height: 24,
+                          width: context.w(24), // FIXED: Responsive width
+                          height: context.h(24), // FIXED: Responsive height
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: isSelected
@@ -804,17 +818,17 @@ class TranslationLoadingWidget extends StatefulWidget {
 }
 
 class _TranslationLoadingWidgetState extends State<TranslationLoadingWidget> {
-  bool _showFallback = false;
-  Timer? _timer;
+  Timer? _timeoutTimer;
+  bool _showSkipButton = false;
 
   @override
   void initState() {
     super.initState();
-    // Start 10s timer
-    _timer = Timer(const Duration(seconds: 10), () {
+    // Show skip button after 5 seconds if translation takes too long
+    _timeoutTimer = Timer(const Duration(seconds: 5), () {
       if (mounted) {
         setState(() {
-          _showFallback = true;
+          _showSkipButton = true;
         });
       }
     });
@@ -822,7 +836,7 @@ class _TranslationLoadingWidgetState extends State<TranslationLoadingWidget> {
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _timeoutTimer?.cancel();
     super.dispose();
   }
 
@@ -830,42 +844,41 @@ class _TranslationLoadingWidgetState extends State<TranslationLoadingWidget> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (!_showFallback) ...[
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
             const CircularProgressIndicator(),
-            const SizedBox(height: AppSpacing.md),
-            const Text("Translating to Gujarati..."),
+            const SizedBox(height: AppSpacing.xxl),
+            Text(
+              'Translating question to Gujarati...',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              "(Please wait...)",
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              'This usually takes a moment.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ] else ...[
-            const Icon(Icons.timer_off, size: 48, color: Colors.orange),
-            const SizedBox(height: AppSpacing.md),
-            const Text(
-              "Translation is taking longer than expected.",
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            ElevatedButton.icon(
-              onPressed: widget.onTimeout,
-              icon: const Icon(Icons.language),
-              label: const Text("Attempt in English"),
-              style: ElevatedButton.styleFrom(
-                foregroundColor: theme.colorScheme.onPrimary,
-                backgroundColor: theme.colorScheme.primary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+            if (_showSkipButton) ...[
+              const SizedBox(height: AppSpacing.xxl),
+              TextButton.icon(
+                onPressed: widget.onTimeout,
+                icon: const Icon(Icons.skip_next),
+                label: const Text('Show original (English)'),
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.colorScheme.primary,
                 ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

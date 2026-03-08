@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import '../../../../domain/models/offer.dart';
 import '../../../../domain/models/mock_test.dart';
 import '../../../../data/services/offer_service.dart';
@@ -72,7 +73,6 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
     try {
       _availableTests = await TestService.instance.fetchMockTests();
       _availableUsers = await AdminService.getAllUsers();
-    } catch (e) {
     } finally {
       if (mounted) setState(() => _isLoadingData = false);
     }
@@ -152,10 +152,11 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
                       activeColor: colorScheme.primary,
                       onChanged: (v) {
                         setState(() {
-                          if (v!)
+                          if (v!) {
                             tempSelected.add(test.id);
-                          else
+                          } else {
                             tempSelected.remove(test.id);
+                          }
                         });
                       },
                     );
@@ -231,10 +232,11 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
                             activeColor: colorScheme.primary,
                             onChanged: (v) {
                               setState(() {
-                                if (v!)
+                                if (v!) {
                                   tempSelected.add(uid);
-                                else
+                                } else {
                                   tempSelected.remove(uid);
+                                }
                               });
                             },
                           );
@@ -271,9 +273,10 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: Text(widget.offer == null ? 'Create Offer' : 'Edit Offer'),
+        title: Text(widget.offer == null ? 'Create Offer' : 'Edit Offer',
+            style: TextStyle(fontSize: context.sp(20))), // FIXED
       ),
       body: _isLoadingData
           ? const Center(child: CircularProgressIndicator())
@@ -311,10 +314,15 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
                         const SizedBox(height: AppSpacing.lg),
                         TextFormField(
                           controller: _titleController,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: "Display Title",
+                            labelStyle:
+                                TextStyle(fontSize: context.sp(14)), // FIXED
                             hintText: "e.g. Festival Special Discount",
-                            prefixIcon: Icon(Icons.label_rounded),
+                            hintStyle:
+                                TextStyle(fontSize: context.sp(12)), // FIXED
+                            prefixIcon: Icon(Icons.label_rounded,
+                                size: context.sp(20)), // FIXED
                           ),
                           validator: (v) => v!.isEmpty ? 'Required' : null,
                         ),
@@ -336,7 +344,7 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
                             final isNarrow = constraints.maxWidth < 350;
 
                             final typeField = DropdownButtonFormField<String>(
-                              value: _discountType,
+                              initialValue: _discountType,
                               isExpanded:
                                   true, // Prevents overflow if items are long
                               decoration: const InputDecoration(
@@ -354,9 +362,12 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
                             final valueField = TextFormField(
                               controller: _valueController,
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: "Value",
-                                prefixIcon: Icon(Icons.attach_money_rounded),
+                                labelStyle: TextStyle(
+                                    fontSize: context.sp(14)), // FIXED
+                                prefixIcon: Icon(Icons.attach_money_rounded,
+                                    size: context.sp(20)), // FIXED
                               ),
                               validator: (v) => v!.isEmpty ? 'Required' : null,
                             );
@@ -382,16 +393,22 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         DropdownButtonFormField<String>(
-                          value: _targetType,
-                          decoration: const InputDecoration(
+                          initialValue: _targetType,
+                          decoration: InputDecoration(
                             labelText: "Apply To",
-                            prefixIcon: Icon(Icons.gps_fixed_rounded),
+                            labelStyle:
+                                TextStyle(fontSize: context.sp(14)), // FIXED
+                            prefixIcon: Icon(Icons.gps_fixed_rounded,
+                                size: context.sp(20)), // FIXED
                           ),
                           items: (_isSale
                                   ? ['ALL', 'TEST']
                                   : ['ALL', 'USER', 'TEST'])
-                              .map((e) =>
-                                  DropdownMenuItem(value: e, child: Text(e)))
+                              .map((e) => DropdownMenuItem(
+                                  value: e,
+                                  child: Text(e,
+                                      style: TextStyle(
+                                          fontSize: context.sp(14))))) // FIXED
                               .toList(),
                           onChanged: (v) {
                             setState(() {
@@ -475,7 +492,7 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
                           subtitle: const Text(
                               "Actually reduces price. Uncheck for display-only/fake offers."),
                           value: _isReal,
-                          activeColor: colorScheme.primary,
+                          activeThumbColor: colorScheme.primary,
                           onChanged: !_isSale
                               ? null // Disable for coupons (always real)
                               : (v) => setState(() => _isReal = v),
@@ -486,8 +503,9 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
                           child: FilledButton.icon(
                             onPressed: _saveOffer,
                             icon: const Icon(Icons.save_rounded),
-                            label:
-                                Text(_isSale ? 'CREATE SALE' : 'SAVE COUPON'),
+                            label: Text(_isSale ? 'CREATE SALE' : 'SAVE COUPON',
+                                style: TextStyle(
+                                    fontSize: context.sp(16))), // FIXED
                           ),
                         ),
                       ],
@@ -509,6 +527,7 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
           fontWeight: FontWeight.w800,
           color: theme.colorScheme.onSurfaceVariant,
           letterSpacing: 1.5,
+          fontSize: context.sp(10), // FIXED
         ),
       ),
     );
@@ -527,13 +546,18 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
           const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        side: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5)),
+        side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
       ),
-      leading: Icon(icon, color: colorScheme.primary),
-      title: Text(label, style: theme.textTheme.labelLarge),
+      leading:
+          Icon(icon, color: colorScheme.primary, size: context.sp(24)), // FIXED
+      title: Text(label,
+          style: theme.textTheme.labelLarge
+              ?.copyWith(fontSize: context.sp(14))), // FIXED
       subtitle: Text(subtitle,
-          style: theme.textTheme.bodySmall
-              ?.copyWith(color: colorScheme.onSurfaceVariant)),
+          style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: context.sp(12))), // FIXED
       onTap: onTap,
       trailing: const Icon(Icons.chevron_right_rounded, size: 20),
     );

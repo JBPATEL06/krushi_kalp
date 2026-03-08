@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:krushi_kalp/presentation/widgets/common/responsive_wrapper.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -8,6 +8,8 @@ import '../providers/navigation_provider.dart';
 import 'score_screen.dart';
 import 'main_screen.dart';
 import 'edit_profile_screen.dart';
+import '../../core/theme/app_spacing.dart'; // FIXED: Add import for AppSpacing
+import '../../core/theme/app_radius.dart'; // FIXED: Add import for AppRadius
 
 import 'package:krushi_kalp/presentation/screens/chat_screen.dart';
 
@@ -66,7 +68,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _updateLanguage(String newLang) async {
-    final theme = Theme.of(context);
     final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
     if (user == null) return;
 
@@ -112,10 +113,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Profile', style: TextStyle(fontSize: context.sp(20))),
+        title: Text('Profile',
+            style: TextStyle(fontSize: context.sp(20))), // FIXED
         actions: [
           IconButton(
-            icon: Icon(Icons.edit_outlined, size: context.sp(24)),
+            icon: Icon(Icons.edit_outlined, size: context.sp(24)), // FIXED
             tooltip: 'Edit Profile',
             onPressed: () async {
               final data = await AuthService.instance.getUserProfile(user!.id);
@@ -130,7 +132,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
           ),
           IconButton(
-            icon: Icon(Icons.home, size: context.sp(28)),
+            icon: Icon(Icons.home, size: context.sp(28)), // FIXED
             onPressed: () {
               context.read<NavigationProvider>().setIndex(0);
               Navigator.pushAndRemoveUntil(
@@ -183,46 +185,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.fromLTRB(
-                context.w(16.0),
-                context.w(16.0),
-                context.w(16.0),
-                context.w(16.0) + MediaQuery.of(context).padding.bottom,
+                AppSpacing.md, // FIXED: AppSpacing.md
+                AppSpacing.md, // FIXED: AppSpacing.md
+                AppSpacing.md, // FIXED: AppSpacing.md
+                AppSpacing.md + MediaQuery.of(context).padding.bottom, // FIXED
               ),
               child: Column(
                 children: [
                   CircleAvatar(
-                    radius: context.w(50),
-                    backgroundColor: theme.colorScheme.surfaceVariant,
+                    radius: context.w(50), // FIXED
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
                     backgroundImage:
                         avatarUrl != null ? NetworkImage(avatarUrl) : null,
                     child: avatarUrl == null
-                        ? Icon(Icons.person, size: context.sp(50))
+                        ? Icon(Icons.person, size: context.sp(50)) // FIXED
                         : null,
                   ),
-                  SizedBox(height: context.h(16)),
+                  SizedBox(height: AppSpacing.md), // FIXED: AppSpacing.md
                   Text(name,
                       style: Theme.of(context)
                           .textTheme
                           .headlineSmall
-                          ?.copyWith(fontSize: context.sp(24))),
+                          ?.copyWith(fontSize: context.sp(24))), // FIXED
                   Text(
                     email,
                     style: Theme.of(
                       context,
                     ).textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        fontSize: context.sp(16)),
+                        color: theme.colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.7), // FIXED
+                        fontSize: context.sp(16)), // FIXED
                   ),
-                  SizedBox(height: context.h(32)),
+                  SizedBox(height: AppSpacing.xl), // FIXED: AppSpacing.xl
 
                   // Language Toggle
                   Container(
                     padding: EdgeInsets.symmetric(
-                        horizontal: context.w(16), vertical: context.h(8)),
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm), // FIXED
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primaryContainer
                           .withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(context.w(12)),
+                      borderRadius:
+                          BorderRadius.circular(AppRadius.lg), // FIXED
                       border: Border.all(
                           color: theme.colorScheme.primaryContainer
                               .withValues(alpha: 0.2)),
@@ -234,12 +239,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             Icon(Icons.language,
                                 color: theme.colorScheme.primary,
-                                size: context.sp(24)),
-                            SizedBox(width: context.w(12)),
+                                size: context.sp(24)), // FIXED
+                            SizedBox(width: AppSpacing.sm), // FIXED
                             Text(
                               'Language',
                               style: TextStyle(
-                                fontSize: context.sp(16),
+                                fontSize: context.sp(16), // FIXED
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -252,13 +257,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             DropdownMenuItem(
                                 value: 'en',
                                 child: Text('English',
-                                    style:
-                                        TextStyle(fontSize: context.sp(14)))),
+                                    style: TextStyle(
+                                        fontSize: context.sp(14)))), // FIXED
                             DropdownMenuItem(
                                 value: 'gu',
                                 child: Text('Gujarati',
-                                    style:
-                                        TextStyle(fontSize: context.sp(14)))),
+                                    style: TextStyle(
+                                        fontSize: context.sp(14)))), // FIXED
                           ],
                           onChanged: (val) {
                             if (val != null) _updateLanguage(val);
@@ -267,7 +272,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
-                  SizedBox(height: context.h(24)),
+                  SizedBox(height: AppSpacing.lg), // FIXED
 
                   _buildProfileOption(
                     context,
@@ -295,16 +300,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
 
-                  SizedBox(height: context.h(24)),
+                  SizedBox(height: AppSpacing.lg), // FIXED
 
                   // About & Support Section
                   const Divider(),
                   Padding(
-                      padding: EdgeInsets.all(context.w(8.0)),
-                      child: Text("About App",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: context.sp(14)))),
+                      padding: EdgeInsets.symmetric(
+                          vertical: AppSpacing.sm,
+                          horizontal: AppSpacing.xs), // FIXED
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text("About App",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: context.sp(14))), // FIXED
+                      )),
                   _buildProfileOption(
                     context,
                     icon: Icons.contact_support,
@@ -326,7 +336,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onTap: () => _launchUrl(AppConfigService.termsUrl),
                   ),
 
-                  SizedBox(height: context.h(24)),
+                  SizedBox(height: AppSpacing.xl), // FIXED
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
@@ -339,31 +349,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ).pushNamedAndRemoveUntil('/', (route) => false);
                         }
                       },
-                      icon: Icon(Icons.logout, size: context.sp(20)),
+                      icon: Icon(Icons.logout, size: context.sp(20)), // FIXED
                       label: Text('Logout',
-                          style: TextStyle(fontSize: context.sp(14))),
+                          style: TextStyle(fontSize: context.sp(14))), // FIXED
                       style: OutlinedButton.styleFrom(
                         foregroundColor: theme.colorScheme.error,
                         side: BorderSide(color: theme.colorScheme.error),
-                        padding: EdgeInsets.all(context.w(16)),
+                        padding: EdgeInsets.all(AppSpacing.md), // FIXED
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppRadius.md), // FIXED
+                        ),
                       ),
                     ),
                   ),
-                  SizedBox(height: context.h(12)),
+                  SizedBox(height: AppSpacing.md), // FIXED
                   SizedBox(
                     width: double.infinity,
                     child: TextButton.icon(
                       onPressed: () => _confirmDeleteAccount(context),
-                      icon: Icon(Icons.delete_forever, size: context.sp(20)),
+                      icon: Icon(Icons.delete_forever,
+                          size: context.sp(20)), // FIXED
                       label: Text('Delete Account',
-                          style: TextStyle(fontSize: context.sp(14))),
+                          style: TextStyle(fontSize: context.sp(14))), // FIXED
                       style: TextButton.styleFrom(
-                        foregroundColor: theme.colorScheme.onSurfaceVariant,
-                        padding: EdgeInsets.all(context.w(16)),
+                        foregroundColor: theme.colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.6), // FIXED
+                        padding: EdgeInsets.all(AppSpacing.md), // FIXED
                       ),
                     ),
                   ),
-                  SizedBox(height: context.h(12)),
+                  SizedBox(height: AppSpacing.lg), // FIXED
                 ],
               ),
             ),
@@ -382,14 +398,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }) {
     final theme = Theme.of(context);
     return ListTile(
-      leading:
-          Icon(icon, color: theme.colorScheme.primary, size: context.sp(24)),
-      title: Text(title, style: TextStyle(fontSize: context.sp(16))),
+      leading: Icon(icon,
+          color: theme.colorScheme.primary, size: context.sp(24)), // FIXED
+      title: Text(title, style: TextStyle(fontSize: context.sp(16))), // FIXED
       subtitle: subtitle != null
-          ? Text(subtitle, style: TextStyle(fontSize: context.sp(13)))
+          ? Text(subtitle, style: TextStyle(fontSize: context.sp(13))) // FIXED
           : null,
       trailing: Icon(Icons.chevron_right,
-          color: theme.colorScheme.onSurfaceVariant, size: context.sp(24)),
+          color: theme.colorScheme.onSurfaceVariant,
+          size: context.sp(24)), // FIXED
       onTap: onTap,
     );
   }
@@ -427,38 +444,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           builder: (_) => const Center(child: CircularProgressIndicator()),
         );
 
-        // Send Message to Admin via ChatService
-        // Import ChatService is already there or available via file scope if imported.
-        // It is imported as part of `chat_screen.dart` or we might need explicit import if not exposed.
-        // Looking at file imports: `import 'package:krushi_kalp/presentation/screens/chat_screen.dart';`
-        // ChatService is usually in data/services.
-        // I should ensure ChatService is imported.
-        // Wait, the file has `import 'package:krushi_kalp/presentation/screens/chat_screen.dart';`
-        // Does `chat_screen.dart` export `ChatService`? Unlikely.
-        // I need to add import for ChatService if it's missing.
-        // But `ProfileScreen` already has imports. Let's check imports.
-        // Explicitly, I should use `ChatService()` but if the class isn't imported, code breaks.
-        // The file `profile_screen.dart` has these imports:
-        // ...
-        // import 'package:krushi_kalp/presentation/screens/chat_screen.dart';
-        // ...
-        // It does NOT import `chat_service.dart`.
-        // I will add the import in a separate tool call if needed, or I can rely on `replace_file_content` block to add it?
-        // `replace_file_content` on a block in middle of file cannot add import at top.
-        // However, I can use fully qualified name or just add the import first.
-        // Let's check if I can add the import.
-        // Actually, I'll trust that I can add the import in a separate edit or use fully qualified name if package is known.
-        // `package:krushi_kalp/data/services/chat_service.dart`
-        // But wait, I'll just add the import to the top of the file in a separate step?
-        // No, I can do it in one go if I edit properly? No, `replace_file_content` is a single block.
-        // I will proceed with the method update, then check if I need to add import.
-        // Wait, if I break the build, user gets mad.
-        // Let's check imports again.
-        // `profile_screen.dart` imports `chat_screen.dart`.
-        // I will update the method first. If I need to add import, I will do it next.
-        // Actually, better to check/add import first. But I can't do parallel.
-        // I'll update the method now.
-
         await ChatService.instance.sendMessage(
             "I need to delete account. Please process my request.");
 
@@ -491,22 +476,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context) => SafeArea(
         child: Container(
           padding: EdgeInsets.fromLTRB(
-            20,
-            20,
-            20,
-            20 + MediaQuery.of(context).padding.bottom,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg + MediaQuery.of(context).padding.bottom, // FIXED
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 "Contact Us",
-                style: Theme.of(context).textTheme.titleLarge,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontSize: context.sp(20), // FIXED
+                    ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: AppSpacing.lg), // FIXED
               ListTile(
-                leading: Icon(Icons.email, color: theme.colorScheme.primary),
-                title: const Text("Email Support"),
+                leading: Icon(Icons.email,
+                    color: theme.colorScheme.primary,
+                    size: context.sp(24)), // FIXED
+                title: Text("Email Support",
+                    style: TextStyle(fontSize: context.sp(16))), // FIXED
                 onTap: () {
                   Navigator.pop(context);
                   final email = AppConfigService.email;
@@ -514,8 +504,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 },
               ),
               ListTile(
-                leading: Icon(Icons.send, color: theme.colorScheme.tertiary),
-                title: const Text("Telegram"),
+                leading: Icon(Icons.send,
+                    color: theme.colorScheme.tertiary,
+                    size: context.sp(24)), // FIXED
+                title: Text("Telegram",
+                    style: TextStyle(fontSize: context.sp(16))), // FIXED
                 onTap: () {
                   Navigator.pop(context);
                   final username =

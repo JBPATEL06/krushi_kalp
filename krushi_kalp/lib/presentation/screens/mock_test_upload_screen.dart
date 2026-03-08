@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -319,7 +319,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                           ),
                           const SizedBox(height: AppSpacing.md),
                           DropdownButtonFormField<String>(
-                            value: _selectedCategory,
+                            initialValue: _selectedCategory,
                             decoration: getPremiumInputDecoration(context,
                                 labelText: 'Category',
                                 prefixIcon: const Icon(Icons.category)),
@@ -351,7 +351,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                           ],
                           const SizedBox(height: AppSpacing.md),
                           DropdownButtonFormField<String>(
-                            value: _selectedLanguage,
+                            initialValue: _selectedLanguage,
                             decoration: getPremiumInputDecoration(context,
                                 labelText: 'Language',
                                 prefixIcon: const Icon(Icons.language)),
@@ -475,7 +475,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                             value: _isNegativeMarking,
                             onChanged: (v) =>
                                 setState(() => _isNegativeMarking = v),
-                            activeColor: theme.colorScheme.primary,
+                            activeThumbColor: theme.colorScheme.primary,
                           ),
                           if (_isNegativeMarking)
                             TextFormField(

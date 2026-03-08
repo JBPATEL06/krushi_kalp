@@ -1,5 +1,4 @@
-import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/resource.dart';
 import '../../utils/supabase_url_helper.dart';
@@ -151,7 +150,7 @@ class ResourceService {
       // Send broadcast notification for new content
       try {
         await AdminNotificationService().sendBroadcast(
-          title: '📖 New Resource Published!',
+          title: 'ðŸ“– New Resource Published!',
           body:
               'New ${resource.type.name}: ${resource.title} is now available.',
         );

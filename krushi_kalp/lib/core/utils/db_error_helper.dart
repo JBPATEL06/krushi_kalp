@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Centralized utility for translating technical database errors into
 /// logical, user-friendly instructions for administrators.

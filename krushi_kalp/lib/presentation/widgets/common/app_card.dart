@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
 
@@ -40,12 +40,12 @@ class AppCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(effectiveRadius),
         border: border ??
             Border.all(
-              color: colorScheme.outline.withOpacity(0.1),
+              color: colorScheme.outline.withValues(alpha: 0.1),
             ),
         boxShadow: elevation != null && elevation! > 0
             ? [
                 BoxShadow(
-                  color: colorScheme.shadow.withOpacity(0.05 * elevation!),
+                  color: colorScheme.shadow.withValues(alpha: 0.05 * elevation!),
                   blurRadius: 10 * elevation!,
                   offset: Offset(0, 4 * elevation!),
                 ),

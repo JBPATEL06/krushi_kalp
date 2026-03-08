@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 
 class AdminProvider extends ChangeNotifier {
   // We can still use the Static Service for heavy lifting if we want,

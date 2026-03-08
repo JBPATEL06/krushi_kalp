@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import '../../../../domain/models/offer.dart';
 import '../../../../data/services/offer_service.dart';
 import '../../widgets/common/network_error_state.dart';
@@ -6,7 +7,6 @@ import 'admin_offer_manage_screen.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../../utils/error_utils.dart';
-import '../../../utils/network_utils.dart';
 
 class AdminOfferListScreen extends StatefulWidget {
   final bool showOnlyActive;
@@ -24,7 +24,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
   final Set<int> _selectedIds = {};
 
   bool _showActiveOnly = false;
-  bool _sortByNewest = false;
+  final bool _sortByNewest = false;
   String _filterType = 'ALL';
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
@@ -156,9 +156,9 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
           .toList();
     }
     if (_showActiveOnly) filtered = filtered.where((o) => o.isActive).toList();
-    if (_filterType == 'COUPON')
+    if (_filterType == 'COUPON') {
       filtered = filtered.where((o) => !o.isSale).toList();
-    else if (_filterType == 'SALE')
+    } else if (_filterType == 'SALE')
       filtered = filtered.where((o) => o.isSale).toList();
     if (_sortByNewest) filtered.sort((a, b) => b.id.compareTo(a.id));
     return filtered;
@@ -174,7 +174,8 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
       appBar: AppBar(
         title: _isSelectionMode
             ? Text('${_selectedIds.length} Selected')
-            : const Text('Manage Offers'),
+            : Text('Manage Offers',
+                style: TextStyle(fontSize: context.sp(20))), // FIXED
         leading: _isSelectionMode
             ? IconButton(
                 icon: const Icon(Icons.close_rounded),
@@ -243,9 +244,12 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
                         children: [
                           TextField(
                             controller: _searchController,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               hintText: 'Search by code or title...',
-                              prefixIcon: Icon(Icons.search_rounded),
+                              hintStyle:
+                                  TextStyle(fontSize: context.sp(14)), // FIXED
+                              prefixIcon: Icon(Icons.search_rounded,
+                                  size: context.sp(20)), // FIXED
                             ),
                             onChanged: (val) =>
                                 setState(() => _searchQuery = val),
@@ -319,7 +323,8 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
                               "${_selectedIds.length} SELECTED",
                               style: theme.textTheme.labelSmall?.copyWith(
                                   fontWeight: FontWeight.w900,
-                                  color: colorScheme.primary),
+                                  color: colorScheme.primary,
+                                  fontSize: context.sp(10)), // FIXED
                             ),
                             const Spacer(),
                             TextButton.icon(
@@ -377,10 +382,11 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
         onTap: () {
           if (_isSelectionMode) {
             setState(() {
-              if (isSelected)
+              if (isSelected) {
                 _selectedIds.remove(offer.id);
-              else
+              } else {
                 _selectedIds.add(offer.id);
+              }
               if (_selectedIds.isEmpty) _isSelectionMode = false;
             });
           } else {
@@ -408,13 +414,13 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
                         ? Icons.check_box_rounded
                         : Icons.check_box_outline_blank_rounded,
                     color: colorScheme.primary,
-                    size: 20,
+                    size: context.sp(20), // FIXED
                   ),
                 ),
               // Icon
               Container(
-                width: 48,
-                height: 48,
+                width: context.sp(48), // FIXED
+                height: context.sp(48), // FIXED
                 decoration: BoxDecoration(
                   color: isInactive
                       ? colorScheme.surfaceContainerHighest
@@ -428,7 +434,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
                   color: isInactive
                       ? colorScheme.onSurfaceVariant
                       : colorScheme.primary,
-                  size: 24,
+                  size: context.sp(24), // FIXED
                 ),
               ),
               const SizedBox(width: 16),
@@ -441,6 +447,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
                       offer.code ?? 'Flash Sale',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
+                        fontSize: context.sp(18), // FIXED
                         color: isInactive
                             ? colorScheme.onSurfaceVariant
                             : colorScheme.onSurface,
@@ -451,8 +458,9 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       offer.title,
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: colorScheme.onSurfaceVariant),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: context.sp(14)), // FIXED
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -482,7 +490,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
                   IconButton(
                     icon: Icon(Icons.delete_outline_rounded,
                         color: colorScheme.error.withValues(alpha: 0.4),
-                        size: 16),
+                        size: context.sp(16)), // FIXED
                     onPressed: () => _delete(offer.id),
                     constraints: const BoxConstraints(),
                     padding: EdgeInsets.zero,

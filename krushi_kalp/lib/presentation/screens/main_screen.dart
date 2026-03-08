@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:krushi_kalp/presentation/screens/purchased_tests_screen.dart'; // Show only mock tests
 import 'package:krushi_kalp/presentation/screens/store_screen.dart';
 import 'downloads_screen.dart';
@@ -260,7 +260,7 @@ class _MainScreenState extends State<MainScreen> {
                                 backgroundColor: theme.colorScheme.surface,
                                 elevation: 0,
                                 indicatorColor:
-                                    theme.colorScheme.primary.withOpacity(0.1),
+                                    theme.colorScheme.primary.withValues(alpha: 0.1),
                                 labelBehavior:
                                     NavigationDestinationLabelBehavior
                                         .alwaysShow,

@@ -1,6 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../data/repositories/mock_repository.dart';
 import '../../domain/models/question.dart';
+import '../../core/theme/app_spacing.dart'; // FIXED: Added import for spacing tokens
+import '../../core/theme/app_radius.dart'; // FIXED: Added import for radius tokens
+import '../widgets/common/responsive_wrapper.dart'; // FIXED: Added import for responsive scaling
 import 'test_result_screen.dart';
 
 class TestAttemptScreen extends StatefulWidget {
@@ -140,7 +143,10 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
           backgroundColor: theme.colorScheme.surface,
           foregroundColor: theme.colorScheme.onSurface,
           elevation: 0,
-          title: Text(widget.testTitle),
+          title: Text(
+            widget.testTitle,
+            style: TextStyle(fontSize: context.sp(18)), // FIXED: context.sp(18)
+          ),
           leading: IconButton(
             icon: const Icon(Icons.close),
             onPressed: () async {
@@ -153,12 +159,14 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
           actions: [
             Center(
               child: Padding(
-                padding: const EdgeInsets.only(right: 16.0),
+                padding: EdgeInsets.only(
+                    right: context.w(16.0)), // FIXED: context.w(16.0)
                 child: Text(
                   '${_currentQuestionIndex + 1}/${_questions.length}',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,
+                    fontSize: context.sp(16), // FIXED: context.sp(16)
                   ),
                 ),
               ),
@@ -166,91 +174,114 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
           ],
         ),
         body: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(context.w(16.0)), // FIXED: context.w(16.0)
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               LinearProgressIndicator(
                 value: progress,
-                backgroundColor: theme.colorScheme.surfaceVariant,
+                backgroundColor: theme.colorScheme.surfaceContainerHighest,
                 valueColor:
                     AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: context.h(24)), // FIXED: context.h(24)
               Text(
                 'Question ${_currentQuestionIndex + 1}',
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: context.sp(14), // FIXED: context.sp(14)
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: context.h(8)), // FIXED: context.h(8)
               Text(
                 question.text,
                 style: theme.textTheme.titleLarge?.copyWith(
                   color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
+                  fontSize: context.sp(20), // FIXED: context.sp(20)
                 ),
               ),
-              const SizedBox(height: 32),
-              ...List.generate(question.options.length, (index) {
-                final isSelected = _selectedAnswers[question.id] == index;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: OutlinedButton(
-                    onPressed: () => _onOptionSelected(index),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                      backgroundColor: isSelected
-                          ? theme.colorScheme.primary.withValues(alpha: 0.1)
-                          : theme.colorScheme.surface,
-                      side: BorderSide(
-                        color: isSelected
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.outlineVariant,
-                        width: isSelected ? 2 : 1,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        question.options[index],
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: isSelected
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurface,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.normal,
+              SizedBox(height: context.h(32)), // FIXED: context.h(32)
+              Expanded(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: question.options.length,
+                  itemBuilder: (context, index) {
+                    final isSelected = _selectedAnswers[question.id] == index;
+                    return Padding(
+                      padding: EdgeInsets.only(
+                          bottom: context.h(12.0)), // FIXED: context.h(12.0)
+                      child: OutlinedButton(
+                        onPressed: () => _onOptionSelected(index),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.all(
+                              context.w(16)), // FIXED: context.w(16)
+                          backgroundColor: isSelected
+                              ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                              : theme.colorScheme.surface,
+                          side: BorderSide(
+                            color: isSelected
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.outlineVariant,
+                            width: isSelected ? 2 : 1,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                                AppRadius.md), // FIXED: AppRadius.md
+                          ),
+                        ),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            question.options[index],
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: isSelected
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurface,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              fontSize: context.sp(14), // FIXED: context.sp(14)
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                );
-              }),
-              const Spacer(),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md), // FIXED: AppSpacing.md
               SafeArea(
-                bottom: true,
-                child: ElevatedButton(
-                  onPressed: _selectedAnswers[question.id] != null
-                      ? _nextQuestion
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: theme.colorScheme.onPrimary,
-                    padding: const EdgeInsets.all(16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                bottom: false,
+                child: Padding(
+                  padding: EdgeInsets.only(
+                      bottom: AppSpacing.md +
+                          MediaQuery.of(context)
+                              .padding
+                              .bottom), // FIXED: Standard bottom padding
+                  child: ElevatedButton(
+                    onPressed: _selectedAnswers[question.id] != null
+                        ? _nextQuestion
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                      padding:
+                          EdgeInsets.all(context.w(16)), // FIXED: context.w(16)
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                            AppRadius.md), // FIXED: AppRadius.md
+                      ),
+                      elevation: 0,
                     ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    _currentQuestionIndex == _questions.length - 1
-                        ? 'Submit Test'
-                        : 'Next Question',
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
+                    child: Text(
+                      _currentQuestionIndex == _questions.length - 1
+                          ? 'Submit Test'
+                          : 'Next Question',
+                      style: TextStyle(
+                          fontSize: context.sp(18),
+                          fontWeight: FontWeight.bold), // FIXED: context.sp(18)
+                    ),
                   ),
                 ),
               ),

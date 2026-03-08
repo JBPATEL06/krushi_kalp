@@ -216,8 +216,9 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
         } catch (_) {}
       }
 
-      if (!mounted)
+      if (!mounted) {
         return; // PRO FIX: Avoid using context/opening Razorpay if disposed
+      }
 
       // 2. Open Razorpay
       PaymentService.instance.openCheckout(
@@ -265,7 +266,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
 
         Navigator.pop(context); // Close sheet
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text("Purchase Successful! 🎉",
+            content: Text("Purchase Successful! ðŸŽ‰",
                 style: TextStyle(
                     color: Theme.of(context).colorScheme.onPrimaryContainer)),
             backgroundColor: Theme.of(context).colorScheme.primaryContainer));
@@ -323,7 +324,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                           : Container(
                               width: 60,
                               height: 60,
-                              color: theme.colorScheme.surfaceVariant,
+                              color: theme.colorScheme.surfaceContainerHighest,
                               child: Icon(Icons.book,
                                   color: theme.colorScheme.outline)),
                     ),
@@ -374,7 +375,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                                 borderRadius: BorderRadius.circular(8),
                                 borderSide: BorderSide(
                                     color: theme.colorScheme.outlineVariant
-                                        .withOpacity(0.5)))),
+                                        .withValues(alpha: 0.5)))),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -401,7 +402,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
-                      "✨ Store sale discounts are already active.",
+                      "âœ¨ Store sale discounts are already active.",
                       style: TextStyle(
                         color: const Color(0xFF10B981), // Success Emerald
                         fontSize: 12,
@@ -430,7 +431,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text("Subtotal"),
-                    Text("₹${_basePrice.toStringAsFixed(2)}"),
+                    Text("â‚¹${_basePrice.toStringAsFixed(2)}"),
                   ],
                 ),
                 if (_appliedOffer != null && (_basePrice - _finalPrice) > 0)
@@ -439,7 +440,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                     children: [
                       Text("Discount",
                           style: TextStyle(color: theme.colorScheme.primary)),
-                      Text("-₹${(_basePrice - _finalPrice).toStringAsFixed(2)}",
+                      Text("-â‚¹${(_basePrice - _finalPrice).toStringAsFixed(2)}",
                           style: TextStyle(color: theme.colorScheme.primary)),
                     ],
                   ),
@@ -450,7 +451,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                     const Text("Total To Pay",
                         style: TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text("₹${_finalPrice.toStringAsFixed(2)}",
+                    Text("â‚¹${_finalPrice.toStringAsFixed(2)}",
                         style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,

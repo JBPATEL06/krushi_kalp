@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart'
     show Chat, DefaultChatTheme;
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
@@ -130,7 +130,7 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: Text(widget.userName),
         backgroundColor: colorScheme.surface,
@@ -175,9 +175,9 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
             ),
             theme: DefaultChatTheme(
               primaryColor: colorScheme.primary,
-              secondaryColor: colorScheme.surfaceVariant.withOpacity(0.5),
+              secondaryColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               inputBackgroundColor: colorScheme.surface,
-              backgroundColor: colorScheme.background,
+              backgroundColor: colorScheme.surface,
               receivedMessageBodyTextStyle: theme.textTheme.bodyMedium!,
               sentMessageBodyTextStyle: theme.textTheme.bodyMedium!
                   .copyWith(color: colorScheme.onPrimary),

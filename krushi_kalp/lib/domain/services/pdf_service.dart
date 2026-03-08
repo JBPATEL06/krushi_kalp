@@ -1,5 +1,4 @@
-import 'package:flutter/foundation.dart';
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -78,19 +77,19 @@ class PdfService {
         'skipped': 'Skipped',
       },
       'gu': {
-        'summary': 'પરિણામ સારાંશ',
-        'score': 'કુલ સ્કોર',
-        'pass': 'પાસ',
-        'fail': 'નાપાસ',
-        'passed_msg': 'તમે પરીક્ષા પાસ કરી છે!',
-        'failed_msg': 'તમે નાપાસ થયા છો. પ્રયત્ન ચાલુ રાખો!',
-        'right': 'સાચા',
-        'wrong': 'ખોટા',
-        'analysis': 'વિગતવાર વિશ્લેષણ',
-        'question': 'પ્રશ્ન',
-        'correct': 'સાચો',
-        'selected': 'પસંદ કરેલ',
-        'skipped': 'છોડી દીધેલ',
+        'summary': 'àªªàª°àª¿àª£àª¾àª® àª¸àª¾àª°àª¾àª‚àª¶',
+        'score': 'àª•à«àª² àª¸à«àª•à«‹àª°',
+        'pass': 'àªªàª¾àª¸',
+        'fail': 'àª¨àª¾àªªàª¾àª¸',
+        'passed_msg': 'àª¤àª®à«‡ àªªàª°à«€àª•à«àª·àª¾ àªªàª¾àª¸ àª•àª°à«€ àª›à«‡!',
+        'failed_msg': 'àª¤àª®à«‡ àª¨àª¾àªªàª¾àª¸ àª¥àª¯àª¾ àª›à«‹. àªªà«àª°àª¯àª¤à«àª¨ àªšàª¾àª²à« àª°àª¾àª–à«‹!',
+        'right': 'àª¸àª¾àªšàª¾',
+        'wrong': 'àª–à«‹àªŸàª¾',
+        'analysis': 'àªµàª¿àª—àª¤àªµàª¾àª° àªµàª¿àª¶à«àª²à«‡àª·àª£',
+        'question': 'àªªà«àª°àª¶à«àª¨',
+        'correct': 'àª¸àª¾àªšà«‹',
+        'selected': 'àªªàª¸àª‚àª¦ àª•àª°à«‡àª²',
+        'skipped': 'àª›à«‹àª¡à«€ àª¦à«€àª§à«‡àª²',
       }
     };
 

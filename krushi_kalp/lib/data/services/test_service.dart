@@ -1,7 +1,6 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/question.dart';
@@ -32,7 +31,7 @@ class TestService {
 
   final _supabase = Supabase.instance.client;
 
-  // ── MOCK TESTS READING ───────────────────────────────────────────────────
+  // â”€â”€ MOCK TESTS READING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Fetches all available mock tests from the database.
   Future<List<MockTest>> fetchMockTests() async {
@@ -125,7 +124,7 @@ class TestService {
     }
   }
 
-  // ── MOCK TESTS ADMIN ─────────────────────────────────────────────────────
+  // â”€â”€ MOCK TESTS ADMIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Creates a new mock test. Sanitizes storage paths before insertion.
   Future<void> createMockTest(MockTest test) async {
@@ -144,7 +143,7 @@ class TestService {
 
       try {
         await AdminNotificationService().sendBroadcast(
-          title: '🆕 New Mock Test Available!',
+          title: 'ðŸ†• New Mock Test Available!',
           body: 'Check out the new test: ${test.title}',
         );
       } catch (notiErr) {
@@ -213,7 +212,7 @@ class TestService {
     }
   }
 
-  // ── RESULTS ──────────────────────────────────────────────────────────────
+  // â”€â”€ RESULTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Replaces storage paths with signed URLs for UI consumption.
   Future<List<MockTest>> _populateSignedUrls(List<MockTest> tests) async {
@@ -285,7 +284,7 @@ class TestService {
     }
   }
 
-  // ── PURCHASES ────────────────────────────────────────────────────────────
+  // â”€â”€ PURCHASES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<Set<int>> fetchPurchasedTestIds(String userId) async {
     try {
@@ -514,7 +513,7 @@ class TestService {
         try {
           await AdminNotificationService().sendToTopic(
             topic: 'admin_updates',
-            title: '🎉 New Sale! (₹$amount)',
+            title: 'ðŸŽ‰ New Sale! (â‚¹$amount)',
             body: 'Order #$orderId has been completed.',
             data: {
               'type': 'sale_alert',
@@ -680,7 +679,7 @@ class TestService {
   }
 }
 
-// ── ISOLATED PARSERS ───────────────────────────────────────────────────────
+// â”€â”€ ISOLATED PARSERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 List<MockTest> _parseMockTests(List<dynamic> jsonList) {
   return jsonList.map((json) => MockTest.fromJson(json)).toList();

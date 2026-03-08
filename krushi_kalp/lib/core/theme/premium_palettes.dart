@@ -1,16 +1,16 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
-/// 🌌 ANTI-GRAVITY Identity Standard: Premium Color Tokens
+/// ðŸŒŒ ANTI-GRAVITY Identity Standard: Premium Color Tokens
 /// "Clarity Defines Structure. Design Defines Trust."
 
 class PremiumPalettes {
-  // ── Indigo + Saffron (High-Trust Light Theme) ──
+  // â”€â”€ Indigo + Saffron (High-Trust Light Theme) â”€â”€
   static const Color indigoPrimary = Color(0xFF1E1B4B); // Deep Academic Navy
   static const Color saffronAccent = Color(0xFFF59E0B); // Vibrant Saffron
   static const Color slateSecondary = Color(0xFF475569); // Professional Slate
   static const Color cloudBackground = Color(0xFFF8FAFC); // Clean Surface
 
-  // ── Neutral + Indigo (Premium Gray Dark Theme) ──
+  // â”€â”€ Neutral + Indigo (Premium Gray Dark Theme) â”€â”€
   static const Color neutralDarkBackground = Color(0xFF1C1C1C); // was 121212
   static const Color neutralDarkSurface = Color(0xFF272727); // was 1E1E1E
   static const Color indigoDarkPrimary = Color(0xFF818CF8); // Indigo 400
@@ -20,7 +20,7 @@ class PremiumPalettes {
 }
 
 class AppColorsV2 {
-  // ── Light Theme (Indigo + Saffron) ──
+  // â”€â”€ Light Theme (Indigo + Saffron) â”€â”€
   static const Color primary = PremiumPalettes.indigoPrimary;
   static const Color secondary = PremiumPalettes.saffronAccent;
   static const Color background = PremiumPalettes.cloudBackground;
@@ -29,7 +29,7 @@ class AppColorsV2 {
   static const Color textSecondary = Color(0xFF64748B); // Slate 500
   static const Color tertiary = PremiumPalettes.emeraldGreen;
 
-  // ── Dark Theme (Neutral + Indigo) ──
+  // â”€â”€ Dark Theme (Neutral + Indigo) â”€â”€
   static const Color primaryDark = PremiumPalettes.indigoDarkPrimary;
   static const Color secondaryDark = PremiumPalettes.skyDarkSecondary;
   static const Color tertiaryDark = PremiumPalettes.jadeGreen;

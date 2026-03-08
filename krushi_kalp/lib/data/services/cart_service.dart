@@ -1,5 +1,4 @@
-import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/order_item.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/resource.dart';
@@ -13,7 +12,7 @@ class CartService {
 
   final _supabase = Supabase.instance.client;
 
-  // ── READ ─────────────────────────────────────────────────────────────────
+  // â”€â”€ READ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Fetches all items in the user's current PENDING order (the cart).
   Future<List<OrderItem>> fetchCartItems(String userId) async {
@@ -103,7 +102,7 @@ class CartService {
     }));
   }
 
-  // ── WRITE ────────────────────────────────────────────────────────────────
+  // â”€â”€ WRITE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /// Checks if user already owns the item (Status = SUCCESS)
   Future<bool> checkOwnership({

@@ -1,4 +1,4 @@
-class Message {
+﻿class Message {
   final String id;
   final String userId;
   final String message;

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'common/responsive_wrapper.dart';
 
 enum TestStatus { running, newTest, evaluated }
@@ -6,7 +6,7 @@ enum TestStatus { running, newTest, evaluated }
 class ActiveTestCard extends StatelessWidget {
   final String category;
   final String title;
-  final String subtitle; // e.g., "IELTS Academic • Advanced"
+  final String subtitle; // e.g., "IELTS Academic â€¢ Advanced"
   final TestStatus status;
   final VoidCallback onTap;
 

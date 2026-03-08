@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:provider/provider.dart';
 import 'package:krushi_kalp/presentation/providers/admin_provider.dart';
 import 'package:krushi_kalp/presentation/providers/auth_provider.dart';
@@ -75,7 +76,8 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
               backgroundColor: colorScheme.surface,
               appBar: AppBar(
                 leading: isLargeScreen ? const SizedBox.shrink() : null,
-                title: Text(_getAppBarTitle(provider.navIndex)),
+                title: Text(_getAppBarTitle(provider.navIndex),
+                    style: TextStyle(fontSize: context.sp(20))), // FIXED
                 actions: [
                   _buildRoleBadge(context),
                   const SizedBox(width: AppSpacing.md),
@@ -86,7 +88,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                 children: [
                   if (isLargeScreen || isTablet)
                     Container(
-                      width: isLargeScreen ? 280 : 80,
+                      width: context.w(isLargeScreen ? 280 : 80), // FIXED
                       decoration: BoxDecoration(
                         color: colorScheme.surface,
                         border: Border(
@@ -143,7 +145,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.admin_panel_settings_rounded,
-              size: 14, color: colorScheme.primary),
+              size: context.sp(14), color: colorScheme.primary), // FIXED
           const SizedBox(width: 6),
           Text(
             'ADMIN',
@@ -151,6 +153,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                   color: colorScheme.primary,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
+                  fontSize: context.sp(11), // FIXED
                 ),
           ),
         ],
@@ -179,10 +182,10 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
           child: Row(
             children: [
               CircleAvatar(
-                radius: 28,
+                radius: context.sp(28), // FIXED
                 backgroundColor: colorScheme.primary,
-                child: const Icon(Icons.agriculture_rounded,
-                    color: Colors.white, size: 32),
+                child: Icon(Icons.agriculture_rounded,
+                    color: Colors.white, size: context.sp(32)), // FIXED
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -195,13 +198,15 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: colorScheme.onSurface,
+                        fontSize: context.sp(20), // FIXED
                       ),
                     ),
                     Text(
                       'Admin Panel',
                       style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.1)),
+                              .withValues(alpha: 0.1),
+                          fontSize: context.sp(12)), // FIXED
                     ),
                   ],
                 ),
@@ -414,7 +419,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                 : colorScheme.onSurfaceVariant),
         style: IconButton.styleFrom(
           backgroundColor:
-              isSelected ? colorScheme.primary.withOpacity(0.1) : null,
+              isSelected ? colorScheme.primary.withValues(alpha: 0.1) : null,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.md)),
         ),
@@ -471,7 +476,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
-        selectedTileColor: colorScheme.primary.withOpacity(0.08),
+        selectedTileColor: colorScheme.primary.withValues(alpha: 0.08),
         visualDensity: const VisualDensity(vertical: -1),
       ),
     );

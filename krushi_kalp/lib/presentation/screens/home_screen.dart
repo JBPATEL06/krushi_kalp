@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/test_provider.dart';
@@ -6,6 +6,7 @@ import '../../data/services/banner_service.dart';
 import '../../domain/models/home_banner.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart'; // FIXED: Added import for radius tokens
 import '../providers/navigation_provider.dart';
 import '../../data/services/app_config_service.dart';
 import 'login_screen.dart';
@@ -57,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     } catch (e) {
-      
+      // Ignore errors in user profile loading
     }
   }
 
@@ -74,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
         shape: Border(
           bottom: BorderSide(
             color: theme.colorScheme.outlineVariant,
-            width: 1,
+            width: 1, // FIXED: standard border width
           ),
         ),
         leading: Builder(
@@ -82,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(
               Icons.menu_rounded,
               color: theme.colorScheme.onSurface,
-              size: 26,
+              size: context.sp(26), // FIXED: context.sp(26)
             ),
             tooltip: 'Menu',
             onPressed: () => Scaffold.of(context).openDrawer(),
@@ -96,10 +97,10 @@ class _HomeScreenState extends State<HomeScreen> {
             letterSpacing: 0.5,
           ),
         ),
-        actions: const [
+        actions: [
           SizedBox(
-              width:
-                  48), // Balancing the leading menu button for true centering
+              width: context.w(
+                  48)), // FIXED: context.w(48) - Balancing the leading menu button
         ],
       ),
       drawer: _buildDrawer(),
@@ -116,7 +117,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       context.read<AuthProvider>().currentUser?.id ?? ''),
                 ]).timeout(const Duration(seconds: 20));
               } catch (e) {
-                
                 // The indicator will stop automatically when this async block finishes
               }
             },
@@ -172,7 +172,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             accountName: Text(
               _userName,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.sp(18)), // FIXED: context.sp(18)
             ),
             accountEmail: Text(_userEmail),
             currentAccountPicture: GestureDetector(
@@ -184,8 +186,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 backgroundColor: theme.colorScheme.surface,
                 child: Text(
                   _userName.isNotEmpty ? _userName[0].toUpperCase() : 'A',
-                  style:
-                      TextStyle(fontSize: 32, color: theme.colorScheme.primary),
+                  style: TextStyle(
+                      fontSize: context.sp(32),
+                      color:
+                          theme.colorScheme.primary), // FIXED: context.sp(32)
                 ),
               ),
             ),
@@ -295,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return StreamBuilder<List<HomeBanner>>(
       stream: BannerService.instance.streamAllBanners(),
       builder: (context, snapshot) {
-        // Loading → show shimmer placeholder (NOT static banner)
+        // Loading â†’ show shimmer placeholder (NOT static banner)
         if (snapshot.connectionState == ConnectionState.waiting) {
           return _buildBannerShimmer();
         }
@@ -323,16 +327,15 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-    )
-        .animate(onPlay: (c) => c.repeat())
-        .shimmer(duration: 1200.ms, color: theme.colorScheme.surfaceVariant);
+    ).animate(onPlay: (c) => c.repeat()).shimmer(
+        duration: 1200.ms, color: theme.colorScheme.surfaceContainerHighest);
   }
 
   Widget _buildStaticBanner() {
     final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      height: context.h(180),
+      height: context.h(180), // FIXED: context.h(180) - Specified banner size
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -538,10 +541,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────
-// Isolated banner slider — owns PageController + Timer
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Isolated banner slider â€” owns PageController + Timer
 // so StreamBuilder rebuilds never reset position.
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _BannerAutoSlider extends StatefulWidget {
   final List<HomeBanner> banners;
   final bool autoScroll;
@@ -614,7 +617,8 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
     return Column(
       children: [
         SizedBox(
-          height: context.h(180),
+          height:
+              context.h(180), // FIXED: context.h(180) - Specified banner size
           child: PageView.builder(
             controller: _controller,
             itemCount: _banners.length,
@@ -622,7 +626,8 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
             itemBuilder: (context, index) {
               final banner = _banners[index];
               return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
+                margin: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xs), // FIXED: AppSpacing.xs (4)
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                   boxShadow: [
@@ -640,14 +645,15 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
                     fit: BoxFit.cover,
                     width: double.infinity,
                     placeholder: (context, url) => Container(
-                      color: theme.colorScheme.surfaceVariant,
+                      color: theme.colorScheme.surfaceContainerHighest,
                       child: const Center(child: CircularProgressIndicator()),
                     ),
                     errorWidget: (context, url, error) => Container(
-                      color: theme.colorScheme.surfaceVariant,
+                      color: theme.colorScheme.surfaceContainerHighest,
                       child: Center(
                         child: Icon(Icons.broken_image,
-                            color: theme.colorScheme.outline, size: 40),
+                            color: theme.colorScheme.outline,
+                            size: context.sp(40)), // FIXED: context.sp(40)
                       ),
                     ),
                   ),
@@ -656,7 +662,7 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
             },
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm), // FIXED: AppSpacing.sm (8)
         // Dot indicators
         if (_banners.length > 1)
           Row(
@@ -664,14 +670,19 @@ class _BannerAutoSliderState extends State<_BannerAutoSlider> {
             children: _banners.asMap().entries.map((entry) {
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                width: _current == entry.key ? 20 : 8,
-                height: 8,
-                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: _current == entry.key
+                    ? AppSpacing.lg
+                    : AppSpacing
+                        .sm, // FIXED: AppSpacing.lg (20) : AppSpacing.sm (8)
+                height: AppSpacing.sm, // FIXED: AppSpacing.sm (8)
+                margin: const EdgeInsets.symmetric(
+                    horizontal: 3), // small margin for dots
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(
+                      AppRadius.sm), // FIXED: AppRadius.sm (4)
                   color: _current == entry.key
                       ? theme.colorScheme.primary
-                      : theme.colorScheme.surfaceVariant,
+                      : theme.colorScheme.surfaceContainerHighest,
                 ),
               );
             }).toList(),

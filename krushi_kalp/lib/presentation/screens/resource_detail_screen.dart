@@ -265,7 +265,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                                       borderRadius: BorderRadius.circular(4),
                                       border: Border.all(
                                           color: theme.colorScheme.primary
-                                              .withOpacity(0.3)),
+                                              .withValues(alpha: 0.3)),
                                     ),
                                     child: Text(
                                       '${percentOff.toInt()}% OFF',
@@ -288,7 +288,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                                   horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: theme.colorScheme.secondaryContainer
-                                    .withOpacity(0.2),
+                                    .withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                     color: theme.colorScheme.secondary),

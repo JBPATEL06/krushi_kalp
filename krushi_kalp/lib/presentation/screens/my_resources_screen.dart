@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import '../../data/services/auth_service.dart';
@@ -202,7 +202,7 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
                   Icon(Icons.search, color: theme.colorScheme.onSurfaceVariant),
               filled: true,
               fillColor:
-                  theme.colorScheme.surfaceVariant.withValues(alpha: 0.5),
+                  theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                 borderSide: BorderSide.none,
@@ -343,7 +343,7 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
         url: resource.fileUrl!,
         filename: filename,
         displayName: resource.title,
-        userId: userId, // ← REQUIRED for ownership manifest
+        userId: userId, // â† REQUIRED for ownership manifest
         onComplete: (path) {
           // Open file after download
           if (!outerContext.mounted) return;

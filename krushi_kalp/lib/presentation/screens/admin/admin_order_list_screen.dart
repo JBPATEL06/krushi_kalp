@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:intl/intl.dart';
 import '../../../../data/services/admin_service.dart';
 import '../../widgets/common/network_error_state.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../../utils/error_utils.dart';
-import '../../../utils/network_utils.dart';
 
 class AdminOrderListScreen extends StatefulWidget {
   const AdminOrderListScreen({super.key});
@@ -23,7 +23,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
     _ordersStream = AdminService.streamAllOrders();
   }
 
-  // ─── Detail Dialog ──────────────────────────────────────────────────────────
+  // â”€â”€â”€ Detail Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<void> _onRowTap(Map<String, dynamic> basicOrder) async {
     final theme = Theme.of(context);
@@ -61,16 +61,16 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
     final double amount = (order['total_amount'] as num?)?.toDouble() ?? 0.0;
     final double discountAmount =
         (order['discount_amount'] as num?)?.toDouble() ?? 0.0;
-    final String paymentId = order['payment_id'] as String? ?? '—';
-    final String orderId = order['order_id'] as String? ?? '—';
+    final String paymentId = order['payment_id'] as String? ?? 'â€”';
+    final String orderId = order['order_id'] as String? ?? 'â€”';
     final String dateStr = order['created_at'] != null
-        ? DateFormat('MMM dd, yyyy • hh:mm a')
+        ? DateFormat('MMM dd, yyyy â€¢ hh:mm a')
             .format(DateTime.parse(order['created_at']).toUtc().toLocal())
         : 'Unknown Date';
 
     final String userName = user?['username'] ?? 'Unknown';
     final String userEmail = user?['email'] ?? '';
-    final String userPhone = user?['phonenumber'] ?? '—';
+    final String userPhone = user?['phonenumber'] ?? 'â€”';
 
     // Offer info
     String offerLabel = 'No Offer Applied';
@@ -82,7 +82,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
       final type = offer['discount_type'];
       offerLabel = code != null ? 'Coupon: $code' : 'Sale Offer';
       if (val != null) {
-        discountLabel = (type == 'PERCENTAGE') ? '${val}% OFF' : '₹${val} OFF';
+        discountLabel = (type == 'PERCENTAGE') ? '$val% OFF' : 'â‚¹$val OFF';
       }
     }
 
@@ -93,9 +93,10 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
       builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.lg)),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+        insetPadding: EdgeInsets.symmetric(
+            horizontal: context.w(20), vertical: context.h(40)), // FIXED
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
+          constraints: BoxConstraints(maxWidth: context.w(520)), // FIXED
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: SingleChildScrollView(
@@ -103,17 +104,17 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Header ──────────────────────────────────────────
+                  // â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: emerald.withOpacity(0.1),
+                          color: emerald.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         child: Icon(Icons.receipt_long_rounded,
-                            color: emerald, size: 22),
+                            color: emerald, size: context.sp(22)), // FIXED
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -122,25 +123,28 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                           children: [
                             Text(
                               'Transaction Details',
-                              style: theme.textTheme.titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.bold),
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: context.sp(20)), // FIXED
                             ),
                             Text(
                               dateStr,
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
+                                fontSize: context.sp(11), // FIXED
                               ),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
-                        iconSize: 20,
+                        iconSize: context.sp(20), // FIXED
                         icon: Icon(Icons.close_rounded,
-                            color: colorScheme.onSurfaceVariant),
+                            color: colorScheme.onSurfaceVariant,
+                            size: context.sp(20)), // FIXED
                         style: IconButton.styleFrom(
-                          backgroundColor:
-                              colorScheme.surfaceVariant.withOpacity(0.4),
+                          backgroundColor: colorScheme.surfaceContainerHighest
+                              .withValues(alpha: 0.4),
                         ),
                         onPressed: () => Navigator.pop(ctx),
                       ),
@@ -151,7 +155,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   const Divider(),
                   const SizedBox(height: AppSpacing.md),
 
-                  // ── Customer ────────────────────────────────────────
+                  // â”€â”€ Customer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   _DialogSection(
                     icon: Icons.person_rounded,
                     label: 'CUSTOMER',
@@ -165,7 +169,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                           Text(userEmail,
                               style: theme.textTheme.bodySmall?.copyWith(
                                   color: colorScheme.onSurfaceVariant)),
-                        if (userPhone != '—')
+                        if (userPhone != 'â€”')
                           Text(userPhone,
                               style: theme.textTheme.bodySmall?.copyWith(
                                   color: colorScheme.onSurfaceVariant)),
@@ -174,7 +178,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
 
-                  // ── IDs Section ─────────────────────────────────────
+                  // â”€â”€ IDs Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   _DialogSection(
                     icon: Icons.tag_rounded,
                     label: 'ORDER INFO',
@@ -189,7 +193,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
 
-                  // ── Offer ───────────────────────────────────────────
+                  // â”€â”€ Offer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   _DialogSection(
                     icon: Icons.local_offer_rounded,
                     label: 'OFFER',
@@ -221,7 +225,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
 
-                  // ── Items ───────────────────────────────────────────
+                  // â”€â”€ Items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   _DialogSection(
                     icon: Icons.shopping_bag_rounded,
                     label: 'PURCHASED ITEMS (${items.length})',
@@ -292,7 +296,8 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                                                     ?.copyWith(
                                                   color: colorScheme.primary,
                                                   fontWeight: FontWeight.bold,
-                                                  fontSize: 8,
+                                                  fontSize:
+                                                      context.sp(8), // FIXED
                                                 ),
                                               ),
                                             ),
@@ -310,7 +315,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                                             ),
                                             const SizedBox(width: 8),
                                             Text(
-                                              '₹${price.toStringAsFixed(0)}',
+                                              'â‚¹${price.toStringAsFixed(0)}',
                                               style: theme.textTheme.bodySmall
                                                   ?.copyWith(
                                                       fontWeight:
@@ -331,7 +336,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   const Divider(),
                   const SizedBox(height: AppSpacing.sm),
 
-                  // ── Total ───────────────────────────────────────────
+                  // â”€â”€ Total â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   if (discountAmount > 0) ...[
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -340,7 +345,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                             style: theme.textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.onSurfaceVariant)),
                         Text(
-                          '-₹${discountAmount.toStringAsFixed(2)}',
+                          '-â‚¹${discountAmount.toStringAsFixed(2)}',
                           style: theme.textTheme.bodyMedium?.copyWith(
                               color: emerald, fontWeight: FontWeight.w600),
                         ),
@@ -357,7 +362,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        '₹${amount.toStringAsFixed(2)}',
+                        'â‚¹${amount.toStringAsFixed(2)}',
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w900,
                           color: emerald,
@@ -374,7 +379,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
     );
   }
 
-  // ─── Build ───────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Build â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   @override
   Widget build(BuildContext context) {
@@ -433,6 +438,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.bold,
+                              fontSize: context.sp(10), // FIXED
                             ),
                           ),
                         ],
@@ -482,12 +488,13 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.receipt_long_rounded,
-              size: 64, color: colorScheme.onSurfaceVariant.withOpacity(0.2)),
+              size: 64,
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.2)),
           const SizedBox(height: AppSpacing.md),
           Text(
             'No transactions yet',
             style: TextStyle(
-              color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -502,7 +509,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
     final dateStr = order['created_at'] as String;
     final date = DateTime.tryParse(dateStr) ?? DateTime.now();
     final formattedDate =
-        DateFormat('MMM d, yyyy • h:mm a').format(date.toLocal());
+        DateFormat('MMM d, yyyy â€¢ h:mm a').format(date.toLocal());
 
     final user = order['users'] as Map<String, dynamic>?;
     final userEmail = user?['email'] ?? 'Unknown User';
@@ -516,7 +523,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                  color: colorScheme.outlineVariant.withOpacity(0.5)),
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
             ),
           ),
           child: Padding(
@@ -528,10 +535,11 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   height: 48,
                   width: 48,
                   decoration: BoxDecoration(
-                    color: emerald.withOpacity(0.1),
+                    color: emerald.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(Icons.receipt_rounded, color: emerald, size: 24),
+                  child: Icon(Icons.receipt_rounded,
+                      color: emerald, size: context.sp(24)), // FIXED
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
@@ -550,7 +558,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                         userEmail,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
-                          fontSize: 12,
+                          fontSize: context.sp(12), // FIXED
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -559,7 +567,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: colorScheme.onSurfaceVariant
                               .withValues(alpha: 0.5),
-                          fontSize: 10,
+                          fontSize: context.sp(10), // FIXED
                         ),
                       ),
                     ],
@@ -570,10 +578,11 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '₹${amount.toStringAsFixed(0)}',
+                      'â‚¹${amount.toStringAsFixed(0)}',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w900,
                         color: colorScheme.onSurface,
+                        fontSize: context.sp(22), // FIXED
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -581,13 +590,13 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: emerald.withOpacity(0.1),
+                        color: emerald.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         'SUCCESS',
                         style: TextStyle(
-                          fontSize: 8,
+                          fontSize: context.sp(8), // FIXED
                           fontWeight: FontWeight.w900,
                           color: emerald,
                           letterSpacing: 0.5,
@@ -597,8 +606,9 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                     const SizedBox(height: 4),
                     Icon(
                       Icons.chevron_right_rounded,
-                      size: 14,
-                      color: colorScheme.onSurfaceVariant.withOpacity(0.3),
+                      size: context.sp(14), // FIXED
+                      color:
+                          colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
                     ),
                   ],
                 ),
@@ -611,7 +621,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
   }
 }
 
-// ─── Helper Widgets ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Helper Widgets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _DialogSection extends StatelessWidget {
   final IconData icon;
@@ -632,7 +642,8 @@ class _DialogSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon,
-            size: 18, color: colorScheme.onSurfaceVariant.withOpacity(0.6)),
+            size: context.sp(18), // FIXED
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6)),
         const SizedBox(width: 12),
         Expanded(
           child: Column(

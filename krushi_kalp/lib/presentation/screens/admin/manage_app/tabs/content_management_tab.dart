@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
+import 'package:krushi_kalp/core/theme/app_radius.dart';
 import '../../../../../data/services/app_config_service.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import '../../../../utils/ui_helpers.dart';
-import '../../../../../utils/error_utils.dart';
 
 class ContentManagementTab extends StatefulWidget {
   const ContentManagementTab({super.key});
@@ -121,9 +122,9 @@ class _ContentManagementTabState extends State<ContentManagementTab> {
                 icon: const Icon(Icons.save_rounded),
                 label: const Text("Save Contact Info"),
                 style: FilledButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 54),
+                  minimumSize: Size(double.infinity, context.h(54)), // FIXED
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md), // FIXED
                   ),
                 ),
               ),
@@ -165,6 +166,7 @@ class _ContentManagementTabState extends State<ContentManagementTab> {
           fontWeight: FontWeight.w800,
           color: colorScheme.onSurfaceVariant,
           letterSpacing: 1.2,
+          fontSize: context.sp(12), // FIXED
         ),
       ),
     );
@@ -178,7 +180,7 @@ class _ContentManagementTabState extends State<ContentManagementTab> {
       decoration: getPremiumInputDecoration(
         context,
         labelText: label,
-        prefixIcon: Icon(icon),
+        prefixIcon: Icon(icon, size: context.sp(20)), // FIXED
       ),
     );
   }

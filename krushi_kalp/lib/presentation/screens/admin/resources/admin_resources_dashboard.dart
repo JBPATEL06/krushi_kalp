@@ -1,13 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import '../../../../data/services/admin_service.dart';
-import '../../../../presentation/providers/admin_provider.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../domain/models/resource.dart';
 import 'admin_resource_list.dart';
 import '../../../widgets/common/category_card.dart';
 import 'admin_generic_resource_screen.dart';
+import '../admin_store_screen.dart'; // CHANGED
 
 class AdminResourcesDashboard extends StatelessWidget {
   const AdminResourcesDashboard({super.key});
@@ -17,9 +17,10 @@ class AdminResourcesDashboard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Manage Resources'),
+        title: Text('Manage Resources',
+            style: TextStyle(fontSize: context.sp(20))), // FIXED
       ),
       body: LayoutBuilder(builder: (context, constraints) {
         final width = constraints.maxWidth;
@@ -73,9 +74,12 @@ class AdminResourcesDashboard extends StatelessWidget {
                       icon: Icons.quiz_rounded,
                       color: const Color(0xFF3B82F6), // Premium Blue
                       onTap: () {
-                        // Navigate to Admin Store Tab (Index 1)
-                        Navigator.pop(context);
-                        context.read<AdminProvider>().setNavIndex(1);
+                        // Navigate to Admin Store screen // CHANGED
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const AdminStoreScreen()),
+                        );
                       },
                       onLongPress: () =>
                           _showTypeStats(context, 'test_series', 'Test Series'),
@@ -146,8 +150,9 @@ class AdminResourcesDashboard extends StatelessWidget {
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.lg)),
           title: Text('$title Analytics',
-              style: theme.textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold)),
+              style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.sp(20))), // FIXED
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -179,12 +184,14 @@ class AdminResourcesDashboard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: context.sp(14))), // FIXED
           Text(value,
               style: theme.textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary)),
+                  color: theme.colorScheme.primary,
+                  fontSize: context.sp(16))), // FIXED
         ],
       ),
     );

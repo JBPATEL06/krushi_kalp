@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
@@ -169,7 +169,7 @@ class NotificationService {
       _isConnected = true;
       await _listenForPersonalNotifications(supabase, userId);
       await _listenForBroadcastNotifications(
-          supabase); // ← ADDED: Global admin broadcasts
+          supabase); // â† ADDED: Global admin broadcasts
       await connectBackground(supabase); // Public (Offers/MockTests)
       await _listenForChatMessages(supabase, userId, isUser: true); // User Mode
     }

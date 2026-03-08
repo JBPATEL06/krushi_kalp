@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/theme/app_spacing.dart';
 
 class PrimaryButton extends StatelessWidget {
@@ -46,7 +46,7 @@ class PrimaryButton extends StatelessWidget {
     final buttonStyle = ElevatedButton.styleFrom(
       backgroundColor: theme.colorScheme.primary,
       foregroundColor: theme.colorScheme.onPrimary,
-      disabledBackgroundColor: theme.colorScheme.surfaceVariant,
+      disabledBackgroundColor: theme.colorScheme.surfaceContainerHighest,
       disabledForegroundColor: theme.colorScheme.outline,
       padding: const EdgeInsets.symmetric(
         vertical: AppSpacing.lg,

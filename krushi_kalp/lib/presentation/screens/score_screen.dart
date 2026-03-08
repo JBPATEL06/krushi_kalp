@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +11,8 @@ import '../../domain/models/test_result.dart';
 import '../widgets/common/network_error_state.dart';
 import 'pdf_viewer_screen.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart'; // FIXED: Added import for radius tokens
+import '../widgets/common/responsive_wrapper.dart'; // FIXED: Added import for responsive scaling
 
 class ScoreScreen extends StatefulWidget {
   const ScoreScreen({super.key});
@@ -66,7 +68,6 @@ class _ScoreScreenState extends State<ScoreScreen> {
           });
         }
       } catch (e) {
-        
         if (mounted) {
           setState(() {
             _isLoading = false;
@@ -105,7 +106,6 @@ class _ScoreScreenState extends State<ScoreScreen> {
       await file.writeAsBytes(bytes);
       _openPdf(file, title);
     } catch (e) {
-      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error downloading result: $e')),
@@ -138,6 +138,7 @@ class _ScoreScreenState extends State<ScoreScreen> {
           style: theme.textTheme.titleLarge?.copyWith(
             color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
+            fontSize: context.sp(20), // FIXED: context.sp(20)
           ),
         ),
         backgroundColor: theme.colorScheme.surface,
@@ -172,12 +173,18 @@ class _ScoreScreenState extends State<ScoreScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(Icons.history,
-                                    size: 64, color: theme.colorScheme.outline),
-                                const SizedBox(height: AppSpacing.lg),
+                                    size:
+                                        context.sp(64), // FIXED: context.sp(64)
+                                    color: theme.colorScheme.outline),
+                                SizedBox(
+                                    height: context.h(AppSpacing
+                                        .lg)), // FIXED: context.h(AppSpacing.lg)
                                 Text(
                                   "No attempts yet.",
                                   style: theme.textTheme.bodyLarge?.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant,
+                                    fontSize:
+                                        context.sp(16), // FIXED: context.sp(16)
                                   ),
                                 ),
                               ],
@@ -199,12 +206,15 @@ class _ScoreScreenState extends State<ScoreScreen> {
                                   left: AppSpacing.lg,
                                   right: AppSpacing.lg,
                                   top: AppSpacing.lg,
-                                  bottom: AppSpacing.lg +
-                                      MediaQuery.of(context).padding.bottom,
+                                  bottom: AppSpacing.md +
+                                      MediaQuery.of(context)
+                                          .padding
+                                          .bottom, // FIXED: AppSpacing.md + bottom padding
                                 ),
                                 itemCount: _results.length,
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(height: AppSpacing.md),
+                                separatorBuilder: (_, __) => SizedBox(
+                                    height: context.h(AppSpacing
+                                        .md)), // FIXED: context.h(AppSpacing.md)
                                 itemBuilder: (context, index) {
                                   final result = _results[index];
                                   return AnimationConfiguration.staggeredList(
@@ -233,7 +243,8 @@ class _ScoreScreenState extends State<ScoreScreen> {
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        borderRadius:
+            BorderRadius.circular(AppRadius.lg), // FIXED: AppRadius.lg
         border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
@@ -250,8 +261,8 @@ class _ScoreScreenState extends State<ScoreScreen> {
             children: [
               // 1. Score Circle
               Container(
-                width: 48,
-                height: 48,
+                width: context.w(48), // FIXED: context.w(48)
+                height: context.w(48), // FIXED: context.w(48)
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: result.isPassed
@@ -267,12 +278,14 @@ class _ScoreScreenState extends State<ScoreScreen> {
                       color: result.isPassed
                           ? theme.colorScheme.primary
                           : theme.colorScheme.error,
-                      fontSize: 14,
+                      fontSize: context.sp(14), // FIXED: context.sp(14)
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(
+                  width: context
+                      .w(AppSpacing.md)), // FIXED: context.w(AppSpacing.md)
 
               // 2. Main Content
               Expanded(
@@ -293,21 +306,26 @@ class _ScoreScreenState extends State<ScoreScreen> {
                               fontWeight: FontWeight.bold,
                               height: 1.2,
                               color: theme.colorScheme.onSurface,
+                              fontSize: context.sp(16), // FIXED: context.sp(16)
                             ),
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.sm),
+                        SizedBox(
+                            width: context.w(AppSpacing
+                                .sm)), // FIXED: context.w(AppSpacing.sm)
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: context.w(8),
+                              vertical: context
+                                  .h(4)), // FIXED: context.w(8), context.h(4)
                           decoration: BoxDecoration(
                             color: result.isPassed
                                 ? theme.colorScheme.primaryContainer
                                     .withValues(alpha: 0.3)
                                 : theme.colorScheme.errorContainer
                                     .withValues(alpha: 0.3),
-                            borderRadius:
-                                BorderRadius.circular(AppSpacing.radiusSm),
+                            borderRadius: BorderRadius.circular(
+                                AppRadius.sm), // FIXED: AppRadius.sm
                           ),
                           child: Text(
                             result.isPassed ? "PASS" : "FAIL",
@@ -316,50 +334,59 @@ class _ScoreScreenState extends State<ScoreScreen> {
                                   ? theme.colorScheme.primary
                                   : theme.colorScheme.error,
                               fontWeight: FontWeight.bold,
-                              fontSize: 10,
+                              fontSize: context.sp(10), // FIXED: context.sp(10)
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: context.h(6)), // FIXED: context.h(6)
 
                     // Marks & Language
                     Row(
                       children: [
                         Icon(Icons.assignment_turned_in_outlined,
-                            size: 14,
+                            size: context.sp(14), // FIXED: context.sp(14)
                             color: theme.colorScheme.onSurfaceVariant),
-                        const SizedBox(width: 4),
-                        Text(
-                          "${result.scoreObtained.toStringAsFixed(1)} / ${result.totalMarks}",
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w500,
+                        SizedBox(width: context.w(4)), // FIXED: context.w(4)
+                        Expanded(
+                          // FIXED: Added Expanded
+                          child: Text(
+                            "${result.scoreObtained.toStringAsFixed(1)} / ${result.totalMarks}",
+                            overflow:
+                                TextOverflow.ellipsis, // FIXED: Added ellipsis
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
+                              fontSize: context.sp(12), // FIXED: context.sp(12)
+                            ),
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.md),
+                        SizedBox(
+                            width: context.w(AppSpacing
+                                .md)), // FIXED: context.w(AppSpacing.md)
                         Icon(Icons.translate,
-                            size: 14,
+                            size: context.sp(14), // FIXED: context.sp(14)
                             color: theme.colorScheme.onSurfaceVariant),
-                        const SizedBox(width: 4),
+                        SizedBox(width: context.w(4)), // FIXED: context.w(4)
                         Text(
                           result.language == 'gu' ? 'Gujarati' : 'English',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w500,
+                            fontSize: context.sp(12), // FIXED: context.sp(12)
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: context.h(4)), // FIXED: context.h(4)
 
                     // Date
                     Text(
                       _formatDate(result.attemptDate),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.outline,
-                        fontSize: 11,
+                        fontSize: context.sp(11), // FIXED: context.sp(11)
                       ),
                     ),
                   ],
@@ -370,7 +397,9 @@ class _ScoreScreenState extends State<ScoreScreen> {
 
           // 3. Actions Divider
           Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 8),
+            padding: EdgeInsets.only(
+                top: context.h(12),
+                bottom: context.h(8)), // FIXED: context.h(12), context.h(8)
             child: Divider(height: 1, color: theme.colorScheme.outlineVariant),
           ),
 
@@ -381,33 +410,44 @@ class _ScoreScreenState extends State<ScoreScreen> {
               TextButton.icon(
                 onPressed: () => _deleteResult(result.resultId),
                 icon: Icon(Icons.delete_outline,
-                    size: 18, color: theme.colorScheme.error),
+                    size: context.sp(18),
+                    color: theme.colorScheme.error), // FIXED: context.sp(18)
                 label: Text("Delete",
                     style: TextStyle(
-                        color: theme.colorScheme.error, fontSize: 13)),
+                        color: theme.colorScheme.error,
+                        fontSize: context.sp(13))), // FIXED: context.sp(13)
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md, vertical: 8),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: context.w(AppSpacing.md),
+                      vertical: context.h(
+                          8)), // FIXED: context.w(AppSpacing.md), context.h(8)
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
+              SizedBox(
+                  width: context
+                      .w(AppSpacing.sm)), // FIXED: context.w(AppSpacing.sm)
               TextButton.icon(
                 onPressed: () =>
                     _downloadAndOpenResult(result.testId, result.testTitle),
                 icon: Icon(Icons.remove_red_eye,
-                    size: 18, color: theme.colorScheme.primary),
+                    size: context.sp(18),
+                    color: theme.colorScheme.primary), // FIXED: context.sp(18)
                 label: Text("View Result",
                     style: TextStyle(
-                        color: theme.colorScheme.primary, fontSize: 13)),
+                        color: theme.colorScheme.primary,
+                        fontSize: context.sp(13))), // FIXED: context.sp(13)
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg, vertical: 8),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: context.w(AppSpacing.lg),
+                      vertical: context.h(
+                          8)), // FIXED: context.w(AppSpacing.lg), context.h(8)
                   backgroundColor:
                       theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
+                      borderRadius: BorderRadius.circular(
+                          AppRadius.md)), // FIXED: AppRadius.md
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -441,12 +481,11 @@ class _ScoreScreenState extends State<ScoreScreen> {
     if (confirmed == true) {
       // Optimistic update: Remove from UI immediately
       final previousResults = List<TestResult>.from(_results);
-      if (mounted) {
-        setState(() {
-          _results.removeWhere((r) => r.resultId == resultId);
-          _isLoading = true; // Show loading briefly while confirming
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _results.removeWhere((r) => r.resultId == resultId);
+        _isLoading = true; // Show loading briefly while confirming
+      });
 
       try {
         final success = await TestService.instance.deleteTestResult(resultId);
@@ -454,37 +493,34 @@ class _ScoreScreenState extends State<ScoreScreen> {
         if (success) {
           // Re-fetch to ensure consistency
           await _loadData();
-          if (mounted) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(const SnackBar(content: Text("Attempt deleted")));
-          }
+          if (!mounted) return;
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text("Attempt deleted")));
         } else {
           // Rollback on server failure
-          if (mounted) {
-            setState(() {
-              _results = previousResults;
-              _isLoading = false;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text(
-                    "Server permission error: Please check Supabase Delete Policy."),
-                backgroundColor: Theme.of(context).colorScheme.error,
-                duration: const Duration(seconds: 4),
-              ),
-            );
-          }
-        }
-      } catch (e) {
-        // Rollback on error
-        if (mounted) {
+          if (!mounted) return;
           setState(() {
             _results = previousResults;
             _isLoading = false;
           });
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text("Error: $e")));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                  "Server permission error: Please check Supabase Delete Policy."),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              duration: const Duration(seconds: 4),
+            ),
+          );
         }
+      } catch (e) {
+        // Rollback on error
+        if (!mounted) return;
+        setState(() {
+          _results = previousResults;
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Error: $e")));
       }
     }
   }

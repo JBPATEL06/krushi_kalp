@@ -239,7 +239,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
     final filename = 'resource_${resource.id}.pdf';
     final ds = DownloadService();
 
-    // 1. Ownership check — manifest must confirm this user downloaded the file
+    // 1. Ownership check â€” manifest must confirm this user downloaded the file
     final owned = await ds.verifyOwnership(filename, userId: uid);
     if (!owned) {
       if (mounted) {
@@ -254,7 +254,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
       return;
     }
 
-    // 2. Purchase check — current user must have this resource purchased
+    // 2. Purchase check â€” current user must have this resource purchased
     final resourceProvider = context.read<ResourceProvider>();
     if (!resourceProvider.purchasedResourceIds.contains(resource.id)) {
       if (mounted) {
@@ -305,7 +305,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
       return;
     }
 
-    // 2. Purchase check — current user must have this test purchased
+    // 2. Purchase check â€” current user must have this test purchased
     final testProvider = context.read<TestProvider>();
     final isPurchased = testProvider.userTests.any((t) => t.id == test.id);
     if (!isPurchased) {
@@ -347,13 +347,17 @@ class _DownloadsScreenState extends State<DownloadsScreen>
         // Detailed Filtering Logic
         bool matchesFilter = _activeFilter == 'All Files';
         if (!matchesFilter) {
-          if (_activeFilter == 'Ebook' && r.type == ResourceType.eBook)
+          if (_activeFilter == 'Ebook' && r.type == ResourceType.eBook) {
             matchesFilter = true;
-          if (_activeFilter == 'CA' && r.type == ResourceType.currentAffair)
+          }
+          if (_activeFilter == 'CA' && r.type == ResourceType.currentAffair) {
             matchesFilter = true;
+          }
           if (_activeFilter == 'GK' &&
               (r.type == ResourceType.studyMaterial ||
-                  r.type == ResourceType.pyq)) matchesFilter = true;
+                  r.type == ResourceType.pyq)) {
+            matchesFilter = true;
+          }
         }
 
         if (matchesSearch && matchesFilter) displayItems.add(r);
@@ -535,10 +539,12 @@ class _DownloadsScreenState extends State<DownloadsScreen>
                             SizedBox(height: context.h(AppSpacing.md)),
                         itemBuilder: (context, index) {
                           final item = displayItems[index];
-                          if (item is Resource)
+                          if (item is Resource) {
                             return _buildResourceCard(theme, item);
-                          if (item is MockTest)
+                          }
+                          if (item is MockTest) {
                             return _buildTestCard(theme, item);
+                          }
                           return const SizedBox();
                         },
                       ),
@@ -669,7 +675,7 @@ class _DownloadsScreenState extends State<DownloadsScreen>
                   ),
                   SizedBox(height: context.h(2)),
                   Text(
-                    "${resource.category ?? 'PDF'} • PDF",
+                    "${resource.category ?? 'PDF'} â€¢ PDF",
                     style: TextStyle(
                       color: theme.colorScheme.onSurfaceVariant,
                       fontSize: context.sp(11),

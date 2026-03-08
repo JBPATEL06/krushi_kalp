@@ -1,4 +1,4 @@
-import 'dart:ui';
+﻿import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -39,7 +39,7 @@ class GlassContainer extends StatelessWidget {
             padding: padding ?? EdgeInsets.all(AppSpacing.xxl),
             decoration: BoxDecoration(
               color:
-                  (isDark ? Colors.black : Colors.white).withOpacity(opacity),
+                  (isDark ? Colors.black : Colors.white).withValues(alpha: opacity),
               borderRadius: BorderRadius.circular(effectiveRadius),
               border: Border.all(
                 color:
@@ -47,7 +47,7 @@ class GlassContainer extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                  color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),

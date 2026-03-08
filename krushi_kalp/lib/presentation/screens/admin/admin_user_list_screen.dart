@@ -1,11 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import '../../../../data/services/admin_service.dart';
 import '../../widgets/common/network_error_state.dart';
 import 'admin_user_details_screen.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
-import '../../../../utils/error_utils.dart';
-import '../../../utils/network_utils.dart';
 
 class AdminUserListScreen extends StatefulWidget {
   const AdminUserListScreen({super.key});
@@ -213,14 +212,15 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.person_off_rounded,
-              size: 64,
+              size: context.sp(64), // FIXED
               color: colorScheme.onSurfaceVariant.withValues(alpha: 0.2)),
           const SizedBox(height: AppSpacing.md),
           Text(
             'No matching users found',
             style: TextStyle(
                 color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                fontWeight: FontWeight.w500),
+                fontWeight: FontWeight.w500,
+                fontSize: context.sp(16)), // FIXED
           ),
         ],
       ),
@@ -244,6 +244,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
       labelStyle: theme.textTheme.labelLarge?.copyWith(
         color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        fontSize: context.sp(14), // FIXED
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.full),
@@ -305,14 +306,14 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
           child: Row(
             children: [
               CircleAvatar(
-                radius: 24,
+                radius: context.sp(24), // FIXED
                 backgroundColor: colorScheme.primary.withValues(alpha: 0.08),
                 child: Text(
                   firstChar,
                   style: TextStyle(
                       color: colorScheme.primary,
                       fontWeight: FontWeight.bold,
-                      fontSize: 18),
+                      fontSize: context.sp(18)), // FIXED
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -325,6 +326,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: colorScheme.onSurface,
+                        fontSize: context.sp(16), // FIXED
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -334,7 +336,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
                       user['email'] ?? 'No Email',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
-                        fontSize: 12,
+                        fontSize: context.sp(12), // FIXED
                       ),
                     ),
                   ],
@@ -356,7 +358,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
                 ),
               const SizedBox(width: AppSpacing.md),
               Icon(Icons.chevron_right_rounded,
-                  size: 20,
+                  size: context.sp(20), // FIXED
                   color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3)),
             ],
           ),
@@ -369,7 +371,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -377,7 +379,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: color,
               fontWeight: FontWeight.w800,
-              fontSize: 9,
+              fontSize: context.sp(9), // FIXED
               letterSpacing: 0.5,
             ),
       ),

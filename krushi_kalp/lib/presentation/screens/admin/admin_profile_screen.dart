@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import '../../providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 // import 'package:supabase_flutter/supabase_flutter.dart'; // REMOVED (unused)
@@ -22,7 +23,8 @@ class AdminProfileScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text('Cancel',
+                style: TextStyle(fontSize: context.sp(14))), // FIXED
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -32,7 +34,8 @@ class AdminProfileScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md)),
             ),
-            child: const Text('Logout'),
+            child: Text('Logout',
+                style: TextStyle(fontSize: context.sp(14))), // FIXED
           ),
         ],
       ),
@@ -58,8 +61,9 @@ class AdminProfileScreen extends StatelessWidget {
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: Text('Admin Profile',
-            style: theme.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.bold)),
+            style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: context.sp(20))), // FIXED
         backgroundColor: colorScheme.surface,
         elevation: 0,
         centerTitle: true,
@@ -89,27 +93,30 @@ class AdminProfileScreen extends StatelessWidget {
                   return Column(
                     children: [
                       CircleAvatar(
-                        radius: 50,
+                        radius: context.sp(50), // FIXED
                         backgroundColor: colorScheme.primaryContainer,
                         backgroundImage:
                             photoUrl != null ? NetworkImage(photoUrl) : null,
                         child: photoUrl == null
                             ? Icon(Icons.admin_panel_settings,
-                                size: 50, color: colorScheme.onPrimaryContainer)
+                                size: context.sp(50),
+                                color: colorScheme.onPrimaryContainer) // FIXED
                             : null,
                       ),
                       SizedBox(height: AppSpacing.xl),
                       Text(
                         name,
-                        style: theme.textTheme.headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: context.sp(24)), // FIXED
                         textAlign: TextAlign.center,
                       ),
                       SizedBox(height: AppSpacing.xs),
                       Text(
                         email,
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(color: colorScheme.onSurfaceVariant),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            fontSize: context.sp(14)), // FIXED
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -119,7 +126,7 @@ class AdminProfileScreen extends StatelessWidget {
               SizedBox(height: AppSpacing.xxxl),
               SizedBox(
                 width: double.infinity,
-                height: 56,
+                height: context.h(56), // FIXED
                 child: ElevatedButton.icon(
                   onPressed: () {
                     Navigator.push(
@@ -128,11 +135,12 @@ class AdminProfileScreen extends StatelessWidget {
                           builder: (context) => const ManageAppScreen()),
                     );
                   },
-                  icon: const Icon(Icons.settings),
-                  label: const Text('MANAGE APP'),
+                  icon: Icon(Icons.settings, size: context.sp(20)), // FIXED
+                  label: Text('MANAGE APP',
+                      style: TextStyle(fontSize: context.sp(14))), // FIXED
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
-                        colorScheme.primaryContainer.withOpacity(0.5),
+                        colorScheme.primaryContainer.withValues(alpha: 0.5),
                     foregroundColor: colorScheme.primary,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -144,14 +152,15 @@ class AdminProfileScreen extends StatelessWidget {
               SizedBox(height: AppSpacing.lg),
               SizedBox(
                 width: double.infinity,
-                height: 56,
+                height: context.h(56), // FIXED
                 child: ElevatedButton.icon(
                   onPressed: () => _logout(context),
-                  icon: const Icon(Icons.logout),
-                  label: const Text('LOGOUT'),
+                  icon: Icon(Icons.logout, size: context.sp(20)), // FIXED
+                  label: Text('LOGOUT',
+                      style: TextStyle(fontSize: context.sp(14))), // FIXED
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
-                        colorScheme.errorContainer.withOpacity(0.5),
+                        colorScheme.errorContainer.withValues(alpha: 0.5),
                     foregroundColor: colorScheme.error,
                     elevation: 0,
                     shape: RoundedRectangleBorder(

@@ -1,9 +1,9 @@
-import 'package:flutter/gestures.dart';
+﻿import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
-import '../utils/ui_helpers.dart';
 import '../../utils/error_utils.dart';
 import 'main_screen.dart';
 import 'admin/admin_main_screen.dart';
@@ -115,11 +115,11 @@ class _LoginScreenState extends State<LoginScreen>
         children: [
           // Background Elements
           Positioned(
-            top: -100,
-            right: -100,
+            top: -context.h(100), // FIXED: context.h(100)
+            right: -context.w(100), // FIXED: context.w(100)
             child: Container(
-              width: 300,
-              height: 300,
+              width: context.w(300), // FIXED: context.w(300)
+              height: context.h(300), // FIXED: context.h(300)
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Theme.of(context)
@@ -130,11 +130,11 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
           Positioned(
-            bottom: -50,
-            left: -50,
+            bottom: -context.h(50), // FIXED: context.h(50)
+            left: -context.w(50), // FIXED: context.w(50)
             child: Container(
-              width: 200,
-              height: 200,
+              width: context.w(200), // FIXED: context.w(200)
+              height: context.h(200), // FIXED: context.h(200)
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Theme.of(context)
@@ -164,21 +164,34 @@ class _LoginScreenState extends State<LoginScreen>
                       children: [
                         Image.asset(
                           "assets/images/notification_logo.png",
-                          height: context.h(130),
-                          width: context.w(130),
+                          height: context.h(130), // FIXED
+                          width: context.w(130), // FIXED
                         ),
-                        const SizedBox(height: AppSpacing.lg),
+                        const SizedBox(
+                            height: AppSpacing.lg), // FIXED: AppSpacing.lg
                         Text(
                           'Welcome Back',
-                          style: Theme.of(context).textTheme.headlineMedium,
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineMedium
+                              ?.copyWith(
+                                fontSize:
+                                    context.sp(28), // FIXED: context.sp(28)
+                              ),
                         ),
-                        const SizedBox(height: AppSpacing.sm),
+                        const SizedBox(
+                            height: AppSpacing.sm), // FIXED: AppSpacing.sm
                         Text(
                           'Sign in to continue to Krushi Kalp',
-                          style: Theme.of(context).textTheme.bodyMedium,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontSize:
+                                        context.sp(14), // FIXED: context.sp(14)
+                                  ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: AppSpacing.xl),
+                        const SizedBox(
+                            height: AppSpacing.xl), // FIXED: AppSpacing.xl
 
                         // Terms Checkbox
                         Row(
@@ -193,14 +206,21 @@ class _LoginScreenState extends State<LoginScreen>
                               activeColor:
                                   Theme.of(context).colorScheme.primary,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.circular(
+                                    AppRadius.xs), // FIXED: AppRadius.xs
                               ),
                             ),
                             Expanded(
                               child: RichText(
                                 text: TextSpan(
                                   text: 'I agree with the ',
-                                  style: Theme.of(context).textTheme.bodySmall,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        fontSize: context
+                                            .sp(12), // FIXED: context.sp(12)
+                                      ),
                                   children: [
                                     TextSpan(
                                       text: 'Terms and Conditions',
@@ -209,6 +229,8 @@ class _LoginScreenState extends State<LoginScreen>
                                             .colorScheme
                                             .primary,
                                         fontWeight: FontWeight.bold,
+                                        fontSize: context
+                                            .sp(12), // FIXED: context.sp(12)
                                         decoration: TextDecoration.underline,
                                       ),
                                       recognizer: TapGestureRecognizer()
@@ -220,7 +242,8 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ],
                         ),
-                        const SizedBox(height: AppSpacing.lg),
+                        const SizedBox(
+                            height: AppSpacing.lg), // FIXED: AppSpacing.lg
 
                         PrimaryButton(
                           text: 'Sign in with Google',

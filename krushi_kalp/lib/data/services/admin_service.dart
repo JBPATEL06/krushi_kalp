@@ -1,5 +1,4 @@
-import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rxdart/rxdart.dart';
 import '../../utils/supabase_url_helper.dart';
 import '../../utils/network_utils.dart'; // Import NetworkUtils

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -41,7 +41,7 @@ class ModernCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
           color: colorScheme.outline
-              .withOpacity(theme.brightness == Brightness.dark ? 0.2 : 0.4),
+              .withValues(alpha: theme.brightness == Brightness.dark ? 0.2 : 0.4),
         ),
         boxShadow: AppShadows.soft,
       ),

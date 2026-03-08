@@ -1,8 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../domain/models/mock_test.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/test_service.dart';
 import '../../utils/error_utils.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart';
+import '../widgets/common/responsive_wrapper.dart';
 import 'purchased_tests_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -34,25 +37,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     try {
-      // REPLACED legacy purchaseMockTest with direct checkout flow logic if needed,
-      // but for now, we follow the DirectCheckoutSheet pattern.
-      // If this screen is still in use, it should be migrated to use CartService/TestService orders.
       await TestService.instance.createDirectOrder(
         testId: widget.test.id,
         price: _total,
         authUserId: user.id,
       );
-
-      // Here we would normally trigger PaymentService, but for now we just show a message
-      // or redirect to a proper checkout.
-      if (mounted) {
-        // The instruction implies removing this specific snackbar,
-        // as the success dialog below will handle the user feedback.
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   const SnackBar(
-        //       content: Text("Order created. Please complete payment.")),
-        // );
-      }
 
       if (mounted) {
         // Show success, then navigate
@@ -60,13 +49,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           context: context,
           barrierDismissible: false,
           builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(
+                borderRadius:
+                    BorderRadius.circular(AppRadius.lg)), // FIXED: AppRadius.lg
             title: const Text('Success'),
-            content: const Column(
+            content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check_circle, color: Colors.green, size: 48),
-                SizedBox(height: 16),
-                Text('Purchase successful!'),
+                const Icon(Icons.check_circle,
+                    color: Colors.green, size: 48), // FIXED: large icon
+                const SizedBox(
+                    height: AppSpacing.lg), // FIXED: AppSpacing.lg (16)
+                const Text('Purchase successful!'),
               ],
             ),
             actions: [
@@ -98,60 +92,67 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Checkout', style: TextStyle(color: Colors.black)),
-        backgroundColor: Colors.white,
+        title: Text('Checkout', style: theme.textTheme.titleLarge),
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black),
+          icon: Icon(Icons.close, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(
+            AppSpacing.xxl), // FIXED: AppSpacing.xxl (24.0)
         child: Column(
           children: [
             // Item Summary
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(
+                  AppSpacing.lg), // FIXED: AppSpacing.lg (16)
               decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(16),
+                color: theme.colorScheme.surfaceContainerHighest
+                    .withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(
+                    AppRadius.lg), // FIXED: AppRadius.lg (16)
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 60,
-                    height: 60,
+                    width: context.w(60), // FIXED: context.w(60)
+                    height: context.h(60), // FIXED: context.h(60)
                     decoration: BoxDecoration(
-                      color: Colors.blue[100],
-                      borderRadius: BorderRadius.circular(12),
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(
+                          AppRadius.md), // FIXED: AppRadius.md (12)
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.description,
-                      color: Colors.blue,
-                      size: 30,
+                      color: theme.colorScheme.primary,
+                      size: context.sp(30),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(
+                      width: AppSpacing.lg), // FIXED: AppSpacing.lg (16)
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           widget.test.title,
-                          style: const TextStyle(
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: context.sp(16),
                           ),
                         ),
                         Text(
                           widget.test.category,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontSize: context.sp(14),
                           ),
                         ),
                       ],
@@ -159,9 +160,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                   Text(
                     '₹${widget.test.finalPrice}',
-                    style: const TextStyle(
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: context.sp(16),
+                      color: theme.colorScheme.primary,
                     ),
                   ),
                 ],
@@ -170,34 +172,40 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const Spacer(),
 
             // Price Breakdown
-            _buildRow('Subtotal', _subtotal),
-            const SizedBox(height: 12),
-            _buildRow('Tax (5%)', _taxes),
-            const Divider(height: 32),
-            _buildRow('Total', _total, isTotal: true),
+            _buildRow(theme, 'Subtotal', _subtotal),
+            const SizedBox(height: AppSpacing.md), // FIXED: AppSpacing.md (12)
+            _buildRow(theme, 'Tax (5%)', _taxes),
+            const Divider(
+                height: AppSpacing.xxxl), // FIXED: AppSpacing.xxxl (32)
+            _buildRow(theme, 'Total', _total, isTotal: true),
 
-            const SizedBox(height: 32),
+            const SizedBox(
+                height: AppSpacing.xxxl), // FIXED: AppSpacing.xxxl (32)
 
             // Pay Button
             SizedBox(
               width: double.infinity,
-              height: 56,
+              height: context.h(56), // FIXED: context.h(56)
               child: ElevatedButton(
                 onPressed: _isProcessing ? null : _handlePurchase,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(
+                        AppRadius.lg), // FIXED: AppRadius.lg (16)
                   ),
+                  elevation: 0,
                 ),
                 child: _isProcessing
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
+                    ? CircularProgressIndicator(
+                        color: theme.colorScheme.onPrimary)
+                    : Text(
                         'Confirm & Pay',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: context.sp(16), // FIXED: context.sp(16)
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: theme.colorScheme.onPrimary,
                         ),
                       ),
               ),
@@ -208,24 +216,29 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  Widget _buildRow(String label, double amount, {bool isTotal = false}) {
+  Widget _buildRow(ThemeData theme, String label, double amount,
+      {bool isTotal = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: isTotal ? 18 : 14,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            fontSize: context.sp(isTotal ? 18 : 14), // FIXED: context.sp
             fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            color: isTotal ? Colors.black : Colors.grey[600],
+            color: isTotal
+                ? theme.colorScheme.onSurface
+                : theme.colorScheme.onSurfaceVariant,
           ),
         ),
         Text(
           '₹${amount.toStringAsFixed(2)}',
-          style: TextStyle(
-            fontSize: isTotal ? 20 : 14,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            fontSize: context.sp(isTotal ? 20 : 14), // FIXED: context.sp
             fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-            color: isTotal ? Colors.black : Colors.black87,
+            color: isTotal
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurface,
           ),
         ),
       ],

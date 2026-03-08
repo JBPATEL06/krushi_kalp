@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../data/services/auth_service.dart';
 import '../../../data/services/download_service.dart';
 import '../../../data/services/transfer_notification_service.dart';
@@ -194,7 +194,7 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: colorScheme.primary,
-            disabledBackgroundColor: colorScheme.primary.withOpacity(0.6),
+            disabledBackgroundColor: colorScheme.primary.withValues(alpha: 0.6),
             padding: EdgeInsets.symmetric(
                 vertical: context.h(12), horizontal: context.w(24)),
             shape:
@@ -214,7 +214,7 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
               child: LinearProgressIndicator(
                 value: _progress,
                 minHeight: 3,
-                backgroundColor: colorScheme.surfaceVariant,
+                backgroundColor: colorScheme.surfaceContainerHighest,
                 valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
               ),
             ),

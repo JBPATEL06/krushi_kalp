@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../domain/models/resource.dart';
 import '../../../../data/services/auth_service.dart';
 import '../../../../domain/models/offer.dart';
@@ -70,7 +70,7 @@ class _StoreResourceGridState extends State<StoreResourceGrid> {
         setState(() => _ratingsCache.addAll(bulk));
       }
     } catch (_) {
-      // Silently skip — cards will render without ratings
+      // Silently skip â€” cards will render without ratings
     }
   }
 
@@ -125,7 +125,7 @@ class _StoreResourceGridState extends State<StoreResourceGrid> {
         if (offer.discountType == 'PERCENTAGE') {
           discountTag = '${offer.discountValue.toStringAsFixed(0)}% OFF';
         } else {
-          discountTag = '₹${offer.discountValue.toStringAsFixed(0)} OFF';
+          discountTag = 'â‚¹${offer.discountValue.toStringAsFixed(0)} OFF';
         }
       }
     } else {
@@ -137,7 +137,7 @@ class _StoreResourceGridState extends State<StoreResourceGrid> {
 
     String subtitle = resource.type.toString().split('.').last.toUpperCase();
     if (resource.category != null) {
-      subtitle += ' • ${resource.category}';
+      subtitle += ' â€¢ ${resource.category}';
     }
 
     // Use cached ratings instead of FutureBuilder

@@ -1,5 +1,6 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import '../../../../data/services/test_service.dart';
 import '../../../../domain/models/mock_test.dart';
 import '../../mock_test_upload_screen.dart';
@@ -154,7 +155,7 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(
@@ -162,7 +163,8 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
             MaterialPageRoute(builder: (_) => const MockTestUploadScreen()),
           );
         },
-        label: const Text('ADD TEST'),
+        label: Text('ADD TEST',
+            style: TextStyle(fontSize: context.sp(14))), // FIXED
         icon: const Icon(Icons.add_rounded),
         elevation: 2,
       ),
@@ -175,17 +177,21 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
               color: colorScheme.surface,
               border: Border(
                   bottom: BorderSide(
-                      color: colorScheme.outlineVariant.withOpacity(0.5))),
+                      color:
+                          colorScheme.outlineVariant.withValues(alpha: 0.5))),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(
                   controller: _searchController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Search Tests',
-                    prefixIcon: Icon(Icons.search_rounded),
+                    labelStyle: TextStyle(fontSize: context.sp(14)), // FIXED
+                    prefixIcon: Icon(Icons.search_rounded,
+                        size: context.sp(20)), // FIXED
                     hintText: 'Search by title or category...',
+                    hintStyle: TextStyle(fontSize: context.sp(14)), // FIXED
                   ),
                   onChanged: (val) {
                     setState(() => _searchQuery = val);
@@ -201,6 +207,7 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
                         fontWeight: FontWeight.w800,
                         color: colorScheme.onSurfaceVariant,
                         letterSpacing: 1.2,
+                        fontSize: context.sp(10), // FIXED
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -285,16 +292,17 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
           decoration: BoxDecoration(
             border: Border(
                 bottom: BorderSide(
-                    color: colorScheme.outlineVariant.withOpacity(0.5))),
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5))),
           ),
           child: Row(
             children: [
               // Thumbnail
               Container(
-                width: 48,
-                height: 48,
+                width: context.sp(48), // FIXED
+                height: context.sp(48), // FIXED
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceVariant.withOpacity(0.5),
+                  color: colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: test.signedUrl != null
@@ -305,14 +313,15 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Icon(
                               Icons.broken_image_rounded,
-                              size: 20,
+                              size: context.sp(20), // FIXED
                               color: colorScheme.onSurfaceVariant
-                                  .withOpacity(0.5)),
+                                  .withValues(alpha: 0.5)),
                         ),
                       )
                     : Icon(Icons.description_rounded,
-                        size: 24,
-                        color: colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                        size: context.sp(24), // FIXED
+                        color: colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.5)),
               ),
               const SizedBox(width: AppSpacing.md),
               // Name and Category
@@ -322,8 +331,9 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
                   children: [
                     Text(
                       test.title,
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: context.sp(14)), // FIXED
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -335,7 +345,7 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: colorScheme.primary,
                             fontWeight: FontWeight.w900,
-                            fontSize: 9,
+                            fontSize: context.sp(9), // FIXED
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -350,9 +360,10 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
                         Text(
                           "${test.totalQuestions} Questions",
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color:
-                                colorScheme.onSurfaceVariant.withOpacity(0.7),
+                            color: colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.7),
                             fontWeight: FontWeight.bold,
+                            fontSize: context.sp(10), // FIXED
                           ),
                         ),
                       ],
@@ -366,18 +377,20 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    test.price == 0 ? 'FREE' : '₹${test.price}',
+                    test.price == 0 ? 'FREE' : 'â‚¹${test.price}',
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: test.price == 0
                           ? const Color(0xFF10B981)
                           : colorScheme.onSurface,
                       fontWeight: FontWeight.w900,
+                      fontSize: context.sp(12), // FIXED
                     ),
                   ),
                   const SizedBox(height: 4),
                   IconButton(
                     icon: Icon(Icons.delete_outline_rounded,
-                        color: colorScheme.error.withOpacity(0.5), size: 16),
+                        color: colorScheme.error.withValues(alpha: 0.5),
+                        size: context.sp(16)), // FIXED
                     onPressed: () => _deleteTest(test.id),
                     constraints: const BoxConstraints(),
                     padding: EdgeInsets.zero,
@@ -399,13 +412,14 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.assignment_late_outlined,
-              size: 64, color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+              size: context.sp(64), // FIXED
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3)),
           const SizedBox(height: AppSpacing.md),
           Text(
             'No tests found.',
             style: TextStyle(
                 color: colorScheme.onSurfaceVariant,
-                fontSize: 16,
+                fontSize: context.sp(16), // FIXED
                 fontWeight: FontWeight.w500),
           ),
         ],
@@ -432,7 +446,7 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
           }
         },
         backgroundColor: colorScheme.surface,
-        selectedColor: colorScheme.primary.withOpacity(0.1),
+        selectedColor: colorScheme.primary.withValues(alpha: 0.1),
         checkmarkColor: colorScheme.primary,
         labelStyle: theme.textTheme.labelMedium?.copyWith(
           color:
@@ -444,7 +458,7 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
           side: BorderSide(
             color: isSelected
                 ? colorScheme.primary
-                : colorScheme.outline.withOpacity(0.2),
+                : colorScheme.outline.withValues(alpha: 0.2),
           ),
         ),
       ),

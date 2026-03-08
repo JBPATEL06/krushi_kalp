@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'tabs/feature_control_tab.dart';
 import 'tabs/banner_management_tab.dart';
 import 'tabs/content_management_tab.dart';
@@ -14,7 +14,7 @@ class ManageAppScreen extends StatelessWidget {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: colorScheme.background,
+        backgroundColor: colorScheme.surface,
         appBar: AppBar(
           toolbarHeight: 0,
           bottom: TabBar(

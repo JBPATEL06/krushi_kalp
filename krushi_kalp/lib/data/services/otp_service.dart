@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
@@ -27,7 +26,7 @@ class OtpWrongException implements Exception {
   String toString() => message;
 }
 
-/// MSG91 OTP Service — routes all calls through the Supabase Edge Function
+/// MSG91 OTP Service â€” routes all calls through the Supabase Edge Function
 /// so the MSG91 API key stays safely on the server and IP whitelisting works.
 /// Completely isolated from push_notification and send-fcm edge functions.
 class OtpService {
@@ -58,11 +57,13 @@ class OtpService {
     if (resp['success'] == true) return; // All good
 
     final error = (resp['error'] as String? ?? 'Unknown error').toLowerCase();
-    if (error.contains('rate') || error.contains('wait'))
+    if (error.contains('rate') || error.contains('wait')) {
       throw OtpRateLimitException(resp['error']);
+    }
     if (error.contains('expir')) throw OtpExpiredException(resp['error']);
-    if (error.contains('invalid') || error.contains('wrong'))
+    if (error.contains('invalid') || error.contains('wrong')) {
       throw OtpWrongException(resp['error']);
+    }
     throw Exception(resp['error'] ?? 'OTP request failed.');
   }
 
@@ -81,8 +82,9 @@ class OtpService {
   /// Verifies [otp] for [phone]. Returns true if valid, throws otherwise.
   static Future<bool> verifyOtp(String phone, String otp) async {
     _validatePhone(phone);
-    if (otp.trim().length != 6)
+    if (otp.trim().length != 6) {
       throw OtpWrongException('Please enter a 6-digit OTP.');
+    }
     await _call(
         {'action': 'verify', 'phone': _clean(phone), 'otp': otp.trim()});
     return true;

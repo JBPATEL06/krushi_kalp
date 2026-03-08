@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../providers/network_provider.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -117,7 +117,7 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
     return _buildFull(context);
   }
 
-  // ── Compact variant ─────────────────────────────────────────────────────────
+  // â”€â”€ Compact variant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildCompact(BuildContext context) {
     final theme = Theme.of(context);
@@ -126,10 +126,10 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
           horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: theme.colorScheme.error.withOpacity(0.06),
+        color: theme.colorScheme.error.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         border: Border.all(
-            color: theme.colorScheme.error.withOpacity(0.18), width: 1),
+            color: theme.colorScheme.error.withValues(alpha: 0.18), width: 1),
       ),
       child: Row(
         children: [
@@ -137,7 +137,7 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: theme.colorScheme.error.withOpacity(0.12),
+              color: theme.colorScheme.error.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.wifi_off_rounded,
@@ -162,7 +162,7 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.sm, vertical: 6),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withOpacity(0.5),
+                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 ),
                 child: _isRetrying
@@ -190,7 +190,7 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
     );
   }
 
-  // ── Full-page variant ───────────────────────────────────────────────────────
+  // â”€â”€ Full-page variant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildFull(BuildContext context) {
     return FadeTransition(
@@ -258,7 +258,7 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
                 color: theme.colorScheme.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: theme.colorScheme.error.withOpacity(0.20),
+                    color: theme.colorScheme.error.withValues(alpha: 0.20),
                     blurRadius: 24,
                     spreadRadius: 4,
                   ),
@@ -270,8 +270,8 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [
-                      theme.colorScheme.error.withOpacity(0.15),
-                      theme.colorScheme.error.withOpacity(0.06),
+                      theme.colorScheme.error.withValues(alpha: 0.15),
+                      theme.colorScheme.error.withValues(alpha: 0.06),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -331,7 +331,7 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             boxShadow: [
               BoxShadow(
-                color: theme.colorScheme.primary.withOpacity(0.28 + glow),
+                color: theme.colorScheme.primary.withValues(alpha: 0.28 + glow),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -343,7 +343,7 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: theme.colorScheme.onPrimary,
               disabledBackgroundColor:
-                  theme.colorScheme.primary.withOpacity(0.5),
+                  theme.colorScheme.primary.withValues(alpha: 0.5),
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -389,7 +389,7 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
       ),
       child: Column(

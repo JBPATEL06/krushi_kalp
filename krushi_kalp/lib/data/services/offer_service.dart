@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/offer.dart';
 import '../../utils/network_utils.dart'; // Import NetworkUtils
@@ -228,7 +227,7 @@ class OfferService {
             .update({'is_active': false}).eq('offer_id', id);
         return 'ARCHIVED';
       }
-      throw e;
+      rethrow;
     }
   }
 

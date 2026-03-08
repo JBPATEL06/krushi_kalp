@@ -1,4 +1,4 @@
-class Review {
+﻿class Review {
   final int id;
   final String userId;
   final int itemId;

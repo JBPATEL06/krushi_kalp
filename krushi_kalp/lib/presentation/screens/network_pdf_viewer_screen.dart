@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
@@ -100,7 +101,7 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
           children: [
             Text(
               widget.title,
-              style: const TextStyle(fontSize: 16),
+              style: TextStyle(fontSize: context.sp(16)), // FIXED
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -108,13 +109,14 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
               Text(
                 'Page $_currentPage of $_totalPages',
                 style: TextStyle(
-                    fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                    fontSize: context.sp(12),
+                    color: theme.colorScheme.onSurfaceVariant), // FIXED
               ),
           ],
         ),
         backgroundColor: theme.colorScheme.surface,
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: Icon(Icons.close, size: context.sp(24)), // FIXED
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
@@ -122,6 +124,7 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
             icon: Icon(
               _isNightMode ? Icons.dark_mode : Icons.light_mode,
               color: _isNightMode ? Colors.amber : theme.colorScheme.primary,
+              size: context.sp(20), // FIXED
             ),
             tooltip: 'Toggle Night Mode',
             onPressed: () {
@@ -142,13 +145,14 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
             child: Row(
               children: [
                 Icon(Icons.cloud_outlined,
-                    size: 16, color: theme.colorScheme.primary),
+                    size: context.sp(16),
+                    color: theme.colorScheme.primary), // FIXED
                 const SizedBox(width: 4),
                 Text(
                   'Online',
                   style: TextStyle(
                     color: theme.colorScheme.primary,
-                    fontSize: 12,
+                    fontSize: context.sp(12), // FIXED
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -174,6 +178,7 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
               'Loading PDF...',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: context.sp(16), // FIXED
                   ),
             ),
           ],
@@ -189,13 +194,15 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.error_outline,
-                  size: 64, color: theme.colorScheme.error),
+                  size: context.sp(64),
+                  color: theme.colorScheme.error), // FIXED
               const SizedBox(height: AppSpacing.lg),
               Text(
                 'Failed to load PDF',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: theme.colorScheme.error,
                       fontWeight: FontWeight.bold,
+                      fontSize: context.sp(20), // FIXED
                     ),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -204,13 +211,15 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: context.sp(14), // FIXED
                     ),
               ),
               const SizedBox(height: AppSpacing.xl),
               ElevatedButton.icon(
                 onPressed: _loadPdf,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
+                icon: Icon(Icons.refresh, size: context.sp(18)), // FIXED
+                label: Text('Retry',
+                    style: TextStyle(fontSize: context.sp(14))), // FIXED
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.colorScheme.primary,
                   foregroundColor: theme.colorScheme.onPrimary,
@@ -253,9 +262,7 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
           });
         }
       },
-      onPageError: (page, error) {
-        
-      },
+      onPageError: (page, error) {},
       onViewCreated: (PDFViewController controller) {
         // Controller can be used for additional controls if needed
       },

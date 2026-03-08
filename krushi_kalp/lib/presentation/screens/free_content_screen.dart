@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart'; // NEW
 import '../../core/theme/app_spacing.dart';
@@ -11,7 +11,6 @@ import '../screens/mock_test_detail_screen.dart';
 import '../screens/resource_detail_screen.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/test_service.dart';
-import '../../utils/price_calculator.dart';
 import '../../utils/error_utils.dart';
 import '../../core/theme/app_radius.dart';
 import '../widgets/common/responsive_wrapper.dart';
@@ -146,7 +145,7 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
           _isLoading = false;
         });
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -230,7 +229,7 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
               color: theme.colorScheme.surface,
               border: Border(
                 bottom: BorderSide(
-                  color: theme.colorScheme.outline.withOpacity(0.1),
+                  color: theme.colorScheme.outline.withValues(alpha: 0.1),
                   width: 1,
                 ),
               ),
@@ -254,7 +253,7 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
                       hintText: 'Search free content...',
                       prefixIcon: Icon(
                         Icons.search_rounded,
-                        color: theme.colorScheme.primary.withOpacity(0.5),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.5),
                         size: context.sp(22),
                       ),
                       suffixIcon: _searchQuery.isNotEmpty
@@ -268,7 +267,7 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
                           : null,
                       filled: true,
                       fillColor:
-                          theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                          theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                         borderSide: BorderSide.none,
@@ -311,15 +310,15 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? theme.colorScheme.primary
-                                    : theme.colorScheme.surfaceVariant
-                                        .withOpacity(0.5),
+                                    : theme.colorScheme.surfaceContainerHighest
+                                        .withValues(alpha: 0.5),
                                 borderRadius:
                                     BorderRadius.circular(AppRadius.full),
                                 border: Border.all(
                                   color: isSelected
                                       ? theme.colorScheme.primary
                                       : theme.colorScheme.outline
-                                          .withOpacity(0.2),
+                                          .withValues(alpha: 0.2),
                                 ),
                               ),
                               child: Text(
@@ -470,7 +469,7 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
     return FreeItemCard(
       title: test.title,
       subtitle:
-          '${test.totalQuestions} Questions • ${test.totalMarks} Marks • ${test.durationMinutes ?? 0} mins',
+          '${test.totalQuestions} Questions â€¢ ${test.totalMarks} Marks â€¢ ${test.durationMinutes ?? 0} mins',
       typeLabel: 'Mock Test',
       coverUrl: test.signedUrl,
       actionLabel: 'Claim Free',

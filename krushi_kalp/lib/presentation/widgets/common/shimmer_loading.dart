@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class Shimmer extends StatefulWidget {
   final Widget child;
@@ -103,7 +103,7 @@ class Skeleton extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         color: color ??
-            Theme.of(context).colorScheme.surfaceVariant.withValues(alpha: 0.5),
+            Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(borderRadius),
       ),
     );

@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_spacing.dart';
 
 /// Shown when the installed app version is below the server-required minimum.
-/// The user cannot bypass this screen — they must update via the Play Store.
+/// The user cannot bypass this screen â€” they must update via the Play Store.
 class UpdateRequiredScreen extends StatelessWidget {
   final String currentVersion;
   final String requiredVersion;
@@ -19,9 +20,7 @@ class UpdateRequiredScreen extends StatelessWidget {
 
   Future<void> _openPlayStore() async {
     final uri = Uri.parse(_playStoreUrl);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      
-    }
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {}
   }
 
   @override
@@ -47,7 +46,7 @@ class UpdateRequiredScreen extends StatelessWidget {
                 ),
                 child: Icon(
                   Icons.system_update_alt_rounded,
-                  size: 52,
+                  size: context.sp(52), // FIXED
                   color: Theme.of(context).colorScheme.primary,
                 ),
               ),
@@ -59,6 +58,7 @@ class UpdateRequiredScreen extends StatelessWidget {
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: context.sp(24), // FIXED
                     ),
                 textAlign: TextAlign.center,
               ),
@@ -70,6 +70,7 @@ class UpdateRequiredScreen extends StatelessWidget {
                 'Please update to continue.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: context.sp(14), // FIXED
                     ),
                 textAlign: TextAlign.center,
               ),
@@ -77,9 +78,10 @@ class UpdateRequiredScreen extends StatelessWidget {
 
               // Version info
               Text(
-                'Your version: v$currentVersion  •  Required: v$requiredVersion',
+                'Your version: v$currentVersion  â€¢  Required: v$requiredVersion',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: context.sp(10), // FIXED
                     ),
                 textAlign: TextAlign.center,
               ),
@@ -90,8 +92,10 @@ class UpdateRequiredScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: _openPlayStore,
-                  icon: const Icon(Icons.open_in_new_rounded),
-                  label: const Text('Update on Play Store'),
+                  icon: Icon(Icons.open_in_new_rounded,
+                      size: context.sp(18)), // FIXED
+                  label: Text('Update on Play Store',
+                      style: TextStyle(fontSize: context.sp(14))), // FIXED
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Theme.of(context).colorScheme.onPrimary,

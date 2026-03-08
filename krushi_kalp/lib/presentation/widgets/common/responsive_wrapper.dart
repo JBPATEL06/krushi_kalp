@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+export 'package:krushi_kalp/utils/responsive.dart';
 
 class ResponsiveWrapper extends StatelessWidget {
   final Widget child;
@@ -12,7 +13,6 @@ class ResponsiveWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
     return LayoutBuilder(
       builder: (context, constraints) {
         final mediaQuery = MediaQuery.of(context);
@@ -49,20 +49,4 @@ class ResponsiveWrapper extends StatelessWidget {
   }
 }
 
-// Extension for easy access to responsive sizes
-extension ResponsiveContext on BuildContext {
-  double get scaleFactor {
-    final width = MediaQuery.of(this).size.width;
-    final designWidth = 375.0; // Standard design width
-    final scale = width / designWidth;
-    return scale > 1.2 ? 1.2 : scale;
-  }
-
-  double sp(double size) =>
-      size * scaleFactor * 0.9; // Scaled pixels with 10% reduction
-  double w(double width) => width * scaleFactor * 0.9;
-  double h(double height) => height * scaleFactor * 0.9;
-
-  bool get isTablet => MediaQuery.of(this).size.width > 600;
-  bool get isDesktop => MediaQuery.of(this).size.width > 1200;
-}
+// Extensions moved to lib/utils/responsive.dart

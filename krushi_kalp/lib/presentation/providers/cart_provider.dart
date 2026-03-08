@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/cart_service.dart';
 import '../../utils/supabase_url_helper.dart';

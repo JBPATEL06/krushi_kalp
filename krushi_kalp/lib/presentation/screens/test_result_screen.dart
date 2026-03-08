@@ -1,4 +1,4 @@
-import 'package:confetti/confetti.dart';
+﻿import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import '../../data/services/auth_service.dart';
 import '../../domain/models/question.dart';
@@ -7,12 +7,14 @@ import 'pdf_viewer_screen.dart';
 import 'test_analysis_screen.dart';
 import '../../data/services/translation_service.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart'; // FIXED: Added import for radius tokens
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../data/services/review_service.dart'; // NEW
 import '../widgets/reviews/review_dialog.dart'; // NEW
 import 'main_screen.dart';
 import '../../data/services/test_service.dart';
 import '../../utils/error_utils.dart';
+import '../widgets/common/responsive_wrapper.dart'; // FIXED: Added import for responsive scaling
 
 class TestResultScreen extends StatefulWidget {
   final int? resultId;
@@ -100,13 +102,15 @@ class _TestResultScreenState extends State<TestResultScreen>
           children: [
             Icon(Icons.wifi_off_rounded,
                 color: Theme.of(context).colorScheme.error),
-            const SizedBox(width: AppSpacing.sm),
+            SizedBox(
+                width: context
+                    .w(AppSpacing.sm)), // FIXED: context.w(AppSpacing.sm)
             const Text('Offline Attempt'),
           ],
         ),
-        content: const Text(
+        content: Text(
           'Your data will not be uploaded in database as you are offline. However, your result PDF will be locally stored on this device for your reference.\n\nYou can view it anytime in your downloads.',
-          style: TextStyle(fontSize: 14),
+          style: TextStyle(fontSize: context.sp(14)), // FIXED: context.sp(14)
         ),
         actions: [
           TextButton(
@@ -258,13 +262,16 @@ class _TestResultScreenState extends State<TestResultScreen>
             body: SingleChildScrollView(
               child: Column(
                 children: [
-                  const SizedBox(height: AppSpacing.lg),
+                  SizedBox(
+                      height: context
+                          .h(AppSpacing.lg)), // FIXED: context.h(AppSpacing.lg)
                   // Score Card
                   Container(
                     margin:
                         const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 32, horizontal: AppSpacing.lg),
+                    padding: EdgeInsets.symmetric(
+                        vertical: context.h(32),
+                        horizontal: AppSpacing.lg), // FIXED: context.h(32)
                     width: double.infinity,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -275,7 +282,8 @@ class _TestResultScreenState extends State<TestResultScreen>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                      borderRadius: BorderRadius.circular(
+                          AppRadius.xl), // FIXED: AppRadius.xl
                       boxShadow: [
                         BoxShadow(
                           color:
@@ -297,10 +305,13 @@ class _TestResultScreenState extends State<TestResultScreen>
                                     letterSpacing: 1.5,
                                   ),
                         ),
-                        const SizedBox(height: AppSpacing.md),
+                        SizedBox(
+                            height: context.h(AppSpacing
+                                .md)), // FIXED: context.h(AppSpacing.md)
                         // Icon
                         Container(
-                          padding: const EdgeInsets.all(AppSpacing.md),
+                          padding: EdgeInsets.all(context.w(AppSpacing
+                              .md)), // FIXED: context.w(AppSpacing.md)
                           decoration: BoxDecoration(
                             color: theme.colorScheme.onPrimary
                                 .withValues(alpha: 0.1),
@@ -310,11 +321,13 @@ class _TestResultScreenState extends State<TestResultScreen>
                             isPassed
                                 ? Icons.emoji_events_rounded
                                 : Icons.sentiment_dissatisfied_rounded,
-                            size: 64,
+                            size: context.sp(64), // FIXED: context.sp(64)
                             color: theme.colorScheme.onPrimary,
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.md),
+                        SizedBox(
+                            height: context.h(AppSpacing
+                                .md)), // FIXED: context.h(AppSpacing.md)
                         // Percentage Animation
                         AnimatedBuilder(
                           animation: _scoreAnimation,
@@ -327,14 +340,19 @@ class _TestResultScreenState extends State<TestResultScreen>
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: theme.colorScheme.onPrimary,
-                                    fontSize: 56,
+                                    fontSize:
+                                        context.sp(56), // FIXED: context.sp(56)
                                   ),
                             );
                           },
                         ),
-                        const SizedBox(height: AppSpacing.lg),
+                        SizedBox(
+                            height: context.h(AppSpacing
+                                .lg)), // FIXED: context.h(AppSpacing.lg)
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal:
+                                  AppSpacing.lg), // FIXED: AppSpacing.lg
                           child: Text(
                             isPassed
                                 ? 'Test Completed Successfully\nYou have achieved the passing score for the ${widget.testTitle}.'
@@ -348,7 +366,8 @@ class _TestResultScreenState extends State<TestResultScreen>
                                       .withValues(alpha: 0.95),
                                   fontWeight: FontWeight.w600,
                                   height: 1.4,
-                                  fontSize: 18, // Slightly larger
+                                  fontSize:
+                                      context.sp(18), // FIXED: context.sp(18)
                                 ),
                           ),
                         ),
@@ -356,7 +375,9 @@ class _TestResultScreenState extends State<TestResultScreen>
                     ),
                   ),
 
-                  const SizedBox(height: AppSpacing.xxl),
+                  SizedBox(
+                      height: context.h(
+                          AppSpacing.xxl)), // FIXED: context.h(AppSpacing.xxl)
 
                   // Stats Grid
                   Padding(
@@ -371,7 +392,9 @@ class _TestResultScreenState extends State<TestResultScreen>
                             color: theme.colorScheme.primary,
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.lg),
+                        SizedBox(
+                            width: context.w(AppSpacing
+                                .lg)), // FIXED: context.w(AppSpacing.lg)
                         Expanded(
                           child: _buildStatCard(
                             label: 'WRONG',
@@ -383,7 +406,9 @@ class _TestResultScreenState extends State<TestResultScreen>
                     ),
                   ),
 
-                  const SizedBox(height: AppSpacing.xl),
+                  SizedBox(
+                      height: context
+                          .h(AppSpacing.xl)), // FIXED: context.h(AppSpacing.xl)
 
                   // PDF Download Button
                   Padding(
@@ -395,11 +420,11 @@ class _TestResultScreenState extends State<TestResultScreen>
                         onPressed:
                             _isGeneratingPdf ? null : _generateAndDownloadPdf,
                         icon: _isGeneratingPdf
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
+                            ? SizedBox(
+                                width: context.sp(20), // FIXED: context.sp(20)
+                                height: context.sp(20), // FIXED: context.sp(20)
+                                child: const CircularProgressIndicator(
+                                    strokeWidth: 2),
                               )
                             : Icon(Icons.download,
                                 color: theme.colorScheme.onSurface),
@@ -410,24 +435,28 @@ class _TestResultScreenState extends State<TestResultScreen>
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.onSurface,
+                            fontSize: context.sp(16), // FIXED: context.sp(16)
                           ),
                         ),
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          padding: EdgeInsets.symmetric(
+                              vertical: context.h(18)), // FIXED: context.h(18)
                           side: BorderSide(
                             color: theme.colorScheme.onSurface,
                             width: 2,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppSpacing.radiusXl),
+                            borderRadius: BorderRadius.circular(
+                                AppRadius.xl), // FIXED: AppRadius.xl
                           ),
                         ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: AppSpacing.lg),
+                  SizedBox(
+                      height: context
+                          .h(AppSpacing.lg)), // FIXED: context.h(AppSpacing.lg)
 
                   // Rating Button (only if online)
                   if (!_isOffline)
@@ -437,15 +466,18 @@ class _TestResultScreenState extends State<TestResultScreen>
                       child: _buildRatingSection(),
                     ),
 
-                  const SizedBox(height: AppSpacing.lg),
+                  SizedBox(
+                      height: context
+                          .h(AppSpacing.lg)), // FIXED: context.h(AppSpacing.lg)
 
                   // Analysis Button
                   if (widget.questions != null &&
                       widget.selectedAnswers != null)
                     Padding(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                         horizontal: AppSpacing.lg,
-                        vertical: AppSpacing.sm,
+                        vertical: context.h(
+                            AppSpacing.sm), // FIXED: context.h(AppSpacing.sm)
                       ),
                       child: SizedBox(
                         width: double.infinity,
@@ -463,14 +495,16 @@ class _TestResultScreenState extends State<TestResultScreen>
                             );
                           },
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            padding: EdgeInsets.symmetric(
+                                vertical:
+                                    context.h(18)), // FIXED: context.h(18)
                             side: BorderSide(
                               color: theme.colorScheme.onSurface,
                               width: 2,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppSpacing.radiusXl),
+                              borderRadius: BorderRadius.circular(
+                                  AppRadius.xl), // FIXED: AppRadius.xl
                             ),
                           ),
                           child: Text(
@@ -478,6 +512,7 @@ class _TestResultScreenState extends State<TestResultScreen>
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: theme.colorScheme.onSurface,
+                              fontSize: context.sp(16), // FIXED: context.sp(16)
                             ),
                           ),
                         ),
@@ -490,15 +525,17 @@ class _TestResultScreenState extends State<TestResultScreen>
                       // Discard Button (only if online and resultId exists)
                       if (!_isOffline && widget.resultId != null)
                         Padding(
-                          padding: const EdgeInsets.symmetric(
+                          padding: EdgeInsets.symmetric(
                             horizontal: AppSpacing.lg,
-                            vertical: AppSpacing.sm,
+                            vertical: context.h(AppSpacing
+                                .sm), // FIXED: context.h(AppSpacing.sm)
                           ),
                           child: _isDiscarding
-                              ? const Center(
+                              ? Center(
                                   child: Padding(
-                                    padding: EdgeInsets.all(AppSpacing.md),
-                                    child: CircularProgressIndicator(),
+                                    padding: EdgeInsets.all(context.w(AppSpacing
+                                        .md)), // FIXED: context.w(AppSpacing.md)
+                                    child: const CircularProgressIndicator(),
                                   ),
                                 )
                               : SizedBox(
@@ -507,21 +544,25 @@ class _TestResultScreenState extends State<TestResultScreen>
                                     onPressed: _discardResult,
                                     icon: Icon(Icons.delete_outline,
                                         color: theme.colorScheme.error),
-                                    label: const Text(
+                                    label: Text(
                                       'Discard This Result',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
+                                        fontSize: context
+                                            .sp(14), // FIXED: context.sp(14)
                                       ),
                                     ),
                                     style: TextButton.styleFrom(
                                       foregroundColor: theme.colorScheme.error,
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 16),
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: context
+                                              .h(16)), // FIXED: context.h(16)
                                       backgroundColor: theme.colorScheme.error
                                           .withValues(alpha: 0.1),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(
-                                            AppSpacing.radiusXl),
+                                            AppRadius
+                                                .xl), // FIXED: AppRadius.xl
                                       ),
                                     ),
                                   ),
@@ -530,7 +571,8 @@ class _TestResultScreenState extends State<TestResultScreen>
 
                       // Bottom Button (Back to Home)
                       Padding(
-                        padding: const EdgeInsets.all(AppSpacing.xl),
+                        padding: EdgeInsets.all(context.w(
+                            AppSpacing.xl)), // FIXED: context.w(AppSpacing.xl)
                         child: SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
@@ -545,10 +587,12 @@ class _TestResultScreenState extends State<TestResultScreen>
                             style: ElevatedButton.styleFrom(
                               backgroundColor: theme.colorScheme.primary,
                               foregroundColor: theme.colorScheme.onPrimary,
-                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              padding: EdgeInsets.symmetric(
+                                  vertical:
+                                      context.h(18)), // FIXED: context.h(18)
                               shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(AppSpacing.radiusXl),
+                                borderRadius: BorderRadius.circular(
+                                    AppRadius.xl), // FIXED: AppRadius.xl
                               ),
                               elevation: 0,
                             ),
@@ -557,12 +601,18 @@ class _TestResultScreenState extends State<TestResultScreen>
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: theme.colorScheme.onPrimary,
+                                fontSize:
+                                    context.sp(16), // FIXED: context.sp(16)
                               ),
                             ),
                           ),
                         ),
                       ),
-                      SizedBox(height: MediaQuery.of(context).padding.bottom),
+                      SizedBox(
+                          height: AppSpacing.md +
+                              MediaQuery.of(context)
+                                  .padding
+                                  .bottom), // FIXED: AppSpacing.md + bottom padding
                     ],
                   ),
                 ],
@@ -586,25 +636,29 @@ class _TestResultScreenState extends State<TestResultScreen>
           // Offline Indicator
           if (_isOffline)
             Positioned(
-              top: 10,
-              right: 10,
+              top: context.h(10), // FIXED: context.h(10)
+              right: context.w(10), // FIXED: context.w(10)
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: EdgeInsets.symmetric(
+                    horizontal: context.w(12),
+                    vertical:
+                        context.h(6)), // FIXED: context.w(12), context.h(6)
                 decoration: BoxDecoration(
                   color: theme.colorScheme.error.withValues(alpha: 0.8),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(
+                      AppRadius.xxl), // FIXED: AppRadius.xxl
                 ),
                 child: Row(
                   children: [
                     Icon(Icons.cloud_off,
-                        color: theme.colorScheme.onPrimary, size: 14),
-                    SizedBox(width: 4),
+                        color: theme.colorScheme.onPrimary,
+                        size: context.sp(14)), // FIXED: context.sp(14)
+                    SizedBox(width: context.w(4)), // FIXED: context.w(4)
                     Text(
                       'Offline',
                       style: TextStyle(
                           color: theme.colorScheme.onPrimary,
-                          fontSize: 10,
+                          fontSize: context.sp(10), // FIXED: context.sp(10)
                           fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -663,10 +717,12 @@ class _TestResultScreenState extends State<TestResultScreen>
       final theme = Theme.of(context);
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: EdgeInsets.all(
+            context.w(AppSpacing.md)), // FIXED: context.w(AppSpacing.md)
         decoration: BoxDecoration(
           color: theme.colorScheme.secondary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          borderRadius:
+              BorderRadius.circular(AppRadius.lg), // FIXED: AppRadius.lg
           border: Border.all(
               color: theme.colorScheme.secondary.withValues(alpha: 0.2)),
         ),
@@ -674,13 +730,17 @@ class _TestResultScreenState extends State<TestResultScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.check_circle_outline,
-                color: theme.colorScheme.secondary, size: 20),
-            const SizedBox(width: AppSpacing.sm),
+                color: theme.colorScheme.secondary,
+                size: context.sp(20)), // FIXED: context.sp(20)
+            SizedBox(
+                width: context
+                    .w(AppSpacing.sm)), // FIXED: context.w(AppSpacing.sm)
             Text(
               "Thanks for your feedback!",
               style: TextStyle(
                   color: theme.colorScheme.secondary,
-                  fontWeight: FontWeight.bold),
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.sp(14)), // FIXED: context.sp(14)
             ),
           ],
         ),
@@ -696,16 +756,18 @@ class _TestResultScreenState extends State<TestResultScreen>
         label: Text(
           'Rate this Test',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: context.sp(16), // FIXED: context.sp(16)
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
           ),
         ),
         style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: EdgeInsets.symmetric(
+              vertical: context.h(16)), // FIXED: context.h(16)
           backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.1),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+              borderRadius:
+                  BorderRadius.circular(AppRadius.xl)), // FIXED: AppRadius.xl
         ),
       ),
     );
@@ -731,16 +793,14 @@ class _TestResultScreenState extends State<TestResultScreen>
               reviewText: review,
             );
 
-            if (mounted) {
-              setState(() => _hasRated = true);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Thank you for your review!')),
-              );
-            }
+            if (!mounted) return;
+            setState(() => _hasRated = true);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Thank you for your review!')),
+            );
           } catch (e) {
-            if (mounted) {
-              ErrorUtils.showError(context, e);
-            }
+            if (!mounted) return;
+            ErrorUtils.showError(context, e);
           }
         },
       ),
@@ -753,10 +813,12 @@ class _TestResultScreenState extends State<TestResultScreen>
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
+      padding:
+          EdgeInsets.symmetric(vertical: context.h(24)), // FIXED: context.h(24)
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.05), // Very light tint
-        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+        borderRadius:
+            BorderRadius.circular(AppRadius.xl), // FIXED: AppRadius.xl
         border: Border.all(color: color.withValues(alpha: 0.1)),
       ),
       child: Column(
@@ -765,23 +827,33 @@ class _TestResultScreenState extends State<TestResultScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CircleAvatar(backgroundColor: color, radius: 4),
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: color.withValues(alpha: 0.8),
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                    ),
+              SizedBox(
+                  width: context
+                      .w(AppSpacing.sm)), // FIXED: context.w(AppSpacing.sm)
+              Flexible(
+                // FIXED: Added Flexible for Row label
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis, // FIXED: Added overflow
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: color.withValues(alpha: 0.8),
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                        fontSize: context.sp(12), // FIXED: context.sp(12)
+                      ),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+              height:
+                  context.h(AppSpacing.md)), // FIXED: context.h(AppSpacing.md)
           Text(
             value,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: context.sp(28), // FIXED: context.sp(28)
                 ),
           ),
         ],

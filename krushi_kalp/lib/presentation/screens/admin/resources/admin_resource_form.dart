@@ -1,8 +1,8 @@
-import 'package:file_picker/file_picker.dart';
+﻿import 'package:file_picker/file_picker.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../../data/services/resource_service.dart';
-import '../../../../data/services/admin_notification_service.dart';
 import '../../../../data/services/background_upload_service.dart';
 import '../../../../data/services/transfer_notification_service.dart';
 import '../../../../domain/models/resource.dart';
@@ -270,9 +270,10 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: Text(widget.resource == null ? 'Add Resource' : 'Edit Resource'),
+        title: Text(widget.resource == null ? 'Add Resource' : 'Edit Resource',
+            style: TextStyle(fontSize: context.sp(20))), // FIXED
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -285,27 +286,33 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
               const SizedBox(height: AppSpacing.sm),
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Title',
-                  prefixIcon: Icon(Icons.title_rounded),
+                  labelStyle: TextStyle(fontSize: context.sp(14)), // FIXED
+                  prefixIcon:
+                      Icon(Icons.title_rounded, size: context.sp(20)), // FIXED
                 ),
                 validator: (v) => v!.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: AppSpacing.lg),
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Description',
-                  prefixIcon: Icon(Icons.description_outlined),
+                  labelStyle: TextStyle(fontSize: context.sp(14)), // FIXED
+                  prefixIcon: Icon(Icons.description_outlined,
+                      size: context.sp(20)), // FIXED
                 ),
                 maxLines: 3,
               ),
               const SizedBox(height: AppSpacing.lg),
               TextFormField(
                 controller: _categoryController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Category (Optional)',
-                  prefixIcon: Icon(Icons.category_outlined),
+                  labelStyle: TextStyle(fontSize: context.sp(14)), // FIXED
+                  prefixIcon: Icon(Icons.category_outlined,
+                      size: context.sp(20)), // FIXED
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -313,9 +320,11 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
               const SizedBox(height: AppSpacing.sm),
               TextFormField(
                 controller: _priceController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Price (0 for Free)',
-                  prefixIcon: Icon(Icons.currency_rupee_rounded),
+                  labelStyle: TextStyle(fontSize: context.sp(14)), // FIXED
+                  prefixIcon: Icon(Icons.currency_rupee_rounded,
+                      size: context.sp(20)), // FIXED
                 ),
                 keyboardType: TextInputType.number,
                 validator: (v) {
@@ -374,9 +383,11 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
               const SizedBox(height: AppSpacing.sm),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Visible to Users'),
+                title: Text('Visible to Users',
+                    style: TextStyle(fontSize: context.sp(16))), // FIXED
                 subtitle: Text('Hidden items won\'t appear in the app',
-                    style: theme.textTheme.bodySmall),
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(fontSize: context.sp(12))), // FIXED
                 value: _isActive,
                 onChanged: (v) => setState(() => _isActive = v),
               ),
@@ -386,7 +397,8 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
                 child: ElevatedButton.icon(
                   onPressed: _isLoading ? null : _save,
                   icon: const Icon(Icons.upload_file_rounded),
-                  label: const Text('POST IN BACKGROUND'),
+                  label: Text('POST IN BACKGROUND',
+                      style: TextStyle(fontSize: context.sp(16))), // FIXED
                 ),
               ),
               const SizedBox(height: AppSpacing.xxxl),
@@ -406,6 +418,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
         fontWeight: FontWeight.w800,
         color: colorScheme.onSurfaceVariant,
         letterSpacing: 1.2,
+        fontSize: context.sp(12), // FIXED
       ),
     );
   }
@@ -430,21 +443,23 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
-          width: 44,
-          height: 44,
+          width: context.sp(44), // FIXED
+          height: context.sp(44), // FIXED
           decoration: BoxDecoration(
-            color: (iconColor ?? colorScheme.primary).withOpacity(0.08),
+            color: (iconColor ?? colorScheme.primary).withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
           ),
           child: thumbnail != null
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(8), child: thumbnail)
-              : Icon(icon, color: iconColor ?? colorScheme.primary),
+              : Icon(icon,
+                  color: iconColor ?? colorScheme.primary,
+                  size: context.sp(24)), // FIXED
         ),
         title: Text(
           title,
-          style:
-              theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600, fontSize: context.sp(14)), // FIXED
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -454,7 +469,8 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             minimumSize: const Size(0, 36),
           ),
-          child: const Text("Change"),
+          child: Text("Change",
+              style: TextStyle(fontSize: context.sp(12))), // FIXED
         ),
       ),
     );

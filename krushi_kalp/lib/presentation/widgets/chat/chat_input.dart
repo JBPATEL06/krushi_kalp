@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class ChatInput extends StatefulWidget {
   final Function(String) onSendPressed;
@@ -51,7 +51,7 @@ class _ChatInputState extends State<ChatInput> {
                 hintStyle: TextStyle(color: theme.colorScheme.outlineVariant),
                 filled: true,
                 fillColor:
-                    theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
+                    theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 16, // Comfort padding inside field

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_radius.dart';
@@ -7,13 +7,13 @@ import '../../../widgets/common/responsive_wrapper.dart';
 /// Store-screen item card.
 ///
 /// Layout (horizontal):
-///   ┌──────────────────────────────────────────────────────┐
-///   │        │  [subtitle / category label]    [🛒 top-rt] │
-///   │ IMAGE  │  Title sp(18)                               │
-///   │ covers │  ★ rating                                   │
-///   │ pane   │  ₹399  ₹799                                 │
-///   │        │  [       BUY NOW — full width        ]      │
-///   └──────────────────────────────────────────────────────┘
+///   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+///   â”‚        â”‚  [subtitle / category label]    [ðŸ›’ top-rt] â”‚
+///   â”‚ IMAGE  â”‚  Title sp(18)                               â”‚
+///   â”‚ covers â”‚  â˜… rating                                   â”‚
+///   â”‚ pane   â”‚  â‚¹399  â‚¹799                                 â”‚
+///   â”‚        â”‚  [       BUY NOW â€” full width        ]      â”‚
+///   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 class StoreItemCard extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -85,14 +85,14 @@ class StoreItemCard extends StatelessWidget {
 
     final bool showCart = onCartTap != null && price > 0 && !isPurchased;
 
-    // ── Internal Card (Layout MATCHING the provided reference image) ─────
+    // â”€â”€ Internal Card (Layout MATCHING the provided reference image) â”€â”€â”€â”€â”€
     Widget card = Card(
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.lg),
         side: BorderSide(
-          color: theme.colorScheme.outline.withOpacity(isDark ? 0.18 : 0.35),
+          color: theme.colorScheme.outline.withValues(alpha: isDark ? 0.18 : 0.35),
         ),
       ),
       color: theme.colorScheme.surface,
@@ -106,7 +106,7 @@ class StoreItemCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min, // Wrap content vertically
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── TOP SECTION: IMAGE & TEXT ROW ──────────────────────────
+              // â”€â”€ TOP SECTION: IMAGE & TEXT ROW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -185,7 +185,7 @@ class StoreItemCard extends StatelessWidget {
                               if (originalPrice != null &&
                                   originalPrice! > price)
                                 Text(
-                                  '₹${originalPrice!.toStringAsFixed(0)}',
+                                  'â‚¹${originalPrice!.toStringAsFixed(0)}',
                                   style: theme.textTheme.labelMedium?.copyWith(
                                     decoration: TextDecoration.lineThrough,
                                     color: theme.colorScheme.outline,
@@ -196,7 +196,7 @@ class StoreItemCard extends StatelessWidget {
                               Text(
                                 price == 0
                                     ? 'Free'
-                                    : '₹${price.toStringAsFixed(0)}',
+                                    : 'â‚¹${price.toStringAsFixed(0)}',
                                 style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.w900,
                                   color: theme.colorScheme
@@ -223,14 +223,14 @@ class StoreItemCard extends StatelessWidget {
 
               SizedBox(height: context.h(AppSpacing.lg)),
 
-              // ── BOTTOM SECTION: ACTION BUTTONS ROW ─────────────────────
+              // â”€â”€ BOTTOM SECTION: ACTION BUTTONS ROW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               Row(
                 children: [
                   // Cart Button
                   if (showCart) ...[
                     Material(
                       color: theme.colorScheme.primary
-                          .withOpacity(0.08), // Light faded primary background
+                          .withValues(alpha: 0.08), // Light faded primary background
                       borderRadius: BorderRadius.circular(AppRadius.md),
                       child: InkWell(
                         onTap: onCartTap,
@@ -264,7 +264,7 @@ class StoreItemCard extends StatelessWidget {
                                 : (isActionEnabled ? onActionTap : null),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isPurchased
-                                  ? theme.colorScheme.surfaceVariant
+                                  ? theme.colorScheme.surfaceContainerHighest
                                   : (actionColor ??
                                       (price == 0
                                           ? theme.colorScheme.tertiary
@@ -319,7 +319,7 @@ class StoreItemCard extends StatelessWidget {
     );
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildImage(BuildContext context, ThemeData theme) {
     if (coverUrl != null && coverUrl!.isNotEmpty) {
@@ -336,7 +336,7 @@ class StoreItemCard extends StatelessWidget {
   Widget _placeholder(BuildContext context, ThemeData theme,
       {bool loading = false}) {
     return Container(
-      color: theme.colorScheme.primary.withOpacity(0.06),
+      color: theme.colorScheme.primary.withValues(alpha: 0.06),
       child: Center(
         child: loading
             ? SizedBox(
@@ -344,13 +344,13 @@ class StoreItemCard extends StatelessWidget {
                 height: context.w(20),
                 child: CircularProgressIndicator(
                   strokeWidth: 1.5,
-                  color: theme.colorScheme.primary.withOpacity(0.35),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.35),
                 ),
               )
             : Icon(
                 Icons.school_outlined,
                 size: context.sp(30),
-                color: theme.colorScheme.primary.withOpacity(0.25),
+                color: theme.colorScheme.primary.withValues(alpha: 0.25),
               ),
       ),
     );
@@ -372,7 +372,7 @@ class StoreItemCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         boxShadow: [
           BoxShadow(
-            color: bg.withOpacity(0.35),
+            color: bg.withValues(alpha: 0.35),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),

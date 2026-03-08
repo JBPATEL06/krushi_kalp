@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:intl/intl.dart';
 import '../../../../data/services/admin_service.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
@@ -69,9 +70,10 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
     });
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Revenue Insights'),
+        title: Text('Revenue Insights',
+            style: TextStyle(fontSize: context.sp(20))), // FIXED
       ),
       body: Center(
         child: ConstrainedBox(
@@ -88,8 +90,8 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                     color: colorScheme.surface,
                     border: Border(
                         bottom: BorderSide(
-                            color:
-                                colorScheme.outlineVariant.withOpacity(0.5))),
+                            color: colorScheme.outlineVariant
+                                .withValues(alpha: 0.5))),
                   ),
                   child: Column(
                     children: [
@@ -98,14 +100,14 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                         style: theme.textTheme.labelSmall?.copyWith(
                           fontWeight: FontWeight.w800,
                           color: colorScheme.onSurfaceVariant,
-                          letterSpacing: 1.5,
+                          fontSize: context.sp(10), // FIXED
                         ),
                       ),
                       const SizedBox(height: AppSpacing.md),
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          '₹${totalRevenue.toStringAsFixed(2)}',
+                          'â‚¹${totalRevenue.toStringAsFixed(2)}',
                           style: theme.textTheme.displayLarge?.copyWith(
                             // Increased from displayMedium
                             fontWeight: FontWeight.w900,
@@ -118,7 +120,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 6),
                         decoration: BoxDecoration(
-                          color: colorScheme.primary.withOpacity(0.08),
+                          color: colorScheme.primary.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(100),
                         ),
                         child: Text(
@@ -127,6 +129,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                             color: colorScheme.primary,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0.5,
+                            fontSize: context.sp(10), // FIXED
                           ),
                         ),
                       ),
@@ -140,6 +143,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                               fontWeight: FontWeight.w800,
                               color: colorScheme.onSurfaceVariant,
                               letterSpacing: 1.2,
+                              fontSize: context.sp(10), // FIXED
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -203,7 +207,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
     final user = order['users'];
     final double amount = (order['total_amount'] as num?)?.toDouble() ?? 0.0;
     final String dateStr = order['created_at'] != null
-        ? DateFormat('MMM dd • hh:mm a')
+        ? DateFormat('MMM dd â€¢ hh:mm a')
             .format(DateTime.parse(order['created_at']).toUtc().toLocal())
         : 'Unknown Date';
     final String username =
@@ -219,7 +223,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
           decoration: BoxDecoration(
             border: Border(
                 bottom: BorderSide(
-                    color: colorScheme.outlineVariant.withOpacity(0.5))),
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5))),
           ),
           child: Row(
             children: [
@@ -228,11 +232,11 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.08),
+                  color: colorScheme.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(Icons.receipt_long_rounded,
-                    color: colorScheme.primary, size: 24),
+                    color: colorScheme.primary, size: context.sp(24)), // FIXED
               ),
               const SizedBox(width: 16),
               // User Details
@@ -253,8 +257,8 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                       dateStr,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         // Increased from bodySmall
-                        color: colorScheme.onSurfaceVariant.withOpacity(0.7),
                         fontWeight: FontWeight.bold,
+                        fontSize: context.sp(12), // FIXED
                       ),
                     ),
                   ],
@@ -266,16 +270,18 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '+ ₹${amount.toStringAsFixed(2)}',
+                    '+ â‚¹${amount.toStringAsFixed(2)}',
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w900,
                       color: const Color(0xFF10B981),
+                      fontSize: context.sp(14), // FIXED
                     ),
                   ),
                   const SizedBox(height: 4),
                   Icon(Icons.chevron_right_rounded,
-                      size: 16,
-                      color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+                      size: context.sp(16), // FIXED
+                      color:
+                          colorScheme.onSurfaceVariant.withValues(alpha: 0.3)),
                 ],
               ),
             ],
@@ -293,7 +299,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
     final items = order['order_items'] as List<dynamic>? ?? [];
     final double amount = (order['total_amount'] as num?)?.toDouble() ?? 0.0;
     final String dateStr = order['created_at'] != null
-        ? DateFormat('MMM dd, yyyy • hh:mm a')
+        ? DateFormat('MMM dd, yyyy â€¢ hh:mm a')
             .format(DateTime.parse(order['created_at']).toUtc().toLocal())
         : 'Unknown Date';
 
@@ -306,7 +312,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
       final val = offer['discount_value'];
       final type = offer['discount_type'];
       if (val != null) {
-        discountStr = type == 'PERCENTAGE' ? '${val}% OFF' : '₹${val} OFF';
+        discountStr = type == 'PERCENTAGE' ? '$val% OFF' : 'â‚¹$val OFF';
       }
       offerText =
           (offer['code'] == null) ? 'Store Sale Applied' : 'Coupon Code: $code';
@@ -332,8 +338,8 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                   icon: const Icon(Icons.close_rounded, size: 20),
                   onPressed: () => Navigator.pop(ctx),
                   style: IconButton.styleFrom(
-                      backgroundColor:
-                          colorScheme.surfaceVariant.withOpacity(0.3)),
+                      backgroundColor: colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.3)),
                 ),
               ],
             ),
@@ -356,7 +362,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                            color: colorScheme.tertiary.withOpacity(0.1),
+                            color: colorScheme.tertiary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4)),
                         child: Text(discountStr,
                             style: theme.textTheme.labelSmall?.copyWith(
@@ -376,7 +382,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
               constraints: const BoxConstraints(maxHeight: 180),
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: colorScheme.background,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: SingleChildScrollView(
@@ -412,7 +418,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                '₹${price.toStringAsFixed(0)}',
+                                'â‚¹${price.toStringAsFixed(0)}',
                                 style: theme.textTheme.bodySmall
                                     ?.copyWith(fontWeight: FontWeight.bold),
                               ),
@@ -432,7 +438,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                 Text('Total Paid',
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.bold)),
-                Text('₹${amount.toStringAsFixed(2)}',
+                Text('â‚¹${amount.toStringAsFixed(2)}',
                     style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w900,
                         color: colorScheme.tertiary)),
@@ -455,7 +461,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
         if (selected) setState(() => _selectedFilter = label);
       },
       selectedColor: colorScheme.primary,
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       labelStyle: TextStyle(
         color:
             isSelected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
@@ -464,7 +470,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
       side: BorderSide(
           color: isSelected
               ? colorScheme.primary
-              : colorScheme.outline.withOpacity(0.2)),
+              : colorScheme.outline.withValues(alpha: 0.2)),
       shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md)),
     );
@@ -479,7 +485,9 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon,
-            size: 20, color: colorScheme.onSurfaceVariant.withOpacity(0.6)),
+            size: context.sp(20),
+            color:
+                colorScheme.onSurfaceVariant.withValues(alpha: 0.6)), // FIXED
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -490,8 +498,9 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                       color: colorScheme.onSurfaceVariant, letterSpacing: 1.1)),
               const SizedBox(height: 2),
               Text(value,
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w600)),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: context.sp(14))), // FIXED
               if (extra != null) extra,
             ],
           ),
@@ -507,7 +516,9 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.receipt_long_rounded,
-              size: 64, color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+              size: context.sp(64),
+              color:
+                  colorScheme.onSurfaceVariant.withValues(alpha: 0.3)), // FIXED
           const SizedBox(height: AppSpacing.md),
           Text('No transactions found',
               style: TextStyle(color: colorScheme.onSurfaceVariant)),

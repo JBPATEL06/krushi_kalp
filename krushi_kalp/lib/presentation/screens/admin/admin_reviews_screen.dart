@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../data/services/review_service.dart';
 import '../../../../domain/models/review.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
@@ -92,7 +92,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text("Manage Reviews"),
       ),
@@ -109,7 +109,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
                   color: colorScheme.surface,
                   border: Border(
                       bottom: BorderSide(
-                          color: colorScheme.outlineVariant.withOpacity(0.5))),
+                          color: colorScheme.outlineVariant.withValues(alpha: 0.5))),
                 ),
                 child: Row(
                   children: [
@@ -178,7 +178,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
       decoration: BoxDecoration(
         border: Border(
             bottom:
-                BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5))),
+                BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5))),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,7 +191,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.08),
+                  color: colorScheme.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: review.userAvatarUrl != null
@@ -230,7 +230,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
                         ),
                         IconButton(
                           icon: Icon(Icons.delete_outline_rounded,
-                              color: colorScheme.error.withOpacity(0.5),
+                              color: colorScheme.error.withValues(alpha: 0.5),
                               size: 18),
                           onPressed: () => _confirmDelete(review),
                           constraints: const BoxConstraints(),
@@ -257,7 +257,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
                           DateFormat.yMMMd().format(review.createdAt),
                           style: theme.textTheme.labelSmall?.copyWith(
                               color: colorScheme.onSurfaceVariant
-                                  .withOpacity(0.7)),
+                                  .withValues(alpha: 0.7)),
                         ),
                       ],
                     ),
@@ -267,7 +267,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
                       Text(
                         review.reviewText!,
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          color: colorScheme.onSurface.withOpacity(0.8),
+                          color: colorScheme.onSurface.withValues(alpha: 0.8),
                           height: 1.5,
                         ),
                       ),
@@ -289,7 +289,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.rate_review_outlined,
-              size: 64, color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+              size: 64, color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3)),
           const SizedBox(height: AppSpacing.md),
           Text("No reviews found",
               style: TextStyle(color: colorScheme.onSurfaceVariant)),
@@ -311,13 +311,13 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
         setState(() => _filter = value);
         _loadReviews();
       },
-      selectedColor: colorScheme.primary.withOpacity(0.1),
+      selectedColor: colorScheme.primary.withValues(alpha: 0.1),
       checkmarkColor: colorScheme.primary,
       backgroundColor: colorScheme.surface,
       side: BorderSide(
         color: isSelected
             ? colorScheme.primary
-            : colorScheme.outline.withOpacity(0.2),
+            : colorScheme.outline.withValues(alpha: 0.2),
         width: isSelected ? 1.5 : 1,
       ),
       labelStyle: theme.textTheme.labelLarge?.copyWith(

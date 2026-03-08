@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../domain/models/mock_test.dart';
 import '../../../../domain/models/offer.dart';
 import 'store_item_card.dart';
@@ -73,7 +73,7 @@ class _StoreGridState extends State<StoreGrid> {
         setState(() => _ratingsCache.addAll(bulk));
       }
     } catch (_) {
-      // Silently skip — cards will render without ratings
+      // Silently skip â€” cards will render without ratings
     }
   }
 
@@ -124,7 +124,7 @@ class _StoreGridState extends State<StoreGrid> {
       if (offer.discountType == 'PERCENTAGE') {
         discountTag = '${offer.discountValue.toStringAsFixed(0)}% OFF';
       } else {
-        discountTag = '₹${offer.discountValue.toStringAsFixed(0)} OFF';
+        discountTag = 'â‚¹${offer.discountValue.toStringAsFixed(0)} OFF';
       }
     }
 
@@ -146,7 +146,7 @@ class _StoreGridState extends State<StoreGrid> {
 
     return StoreItemCard(
       title: test.title,
-      subtitle: '${test.totalQuestions} Qs • ${test.totalMarks} Marks',
+      subtitle: '${test.totalQuestions} Qs â€¢ ${test.totalMarks} Marks',
       time: test.time,
       price: displayPrice,
       originalPrice: mrp,

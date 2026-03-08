@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -12,9 +12,9 @@ const String _kNoInternetRoute = '/no-internet';
 /// Global network-aware wrapper.
 ///
 /// Sits inside MaterialApp.builder so it has access to the navigator.
-/// When connectivity is lost → pushes [NoInternetScreen] on top of everything.
-/// When connectivity returns → pops [NoInternetScreen] automatically.
-/// Back-button on [NoInternetScreen] → exits the app.
+/// When connectivity is lost â†’ pushes [NoInternetScreen] on top of everything.
+/// When connectivity returns â†’ pops [NoInternetScreen] automatically.
+/// Back-button on [NoInternetScreen] â†’ exits the app.
 class NetworkAwareWrapper extends StatefulWidget {
   final Widget child;
 
@@ -80,7 +80,7 @@ class _NetworkAwareWrapperState extends State<NetworkAwareWrapper> {
     if (!_isNoInternetVisible) return;
     _isNoInternetVisible = false;
 
-    // Pop only the NoInternet route — leave everything below intact.
+    // Pop only the NoInternet route â€” leave everything below intact.
     final nav = navigatorKey.currentState;
     if (nav != null && nav.canPop()) {
       nav.popUntil((route) => route.settings.name != _kNoInternetRoute);
@@ -97,9 +97,9 @@ class _NetworkAwareWrapperState extends State<NetworkAwareWrapper> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  Full-screen No Internet gate
-// ═══════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class NoInternetScreen extends StatefulWidget {
   const NoInternetScreen({super.key});
@@ -410,7 +410,7 @@ class _NoInternetScreenState extends State<NoInternetScreen>
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant,
+        color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
       ),
       child: Column(

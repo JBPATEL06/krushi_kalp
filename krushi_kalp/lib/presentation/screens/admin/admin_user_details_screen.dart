@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../data/services/admin_service.dart';
 import '../../widgets/common/network_error_state.dart';
 import 'admin_chat_detail_screen.dart';
@@ -506,7 +506,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                 subtitle: Text('${date.day}/${date.month}/${date.year}',
                     style: theme.textTheme.bodySmall),
                 trailing: Text(
-                  '₹$amount',
+                  'â‚¹$amount',
                   style: const TextStyle(
                       color: Color(0xFF10B981),
                       fontWeight: FontWeight.bold,

@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../data/services/auth_service.dart';
@@ -168,7 +168,7 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
                 return ActiveTestCard(
                   category: test.category,
                   title: test.title,
-                  subtitle: '${test.language} • ${test.durationMinutes} mins',
+                  subtitle: '${test.language} â€¢ ${test.durationMinutes} mins',
                   status:
                       isCompleted ? TestStatus.evaluated : TestStatus.newTest,
                   time: '${test.durationMinutes}m',

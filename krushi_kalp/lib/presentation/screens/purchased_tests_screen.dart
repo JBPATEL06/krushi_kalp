@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:provider/provider.dart';
 import '../../data/services/auth_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -90,14 +91,15 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
           slivers: [
             _buildSliverAppBar(context, theme),
             SliverToBoxAdapter(
-              child: _buildSearchAndFilterBar(theme),
+              child: _buildSearchAndFilterBar(context, theme), // FIXED: context
             ),
             if (_isLoading || (testProvider.isLoading && tests.isEmpty))
-              SliverToBoxAdapter(child: _buildSkeletonLoader(theme))
+              SliverToBoxAdapter(
+                  child: _buildSkeletonLoader(context, theme)) // FIXED: context
             else if (filteredTests.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
-                child: _buildEmptyState(theme),
+                child: _buildEmptyState(context, theme), // FIXED: context
               )
             else
               SliverPadding(
@@ -120,7 +122,7 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
                             startLabel: "Start",
                             isFullWidth: false,
                             userId: AuthService.instance.currentUser?.id,
-                            displayName: item.title, // CHANGED
+                            displayName: item.title,
                             onAction: () async {
                               if (item.contentUrl == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -175,12 +177,14 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
         style: theme.textTheme.titleLarge?.copyWith(
           color: theme.colorScheme.onSurface,
           fontWeight: FontWeight.bold,
+          fontSize: context.sp(20), // FIXED: context.sp(20)
         ),
       ),
     );
   }
 
-  Widget _buildSearchAndFilterBar(ThemeData theme) {
+  Widget _buildSearchAndFilterBar(BuildContext context, ThemeData theme) {
+    // FIXED: context
     return Padding(
       padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
@@ -190,14 +194,21 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
           // Search Bar
           TextField(
             controller: _searchController,
-            style: TextStyle(color: theme.colorScheme.onSurface),
+            style: TextStyle(
+              color: theme.colorScheme.onSurface,
+              fontSize: context.sp(14), // FIXED: context.sp(14)
+            ),
             decoration: InputDecoration(
               hintText: 'Search mock tests...',
-              hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-              prefixIcon:
-                  Icon(Icons.search, color: theme.colorScheme.onSurfaceVariant),
+              hintStyle: TextStyle(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontSize: context.sp(14), // FIXED: context.sp(14)
+              ),
+              prefixIcon: Icon(Icons.search,
+                  color: theme.colorScheme.onSurfaceVariant,
+                  size: context.sp(20)), // FIXED
               filled: true,
-              fillColor: theme.colorScheme.surfaceVariant,
+              fillColor: theme.colorScheme.surfaceContainerHighest,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                 borderSide: BorderSide.none,
@@ -212,11 +223,11 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildFilterChip('Newest', theme),
+                _buildFilterChip(context, 'Newest', theme), // FIXED: context
                 const SizedBox(width: AppSpacing.sm),
-                _buildFilterChip('Oldest', theme),
+                _buildFilterChip(context, 'Oldest', theme), // FIXED: context
                 const SizedBox(width: AppSpacing.sm),
-                _buildFilterChip('A-Z', theme),
+                _buildFilterChip(context, 'A-Z', theme), // FIXED: context
               ],
             ),
           ),
@@ -225,7 +236,8 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label, ThemeData theme) {
+  Widget _buildFilterChip(BuildContext context, String label, ThemeData theme) {
+    // FIXED: context
     final isSelected = _sortOption == label;
     return FilterChip(
       label: Text(label),
@@ -243,6 +255,7 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
             ? theme.colorScheme.primary
             : theme.colorScheme.onSurfaceVariant,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        fontSize: context.sp(13), // FIXED: context.sp(13)
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
@@ -255,14 +268,15 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
     );
   }
 
-  Widget _buildEmptyState(ThemeData theme) {
+  Widget _buildEmptyState(BuildContext context, ThemeData theme) {
+    // FIXED: context
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.search_off_rounded,
-            size: 64,
+            size: context.sp(64), // FIXED: context.sp(64)
             color: theme.colorScheme.outline,
           ),
           const SizedBox(height: AppSpacing.md),
@@ -272,6 +286,7 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
                 : 'No purchased tests yet.',
             style: theme.textTheme.bodyLarge?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
+              fontSize: context.sp(16), // FIXED: context.sp(16)
             ),
           ),
           if (_searchQuery.isEmpty) ...[
@@ -280,7 +295,8 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
               onPressed: () {
                 context.read<NavigationProvider>().setIndex(2); // Store
               },
-              child: const Text("Browse Store"),
+              child: Text("Browse Store",
+                  style: TextStyle(fontSize: context.sp(14))), // FIXED
             )
           ]
         ],
@@ -288,9 +304,10 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
     );
   }
 
-  Widget _buildSkeletonLoader(ThemeData theme) {
+  Widget _buildSkeletonLoader(BuildContext context, ThemeData theme) {
+    // FIXED: context
     return Shimmer.fromColors(
-      baseColor: theme.colorScheme.surfaceVariant,
+      baseColor: theme.colorScheme.surfaceContainerHighest,
       highlightColor: theme.colorScheme.surface,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -301,7 +318,7 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: Container(
                 width: double.infinity,
-                height: 120,
+                height: context.h(120), // FIXED
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -310,8 +327,8 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
                 child: Row(
                   children: [
                     Container(
-                      width: 80,
-                      height: 80,
+                      width: context.w(80), // FIXED
+                      height: context.h(80), // FIXED
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surface,
                         borderRadius:
@@ -325,15 +342,17 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                              height: 16, color: theme.colorScheme.surface),
-                          const SizedBox(height: 8),
+                              height: context.h(16),
+                              color: theme.colorScheme.surface), // FIXED
+                          const SizedBox(height: AppSpacing.xs),
                           Container(
-                              height: 14, color: theme.colorScheme.surface),
-                          const SizedBox(height: 12),
+                              height: context.h(14),
+                              color: theme.colorScheme.surface), // FIXED
+                          const SizedBox(height: AppSpacing.sm),
                           Container(
-                              width: 60,
-                              height: 12,
-                              color: theme.colorScheme.surface),
+                              width: context.w(60),
+                              height: context.h(12),
+                              color: theme.colorScheme.surface), // FIXED
                         ],
                       ),
                     ),

@@ -84,8 +84,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _handleMessageLongPress(
       BuildContext context, types.Message message) async {
-    if (message.author.id != _user.id)
+    if (message.author.id != _user.id) {
       return; // Only allow deleting own messages
+    }
 
     // Check time limit (2 minutes)
     final createdAt = message.createdAt;
@@ -148,7 +149,7 @@ class _ChatScreenState extends State<ChatScreen> {
         title: Row(
           children: [
             CircleAvatar(
-              backgroundColor: theme.colorScheme.surfaceVariant,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
               child:
                   Icon(Icons.support_agent, color: theme.colorScheme.primary),
             ),
@@ -219,7 +220,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             theme: DefaultChatTheme(
               primaryColor: theme.colorScheme.primary,
-              secondaryColor: theme.colorScheme.surfaceVariant,
+              secondaryColor: theme.colorScheme.surfaceContainerHighest,
               inputBackgroundColor: theme.colorScheme.surface,
               backgroundColor: theme.scaffoldBackgroundColor,
               receivedMessageBodyTextStyle:

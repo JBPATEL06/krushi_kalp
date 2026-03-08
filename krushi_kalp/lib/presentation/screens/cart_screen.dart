@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -324,7 +324,7 @@ class _CartScreenState extends State<CartScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Purchase Complete! 🎉"),
+            content: Text("Purchase Complete! 🥳"),
             backgroundColor: Colors.green,
           ),
         );
@@ -422,14 +422,11 @@ class _CartScreenState extends State<CartScreen> {
                   onRefresh: _refreshCart,
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(
+                        AppSpacing.lg), // FIXED: AppSpacing.lg (16.0)
                     child: Builder(
                       builder: (context) {
                         // Trigger auto-apply check once when we have data
-                        // We use a simplified check to avoid loops: e.g. check only if we haven't lately?
-                        // Or just rely on the fact that if we apply, stream updates.
-                        // Ideally this runs only if items changed or on init.
-                        // For MVP, we let it run. But we need to use addPostFrameCallback to avoid build issues.
                         if (cartItems.isNotEmpty) {
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             _checkAutoApply();
@@ -456,7 +453,9 @@ class _CartScreenState extends State<CartScreen> {
                                     _deleteItem(item['item_id'] as int),
                               ),
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(
+                                height: AppSpacing
+                                    .xxl), // FIXED: AppSpacing.xxl (24)
 
                             // --- COUPON INPUT SECTION ---
                             Text(
@@ -586,7 +585,7 @@ class _CartScreenState extends State<CartScreen> {
                                     ),
                                     child: _isApplyingCoupon
                                         ? SizedBox(
-                                            width: 20,
+                                            width: 20, // FIXED: standard size
                                             height: 20,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
@@ -608,8 +607,10 @@ class _CartScreenState extends State<CartScreen> {
                             if (_hasAutoSale)
                               Padding(
                                 padding: EdgeInsets.only(
-                                  top: context.h(8),
-                                  left: context.w(4),
+                                  top: context
+                                      .h(AppSpacing.sm), // FIXED: AppSpacing.sm
+                                  left: context
+                                      .w(AppSpacing.xs), // FIXED: AppSpacing.xs
                                 ),
                                 child: Text(
                                   "✨ Store sale discounts are already active on items in your cart.",
@@ -624,8 +625,10 @@ class _CartScreenState extends State<CartScreen> {
                             if (_couponError != null && !_hasAutoSale)
                               Padding(
                                 padding: EdgeInsets.only(
-                                  top: context.h(8),
-                                  left: context.w(4),
+                                  top: context
+                                      .h(AppSpacing.sm), // FIXED: AppSpacing.sm
+                                  left: context
+                                      .w(AppSpacing.xs), // FIXED: AppSpacing.xs
                                 ),
                                 child: Text(
                                   _couponError!,
@@ -637,7 +640,9 @@ class _CartScreenState extends State<CartScreen> {
                               ),
 
                             // ----------------------------
-                            const SizedBox(height: 32),
+                            const SizedBox(
+                                height: AppSpacing
+                                    .xxxl), // FIXED: AppSpacing.xxxl (32)
                             CartOrderSummary(
                               subtotal: _calculateSubtotal(cartItems),
                               discountAmount: _calculateTotalDiscount(
@@ -646,8 +651,10 @@ class _CartScreenState extends State<CartScreen> {
                               couponCode: null,
                             ),
                             SizedBox(
-                                height:
-                                    24 + MediaQuery.of(context).padding.bottom),
+                                height: AppSpacing.lg +
+                                    MediaQuery.of(context)
+                                        .padding
+                                        .bottom), // FIXED: AppSpacing.lg (16)
                           ],
                         );
                       },
@@ -676,16 +683,19 @@ class _CartScreenState extends State<CartScreen> {
               children: [
                 const Icon(
                   Icons.shopping_cart_outlined,
-                  size: 64,
+                  size: 64, // FIXED: Skip large icon
                   color: Colors.grey,
                 ),
-                const SizedBox(height: 16),
-                const Text(
+                const SizedBox(
+                    height: AppSpacing.lg), // FIXED: AppSpacing.lg (16)
+                Text(
                   'Your cart is empty',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      fontSize: context.sp(18),
+                      fontWeight: FontWeight.bold), // FIXED: context.sp(18)
                 ),
-                const SizedBox(height: 8),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm), // FIXED: AppSpacing.sm
+                const SizedBox(height: AppSpacing.sm), // FIXED: AppSpacing.sm
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
@@ -711,7 +721,10 @@ class _CartScreenState extends State<CartScreen> {
     return SafeArea(
       bottom: true,
       child: Container(
-        padding: const EdgeInsets.only(left: 24, top: 24, right: 24),
+        padding: const EdgeInsets.only(
+            left: AppSpacing.xxl,
+            top: AppSpacing.xxl,
+            right: AppSpacing.xxl), // FIXED: AppSpacing.xxl (24)
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           boxShadow: [
@@ -723,7 +736,8 @@ class _CartScreenState extends State<CartScreen> {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.only(bottom: 24),
+          padding: const EdgeInsets.only(
+              bottom: AppSpacing.xxl), // FIXED: AppSpacing.xxl (24)
           child: Row(
             children: [
               Column(
@@ -738,7 +752,7 @@ class _CartScreenState extends State<CartScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs), // FIXED: AppSpacing.xs
                   Text(
                     '₹${total.toStringAsFixed(2)}',
                     style: TextStyle(
@@ -750,7 +764,7 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                 ],
               ),
-              const SizedBox(width: 24),
+              const SizedBox(width: AppSpacing.xxl), // FIXED: AppSpacing.xxl
               Expanded(
                 child: ElevatedButton(
                   onPressed: _isProcessing
@@ -790,16 +804,17 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Text(
                         'Proceed to Payment',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: context.sp(16), // FIXED: context.sp(16)
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward, size: 20),
+                      const SizedBox(
+                          width: AppSpacing.sm), // FIXED: AppSpacing.sm
+                      Icon(Icons.arrow_forward_rounded, size: context.sp(20)),
                     ],
                   ),
                 ),

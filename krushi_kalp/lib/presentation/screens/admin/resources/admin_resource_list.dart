@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
+import 'package:krushi_kalp/core/theme/app_radius.dart';
 import '../../../../data/services/resource_service.dart';
 import '../../../../domain/models/resource.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -111,7 +112,8 @@ class _AdminResourceListState extends State<AdminResourceList> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.error_outline_rounded,
-                        color: colorScheme.error, size: 48),
+                        color: colorScheme.error,
+                        size: context.sp(48)), // FIXED
                     const SizedBox(height: AppSpacing.md),
                     Text('Something went wrong. Please try again.',
                         style: theme.textTheme.bodySmall),
@@ -163,14 +165,14 @@ class _AdminResourceListState extends State<AdminResourceList> {
           decoration: BoxDecoration(
             border: Border(
                 bottom: BorderSide(
-                    color: colorScheme.outlineVariant.withOpacity(0.5))),
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5))),
           ),
           child: Row(
             children: [
               // Thumbnail/Icon
               Container(
-                width: 48,
-                height: 48,
+                width: context.sp(48), // FIXED
+                height: context.sp(48), // FIXED
                 decoration: BoxDecoration(
                   color: colorScheme.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
@@ -183,13 +185,13 @@ class _AdminResourceListState extends State<AdminResourceList> {
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Icon(
                               Icons.image_not_supported_rounded,
-                              size: 20,
+                              size: context.sp(20), // FIXED
                               color: colorScheme.onSurfaceVariant
-                                  .withOpacity(0.5)),
+                                  .withValues(alpha: 0.5)),
                         ),
                       )
                     : Icon(Icons.insert_drive_file_rounded,
-                        size: 24,
+                        size: context.sp(24), // FIXED
                         color: colorScheme.onSurfaceVariant
                             .withValues(alpha: 0.5)),
               ),
@@ -201,8 +203,9 @@ class _AdminResourceListState extends State<AdminResourceList> {
                   children: [
                     Text(
                       item.title,
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: context.sp(14)), // FIXED
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -215,7 +218,7 @@ class _AdminResourceListState extends State<AdminResourceList> {
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: colorScheme.primary,
                               fontWeight: FontWeight.w900,
-                              fontSize: 9,
+                              fontSize: context.sp(9), // FIXED
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -236,6 +239,7 @@ class _AdminResourceListState extends State<AdminResourceList> {
                                 : colorScheme.onSurfaceVariant
                                     .withValues(alpha: 0.5),
                             fontWeight: FontWeight.bold,
+                            fontSize: context.sp(10), // FIXED
                           ),
                         ),
                       ],
@@ -299,12 +303,14 @@ class _AdminResourceListState extends State<AdminResourceList> {
         onTap: onPressed,
         borderRadius: BorderRadius.circular(8),
         child: Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(context.sp(8)), // FIXED
           decoration: BoxDecoration(
             color: (color ?? colorScheme.primary).withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm), // FIXED
           ),
-          child: Icon(icon, color: color ?? colorScheme.primary, size: 18),
+          child: Icon(icon,
+              color: color ?? colorScheme.primary,
+              size: context.sp(18)), // FIXED
         ),
       ),
     );
@@ -317,10 +323,13 @@ class _AdminResourceListState extends State<AdminResourceList> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.inventory_2_outlined,
-              size: 64, color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+              size: context.sp(64), // FIXED
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3)),
           const SizedBox(height: AppSpacing.md),
           Text('No items found. Add one!',
-              style: TextStyle(color: colorScheme.onSurfaceVariant)),
+              style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: context.sp(14))), // FIXED
         ],
       ),
     );

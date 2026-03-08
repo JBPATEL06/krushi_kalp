@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../../domain/models/resource.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -102,7 +102,7 @@ class StoreCurrentAffairsList extends StatelessWidget {
                     if (!purchasedIds.contains(item.id)) ...[
                       if (item.mrp != null && item.mrp! > item.price)
                         Text(
-                          '₹${item.mrp!.toStringAsFixed(0)}',
+                          'â‚¹${item.mrp!.toStringAsFixed(0)}',
                           style: TextStyle(
                             decoration: TextDecoration.lineThrough,
                             color: theme.colorScheme.onSurfaceVariant,
@@ -112,7 +112,7 @@ class StoreCurrentAffairsList extends StatelessWidget {
                       Text(
                         item.price <= 0
                             ? 'Free'
-                            : '₹${item.price.toStringAsFixed(0)}',
+                            : 'â‚¹${item.price.toStringAsFixed(0)}',
                         style: TextStyle(
                           color: item.price <= 0
                               ? theme.colorScheme.primary

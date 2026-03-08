@@ -1,5 +1,4 @@
-import 'package:flutter/foundation.dart';
-import '../domain/models/offer.dart';
+﻿import '../domain/models/offer.dart';
 
 class PriceCalculator {
   /// Calculates the display MRP (High Price) and Final Selling Price.

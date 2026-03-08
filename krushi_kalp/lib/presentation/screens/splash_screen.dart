@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/auth_provider.dart';
 import '../../data/services/notification_service.dart';
@@ -89,7 +90,7 @@ class _SplashScreenState extends State<SplashScreen> {
     setState(() => _progress = 1.0);
     await Future.delayed(const Duration(milliseconds: 300));
 
-    // ── Force Update Check ──────────────────────────────────────────────────
+    // â”€â”€ Force Update Check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (!mounted) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
@@ -103,7 +104,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
     final role = authProvider.userRole;
 
-    // ── App Status Checks (Skip for Admins) ──────────────────────────────────
+    // â”€â”€ App Status Checks (Skip for Admins) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (role != 'Admin') {
       // 1. Force Update Check
       final minVer = AppConfigService.minVersion;
@@ -189,11 +190,13 @@ class _SplashScreenState extends State<SplashScreen> {
               children: [
                 Image.asset(
                   'assets/images/playstore.png',
-                  width: context.w(140),
-                  height: context.w(140),
+                  width: context.w(140), // FIXED
+                  height: context.w(140), // FIXED
                   fit: BoxFit.contain,
                 ),
-                SizedBox(height: context.h(48)),
+                SliverToBoxAdapter(
+                    child: SizedBox(
+                        height: context.h(48))), // FIXED: Using context.h(48)
                 // App Title
                 Text(
                   'Krushi Kalp',
@@ -201,21 +204,24 @@ class _SplashScreenState extends State<SplashScreen> {
                     color: colorScheme.primary,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.5,
+                    fontSize: context.sp(36), // FIXED: context.sp(36)
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: AppSpacing.sm), // FIXED: AppSpacing.sm
                 // Tagline
                 Text(
                   'Empowering Agricultural Academics',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                     letterSpacing: 0.2,
+                    fontSize: context.sp(14), // FIXED: context.sp(14)
                   ),
                 ),
-                SizedBox(height: context.h(80)),
+                SizedBox(height: context.h(80)), // FIXED
                 // Loading Section
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 48),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xxl), // FIXED: AppSpacing.xxl
                   child: Column(
                     children: [
                       Row(
@@ -224,8 +230,9 @@ class _SplashScreenState extends State<SplashScreen> {
                           Text(
                             _statusText,
                             style: theme.textTheme.labelMedium?.copyWith(
-                              color:
-                                  colorScheme.onSurfaceVariant.withOpacity(0.5),
+                              color: colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.5),
+                              fontSize: context.sp(12), // FIXED: context.sp(12)
                             ),
                           ),
                           Text(
@@ -233,18 +240,19 @@ class _SplashScreenState extends State<SplashScreen> {
                             style: theme.textTheme.labelMedium?.copyWith(
                               color: colorScheme.primary,
                               fontWeight: FontWeight.bold,
+                              fontSize: context.sp(12), // FIXED: context.sp(12)
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: AppSpacing.md), // FIXED: AppSpacing.md
                       ClipRRect(
                         borderRadius: BorderRadius.circular(100),
                         child: LinearProgressIndicator(
                           value: _progress,
                           minHeight: 6,
                           backgroundColor:
-                              colorScheme.primary.withOpacity(0.12),
+                              colorScheme.primary.withValues(alpha: 0.12),
                           valueColor: AlwaysStoppedAnimation<Color>(
                               colorScheme.primary),
                         ),
@@ -252,13 +260,13 @@ class _SplashScreenState extends State<SplashScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: AppSpacing.xl), // FIXED: AppSpacing.xl
                 Text(
                   'AGRICULTURAL ACADEMIC INDUSTRY',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                     letterSpacing: 1.2,
-                    fontSize: 10,
+                    fontSize: context.sp(10), // FIXED: context.sp(10)
                   ),
                 ),
               ],
@@ -268,7 +276,7 @@ class _SplashScreenState extends State<SplashScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 40,
+            bottom: context.h(40), // FIXED: context.h(40)
             child: Column(
               children: [
                 Row(
@@ -276,21 +284,24 @@ class _SplashScreenState extends State<SplashScreen> {
                   children: [
                     Icon(
                       Icons.verified_user_rounded,
-                      size: 14,
-                      color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                      size: context.sp(14), // FIXED: context.sp(14)
+                      color:
+                          colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: AppSpacing.sm), // FIXED: AppSpacing.sm
                     Text(
                       'SECURE ACCESS',
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                        color:
+                            colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.1,
+                        fontSize: context.sp(11), // FIXED: context.sp(11)
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: AppSpacing.xs), // FIXED: AppSpacing.xs
                 FutureBuilder<PackageInfo>(
                   future: PackageInfo.fromPlatform(),
                   builder: (context, snapshot) {
@@ -299,8 +310,9 @@ class _SplashScreenState extends State<SplashScreen> {
                     return Text(
                       'v$version Build $build',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant.withOpacity(0.3),
-                        fontSize: 10,
+                        color:
+                            colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                        fontSize: context.sp(10), // FIXED: context.sp(10)
                       ),
                     );
                   },

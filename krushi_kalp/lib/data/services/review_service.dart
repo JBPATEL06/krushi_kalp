@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/review.dart';
 
@@ -131,7 +130,7 @@ class ReviewService {
   }
 
   /// Fetch rating stats for multiple items in a single DB round-trip.
-  /// Returns a map of itemId → {'average': double, 'count': int}
+  /// Returns a map of itemId â†’ {'average': double, 'count': int}
   static Future<Map<int, Map<String, dynamic>>> getBulkRatingStats(
     List<int> itemIds,
     String itemType,
@@ -232,7 +231,7 @@ class ReviewService {
           .eq('id', reviewId);
     } catch (e) {
       
-      throw e;
+      rethrow;
     }
   }
 }

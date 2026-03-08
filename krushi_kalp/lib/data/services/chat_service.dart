@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/message.dart';
 import 'auth_service.dart';
@@ -30,9 +29,7 @@ class ChatService {
 
   bool _isRealtimeConnected = false;
 
-  ChatService._internal() {
-    
-  }
+  ChatService._internal();
 
   // ==========================================
   //         ADMIN: CONVERSATION LIST

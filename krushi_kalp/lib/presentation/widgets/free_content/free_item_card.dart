@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
@@ -41,7 +41,7 @@ class FreeItemCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.lg),
         side: BorderSide(
-          color: theme.colorScheme.outline.withOpacity(isDark ? 0.15 : 0.3),
+          color: theme.colorScheme.outline.withValues(alpha: isDark ? 0.15 : 0.3),
         ),
       ),
       color: theme.colorScheme.surface,
@@ -52,7 +52,7 @@ class FreeItemCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── IMAGE PANE (40% roughly) ──
+              // â”€â”€ IMAGE PANE (40% roughly) â”€â”€
               SizedBox(
                 width: context.w(110),
                 child: Hero(
@@ -77,7 +77,7 @@ class FreeItemCard extends StatelessWidget {
                 ),
               ),
 
-              // ── CONTENT PANE (60%) ──
+              // â”€â”€ CONTENT PANE (60%) â”€â”€
               Expanded(
                 child: Padding(
                   padding: EdgeInsets.all(AppSpacing.md),
@@ -137,7 +137,7 @@ class FreeItemCard extends StatelessWidget {
                           onPressed: isPurchased ? onTap : onActionTap,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: isPurchased
-                                ? theme.colorScheme.surfaceVariant
+                                ? theme.colorScheme.surfaceContainerHighest
                                 : theme.colorScheme.tertiary,
                             foregroundColor: isPurchased
                                 ? theme.colorScheme.onSurfaceVariant
@@ -174,7 +174,7 @@ class FreeItemCard extends StatelessWidget {
         imageUrl: coverUrl!,
         fit: BoxFit.cover,
         placeholder: (_, __) => Container(
-          color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           child: const Center(
             child: SizedBox(
               width: 20,
@@ -191,11 +191,11 @@ class FreeItemCard extends StatelessWidget {
 
   Widget _placeholder(ThemeData theme) {
     return Container(
-      color: theme.colorScheme.primary.withOpacity(0.05),
+      color: theme.colorScheme.primary.withValues(alpha: 0.05),
       child: Center(
         child: Icon(
           Icons.school_outlined,
-          color: theme.colorScheme.primary.withOpacity(0.2),
+          color: theme.colorScheme.primary.withValues(alpha: 0.2),
           size: 32,
         ),
       ),
@@ -211,7 +211,7 @@ class FreeItemCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.sm),
         boxShadow: [
           BoxShadow(
-            color: bg.withOpacity(0.3),
+            color: bg.withValues(alpha: 0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

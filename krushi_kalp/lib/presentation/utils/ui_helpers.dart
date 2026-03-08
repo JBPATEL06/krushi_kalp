@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 /// Wraps form content in a standardized "Premium Card"
 Widget buildFormCard(BuildContext context,
@@ -138,7 +138,7 @@ InputDecoration getPremiumInputDecoration(
     suffixIcon: suffixIcon,
     filled: true,
     fillColor:
-        Theme.of(context).colorScheme.surfaceVariant.withValues(alpha: 0.3),
+        Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
     labelStyle: TextStyle(
         color: Theme.of(context).colorScheme.onSurfaceVariant,

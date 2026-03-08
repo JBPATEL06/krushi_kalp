@@ -46,3 +46,9 @@ app.*.map.json
 
 # Environment Variables
 *.env
+
+# Audit & Analysis Reports
+analyze_output.txt
+analyze_errors.txt
+analyze_warnings.txt
+audit_*.txt

@@ -1,7 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:krushi_kalp/presentation/widgets/common/responsive_wrapper.dart'; // FIXED
 import '../../data/services/auth_service.dart';
 import '../../utils/error_utils.dart';
+import '../../core/theme/app_spacing.dart'; // FIXED
+import '../../core/theme/app_radius.dart'; // FIXED
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic> profile;
@@ -68,11 +71,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('You are changing your phone number to: +91 $phone'),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md), // FIXED: AppSpacing.md
               Text(
                 'Note: This number will be used for all future payments and pre-filled in Razorpay. Please ensure it is a valid and active number.',
                 style: TextStyle(
-                    fontSize: 13, color: theme.colorScheme.onSurfaceVariant),
+                    fontSize: context.sp(13),
+                    color: theme
+                        .colorScheme.onSurfaceVariant), // FIXED: context.sp(13)
               ),
             ],
           ),
@@ -126,67 +131,88 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Profile'),
+        title: Text('Edit Profile',
+            style:
+                TextStyle(fontSize: context.sp(18))), // FIXED: context.sp(18)
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _save,
             child: _isSaving
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2))
+                ? SizedBox(
+                    width: context.w(20), // FIXED: context.w(20)
+                    height: context.h(20), // FIXED: context.h(20)
+                    child: const CircularProgressIndicator(strokeWidth: 2))
                 : Text('Save',
                     style: TextStyle(
                         color: primary,
                         fontWeight: FontWeight.bold,
-                        fontSize: 16)),
+                        fontSize: context.sp(16))), // FIXED: context.sp(16)
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg + MediaQuery.of(context).padding.bottom, // FIXED
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Display Name
             Text('Display Name',
                 style: TextStyle(
-                    fontSize: 13,
+                    fontSize: context.sp(13), // FIXED: context.sp(13)
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm), // FIXED: AppSpacing.sm
             TextField(
               controller: _usernameController,
               textCapitalization: TextCapitalization.words,
+              style:
+                  TextStyle(fontSize: context.sp(16)), // FIXED: context.sp(16)
               decoration: InputDecoration(
                 hintText: 'Enter your name',
-                prefixIcon: const Icon(Icons.person_outline),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                prefixIcon: Icon(Icons.person_outline,
+                    size: context.sp(22)), // FIXED: context.sp(22)
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                        AppRadius.md)), // FIXED: AppRadius.md
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl), // FIXED: AppSpacing.xl
 
             // Language Option
             Text('App Language',
                 style: TextStyle(
-                    fontSize: 13,
+                    fontSize: context.sp(13), // FIXED: context.sp(13)
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm), // FIXED: AppSpacing.sm
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md), // FIXED: AppSpacing.md
               decoration: BoxDecoration(
                 border: Border.all(color: theme.colorScheme.outline),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius:
+                    BorderRadius.circular(AppRadius.md), // FIXED: AppRadius.md
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _selectedLanguage,
                   isExpanded: true,
-                  items: const [
-                    DropdownMenuItem(value: 'en', child: Text('English')),
-                    DropdownMenuItem(value: 'gu', child: Text('Gujarati')),
+                  items: [
+                    DropdownMenuItem(
+                        value: 'en',
+                        child: Text('English',
+                            style:
+                                TextStyle(fontSize: context.sp(16)))), // FIXED
+                    DropdownMenuItem(
+                        value: 'gu',
+                        child: Text('Gujarati',
+                            style:
+                                TextStyle(fontSize: context.sp(16)))), // FIXED
                   ],
                   onChanged: (val) {
                     if (val != null) {
@@ -196,34 +222,40 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl), // FIXED: AppSpacing.xl
 
             // Phone Number
             Text('Phone Number',
                 style: TextStyle(
-                    fontSize: 13,
+                    fontSize: context.sp(13), // FIXED: context.sp(13)
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm), // FIXED: AppSpacing.sm
             TextField(
               controller: _phoneController,
               keyboardType: TextInputType.phone,
               maxLength: 10,
+              style:
+                  TextStyle(fontSize: context.sp(16)), // FIXED: context.sp(16)
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: InputDecoration(
                 hintText: '10-digit mobile number',
-                prefixIcon: const Icon(Icons.phone_outlined),
+                prefixIcon: Icon(Icons.phone_outlined,
+                    size: context.sp(22)), // FIXED: context.sp(22)
                 prefixText: '+91  ',
                 counterText: '',
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(
+                        AppRadius.md)), // FIXED: AppRadius.md
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm), // FIXED: AppSpacing.sm
             Text(
               'Your number will be used to prefill Razorpay during checkout.',
               style: TextStyle(
-                  fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                  fontSize: context.sp(12),
+                  color: theme
+                      .colorScheme.onSurfaceVariant), // FIXED: context.sp(12)
             ),
           ],
         ),

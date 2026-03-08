@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../data/services/download_service.dart';
 import '../../../core/theme/app_spacing.dart';
 
@@ -162,7 +162,7 @@ class _DownloadProgressDialogState extends State<DownloadProgressDialog> {
                   child: LinearProgressIndicator(
                     value: _progress / 100,
                     minHeight: 8,
-                    backgroundColor: theme.colorScheme.surfaceVariant,
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
                     valueColor: AlwaysStoppedAnimation<Color>(
                         theme.colorScheme.primary),
                   ),

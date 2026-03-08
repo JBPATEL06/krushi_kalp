@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:krushi_kalp/data/services/admin_service.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
@@ -65,10 +66,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: color, size: 36),
+                child: Icon(icon,
+                    color: color,
+                    size: context.sp(36)), // FIXED: context.sp(36)
               ),
               const SizedBox(height: AppSpacing.md),
               Text(
@@ -92,10 +95,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       body: RefreshIndicator(
         onRefresh: _onRefresh,
-        displacement: 20,
+        displacement: context.h(20), // FIXED: context.h(20)
         color: colorScheme.primary,
         backgroundColor: colorScheme.surface,
         child: LayoutBuilder(builder: (context, constraints) {
@@ -220,13 +223,15 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4.0),
+      padding:
+          const EdgeInsets.only(bottom: AppSpacing.xs), // FIXED: AppSpacing.xs
       child: Text(
         title,
         style: theme.textTheme.titleSmall?.copyWith(
           fontWeight: FontWeight.w800,
           color: colorScheme.onSurfaceVariant,
           letterSpacing: 1.2,
+          fontSize: context.sp(12), // FIXED: context.sp(12)
         ),
       ),
     );
@@ -255,23 +260,25 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     final colorScheme = theme.colorScheme;
 
     // Calculate dynamic height based on orientation and screen size
-    final listHeight = width > 1024 ? 300.0 : 260.0;
+    final listHeight =
+        width > 1024 ? context.h(300.0) : context.h(260.0); // FIXED
     final itemWidth = width > 1024 ? width * 0.2 : width * 0.45;
 
     if (tests.isEmpty) {
       return ModernCard(
-        height: 150,
+        height: context.h(150), // FIXED
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.bar_chart_rounded,
-                  size: 40,
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+                  size: context.sp(40), // FIXED
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3)),
               const SizedBox(height: AppSpacing.sm),
               Text('No data yet',
                   style: TextStyle(
-                      color: colorScheme.onSurfaceVariant.withOpacity(0.5))),
+                      color:
+                          colorScheme.onSurfaceVariant.withValues(alpha: 0.5))),
             ],
           ),
         ),
@@ -291,10 +298,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             decoration: BoxDecoration(
               color: colorScheme.surface,
               borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: colorScheme.outline.withOpacity(0.05)),
+              border: Border.all(
+                  color: colorScheme.outline.withValues(alpha: 0.05)),
               boxShadow: [
                 BoxShadow(
-                  color: colorScheme.shadow.withOpacity(0.03),
+                  color: colorScheme.shadow.withValues(alpha: 0.03),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -315,22 +323,23 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                             width: double.infinity,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
-                                color:
-                                    colorScheme.surfaceVariant.withOpacity(0.5),
+                                color: colorScheme.surfaceContainerHighest
+                                    .withValues(alpha: 0.5),
                                 child: Center(
                                   child: Icon(Icons.broken_image_rounded,
                                       color: colorScheme.onSurfaceVariant
-                                          .withOpacity(0.3)),
+                                          .withValues(alpha: 0.3)),
                                 ),
                               );
                             },
                           )
                         : Container(
-                            color: colorScheme.primary.withOpacity(0.05),
+                            color: colorScheme.primary.withValues(alpha: 0.05),
                             child: Center(
                               child: Icon(Icons.book_rounded,
-                                  color: colorScheme.primary.withOpacity(0.3),
-                                  size: 40),
+                                  color: colorScheme.primary
+                                      .withValues(alpha: 0.3),
+                                  size: context.sp(40)), // FIXED
                             ),
                           ),
                   ),
@@ -358,6 +367,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: colorScheme.primary,
                                 fontWeight: FontWeight.bold,
+                                fontSize: context.sp(11), // FIXED
                               ),
                             ),
                             Text(
@@ -365,6 +375,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.bold,
+                                fontSize: context.sp(11), // FIXED
                               ),
                             ),
                           ],
@@ -417,23 +428,27 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             contentPadding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md, vertical: AppSpacing.xs),
             leading: CircleAvatar(
-              radius: 20,
-              backgroundColor: colorScheme.primary.withOpacity(0.1),
+              radius: context.sp(20), // FIXED
+              backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
               child: Text(
                 firstChar,
                 style: TextStyle(
-                    color: colorScheme.primary, fontWeight: FontWeight.bold),
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: context.sp(14)), // FIXED
               ),
             ),
             title: Text(
               user['username'],
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.sp(14)), // FIXED
             ),
             subtitle: Text(
               '${user['testsTaken']} Tests Attempted',
-              style: theme.textTheme.labelSmall
-                  ?.copyWith(color: colorScheme.onSurfaceVariant),
+              style: theme.textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: context.sp(11)), // FIXED
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
@@ -444,11 +459,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     fontWeight: FontWeight.w900,
                     color: colorScheme.primary,
                     fontFamily: 'Inter',
+                    fontSize: context.sp(16), // FIXED
                   ),
                 ),
                 const SizedBox(width: AppSpacing.xs),
-                const Icon(Icons.emoji_events_rounded,
-                    size: 18, color: Color(0xFFF59E0B)),
+                Icon(Icons.emoji_events_rounded,
+                    size: context.sp(18),
+                    color: const Color(0xFFF59E0B)), // FIXED
               ],
             ),
           ),
@@ -469,19 +486,23 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.insights_rounded,
-                      size: 48, color: colorScheme.primary.withOpacity(0.2)),
+                      size: context.sp(48),
+                      color:
+                          colorScheme.primary.withValues(alpha: 0.2)), // FIXED
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     'User Performance Metrics',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: context.sp(16)), // FIXED
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
                     'Showing top 5 users based on accuracy and test volume across the platform.',
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: context.sp(12)), // FIXED
                   ),
                 ],
               ),
@@ -500,10 +521,10 @@ class _LoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(AppSpacing.xl),
-        child: CircularProgressIndicator(strokeWidth: 2.5),
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: CircularProgressIndicator(strokeWidth: context.w(2.5)), // FIXED
       ),
     );
   }

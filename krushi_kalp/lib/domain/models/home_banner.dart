@@ -1,4 +1,4 @@
-class HomeBanner {
+﻿class HomeBanner {
   final int id;
   final String title;
   final String imageUrl;

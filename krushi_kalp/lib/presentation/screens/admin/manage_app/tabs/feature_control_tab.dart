@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:krushi_kalp/utils/responsive.dart';
+import 'package:krushi_kalp/core/theme/app_radius.dart';
 import '../../../../../data/services/app_config_service.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import '../../../../utils/ui_helpers.dart';
-import '../../../../../utils/error_utils.dart';
 
 class FeatureControlTab extends StatefulWidget {
   const FeatureControlTab({super.key});
@@ -47,13 +48,15 @@ class _FeatureControlTabState extends State<FeatureControlTab> {
         'show_reviews': _showReviews,
         'allow_writing': _allowWriting,
       });
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Review settings updated")));
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
     }
   }
 
@@ -71,13 +74,15 @@ class _FeatureControlTabState extends State<FeatureControlTab> {
             ? null
             : _minVersionController.text.trim(),
       });
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text("App Status updated")));
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
     }
   }
 
@@ -175,9 +180,9 @@ class _FeatureControlTabState extends State<FeatureControlTab> {
                 icon: const Icon(Icons.save_rounded),
                 label: const Text("Save Version & Status"),
                 style: FilledButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 54),
+                  minimumSize: Size(double.infinity, context.h(54)), // FIXED
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md), // FIXED
                   ),
                 ),
               ),
@@ -199,6 +204,7 @@ class _FeatureControlTabState extends State<FeatureControlTab> {
           fontWeight: FontWeight.w800,
           color: colorScheme.onSurfaceVariant,
           letterSpacing: 1.2,
+          fontSize: context.sp(12), // FIXED
         ),
       ),
     );
@@ -223,12 +229,13 @@ class _FeatureControlTabState extends State<FeatureControlTab> {
       ),
       child: SwitchListTile(
         secondary: Container(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(context.sp(12)), // FIXED
           decoration: BoxDecoration(
             color: colorScheme.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md), // FIXED
           ),
-          child: Icon(icon, color: colorScheme.primary, size: 24),
+          child: Icon(icon,
+              color: colorScheme.primary, size: context.sp(24)), // FIXED
         ),
         title: Text(
           title,
