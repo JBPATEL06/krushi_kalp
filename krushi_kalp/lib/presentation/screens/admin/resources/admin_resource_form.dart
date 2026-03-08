@@ -6,6 +6,7 @@ import '../../../../data/services/admin_notification_service.dart';
 import '../../../../domain/models/resource.dart';
 import '../../../utils/ui_helpers.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
+import '../../../../utils/supabase_url_helper.dart';
 
 class AdminResourceForm extends StatefulWidget {
   final ResourceType type;
@@ -269,7 +270,26 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
                 thumbnail: (_coverBytes != null)
                     ? Image.memory(_coverBytes!, fit: BoxFit.cover)
                     : (_existingCoverUrl != null)
-                        ? Image.network(_existingCoverUrl!, fit: BoxFit.cover)
+                        ? FutureBuilder<String>(
+                            future: SupabaseUrlHelper.getFreshSignedUrl(
+                              bucketName: 'mock_test',
+                              storagePath: _existingCoverUrl!,
+                            ),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData &&
+                                  snapshot.data!.isNotEmpty) {
+                                return Image.network(
+                                  snapshot.data!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(Icons.broken_image_outlined),
+                                );
+                              }
+                              return const Center(
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2));
+                            },
+                          )
                         : null,
               ),
               const SizedBox(height: AppSpacing.lg),

@@ -71,22 +71,17 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuthAndNavigate() async {
-    debugPrint("Splash: Starting checks...");
-
     // Run config fetch + notification init in parallel
     await Future.wait([
       AppConfigService.fetchConfigs().catchError((e) {
-        debugPrint("Splash: Config fetch error (non-fatal): $e");
         return null;
       }),
       NotificationService().initialize().catchError((e) {
-        debugPrint("Splash: Notification init error (non-fatal): $e");
         return null;
       }),
     ]).timeout(
       const Duration(seconds: 5),
       onTimeout: () {
-        debugPrint("Splash: Parallel init timed out — proceeding anyway.");
         return [];
       },
     );
@@ -94,10 +89,23 @@ class _SplashScreenState extends State<SplashScreen> {
     setState(() => _progress = 1.0);
     await Future.delayed(const Duration(milliseconds: 300));
 
-    debugPrint("Splash: Parallel init done.");
-
     // ── Force Update Check ──────────────────────────────────────────────────
-    if (mounted) {
+    if (!mounted) return;
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    int attempts = 0;
+    while (!authProvider.isAuthCheckComplete && attempts < 10) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      attempts++;
+      if (_disposed) return;
+    }
+
+    if (!mounted) return;
+    final role = authProvider.userRole;
+
+    // ── App Status Checks (Skip for Admins) ──────────────────────────────────
+    if (role != 'Admin') {
+      // 1. Force Update Check
       final minVer = AppConfigService.minVersion;
       if (minVer != null && minVer.isNotEmpty) {
         final info = await PackageInfo.fromPlatform();
@@ -117,24 +125,9 @@ class _SplashScreenState extends State<SplashScreen> {
           return;
         }
       }
-    }
 
-    if (!mounted) return;
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    int attempts = 0;
-    while (!authProvider.isAuthCheckComplete && attempts < 10) {
-      await Future.delayed(const Duration(milliseconds: 200));
-      attempts++;
-      if (_disposed) return;
-    }
-
-    if (!mounted) return;
-
-    // Final navigation
-    if (authProvider.isLoggedIn) {
-      final role = authProvider.userRole;
-      if (AppConfigService.isMaintenanceMode && role != 'Admin') {
+      // 2. Maintenance Check
+      if (AppConfigService.isMaintenanceMode) {
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -151,7 +144,10 @@ class _SplashScreenState extends State<SplashScreen> {
         }
         return;
       }
+    }
 
+    // Final navigation
+    if (authProvider.isLoggedIn) {
       if (role != 'Admin') {
         NotificationService().connectUser();
         if (mounted && !_disposed) {
@@ -191,26 +187,11 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo Container with Soft Shadow
-                Container(
-                  width: context.w(150),
-                  height: context.w(150),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.primary.withOpacity(0.08),
-                        blurRadius: 40,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
-                  ),
-                  child: Image.asset(
-                    'assets/images/playstore.png',
-                    fit: BoxFit.contain,
-                  ),
+                Image.asset(
+                  'assets/images/playstore.png',
+                  width: context.w(140),
+                  height: context.w(140),
+                  fit: BoxFit.contain,
                 ),
                 SizedBox(height: context.h(48)),
                 // App Title

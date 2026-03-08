@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_spacing.dart';
+import '../widgets/common/responsive_wrapper.dart';
 
 class MaintenanceScreen extends StatelessWidget {
   final String? error;
@@ -12,59 +14,82 @@ class MaintenanceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.xxl),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.cloud_off,
-                size: 80,
-                color: Colors.redAccent,
+              // Engineering/Construction Icon
+              Container(
+                width: context.w(120),
+                height: context.w(120),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.engineering_rounded,
+                  size: 64,
+                  color: colorScheme.primary,
+                ),
               ),
-              const SizedBox(height: 24),
-              const Text(
-                'Connection Error',
-                style: TextStyle(
-                  fontSize: 24,
+              const SizedBox(height: AppSpacing.xl),
+
+              // Title
+              Text(
+                'Under Maintenance',
+                style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
                 ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'We could not connect to the server. Please check your internet connection or try again later.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
               ),
-              if (error != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: Text(
-                    'Error: $error',
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
+              const SizedBox(height: AppSpacing.md),
+
+              // Message
+              Text(
+                error ??
+                    'We are currently performing scheduled maintenance to improve our services. Please check back soon.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+
+              // Retry Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: onRetry,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Check Again'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                     ),
-                    textAlign: TextAlign.center,
                   ),
                 ),
-              ],
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Try Again'),
-                style: ElevatedButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // Back to Login (Safety exit)
+              TextButton(
+                onPressed: () =>
+                    Navigator.of(context).popUntil((route) => route.isFirst),
+                child: Text(
+                  'Back to Start',
+                  style: TextStyle(color: colorScheme.primary),
                 ),
               ),
             ],

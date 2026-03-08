@@ -18,6 +18,7 @@ import 'cart/widgets/cart_item_widget.dart';
 import 'cart/widgets/cart_order_summary.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/cart_provider.dart';
+import '../../utils/supabase_url_helper.dart'; // Ensure correct URL construction
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -34,9 +35,10 @@ class _CartScreenState extends State<CartScreen> {
   // --- Coupon Logic ---
   final TextEditingController _couponController = TextEditingController();
   bool _isApplyingCoupon = false;
+  bool _isProcessing = false; // PRO FIX: Synchronization Gate
   String? _couponError;
   Offer? _appliedGlobalOffer;
-  bool _isProcessing = false; // PRO FIX: Synchronization Gate
+  bool _hasAutoSale = false; // NEW FLAG
 
   @override
   void initState() {
@@ -109,18 +111,13 @@ class _CartScreenState extends State<CartScreen> {
               }
 
               if (path != null && !path.startsWith('http')) {
-                // Only sign if we know it's a mock test storage path for now
-                if (mockTest != null) {
-                  path = path.replaceAll('mock_test/', '');
-                  try {
-                    imageUrl = await TestService.instance.getSignedUrl(
-                      path,
-                      'mock_test',
-                    );
-                  } catch (e) {
-                    // ignore error
-                  }
-                } else {
+                try {
+                  imageUrl = await SupabaseUrlHelper.getFreshSignedUrl(
+                    bucketName: 'mock_test',
+                    storagePath: path,
+                  );
+                } catch (e) {
+                  debugPrint('CartScreen: Failed to sign url ($path): $e');
                   imageUrl = path;
                 }
               } else {
@@ -130,6 +127,8 @@ class _CartScreenState extends State<CartScreen> {
               // --- Calculate Automatic Sale Price ---
               final priceData = PriceCalculator.calculateDisplayPrice(
                 basePrice: originalPrice,
+                baseMrp: (item.resource?.mrp ?? item.mockTest?.mrp)
+                    ?.toDouble(), // Fetch original MRP
                 activeOffers: saleOffers,
                 testId: item.testId,
                 resourceId: item.resourceId,
@@ -138,6 +137,7 @@ class _CartScreenState extends State<CartScreen> {
 
               final double finalPrice = priceData['finalPrice'];
               final double mrp = priceData['mrp'];
+              final Offer? appliedSale = priceData['offer'];
               // --------------------------------------
 
               return {
@@ -153,18 +153,29 @@ class _CartScreenState extends State<CartScreen> {
                 'image_url': imageUrl,
                 'color': Colors.blue[50], // Placeholder color
                 'offers': item.offers,
+                'appliedSale': appliedSale, // Store to detect later
               };
             }),
           );
-
           _processGlobalOffer(cartItems);
-          // _processMrpDisplay(cartItems); // REMOVED: Handled inline
+
+          // Check if ANY item has an auto sale applied
+          _hasAutoSale = cartItems.any((item) => item['appliedSale'] != null);
+
+          // If a sale is active, force strip any coupon just in case
+          if (_hasAutoSale &&
+              _appliedGlobalOffer != null &&
+              !_appliedGlobalOffer!.isSale) {
+            _appliedGlobalOffer = null;
+            if (!_isApplyingCoupon) _couponController.clear();
+          }
 
           return cartItems;
         });
       });
     } else {
       _cartFuture = Future.value([]);
+      _hasAutoSale = false;
     }
   }
 
@@ -474,17 +485,23 @@ class _CartScreenState extends State<CartScreen> {
                                     ),
                                     child: TextField(
                                       controller: _couponController,
-                                      enabled: !_isApplyingCoupon,
-                                      readOnly: _appliedGlobalOffer != null,
+                                      enabled:
+                                          !_isApplyingCoupon && !_hasAutoSale,
+                                      readOnly: _appliedGlobalOffer != null ||
+                                          _hasAutoSale,
                                       textAlignVertical:
                                           TextAlignVertical.center,
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: context.sp(14),
-                                        color: theme.colorScheme.onSurface,
+                                        color: _hasAutoSale
+                                            ? theme.colorScheme.onSurfaceVariant
+                                            : theme.colorScheme.onSurface,
                                       ),
                                       decoration: InputDecoration(
-                                        hintText: 'Enter code (e.g. SCHOLAR20)',
+                                        hintText: _hasAutoSale
+                                            ? 'Disabled during Store Sale'
+                                            : 'Enter code (e.g. SCHOLAR20)',
                                         hintStyle: TextStyle(
                                           color:
                                               theme.colorScheme.outlineVariant,
@@ -522,7 +539,8 @@ class _CartScreenState extends State<CartScreen> {
                                           ),
                                           borderSide: BorderSide(
                                             color: theme
-                                                .colorScheme.outlineVariant,
+                                                .colorScheme.outlineVariant
+                                                .withOpacity(0.5),
                                           ),
                                         ),
                                       ),
@@ -533,27 +551,35 @@ class _CartScreenState extends State<CartScreen> {
                                 SizedBox(
                                   height: context.h(50),
                                   child: ElevatedButton(
-                                    onPressed: _appliedGlobalOffer == null
-                                        ? _applyOrderCoupon
-                                        : _removeOrderCoupon,
+                                    onPressed: _hasAutoSale
+                                        ? null
+                                        : (_appliedGlobalOffer == null
+                                            ? _applyOrderCoupon
+                                            : _removeOrderCoupon),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          _appliedGlobalOffer == null
+                                      backgroundColor: _hasAutoSale
+                                          ? theme.colorScheme.surfaceVariant
+                                              .withValues(alpha: 0.5)
+                                          : (_appliedGlobalOffer == null
                                               ? theme.colorScheme.surfaceVariant
                                               : theme.colorScheme.errorContainer
-                                                  .withValues(alpha: 0.3),
-                                      foregroundColor:
-                                          _appliedGlobalOffer == null
+                                                  .withValues(alpha: 0.3)),
+                                      foregroundColor: _hasAutoSale
+                                          ? theme.colorScheme.onSurfaceVariant
+                                              .withValues(alpha: 0.5)
+                                          : (_appliedGlobalOffer == null
                                               ? theme.colorScheme.primary
-                                              : theme.colorScheme.error,
+                                              : theme.colorScheme.error),
                                       elevation: 0,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(
                                           context.w(AppSpacing.radiusMd),
                                         ),
                                         side: BorderSide(
-                                          color:
-                                              theme.colorScheme.outlineVariant,
+                                          color: _hasAutoSale
+                                              ? Colors.transparent
+                                              : theme
+                                                  .colorScheme.outlineVariant,
                                         ),
                                       ),
                                       padding: EdgeInsets.symmetric(
@@ -581,7 +607,23 @@ class _CartScreenState extends State<CartScreen> {
                                 ),
                               ],
                             ),
-                            if (_couponError != null)
+                            if (_hasAutoSale)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  top: context.h(8),
+                                  left: context.w(4),
+                                ),
+                                child: Text(
+                                  "✨ Store sale discounts are already active on items in your cart.",
+                                  style: TextStyle(
+                                    color: const Color(
+                                        0xFF10B981), // Success Emerald
+                                    fontSize: context.sp(12),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            if (_couponError != null && !_hasAutoSale)
                               Padding(
                                 padding: EdgeInsets.only(
                                   top: context.h(8),

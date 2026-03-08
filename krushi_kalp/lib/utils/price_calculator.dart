@@ -6,13 +6,14 @@ class PriceCalculator {
   /// Handles both "Real" (Price discount) and "Fake" (MRP hike) offers simultaneously.
   static Map<String, dynamic> calculateDisplayPrice({
     required double basePrice,
+    double? baseMrp, // NEW
     List<Offer>? activeOffers,
     int? testId,
-    int? resourceId, // Added resourceId
-    String? userId, // Added userId
+    int? resourceId,
+    String? userId,
   }) {
     debugPrint(
-        'PriceCalculator: Calculating for basePrice: $basePrice, testId: $testId, resourceId: $resourceId, userId: $userId');
+        'PriceCalculator: Calculating for basePrice: $basePrice, baseMrp: $baseMrp, testId: $testId, resourceId: $resourceId, userId: $userId');
 
     if (activeOffers == null || activeOffers.isEmpty) {
       debugPrint('PriceCalculator: No activeOffers provided.');
@@ -20,7 +21,7 @@ class PriceCalculator {
 
     Offer? bestOffer;
     double finalPrice = basePrice;
-    double mrp = basePrice;
+    double mrp = baseMrp ?? basePrice;
 
     if (activeOffers != null) {
       debugPrint(
@@ -33,7 +34,7 @@ class PriceCalculator {
         if (!applicable) continue;
 
         double currentPrice = basePrice;
-        double currentMrp = basePrice;
+        double currentMrp = baseMrp ?? basePrice;
 
         if (offer.isReal) {
           // Real Offer: Discount off Base
@@ -48,16 +49,16 @@ class PriceCalculator {
               currentPrice = basePrice - offer.maxDiscount!;
             }
           }
-          currentMrp = basePrice;
+          currentMrp = baseMrp ?? basePrice; // Preserves original MRP
         } else {
           // Fake Offer: Price is Base, MRP is Inflated
           currentPrice = basePrice;
           if (offer.discountType == 'PERCENTAGE') {
             double rate = offer.discountValue / 100;
             if (rate >= 1) rate = 0.99;
-            currentMrp = basePrice / (1 - rate);
+            currentMrp = basePrice / (1 - rate); // Inflate from base
           } else {
-            currentMrp = basePrice + offer.discountValue;
+            currentMrp = basePrice + offer.discountValue; // Inflate from base
           }
         }
         if (currentPrice < 0) currentPrice = 0;

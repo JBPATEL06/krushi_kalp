@@ -2,6 +2,8 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/resource.dart';
+import '../../utils/supabase_url_helper.dart';
+import 'admin_notification_service.dart';
 
 class ResourceService {
   // --- SINGLETON ---
@@ -9,26 +11,6 @@ class ResourceService {
   static final ResourceService instance = ResourceService._();
 
   final SupabaseClient _client = Supabase.instance.client;
-
-  // --- SIGNED URL CACHE ---
-  final Map<String, _SignedUrlEntry> _urlCache = {};
-
-  Future<String?> _getSignedUrlCached(String path, String bucket,
-      {int ttlSeconds = 60 * 60 * 22}) async {
-    final cached = _urlCache[path];
-    if (cached != null && !cached.isExpired) return cached.url;
-
-    try {
-      final url = await _client.storage
-          .from(bucket)
-          .createSignedUrl(path, 60 * 60 * 24);
-      _urlCache[path] = _SignedUrlEntry(
-          url, DateTime.now().add(Duration(seconds: ttlSeconds)));
-      return url;
-    } catch (e) {
-      return null;
-    }
-  }
 
   Future<List<Resource>> fetchResources({
     required ResourceType type,
@@ -58,7 +40,9 @@ class ResourceService {
         await _client.from('resources').select().eq('id', id).maybeSingle();
 
     if (response == null) return null;
-    return Resource.fromJson(response);
+    final resource = Resource.fromJson(response);
+    final signed = await _signResources([resource]);
+    return signed.first;
   }
 
   // Fetch purchased resources for a user
@@ -103,20 +87,23 @@ class ResourceService {
       const bucket = 'mock_test'; // Same bucket used for resources
 
       if (r.fileUrl != null && r.fileUrl!.isNotEmpty) {
-        if (!r.fileUrl!.startsWith('http')) {
-          final path = r.fileUrl!.replaceAll('$bucket/', '');
-          signedFile = await _getSignedUrlCached(path, bucket);
+        final path = SupabaseUrlHelper.extractPathFromUrl(r.fileUrl!, bucket);
+        if (!path.startsWith('http')) {
+          signedFile = await SupabaseUrlHelper.getFreshSignedUrl(
+              bucketName: bucket, storagePath: path);
         } else {
-          signedFile = r.fileUrl;
+          signedFile = path;
         }
       }
 
       if (r.thumbnailUrl != null && r.thumbnailUrl!.isNotEmpty) {
-        if (!r.thumbnailUrl!.startsWith('http')) {
-          final path = r.thumbnailUrl!.replaceAll('$bucket/', '');
-          signedThumb = await _getSignedUrlCached(path, bucket);
+        final path =
+            SupabaseUrlHelper.extractPathFromUrl(r.thumbnailUrl!, bucket);
+        if (!path.startsWith('http')) {
+          signedThumb = await SupabaseUrlHelper.getFreshSignedUrl(
+              bucketName: bucket, storagePath: path);
         } else {
-          signedThumb = r.thumbnailUrl;
+          signedThumb = path;
         }
       }
 
@@ -140,7 +127,31 @@ class ResourceService {
   // Admin: Create Resource
   Future<void> createResource(Resource resource) async {
     try {
-      await _client.from('resources').insert(resource.toJson());
+      final payload = resource.toJson();
+      payload.remove('id');
+
+      // Ensure we store paths, not signed URLs
+      if (payload['file_url'] != null) {
+        payload['file_url'] = SupabaseUrlHelper.extractPathFromUrl(
+            payload['file_url'], 'mock_test');
+      }
+      if (payload['thumbnail_url'] != null) {
+        payload['thumbnail_url'] = SupabaseUrlHelper.extractPathFromUrl(
+            payload['thumbnail_url'], 'mock_test');
+      }
+
+      await _client.from('resources').insert(payload);
+
+      // --- NOTIFICATION ---
+      try {
+        await AdminNotificationService().sendBroadcast(
+          title: '📖 New Resource Published!',
+          body:
+              'New ${resource.type.name}: ${resource.title} is now available.',
+        );
+      } catch (notiErr) {
+        debugPrint('Resource Notification Error (Non-critical): $notiErr');
+      }
     } catch (e) {
       throw Exception('Failed to create resource: $e');
     }
@@ -149,7 +160,20 @@ class ResourceService {
   // Admin: Update Resource
   Future<void> updateResource(int id, Map<String, dynamic> updates) async {
     try {
-      await _client.from('resources').update(updates).eq('id', id);
+      final payload = Map<String, dynamic>.from(updates);
+      payload.remove('id');
+
+      // Ensure we store paths, not signed URLs
+      if (payload['file_url'] != null) {
+        payload['file_url'] = SupabaseUrlHelper.extractPathFromUrl(
+            payload['file_url'] as String, 'mock_test');
+      }
+      if (payload['thumbnail_url'] != null) {
+        payload['thumbnail_url'] = SupabaseUrlHelper.extractPathFromUrl(
+            payload['thumbnail_url'] as String, 'mock_test');
+      }
+
+      await _client.from('resources').update(payload).eq('id', id);
     } catch (e) {
       throw Exception('Failed to update resource: $e');
     }
@@ -182,24 +206,10 @@ class ResourceService {
   Future<void> deleteFileFromStorage(String fileUrlOrPath) async {
     try {
       const bucket = 'mock_test';
-      String path = fileUrlOrPath;
+      String path = SupabaseUrlHelper.extractPathFromUrl(fileUrlOrPath, bucket);
 
-      // Extract relative path from URL
-      if (fileUrlOrPath.contains('/storage/v1/object/')) {
-        final uri = Uri.parse(fileUrlOrPath);
-        final segments = uri.pathSegments;
-
-        // Find bucket index (works for /public/[bucket] or /sign/[bucket])
-        final bucketIndex = segments.indexOf(bucket);
-        if (bucketIndex != -1 && bucketIndex < segments.length - 1) {
-          path = segments.sublist(bucketIndex + 1).join('/');
-          // Remove query parameters if any
-          if (path.contains('?')) {
-            path = path.split('?').first;
-          }
-        }
-      } else if (fileUrlOrPath.startsWith('$bucket/')) {
-        path = fileUrlOrPath.replaceAll('$bucket/', '');
+      if (path.startsWith('$bucket/')) {
+        path = path.replaceAll('$bucket/', '');
       }
 
       // Supabase remove expects a list of paths relative to the bucket
@@ -223,11 +233,8 @@ class ResourceService {
             fileBytes,
             fileOptions: const FileOptions(upsert: true),
           );
-      // Use Signed URL for private buckets (valid for 1 year)
-      final signedUrl = await _client.storage
-          .from(bucket)
-          .createSignedUrl(path, 60 * 60 * 24 * 365);
-      return signedUrl;
+      // Return the relative path instead of a signed URL
+      return path;
     } catch (e) {
       // debugPrint('Error uploading file: $e');
       throw Exception('Upload failed: $e');
@@ -338,13 +345,4 @@ class ResourceService {
 
 List<Resource> _parseResources(List<dynamic> jsonList) {
   return jsonList.map((json) => Resource.fromJson(json)).toList();
-}
-
-class _SignedUrlEntry {
-  final String url;
-  final DateTime expiresAt;
-
-  _SignedUrlEntry(this.url, this.expiresAt);
-
-  bool get isExpired => DateTime.now().isAfter(expiresAt);
 }

@@ -37,6 +37,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
   bool _isApplyingCoupon = false;
   bool _isProcessing = false;
   String? _couponError;
+  bool _hasAutoSale = false; // NEW FLAG
 
   // Helpers
   double get _basePrice => widget.test?.price ?? widget.resource?.price ?? 0.0;
@@ -74,12 +75,18 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
     debugPrint('DirectCheckout: Applying Initial Offer. User: ${user?.id}');
     final priceData = PriceCalculator.calculateDisplayPrice(
       basePrice: _basePrice,
+      baseMrp: (widget.resource?.mrp ?? widget.test?.mrp)?.toDouble(),
       activeOffers: widget.initialOffer != null ? [widget.initialOffer!] : [],
       testId: _testId,
+      resourceId: _resourceId,
       userId: user?.id,
     );
     _appliedOffer = priceData['offer'];
     _finalPrice = priceData['finalPrice'];
+
+    // Check if the Sale actually applied successfully
+    _hasAutoSale = _appliedOffer != null && _appliedOffer!.isSale;
+
     debugPrint(
         'DirectCheckout: Initial Result -> Offer: ${_appliedOffer?.title}, Price: $_finalPrice');
   }
@@ -142,6 +149,10 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
       _couponError = null;
       _appliedOffer = null; // Clear offer to allow new entry
       _finalPrice = _basePrice; // Reset to base price
+      // Re-apply any initial sale if present
+      if (widget.initialOffer != null) {
+        _applyInitialOffer();
+      }
     });
   }
 
@@ -351,22 +362,32 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                     Expanded(
                       child: TextField(
                         controller: _couponController,
-                        enabled: _appliedOffer == null && !_isProcessing,
+                        enabled: _appliedOffer == null &&
+                            !_isProcessing &&
+                            !_hasAutoSale,
                         decoration: InputDecoration(
-                          hintText: "Enter Code",
-                          errorText: _couponError,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 12),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
+                            hintText: _hasAutoSale
+                                ? "Disabled during Store Sale"
+                                : "Enter Code",
+                            errorText: _hasAutoSale ? null : _couponError,
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 12),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8)),
+                            disabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                    color: theme.colorScheme.outlineVariant
+                                        .withOpacity(0.5)))),
                       ),
                     ),
                     const SizedBox(width: 12),
-                    _appliedOffer == null
+                    _appliedOffer == null || _hasAutoSale
                         ? AppButton(
                             text: "Apply",
-                            onPressed: _isApplyingCoupon || _isProcessing
+                            onPressed: _isApplyingCoupon ||
+                                    _isProcessing ||
+                                    _hasAutoSale
                                 ? null
                                 : _applyCoupon,
                             isLoading: _isApplyingCoupon,
@@ -380,7 +401,19 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                                 color: theme.colorScheme.error)),
                   ],
                 ),
-                if (_appliedOffer != null)
+                if (_hasAutoSale)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      "✨ Store sale discounts are already active.",
+                      style: TextStyle(
+                        color: const Color(0xFF10B981), // Success Emerald
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                if (_appliedOffer != null && !_hasAutoSale)
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(

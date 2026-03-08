@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:krushi_kalp/data/services/test_service.dart';
+import '../../utils/supabase_url_helper.dart';
 import '../../utils/network_utils.dart'; // Import NetworkUtils
 
 class AdminService {
@@ -310,9 +310,8 @@ class AdminService {
         for (var t in result) {
           final testId = t['id'];
           final path = 'mock_test_cover/$testId.jpg';
-          // Use TestService instance (which has the cache)
-          final signedUrl =
-              await TestService.instance.getSignedUrl(path, 'mock_test');
+          final signedUrl = await SupabaseUrlHelper.getFreshSignedUrl(
+              bucketName: 'mock_test', storagePath: path);
           t['image_url'] = signedUrl;
         }
 

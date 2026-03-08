@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../data/services/auth_service.dart';
-import '../../data/services/test_service.dart';
 import '../../data/services/cart_service.dart';
+import '../../utils/supabase_url_helper.dart';
+import '../../utils/crashlytics_service.dart';
 
 class CartProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _cartItems = [];
@@ -44,6 +45,8 @@ class CartProvider extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
+    CrashlyticsService.instance
+        .log('CartProvider: Fetching cart (force: $forceRefresh)');
 
     try {
       final items = await CartService.instance.fetchCartItems(user.id);
@@ -78,8 +81,8 @@ class CartProvider extends ChangeNotifier {
           // For now, only signing MockTests as before.
           if (item.mockTest != null) {
             try {
-              imageUrl =
-                  await TestService.instance.getSignedUrl(path, 'mock_test');
+              imageUrl = await SupabaseUrlHelper.getFreshSignedUrl(
+                  bucketName: 'mock_test', storagePath: path);
             } catch (e) {
               // ignore
             }
@@ -109,8 +112,10 @@ class CartProvider extends ChangeNotifier {
       }));
 
       _cartItems = processedItems;
-    } catch (e) {
+    } catch (e, stack) {
       _errorMessage = e.toString();
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'CartProvider: fetchCart');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -136,6 +141,8 @@ class CartProvider extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
+    CrashlyticsService.instance.log(
+        'CartProvider: Adding to cart (test: $testId, resource: $resourceId)');
 
     try {
       await CartService.instance.addToCart(
@@ -146,8 +153,10 @@ class CartProvider extends ChangeNotifier {
       );
 
       await fetchCart(forceRefresh: true);
-    } catch (e) {
+    } catch (e, stack) {
       _errorMessage = e.toString();
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'CartProvider: addToCart');
       rethrow;
     } finally {
       _isLoading = false;
@@ -166,7 +175,11 @@ class CartProvider extends ChangeNotifier {
 
       // Full refresh to be safe
       await fetchCart(forceRefresh: true);
-    } catch (e) {
+      CrashlyticsService.instance
+          .log('CartProvider: Removed item $itemId from cart');
+    } catch (e, stack) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'CartProvider: removeFromCart');
       rethrow;
     }
   }

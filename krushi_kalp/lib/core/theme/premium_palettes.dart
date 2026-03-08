@@ -10,9 +10,10 @@ class PremiumPalettes {
   static const Color slateSecondary = Color(0xFF475569); // Professional Slate
   static const Color cloudBackground = Color(0xFFF8FAFC); // Clean Surface
 
-  // ── Indigo + Slate (Sophisticated Dark Theme) ──
-  static const Color slateDarkBackground = Color(0xFF0F172A); // Slate 900
-  static const Color slateDarkSurface = Color(0xFF1E293B); // Slate 800
+  // ── Neutral + Indigo (Premium Gray Dark Theme) ──
+  static const Color neutralDarkBackground =
+      Color(0xFF121212); // Deep Neutral Gray
+  static const Color neutralDarkSurface = Color(0xFF1E1E1E); // Surface Gray
   static const Color indigoDarkPrimary = Color(0xFF818CF8); // Indigo 400
   static const Color skyDarkSecondary = Color(0xFF38BDF8); // Sky 400
 }
@@ -26,11 +27,11 @@ class AppColorsV2 {
   static const Color textPrimary = Color(0xFF0F172A); // Slate 900
   static const Color textSecondary = Color(0xFF64748B); // Slate 500
 
-  // ── Dark Theme (Indigo + Slate) ──
+  // ── Dark Theme (Neutral + Indigo) ──
   static const Color primaryDark = PremiumPalettes.indigoDarkPrimary;
   static const Color secondaryDark = PremiumPalettes.skyDarkSecondary;
-  static const Color backgroundDark = PremiumPalettes.slateDarkBackground;
-  static const Color surfaceDark = PremiumPalettes.slateDarkSurface;
-  static const Color textPrimaryDark = Color(0xFFF1F5F9); // Slate 100
-  static const Color textSecondaryDark = Color(0xFF94A3B8); // Slate 400
+  static const Color backgroundDark = PremiumPalettes.neutralDarkBackground;
+  static const Color surfaceDark = PremiumPalettes.neutralDarkSurface;
+  static const Color textPrimaryDark = Color(0xFFF5F5F5); // Neutral 100
+  static const Color textSecondaryDark = Color(0xFFA3A3A3); // Neutral 400
 }

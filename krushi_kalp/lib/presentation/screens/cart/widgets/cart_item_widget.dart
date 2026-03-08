@@ -62,14 +62,14 @@ class CartItemWidget extends StatelessWidget {
               color: theme.colorScheme.surfaceVariant,
               borderRadius:
                   BorderRadius.circular(context.w(AppSpacing.radiusMd)),
-              image: imageUrl != null
+              image: imageUrl != null && imageUrl.startsWith('http')
                   ? DecorationImage(
                       image: NetworkImage(imageUrl),
                       fit: BoxFit.cover,
                     )
                   : null,
             ),
-            child: imageUrl == null
+            child: (imageUrl == null || !imageUrl.startsWith('http'))
                 ? Icon(Icons.school_outlined,
                     size: context.w(30),
                     color: theme.colorScheme.onSurfaceVariant)

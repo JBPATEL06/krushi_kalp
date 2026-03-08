@@ -454,26 +454,7 @@ class _StoreScreenState extends State<StoreScreen>
     } else if (category == 'PYQs') {
       resources = provider.pyqs;
     } else if (category == 'Current Affairs') {
-      final caItems = List<Resource>.from(provider.currentAffairs);
-      caItems.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      return StoreCurrentAffairsList(
-        items: caItems,
-        purchasedIds: provider.purchasedResourceIds,
-        onTap: (item) {
-          final isPurchased = provider.purchasedResourceIds.contains(item.id);
-          showDialog(
-            context: context,
-            builder: (context) => ResourceDetailDialog(
-              resource: item,
-              isPurchased: isPurchased,
-              onBuyTap: () {
-                Navigator.pop(context); // Close dialog
-                _buyNow(resource: item);
-              },
-            ),
-          );
-        },
-      );
+      resources = provider.currentAffairs;
     } else {
       resources = [];
     }

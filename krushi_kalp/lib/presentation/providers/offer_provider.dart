@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/offer.dart';
 import '../../data/services/offer_service.dart';
+import '../../utils/crashlytics_service.dart';
 
 class OfferProvider with ChangeNotifier {
   List<Offer> _activeOffers = [];
@@ -27,13 +28,17 @@ class OfferProvider with ChangeNotifier {
     try {
       _isLoading = true;
       notifyListeners();
+      CrashlyticsService.instance
+          .log('OfferProvider: Fetching active offers (force: $forceRefresh)');
 
       final offers = await OfferService.instance.fetchActiveSaleOffers();
       _activeOffers = offers;
       _errorMessage = '';
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('OfferProvider: Error fetching offers: $e');
       _errorMessage = e.toString();
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'OfferProvider: fetchActiveOffers');
     } finally {
       _isLoading = false;
       notifyListeners();

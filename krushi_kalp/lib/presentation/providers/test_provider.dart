@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/mock_test.dart';
 import '../../data/services/test_service.dart';
 import '../../data/services/auth_service.dart';
+import '../../utils/crashlytics_service.dart';
 
 class TestProvider with ChangeNotifier {
   static const String _purchasedTestsKey = 'cached_user_purchased_tests';
@@ -51,8 +52,10 @@ class TestProvider with ChangeNotifier {
             'TestProvider: Loaded ${_userTests.length} tests from cache');
         notifyListeners();
       }
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('TestProvider: Error loading from cache: $e');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'TestProvider: _loadFromPrefs');
     }
   }
 
@@ -62,9 +65,9 @@ class TestProvider with ChangeNotifier {
       final String encodedData =
           json.encode(_userTests.map((t) => t.toJson()).toList());
       await prefs.setString(_purchasedTestsKey, encodedData);
-      debugPrint('TestProvider: Saved ${_userTests.length} tests to cache');
-    } catch (e) {
-      debugPrint('TestProvider: Error saving to cache: $e');
+    } catch (e, stack) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'TestProvider: _saveToPrefs');
     }
   }
 
@@ -79,6 +82,8 @@ class TestProvider with ChangeNotifier {
 
     _setLoading(true);
     _errorMessage = '';
+    CrashlyticsService.instance
+        .log('TestProvider: Fetching tests (force: $forceRefresh)');
 
     try {
       final results = await Future.wait([
@@ -89,9 +94,10 @@ class TestProvider with ChangeNotifier {
       final fetchedTests = results[0] as List<MockTest>;
       _cachedTests = fetchedTests;
       filterAndSortTests();
-    } catch (e) {
-      debugPrint('TestProvider: Error fetching tests: $e');
+    } catch (e, stack) {
       _errorMessage = 'Failed to load tests. Please check your connection.';
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'TestProvider: fetchTests');
     } finally {
       _setLoading(false);
     }
@@ -110,8 +116,9 @@ class TestProvider with ChangeNotifier {
       if (_cachedTests.isNotEmpty) {
         filterAndSortTests();
       }
-    } catch (e) {
-      debugPrint("Error fetching purchased status: $e");
+    } catch (e, stack) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'TestProvider: fetchPurchasedStatus');
     }
   }
 
@@ -122,9 +129,12 @@ class TestProvider with ChangeNotifier {
       _userTests = await TestService.instance.fetchUserTests(userId);
       _purchasedTestIds = _userTests.map((t) => t.id).toSet();
       _saveToPrefs();
-    } catch (e) {
-      debugPrint("Error fetching user tests: $e");
+      CrashlyticsService.instance
+          .log('TestProvider: Fetched ${_userTests.length} user tests');
+    } catch (e, stack) {
       _errorMessage = 'Error loading your tests: $e';
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'TestProvider: fetchUserTests');
     } finally {
       _setLoading(false);
     }

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/services/resource_service.dart';
 import '../../domain/models/resource.dart';
+import '../../utils/crashlytics_service.dart';
 
 class ResourceProvider extends ChangeNotifier {
   final ResourceService _resourceService = ResourceService.instance;
@@ -40,16 +41,22 @@ class ResourceProvider extends ChangeNotifier {
       final String? cachedData = prefs.getString(_purchasedResourcesKey);
       if (cachedData != null) {
         final List<dynamic> jsonList = json.decode(cachedData);
-        _purchasedResources =
-            jsonList.map((j) => Resource.fromJson(j)).toList();
+        _purchasedResources = jsonList
+            .map((j) => Resource.fromJson(j))
+            .toList();
         _purchasedResourceIds = _purchasedResources.map((r) => r.id).toSet();
         debugPrint(
           'ResourceProvider: Loaded ${_purchasedResources.length} resources from cache',
         );
         Future.microtask(() => notifyListeners());
       }
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('ResourceProvider: Error loading from cache: $e');
+      CrashlyticsService.instance.recordError(
+        e,
+        stack,
+        reason: 'ResourceProvider: _loadFromPrefs',
+      );
     }
   }
 
@@ -63,8 +70,13 @@ class ResourceProvider extends ChangeNotifier {
       debugPrint(
         'ResourceProvider: Saved ${_purchasedResources.length} resources to cache',
       );
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('ResourceProvider: Error saving to cache: $e');
+      CrashlyticsService.instance.recordError(
+        e,
+        stack,
+        reason: 'ResourceProvider: _saveToPrefs',
+      );
     }
   }
 
@@ -92,10 +104,14 @@ class ResourceProvider extends ChangeNotifier {
     }
 
     _setLoading(true);
+    CrashlyticsService.instance.log(
+      'ResourceProvider: Fetching resources (type: $type, force: $forceRefresh)',
+    );
     try {
       final resources = await _resourceService.fetchResources(type: type);
       debugPrint(
-          'ResourceProvider: Fetched ${resources.length} items for type $type');
+        'ResourceProvider: Fetched ${resources.length} items for type $type',
+      );
 
       switch (type) {
         case ResourceType.eBook:
@@ -112,9 +128,14 @@ class ResourceProvider extends ChangeNotifier {
           break;
       }
       _errorMessage = null;
-    } catch (e) {
+    } catch (e, stack) {
       _errorMessage = 'Failed to load ${type.toString().split('.').last}: $e';
       debugPrint('ResourceProvider: Error fetching $type: $e');
+      CrashlyticsService.instance.recordError(
+        e,
+        stack,
+        reason: 'ResourceProvider: fetchResources($type)',
+      );
     } finally {
       _setLoading(false);
     }
@@ -128,12 +149,22 @@ class ResourceProvider extends ChangeNotifier {
       _purchasedResources = resources;
       _purchasedResourceIds = resources.map((r) => r.id).toSet();
       debugPrint(
-          'ResourceProvider: Updated purchasedResourceIds. Total: ${_purchasedResourceIds.length}, IDs: $_purchasedResourceIds');
+        'ResourceProvider: Updated purchasedResourceIds. Total: ${_purchasedResourceIds.length}, IDs: $_purchasedResourceIds',
+      );
       _saveToPrefs();
-    } catch (e) {
+      CrashlyticsService.instance.log(
+        'ResourceProvider: Fetched purchased resources for $userId',
+      );
+    } catch (e, stack) {
       debugPrint(
-          'ResourceProvider: Error fetching purchased resources for $userId: $e');
+        'ResourceProvider: Error fetching purchased resources for $userId: $e',
+      );
       _errorMessage = 'Failed to load purchased resources: $e';
+      CrashlyticsService.instance.recordError(
+        e,
+        stack,
+        reason: 'ResourceProvider: fetchPurchasedResources',
+      );
     } finally {
       _setLoading(false);
     }
@@ -148,7 +179,12 @@ class ResourceProvider extends ChangeNotifier {
         fetchResources(ResourceType.pyq, forceRefresh: forceRefresh),
         fetchResources(ResourceType.currentAffair, forceRefresh: forceRefresh),
       ]);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(
+        e,
+        stack,
+        reason: 'ResourceProvider: fetchAll',
+      );
     } finally {
       _setLoading(false);
     }
@@ -156,20 +192,32 @@ class ResourceProvider extends ChangeNotifier {
 
   Future<void> claimResource(int resourceId, String userId) async {
     debugPrint(
-        'ResourceProvider: claimResource called for $resourceId (user: $userId)');
+      'ResourceProvider: claimResource called for $resourceId (user: $userId)',
+    );
     if (_isLoading) {
       debugPrint('ResourceProvider: Skipping claim, already loading');
       return;
     }
     _setLoading(true);
     try {
+      // ACTUALLY CALL THE SERVICE TO CLAIM IT (THIS WAS MISSING!)
       await _resourceService.claimResource(
         resourceId: resourceId,
         userId: userId,
       );
+
+      // Then re-fetch the purchased items to update the UI State
       await fetchPurchasedResources(userId);
-    } catch (e) {
+      CrashlyticsService.instance.log(
+        'ResourceProvider: Claimed resource $resourceId',
+      );
+    } catch (e, stack) {
       debugPrint('Error claiming resource: $e');
+      CrashlyticsService.instance.recordError(
+        e,
+        stack,
+        reason: 'ResourceProvider: claimResource($resourceId)',
+      );
       rethrow;
     }
   }

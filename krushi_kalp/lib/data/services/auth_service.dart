@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:supabase/supabase.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../../utils/crashlytics_service.dart';
 
 class AuthService {
   // Singleton
@@ -72,6 +73,11 @@ class AuthService {
     if (user != null) {
       await ensureProfileExists(user);
       await updateSessionId(user.id);
+
+      // Tag user in Crashlytics
+      await CrashlyticsService.instance.setUser(user.id);
+      CrashlyticsService.instance
+          .log('User signed in with Google: ${user.email}');
     }
   }
 
@@ -89,6 +95,11 @@ class AuthService {
     if (user != null) {
       await ensureProfileExists(user);
       await updateSessionId(user.id);
+
+      // Tag user in Crashlytics
+      await CrashlyticsService.instance.setUser(user.id);
+      CrashlyticsService.instance
+          .log('User signed in with Email: ${user.email}');
     }
     return response;
   }
@@ -108,6 +119,11 @@ class AuthService {
     if (user != null) {
       await ensureProfileExists(user);
       await updateSessionId(user.id);
+
+      // Tag user in Crashlytics
+      await CrashlyticsService.instance.setUser(user.id);
+      CrashlyticsService.instance
+          .log('User signed in with ID Token: ${user.email}');
     }
     return response;
   }
@@ -161,6 +177,8 @@ class AuthService {
     final user = currentUser;
     if (user != null) {
       await clearSession(user.id);
+      CrashlyticsService.instance.log('User signing out: ${user.email}');
+      await CrashlyticsService.instance.clearUser();
     }
     try {
       await GoogleSignIn().signOut();

@@ -8,6 +8,8 @@ import '../../domain/models/question.dart';
 import '../../utils/retry_helper.dart';
 import 'cart_service.dart';
 import 'auth_service.dart';
+import '../../utils/supabase_url_helper.dart';
+import 'admin_notification_service.dart';
 
 class TestService {
   // --- SINGLETON ---
@@ -15,27 +17,6 @@ class TestService {
   static final TestService instance = TestService._();
 
   final _supabase = Supabase.instance.client;
-
-  // --- SIGNED URL CACHE ---
-  final Map<String, _SignedUrlEntry> _urlCache = {};
-
-  Future<String?> _getSignedUrlCached(String path, String bucket,
-      {int ttlSeconds = 60 * 60 * 22}) async {
-    final cached = _urlCache[path];
-    if (cached != null && !cached.isExpired) return cached.url;
-
-    try {
-      final url = await _supabase.storage
-          .from(bucket)
-          .createSignedUrl(path, 60 * 60 * 24);
-      _urlCache[path] = _SignedUrlEntry(
-          url, DateTime.now().add(Duration(seconds: ttlSeconds)));
-      return url;
-    } catch (e) {
-      debugPrint('Error creating signed URL for $path: $e');
-      return null;
-    }
-  }
 
   // --- MOCK TESTS READING ---
 
@@ -147,7 +128,28 @@ class TestService {
   // --- MOCK TESTS ADMIN (WRITE) ---
   Future<void> createMockTest(MockTest test) async {
     try {
-      await _supabase.from('mock_tests').insert(test.toJson());
+      final payload = test.toJson();
+      // Ensure we store paths, not signed URLs
+      if (payload['file_path'] != null) {
+        payload['file_path'] = SupabaseUrlHelper.extractPathFromUrl(
+            payload['file_path'], 'mock_test');
+      }
+      if (payload['cover_image_path'] != null) {
+        payload['cover_image_path'] = SupabaseUrlHelper.extractPathFromUrl(
+            payload['cover_image_path'], 'mock_test');
+      }
+
+      await _supabase.from('mock_tests').insert(payload);
+
+      // --- NOTIFICATION ---
+      try {
+        await AdminNotificationService().sendBroadcast(
+          title: '🆕 New Mock Test Available!',
+          body: 'Check out the new test: ${test.title}',
+        );
+      } catch (notiErr) {
+        debugPrint('Notification Error (Non-critical): $notiErr');
+      }
     } catch (e) {
       debugPrint('Error creating mock test: $e');
       throw Exception('Failed to create test: $e');
@@ -196,7 +198,18 @@ class TestService {
 
   Future<void> updateMockTest(int testId, Map<String, dynamic> updates) async {
     try {
-      await _supabase.from('mock_tests').update(updates).eq('test_id', testId);
+      final payload = Map<String, dynamic>.from(updates);
+      // Ensure we store paths, not signed URLs
+      if (payload['file_path'] != null) {
+        payload['file_path'] = SupabaseUrlHelper.extractPathFromUrl(
+            payload['file_path'] as String, 'mock_test');
+      }
+      if (payload['cover_image_path'] != null) {
+        payload['cover_image_path'] = SupabaseUrlHelper.extractPathFromUrl(
+            payload['cover_image_path'] as String, 'mock_test');
+      }
+
+      await _supabase.from('mock_tests').update(payload).eq('test_id', testId);
     } catch (e) {
       debugPrint('Error updating mock test: $e');
       throw Exception('Failed to update test: $e');
@@ -555,6 +568,24 @@ class TestService {
       debugPrint(
           'TestService: Order Update Status: ${orderResponse.isNotEmpty ? "Success" : "Failed (Empty Response)"}');
 
+      // --- ADMIN NOTIFICATION (SALE) ---
+      if (orderResponse.isNotEmpty) {
+        try {
+          await AdminNotificationService().sendToTopic(
+            topic: 'admin_updates',
+            title: '💰 New Sale! (₹$amount)',
+            body: 'Order #$orderId has been completed.',
+            data: {
+              'type': 'sale_alert',
+              'order_id': orderId,
+              'amount': amount.toString(),
+            },
+          );
+        } catch (notiErr) {
+          debugPrint('Admin Sale Notification Error: $notiErr');
+        }
+      }
+
       // 2. CLEANUP CART (REMOVE PURCHASED ITEMS FROM PENDING ORDERS)
       try {
         final orderItems = await _supabase
@@ -642,25 +673,18 @@ class TestService {
 
         // 1. Generate Content URL (JSON)
         if (test.filePath.isNotEmpty) {
-          contentUrl = await _getSignedUrlCached(test.filePath, 'mock_test');
-
-          // Fallback logic if cached/first attempt fails (handling legacy pathing)
-          if (contentUrl == null) {
-            if (test.filePath.startsWith('mock_test/')) {
-              final stripped = test.filePath.replaceAll('mock_test/', '');
-              contentUrl = await _getSignedUrlCached(stripped, 'mock_test');
-            } else if (!test.filePath.startsWith('resources/')) {
-              final prefixed = 'resources/${test.filePath}';
-              contentUrl = await _getSignedUrlCached(prefixed, 'mock_test');
-            }
-          }
+          final path =
+              SupabaseUrlHelper.extractPathFromUrl(test.filePath, 'mock_test');
+          contentUrl = await SupabaseUrlHelper.getFreshSignedUrl(
+              bucketName: 'mock_test', storagePath: path);
         }
 
         // 2. Generate Image URL
         if (test.coverImagePath != null && test.coverImagePath!.isNotEmpty) {
-          String path =
-              test.coverImagePath!.replaceAll('mock_test/', ''); // Safety
-          imageUrl = await _getSignedUrlCached(path, 'mock_test');
+          final path = SupabaseUrlHelper.extractPathFromUrl(
+              test.coverImagePath!, 'mock_test');
+          imageUrl = await SupabaseUrlHelper.getFreshSignedUrl(
+              bucketName: 'mock_test', storagePath: path);
         }
 
         return test.copyWith(
@@ -787,8 +811,6 @@ class TestService {
   }
 }
 
-// Top-level functions for background isolate JSON parsing
-
 List<MockTest> _parseMockTests(List<dynamic> jsonList) {
   return jsonList.map((json) => MockTest.fromJson(json)).toList();
 }
@@ -796,13 +818,4 @@ List<MockTest> _parseMockTests(List<dynamic> jsonList) {
 List<Question> _decodeAndParseQuestions(String jsonString) {
   final List<dynamic> jsonList = jsonDecode(jsonString);
   return jsonList.map((q) => Question.fromJson(q)).toList();
-}
-
-class _SignedUrlEntry {
-  final String url;
-  final DateTime expiresAt;
-
-  _SignedUrlEntry(this.url, this.expiresAt);
-
-  bool get isExpired => DateTime.now().isAfter(expiresAt);
 }

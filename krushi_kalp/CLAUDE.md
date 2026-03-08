@@ -43,6 +43,9 @@ Services handle the heavy lifting: database calls via Supabase, external APIs, a
 | `chat_service.dart` | Real-time support chat. | `fetchMessageStream`, `sendMessage`, `getAdminConversations`. |
 | `otp_service.dart` | SMS OTP via MSG91. | `sendOtp`, `resendOtp`, `verifyOtp`. |
 | `encryption_service.dart` | Security utilities. | `encryptData`, `decryptData` (used for session IDs). |
+| `supabase_url_helper.dart`| Signed URL management. | `getFreshSignedUrl`, `forceRefresh`, `extractPathFromUrl`. |
+| `crashlytics_service.dart`| Error & Log management. | `init`, `setUser`, `log`, `recordError`. |
+| `analytics_navigator_observer.dart`| Screen tracking. | `NavigatorObserver` for Crashlytics breadcrumbs. |
 
 ### Specialized Services
 
@@ -65,7 +68,7 @@ Services handle the heavy lifting: database calls via Supabase, external APIs, a
 | File Storage | Supabase Storage (buckets: `mock_test`, `resources`) |
 | Environment | `flutter_dotenv` → `.env` file |
 | Encryption | `encrypt` package (AES-256) for session IDs |
-| Crash Reporting | Firebase Crashlytics (user app only) |
+| Crash Reporting | Firebase Crashlytics (Global: Main + Providers + Auth) |
 | Excel Upload | `excel` package + custom JSON converters (admin only) |
 
 ---
@@ -127,6 +130,7 @@ SplashScreen
 | `OfferProvider` | Active offers/coupons, sale offers |
 | `NavigationProvider` | Bottom nav index (user), selected store category |
 | `NetworkProvider` | Online/offline status |
+| `CrashlyticsService` (Util) | Global error catching, user tagging, screen breadcrumbs |
 
 ---
 
@@ -183,9 +187,12 @@ Located in `lib/presentation/screens/admin/`:
 - **Legal**: Privacy Policy and Terms URLs.
 
 ### 3. Notification Hub
-- **Broadcasts**: Push to all users.
+- **Broadcasts**: Push to all users via `admin_notification_service`.
 - **Personal Alerts**: Push to specific user.
-- **System Integration**: Automated alerts for new tests/sales.
+- **System-Wide Automation**:
+  - **New Content**: Creating a `MockTest` or `Resource` triggers a broadcast to all users.
+  - **Sales Hub**: Successful checkouts notify the `admin_updates` topic for real-time sale monitoring.
+  - **Exclusions**: `OfferService` (coupons) does NOT trigger automated notifications.
 
 ### 4. User & Transaction Monitoring
 - **User Records**: View profiles, roles, support history.
@@ -247,6 +254,21 @@ Stored in `app_config` table, accessed via `AppConfigService`:
 4. Razorpay opens (UPI-only)
 5. On success → `TestService.checkout()` updates order status to SUCCESS
 6. **Known gap:** No server-side Razorpay signature verification
+
+---
+
+## Pricing & Coupon Logic
+
+### Price Calculator (`PriceCalculator`)
+- **Real Sales**: `Final Price = Base Price - Discount`. The UI displays `mrp` as the strike-through price using the original `mrp` stored in the database.
+- **Fake Sales (Marketing)**: `Final Price = Base Price`. The UI displays an inflated strike-through price (`database mrp + fake discount`).
+- **Base MRP Rule**: The `PriceCalculator` now relies on the original database `mrp` (`baseMrp`) passed to it to strictly ensure visual strikethrough logic remains correct even if multiple discounts are checked.
+
+### Mutual Exclusion
+- **Store Sales vs Manual Coupons**: If an automatic store sale (Real or Fake) is actively applied to *any* item in the cart or checkout, the manual student discount/coupon code field is completely **disabled**. 
+- Users are presented with a "Store sale discounts are already active" message.
+- **Cart Logic**: `CartProvider` and `DirectCheckoutSheet` strictly enforce this lockout.
+- **Implementation**: Handled in `PriceCalculator.isAnySaleActive` check within `CartProvider`.
 
 ---
 
@@ -355,7 +377,10 @@ flutter clean && flutter pub get && flutter run
 - **Payment Reliability**: No Razorpay webhooks. **Fix needed**: Server-side webhook Edge Functions.
 
 ### Resolved (2026-03-07 Audit)
-- **Performance**: N+1 Signed URL fetching storm. **Fixed**: Added `_SignedUrlEntry` cache (22h TTL) to `TestService` and `ResourceService`.
+- **Sustainability**: Fixed 400 errors from expiring Supabase URLs.
+  - **Strategy**: Switched from storing temporary Signed URLs in DB to permanent Storage Paths.
+  - **Logic**: Implemented `SupabaseUrlHelper` with 1-hour auto-refreshing cache and 5-min safety margin.
+- **Performance**: N+1 Signed URL fetching storm. **Fixed**: Centralized signing in `SupabaseUrlHelper` with 1-hour cache.
 - **Billing**: Excessive FCM database writes. **Fixed**: Throttled FCM token updates via `SharedPreferences`.
 - **Reliability**: Google Translate rate-limiting. **Fixed**: Implemented chunked translation processing (5 items/batch).
 
@@ -414,23 +439,25 @@ flutter clean && flutter pub get && flutter run
 6. **Phase 6**: `fetchOrderById` for rich transaction joins. Interactive detail popups.
 7. **Phase 7**: Premium full-screen detail views for resources + mock tests. PDF sharing.
 8. **Phase 8**: `DbErrorHelper` for friendly PostgrestException translation.
-9. **Phase 9**: Premium splash screen with progress bar. Login logo at `130x130`.
+9. **Phase 9**: Premium splash screen with progress bar. Login logo at `130x130`. Splash logo size increased for better branding.
 10. **Global UI Resilience**: System navigation bar overlap audit and fix across all management screens.
 
-### Unified Infrastructure Fixes (Gemini Audit 2026-03-07)
+### Unified Infrastructure Fixes (Gemini Audit 2026-03-08)
 1. **N+1 Signed URL Caching**: 22-hour in-memory cache implemented for all Storage assets. Reduces API calls by ~90% for high-volume lists.
 2. **FCM Write Throttling**: Database updates for FCM tokens now gated by local `SharedPreferences`.
 3. **Translation Batch Throttling**: Sequential chunked processing (batch size: 5) for Google Translate requests to prevent HTTP 429 rate-limits.
 4. **Dead Code Purge**: Deleted orphaned files (`theme_test_screen.dart`, `feedback_model.dart`) and 100+ lines of unused methods/imports.
 5. **Admin Stream Optimization**: Removed problematic debounce that caused UI lag; shifted reliability to the URL cache layer.
-7. **Free Material Claim Recovery**: Identified and removed non-existent `payment_id` column from `orders` table inserts in `TestService` and `ResourceService`, restoring "Claim Free" functionality.
-8. **Admin Panel Pull-to-Refresh**: Several admin screens were missing pull-to-refresh (`RefreshIndicator`). A systematic sweep was performed.
-**Status**: [COMPLETED]
-**Screens Updated**: `AdminAnalysisScreen`, `RevenueDetailsScreen`, `AdminMockTestList`, `BannerManagementTab`, `ContentManagementTab`, `FeatureControlTab`, `AdminResourcesDashboard`.
-9. **System Nav Bar Overlap Audit**: Completed audit and fix for reactive `MediaQuery` padding globally across 35+ user and admin screens to prevent gesture bar overlap.
-
----
-
+6. **Free Material Claim Recovery**: Identified and added missing call to backend `claimResource` inside `ResourceProvider` and fixed lack of `TestProvider` local updates.
+7. **Admin Panel Pull-to-Refresh**: Several admin screens were missing pull-to-refresh (`RefreshIndicator`). A systematic sweep was performed.
+8. **System Nav Bar Overlap Audit**: Completed audit and fix for reactive `MediaQuery` padding globally across 35+ user and admin screens to prevent gesture bar overlap.
+9. **Global Crashlytics Integration**:
+    - **Initialization**: Modernized `main()` with `PlatformDispatcher` error catching.
+    - **Tracking**: `AnalyticsNavigatorObserver` for automatic screen breadcrumbs.
+    - **Attribution**: User ID tagging in `AuthService` on login/logout.
+    - **Standardization**: Audited all providers for consistent `recordError` usage.
+10. **Cart Image Reliability**: Fixed "Missing Host" crashes in `CartScreen` by implementing centralized URL signing in `CartProvider` via `SupabaseUrlHelper`.
+11. **Splash Screen Production Readiness**: Cleaned up the splash screen for final release by removing debug print statements and refining the central logo container from a large square to a perfectly fitted circular bounding box.
 
 ---
 
@@ -613,7 +640,7 @@ The app entry point manages critical initialization and global UI interceptors.
 
 | Component | Responsibility |
 |-----------|----------------|
-| `main()` | Bootstraps the app: `runZonedGuarded` (Crashlytics), Supabase/Firebase init, `.env` loading. |
+| `main()` | Bootstraps the app: `PlatformDispatcher` (Crashlytics), Supabase/Firebase init, `.env` loading, `runZonedGuarded` fallback. |
 | `MultiProvider` | Injects all 7+ providers into the widget tree. |
 | `MyApp` | Configures `MaterialApp`, global `navigatorKey`, and `ThemeMode.system`. |
 | `NetworkAwareWrapper`| A global builder that monitors `NetworkProvider` and prevents navigation to online-only screens when offline. |

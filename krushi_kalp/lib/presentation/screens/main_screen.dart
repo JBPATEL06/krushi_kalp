@@ -11,6 +11,11 @@ import 'profile_screen.dart';
 import '../providers/test_provider.dart';
 import '../providers/resource_provider.dart';
 
+import 'package:package_info_plus/package_info_plus.dart';
+import '../../data/services/app_config_service.dart';
+import 'maintenance_screen.dart';
+import 'update_required_screen.dart';
+
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -40,8 +45,79 @@ class _MainScreenState extends State<MainScreen> {
 
     // Initial Sync for logged in user
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAppStatus(); // NEW: Gate check
       _initialSync();
     });
+  }
+
+  Future<void> _checkAppStatus() async {
+    final auth = context.read<AuthProvider>();
+    if (auth.isAdmin) {
+      debugPrint("MainScreen: Admin detected. Bypassing app status checks.");
+      return;
+    }
+
+    // Ensure configs are fresh (though Splash usually fetches them)
+    // We don't await here to avoid blocking UI, but Splash ensures they are ready.
+
+    // 1. Maintenance Check
+    if (AppConfigService.isMaintenanceMode) {
+      debugPrint("MainScreen: Maintenance mode detected. Redirecting...");
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MaintenanceScreen(
+              error: AppConfigService.maintenanceMessage,
+              onRetry: () => Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const MainScreen()),
+              ),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    // 2. Version Check
+    final minVer = AppConfigService.minVersion;
+    if (minVer != null && minVer.isNotEmpty) {
+      final info = await PackageInfo.fromPlatform();
+      final current = info.version;
+      if (_isVersionBelow(current, minVer)) {
+        debugPrint(
+            "MainScreen: Update required. Current: $current, Required: $minVer");
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => UpdateRequiredScreen(
+                currentVersion: current,
+                requiredVersion: minVer,
+              ),
+            ),
+          );
+        }
+        return;
+      }
+    }
+  }
+
+  bool _isVersionBelow(String current, String minimum) {
+    try {
+      final c = current.split('.').map(int.parse).toList();
+      final m = minimum.split('.').map(int.parse).toList();
+      for (int i = 0; i < 3; i++) {
+        final cv = i < c.length ? c[i] : 0;
+        final mv = i < m.length ? m[i] : 0;
+        if (cv < mv) return true;
+        if (cv > mv) return false;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> _initialSync() async {
