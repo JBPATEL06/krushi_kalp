@@ -15,10 +15,10 @@ class AdminService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       if (NetworkUtils.isNetworkError(e)) {
-        debugPrint('AdminService: Network Error fetching all users.');
+        
         return [];
       }
-      debugPrint('AdminService: Error fetching all users: $e');
+      
       return [];
     }
   }
@@ -38,7 +38,7 @@ class AdminService {
       return null;
     } catch (e) {
       if (NetworkUtils.isNetworkError(e)) return null;
-      debugPrint('AdminService: Error looking up user: $e');
+      
       return null;
     }
   }
@@ -92,8 +92,7 @@ class AdminService {
               .eq('status', 'SUCCESS');
           totalPurchased = ordersCount;
         } catch (e) {
-          debugPrint(
-              'AdminService: Revenue RPC failed, falling back to local sum: $e');
+          
           final ordersList = await _supabase
               .from('orders')
               .select('total_amount')
@@ -114,7 +113,7 @@ class AdminService {
           'activeOffers': results[3] as int, // Adjusted index
         };
       } catch (e) {
-        debugPrint('AdminService: Error in streamDashboardStats: $e');
+        
         return {
           'totalTests': 0,
           'totalResources': 0,
@@ -157,7 +156,7 @@ class AdminService {
       };
     } catch (e) {
       if (NetworkUtils.isNetworkError(e)) {
-        debugPrint('AdminService: Network Error fetching stats.');
+        
         return {
           'totalTests': 0,
           'totalUsers': 0,
@@ -166,7 +165,7 @@ class AdminService {
           'activeOffers': 0,
         };
       }
-      debugPrint('AdminService: Error fetching stats: $e');
+      
       return {
         'totalTests': 0,
         'totalUsers': 0,
@@ -250,7 +249,7 @@ class AdminService {
 
         return sortedUsers.take(10).toList();
       } catch (e) {
-        debugPrint('AdminService: Error in streamTopUsers: $e');
+        
         return [];
       }
     });
@@ -310,14 +309,14 @@ class AdminService {
         for (var t in result) {
           final testId = t['id'];
           final path = 'mock_test_cover/$testId.jpg';
-          final signedUrl = await SupabaseUrlHelper.getFreshSignedUrl(
-              bucketName: 'mock_test', storagePath: path);
+          final signedUrl =
+              await SupabaseUrlHelper().getFreshSignedUrl('mock_test', path);
           t['image_url'] = signedUrl;
         }
 
         return result;
       } catch (e) {
-        debugPrint('AdminService: Error in streamTopTests: $e');
+        
         return [];
       }
     });
@@ -370,7 +369,7 @@ class AdminService {
 
       return sortedUsers.take(10).toList();
     } catch (e) {
-      debugPrint('AdminService User Ranking Error: $e');
+      
       return [];
     }
   }
@@ -416,10 +415,10 @@ class AdminService {
       }).toList();
     } catch (e) {
       if (NetworkUtils.isNetworkError(e)) {
-        debugPrint('AdminService: Network Error fetching detailed users.');
+        
         return [];
       }
-      debugPrint('AdminService: Error fetching detailed users: $e');
+      
       return [];
     }
   }
@@ -436,7 +435,7 @@ class AdminService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       if (NetworkUtils.isNetworkError(e)) return [];
-      debugPrint('AdminService: Error fetching orders: $e');
+      
       return [];
     }
   }
@@ -457,7 +456,7 @@ class AdminService {
 
         return List<Map<String, dynamic>>.from(orders);
       } catch (e) {
-        debugPrint('AdminService: Error in streamAllOrders poll: $e');
+        
         return [];
       }
     });
@@ -474,7 +473,7 @@ class AdminService {
       return response;
     } catch (e) {
       if (NetworkUtils.isNetworkError(e)) return null;
-      debugPrint('AdminService: Error fetching user details: $e');
+      
       return null;
     }
   }
@@ -490,7 +489,7 @@ class AdminService {
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      debugPrint('AdminService: Error fetching user orders: $e');
+      
       return [];
     }
   }
@@ -506,7 +505,7 @@ class AdminService {
           .order('attempt_date', ascending: false);
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('AdminService: Error fetching user results: $e');
+      
       return [];
     }
   }
@@ -516,7 +515,7 @@ class AdminService {
     try {
       await _supabase.from('users').update({'role': 'Admin'}).eq('id', userId);
     } catch (e) {
-      print('AdminService: Error promoting user: $e');
+      
       rethrow;
     }
   }
@@ -528,7 +527,7 @@ class AdminService {
           .from('users')
           .update({'role': 'Student'}).eq('id', userId);
     } catch (e) {
-      print('AdminService: Error demoting user: $e');
+      
       rethrow;
     }
   }
@@ -574,7 +573,7 @@ class AdminService {
           };
         }).toList();
       } catch (e) {
-        debugPrint('AdminService: Error in streamUsers poll: $e');
+        
         return [];
       }
     });
@@ -637,7 +636,7 @@ class AdminService {
       await _supabase
           .rpc('admin_delete_user_data', params: {'target_user_id': userId});
     } catch (e) {
-      debugPrint('AdminService: Error deleting user: $e');
+      
       rethrow;
     }
   }
@@ -663,7 +662,7 @@ class AdminService {
         'salesCount': (salesRes as List).length,
       };
     } catch (e) {
-      debugPrint('AdminService: Error fetching Type stats: $e');
+      
       return {'totalCount': 0, 'salesCount': 0};
     }
   }
@@ -691,7 +690,7 @@ class AdminService {
         'salesCount': salesRes.count,
       };
     } catch (e) {
-      debugPrint('AdminService: Error fetching Item stats: $e');
+      
       return {'price': 0.0, 'salesCount': 0};
     }
   }
@@ -718,7 +717,7 @@ class AdminService {
         'salesCount': salesRes.count,
       };
     } catch (e) {
-      debugPrint('AdminService: Error fetching Mock Test stats: $e');
+      
       return {'price': 0.0, 'salesCount': 0};
     }
   }
@@ -741,7 +740,7 @@ class AdminService {
       return response;
     } catch (e) {
       if (NetworkUtils.isNetworkError(e)) return null;
-      debugPrint('AdminService: Error fetching order by ID: $e');
+      
       return null;
     }
   }
@@ -765,10 +764,10 @@ class AdminService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       if (NetworkUtils.isNetworkError(e)) {
-        debugPrint('AdminService: Network Error fetching order details.');
+        
         return [];
       }
-      debugPrint('AdminService: Error fetching order details: $e');
+      
       rethrow;
     }
   }

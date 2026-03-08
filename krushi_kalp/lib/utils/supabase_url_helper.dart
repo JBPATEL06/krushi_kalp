@@ -1,24 +1,54 @@
+import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// A centralized utility to manage signed URLs from Supabase Storage.
-/// Handles caching and automatic refresh before expiry.
+/// Handles in-memory and persistent caching with automatic refresh logic.
 class SupabaseUrlHelper {
-  // --- CACHE ---
+  // Singleton
+  static final SupabaseUrlHelper _instance = SupabaseUrlHelper._internal();
+  factory SupabaseUrlHelper() => _instance;
+  SupabaseUrlHelper._internal();
+
+  // --- CACHE CONFIG ---
+
+  /// The in-memory cache of signed URLs.
   static final Map<String, _SignedUrlEntry> _urlCache = {};
 
-  /// Default TTL for signed URLs. Supabase typically defaults to 1 hour,
-  /// and maxes out at 2 hours for many configurations. We cache for 1 hour
-  /// to ensure we stay safe and refresh before the hard limit.
-  static const Duration defaultTtl = Duration(hours: 1);
+  /// Cache TTL of 3 hours matches the Supabase signed URL duration.
+  /// We refresh every 2 hours (using a 1-hour safety margin).
+  static const Duration _cacheTtl = Duration(hours: 3);
+
+  /// We consider a URL expired 1 hour before its actual expiry (3h - 1h = 2h refresh).
+  static const Duration _safetyMargin = Duration(hours: 1);
+
+  /// Standard expiry for Supabase Signed URLs (3 Hours).
+  static const int maxExpirySeconds = 10800;
+
+  // --- RECOVERY & PERSISTENCE ---
+
+  /// Prefix for persistent SharedPreferences keys.
+  static const String _prefPrefix = 'signed_url__';
+
+  /// Helper to encode a storage path for use as a SharedPreferences key.
+  String _encodeKey(String bucket, String path) {
+    // Replace characters that might be problematic in preference keys
+    final sanitizedPath =
+        path.replaceAll('/', '__SLASH__').replaceAll('.', '__DOT__');
+    return '${_prefPrefix}${bucket}__$sanitizedPath';
+  }
+
+  // --- PUBLIC API ---
 
   /// Gets a fresh signed URL for the given path.
-  /// If a valid (non-expired) URL exists in cache, it's returned immediately.
-  static Future<String> getFreshSignedUrl({
-    required String bucketName,
-    required String storagePath,
-    Duration ttl = defaultTtl,
-  }) async {
+  ///
+  /// Logic flow:
+  /// 1. Check in-memory cache.
+  /// 2. If miss, check SharedPreferences (persistent cache).
+  /// 3. If miss, fetch from Supabase Storage and update both caches.
+  Future<String> getFreshSignedUrl(
+      String bucketName, String storagePath) async {
     if (storagePath.isEmpty) return '';
 
     // If it's already a full HTTP URL, return it as is
@@ -31,24 +61,46 @@ class SupabaseUrlHelper {
     }
 
     final cacheKey = '$bucketName|$cleanPath';
-    final cached = _urlCache[cacheKey];
 
-    if (cached != null && !cached.isExpired) {
+    // 1. Check in-memory cache
+    final cached = _urlCache[cacheKey];
+    if (cached != null && !cached.isExpired(_safetyMargin)) {
       return cached.url;
     }
 
+    // 2. Check SharedPreferences for persistence across restarts
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final prefKey = _encodeKey(bucketName, cleanPath);
+      final storedJson = prefs.getString(prefKey);
+
+      if (storedJson != null) {
+        final data = json.decode(storedJson) as Map<String, dynamic>;
+        final expiry = DateTime.parse(data['expiry'] as String);
+
+        if (expiry.isAfter(DateTime.now().add(_safetyMargin))) {
+          final url = data['url'] as String;
+          // Warm the in-memory cache
+          _urlCache[cacheKey] = _SignedUrlEntry(url: url, expiresAt: expiry);
+          return url;
+        }
+      }
+    } catch (e) {
+      
+    }
+
+    // 3. Fallback to Supabase API
     return await forceRefresh(
       bucketName: bucketName,
       storagePath: cleanPath,
-      ttl: ttl,
     );
   }
 
-  /// Bypasses cache and fetches a new signed URL from Supabase.
-  static Future<String> forceRefresh({
+  /// Bypasses all caches and fetches a new signed URL from Supabase.
+  /// Sets the expiry to 1 year and updates both memory and persistent caches.
+  Future<String> forceRefresh({
     required String bucketName,
     required String storagePath,
-    Duration ttl = defaultTtl,
   }) async {
     try {
       final supabase = Supabase.instance.client;
@@ -60,72 +112,91 @@ class SupabaseUrlHelper {
       }
 
       final cacheKey = '$bucketName|$cleanPath';
-
-      debugPrint('SupabaseUrlHelper: Fetching fresh signed URL for $cacheKey');
+      
 
       final signedUrl = await supabase.storage
           .from(bucketName)
-          .createSignedUrl(cleanPath, ttl.inSeconds);
+          .createSignedUrl(cleanPath, maxExpirySeconds);
 
+      final expiry = DateTime.now().add(_cacheTtl);
+
+      // Update in-memory cache
       _urlCache[cacheKey] = _SignedUrlEntry(
         url: signedUrl,
-        expiresAt: DateTime.now().add(ttl),
+        expiresAt: expiry,
       );
+
+      // Update persistent cache
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final prefKey = _encodeKey(bucketName, cleanPath);
+        await prefs.setString(
+            prefKey,
+            json.encode({
+              'url': signedUrl,
+              'expiry': expiry.toIso8601String(),
+            }));
+      } catch (e) {
+        
+      }
 
       return signedUrl;
     } catch (e) {
-      debugPrint('SupabaseUrlHelper: Error signing URL: $e');
+      
       // If signing fails, return the original path as fallback
       return storagePath;
     }
   }
 
-  /// Clears the entire URL cache. Call this on logout.
-  static void clearCache() {
+  /// Clears the entire URL cache (both memory and SharedPreferences).
+  /// Typically called on logout to ensure session-specific safety.
+  Future<void> clearCache() async {
     _urlCache.clear();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys =
+          prefs.getKeys().where((k) => k.startsWith(_prefPrefix)).toList();
+      for (final key in keys) {
+        await prefs.remove(key);
+      }
+    } catch (e) {
+      
+    }
   }
 
-  /// Helper to extract path from any Supabase storage URL (signed or public)
+  /// Extracts the storage path from any Supabase storage URL (signed or public).
   static String extractPathFromUrl(String url, String bucketName) {
-    // If it doesn't start with http, it's already a path
     if (!url.startsWith('http')) return url;
-
-    // Check for the standard Supabase storage segment
     if (!url.contains('/storage/v1/object/')) return url;
 
     try {
       final uri = Uri.parse(url);
       final segments = uri.pathSegments;
 
-      // URL Format: .../storage/v1/object/[public/sign]/[bucket]/[...path]
       int objectIndex = segments.indexOf('object');
       if (objectIndex != -1 && segments.length > objectIndex + 2) {
-        // The segment after 'object' is usually 'public' or 'sign'
-        // The segment after that is the bucket name
-        // Everything after that is the file path
         String path = segments.sublist(objectIndex + 2).join('/');
-
-        // Remove query parameters (like signature/tokens)
         if (path.contains('?')) {
           path = path.split('?').first;
         }
         return path;
       }
     } catch (e) {
-      debugPrint('SupabaseUrlHelper: Error extracting path: $e');
+      
     }
 
     return url;
   }
 }
 
+/// Internal model for a cached signed URL entry.
 class _SignedUrlEntry {
   final String url;
   final DateTime expiresAt;
 
   _SignedUrlEntry({required this.url, required this.expiresAt});
 
-  // We consider it expired 5 minutes BEFORE the actual expiry for safety
-  bool get isExpired =>
-      DateTime.now().isAfter(expiresAt.subtract(const Duration(minutes: 5)));
+  /// Checks if the URL has expired based on a given [margin].
+  bool isExpired(Duration margin) =>
+      DateTime.now().isAfter(expiresAt.subtract(margin));
 }

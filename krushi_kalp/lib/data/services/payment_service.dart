@@ -80,7 +80,7 @@ class PaymentService {
     try {
       _razorpay.open(options);
     } catch (e) {
-      debugPrint('Error: $e');
+      
     }
   }
 

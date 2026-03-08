@@ -238,7 +238,10 @@ class PdfService {
               ...List.generate(questions.length, (index) {
                 final q = questions[index];
                 final selectedOption = selectedAnswers[index];
-                final isCorrect = selectedOption == q.correctOptionIndex;
+                // CHANGED: Use string-based comparison instead of index
+                final bool isCorrect = selectedOption != null &&
+                    q.options[selectedOption].trim().toLowerCase() ==
+                        q.correctAnswer.trim().toLowerCase(); // CHANGED
                 final isSkipped = selectedOption == null;
 
                 return pw.Container(
@@ -298,7 +301,10 @@ class PdfService {
                       // Options
                       ...List.generate(q.options.length, (optIndex) {
                         final isSelected = selectedOption == optIndex;
-                        final isRealAnswer = q.correctOptionIndex == optIndex;
+                        // CHANGED: Use string-based comparison instead of index
+                        final isRealAnswer =
+                            q.options[optIndex].trim().toLowerCase() ==
+                                q.correctAnswer.trim().toLowerCase(); // CHANGED
 
                         PdfColor boxColor = white;
                         PdfColor borderColor = PdfColors.grey300;
@@ -426,9 +432,7 @@ class PdfService {
         final fontData =
             await rootBundle.load("assets/fonts/NotoSansGujarati-Regular.ttf");
         return pw.Font.ttf(fontData);
-      } catch (e) {
-        debugPrint("Asset load failed: $e. Trying cache/network...");
-      }
+      } catch (e) {}
 
       final dir = await getApplicationDocumentsDirectory();
       final file = File("${dir.path}/NotoSansGujarati.ttf");
@@ -458,9 +462,7 @@ class PdfService {
         await file.writeAsBytes(bytes);
         return pw.Font.ttf(bytes.buffer.asByteData());
       }
-    } catch (e) {
-      debugPrint("Font Error: $e");
-    }
+    } catch (e) {}
     // Fallback
     return pw.Font.courier();
   }

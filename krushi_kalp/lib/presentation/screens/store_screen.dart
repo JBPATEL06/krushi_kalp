@@ -29,6 +29,7 @@ import '../widgets/common/responsive_wrapper.dart';
 import '../../data/services/download_service.dart'; // NEW
 import 'pdf_viewer_screen.dart'; // NEW
 import 'dart:io'; // NEW
+import '../../utils/error_utils.dart';
 
 class StoreScreen extends StatefulWidget {
   const StoreScreen({super.key});
@@ -191,9 +192,7 @@ class _StoreScreenState extends State<StoreScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Cart Error: $e')),
-        );
+        ErrorUtils.showError(context, e);
       }
     }
   }
@@ -239,9 +238,7 @@ class _StoreScreenState extends State<StoreScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Claim Error: $e')),
-        );
+        ErrorUtils.showError(context, e);
       }
     }
   }
@@ -328,8 +325,7 @@ class _StoreScreenState extends State<StoreScreen>
       } catch (e) {
         if (mounted) {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text("Download Failed: $e")));
+          ErrorUtils.showError(context, e);
         }
       }
     }

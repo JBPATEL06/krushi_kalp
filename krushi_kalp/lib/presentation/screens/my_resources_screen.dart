@@ -136,10 +136,13 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
                           coverUrl: resource.thumbnailUrl,
                           heroTag: 'resource_image_${resource.id}',
                           customAction: DownloadActionButton(
+                            testId: resource.id.toString(),
                             filename: 'resource_${resource.id}.pdf',
                             url: resource.fileUrl,
                             startLabel: "Open",
                             isFullWidth: false,
+                            userId: AuthService.instance.currentUser?.id,
+                            displayName: resource.title, // CHANGED
                             onAction: () => _openResource(resource),
                           ),
                           onTap: () => _openResource(resource),

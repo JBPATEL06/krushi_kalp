@@ -16,6 +16,7 @@ import '../../data/services/chat_service.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/app_config_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../utils/error_utils.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -60,12 +61,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _ensureProfile(User user) async {
     try {
-      debugPrint('Profile missing for ${user.id}, creating...');
       await AuthService.instance.ensureProfileExists(user);
-      debugPrint('Profile created.');
-    } catch (e) {
-      debugPrint('Error creating profile: $e');
-    }
+    } catch (e) {}
   }
 
   Future<void> _updateLanguage(String newLang) async {
@@ -80,13 +77,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       await AuthService.instance.updateProfile(user.id, {'language': newLang});
     } catch (e) {
-      debugPrint('Error updating language: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Failed to update language: $e'),
-              backgroundColor: theme.colorScheme.error),
-        );
+        ErrorUtils.showError(context, e);
       }
     }
   }
@@ -99,11 +91,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         throw 'Could not launch $url';
       }
     } catch (e) {
-      debugPrint('Error launching URL: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not open link: $e')),
-        );
+        ErrorUtils.showError(context, e);
       }
     }
   }
@@ -165,7 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             return NetworkErrorState(
               message: isNetworkError(snapshot.error)
                   ? 'Unable to load profile.'
-                  : 'Error: ${snapshot.error}',
+                  : 'Something went wrong.',
               onRetry: _setupStream,
             );
           }
@@ -221,7 +210,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: Theme.of(
                       context,
                     ).textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: theme.colorScheme.surfaceContainerHighest,
                         fontSize: context.sp(16)),
                   ),
                   SizedBox(height: context.h(32)),
@@ -486,12 +475,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       } catch (e) {
         if (context.mounted) {
           Navigator.pop(context); // Pop loading
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error sending request: $e'),
-              backgroundColor: theme.colorScheme.error,
-            ),
-          );
+          ErrorUtils.showError(context, e);
         }
       }
     }

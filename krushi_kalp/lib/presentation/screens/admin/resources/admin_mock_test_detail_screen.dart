@@ -4,6 +4,11 @@ import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:krushi_kalp/data/services/test_service.dart';
 import 'package:krushi_kalp/data/services/admin_service.dart';
 import 'package:krushi_kalp/domain/models/mock_test.dart';
+import 'package:krushi_kalp/utils/supabase_url_helper.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 import '../mock_test_edit_screen.dart';
 
 class AdminMockTestDetailScreen extends StatefulWidget {
@@ -82,6 +87,33 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
     }
   }
 
+  Future<void> _downloadQuestions() async {
+    if (_test.filePath.isEmpty) return;
+
+    setState(() => _isLoadingStats = true);
+    try {
+      const bucket = 'mock_test';
+      final path = SupabaseUrlHelper.extractPathFromUrl(_test.filePath, bucket);
+      final bytes =
+          await Supabase.instance.client.storage.from(bucket).download(path);
+
+      final tempDir = await getTemporaryDirectory();
+      final file =
+          File('${tempDir.path}/${_test.title.replaceAll(' ', '_')}.json');
+      await file.writeAsBytes(bytes);
+
+      await Share.shareXFiles([XFile(file.path)],
+          text: 'Mock Test Questions: ${_test.title}');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Download failed: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingStats = false);
+    }
+  }
+
   void _navigateToEdit() async {
     final result = await Navigator.push(
       context,
@@ -91,9 +123,6 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
     );
 
     if (result == true && mounted) {
-      // Since stream is used in list, it might not be needed here if we pop back,
-      // but if we stay on this screen we should ideally refresh.
-      // Currently, MockTestEditScreen doesn't return the updated object, so we refresh from list.
       Navigator.pop(context, true);
     }
   }
@@ -268,7 +297,7 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
 
             // Performance Stats
             _buildSectionHeader(context, "PERFORMANCE STATS"),
-                const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.sm),
             _buildStatCard(
               context,
               label: 'Total Sales',
@@ -280,7 +309,7 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
 
             // Settings Section
             _buildSectionHeader(context, "TEST SETTINGS"),
-                const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.sm),
             Container(
               decoration: BoxDecoration(
                 color: colorScheme.surface,
@@ -318,6 +347,31 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Content Files section
+            _buildSectionHeader(context, "CONTENT FILES"),
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(
+                    color: colorScheme.outlineVariant.withOpacity(0.5)),
+              ),
+              child: ListTile(
+                leading: Icon(Icons.description_outlined,
+                    color: colorScheme.primary),
+                title: const Text('Questions File (JSON)'),
+                subtitle: Text(_test.filePath.split('/').last),
+                trailing: IconButton(
+                  icon: const Icon(Icons.download_for_offline_outlined),
+                  onPressed: _downloadQuestions,
+                  color: colorScheme.primary,
+                  tooltip: 'Download original JSON',
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.xl),

@@ -1,7 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/order_item.dart';
+import '../../domain/models/mock_test.dart';
+import '../../domain/models/resource.dart';
+import '../../utils/supabase_url_helper.dart';
 
+/// Service class for managing the shopping cart and pending orders.
 class CartService {
   // --- SINGLETON ---
   CartService._();
@@ -9,7 +13,9 @@ class CartService {
 
   final _supabase = Supabase.instance.client;
 
-  // --- READ ---
+  // ── READ ─────────────────────────────────────────────────────────────────
+
+  /// Fetches all items in the user's current PENDING order (the cart).
   Future<List<OrderItem>> fetchCartItems(String userId) async {
     try {
       // 1. Find PENDING order
@@ -32,7 +38,7 @@ class CartService {
           .eq('order_id', orderId)
           .order('created_at');
 
-      // 3. (Optional) Fetch global offer if needed
+      // 3. Fetch global offer if applied to the cart
       Map<String, dynamic>? globalOfferData;
       if (appliedOfferId != null) {
         try {
@@ -45,21 +51,59 @@ class CartService {
         } catch (_) {}
       }
 
-      final List<OrderItem> items = (itemsResponse as List).map((json) {
+      final List<OrderItem> rawItems = (itemsResponse as List).map((json) {
         if (globalOfferData != null) {
           json['offers'] = globalOfferData;
         }
         return OrderItem.fromJson(json);
       }).toList();
 
-      return items;
+      // 4. Transform items to include 1-year signed URLs for thumbnails
+      return await _signCartItems(rawItems);
     } catch (e) {
-      debugPrint("CartService: Error fetching cart items: $e");
+      
       return [];
     }
   }
 
-  // --- WRITE ---
+  /// Internal helper to sign thumbnails for items displayed in the cart.
+  Future<List<OrderItem>> _signCartItems(List<OrderItem> items) async {
+    return await Future.wait(items.map((item) async {
+      MockTest? signedTest = item.mockTest;
+      Resource? signedResource = item.resource;
+      const bucket = 'mock_test';
+
+      if (signedTest != null && signedTest.coverImagePath != null) {
+        final path = SupabaseUrlHelper.extractPathFromUrl(
+            signedTest.coverImagePath!, bucket);
+        final url = await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
+        signedTest = signedTest.copyWith(signedUrl: url);
+      }
+
+      if (signedResource != null &&
+          (signedResource.thumbnailUrl?.isNotEmpty ?? false)) {
+        final path = SupabaseUrlHelper.extractPathFromUrl(
+            signedResource.thumbnailUrl!, bucket);
+        final url = await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
+        signedResource = signedResource.copyWith(thumbnailUrl: url);
+      }
+
+      return OrderItem(
+        itemId: item.itemId,
+        orderId: item.orderId,
+        testId: item.testId,
+        resourceId: item.resourceId,
+        priceAtPurchase: item.priceAtPurchase,
+        appliedOfferId: item.appliedOfferId,
+        createdAt: item.createdAt,
+        mockTest: signedTest,
+        resource: signedResource,
+        offers: item.offers,
+      );
+    }));
+  }
+
+  // ── WRITE ────────────────────────────────────────────────────────────────
 
   /// Checks if user already owns the item (Status = SUCCESS)
   Future<bool> checkOwnership({
@@ -70,7 +114,6 @@ class CartService {
     try {
       if (testId == null && resourceId == null) return false;
 
-      // Check in order_items joined with orders where status is SUCCESS
       var query = _supabase
           .from('order_items')
           .select('orders!inner(status, user_id)')
@@ -86,11 +129,12 @@ class CartService {
       final response = await query.limit(1).maybeSingle();
       return response != null;
     } catch (e) {
-      debugPrint("CartService: Error checking ownership: $e");
+      
       return false;
     }
   }
 
+  /// Adds an item to the user's cart. Handles duplicate and ownership checks.
   Future<void> addToCart({
     required String authUserId,
     int? testId,
@@ -138,12 +182,10 @@ class CartService {
         }
 
         final existingItem = await query.maybeSingle();
-
         if (existingItem != null) {
           throw Exception("Item is already in your cart.");
         }
       } else {
-        // Create new
         final newOrder = await _supabase
             .from('orders')
             .insert({
@@ -166,16 +208,17 @@ class CartService {
         'created_at': DateTime.now().toUtc().toIso8601String(),
       });
     } catch (e) {
-      debugPrint('CartService: Error adding to cart: $e');
+      
       throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }
 
+  /// Removes a specific item from the cart.
   Future<void> removeCartItem(int itemId) async {
     try {
       await _supabase.from('order_items').delete().eq('item_id', itemId);
     } catch (e) {
-      debugPrint('CartService: Error removing item: $e');
+      
       throw Exception('Failed to remove item: $e');
     }
   }

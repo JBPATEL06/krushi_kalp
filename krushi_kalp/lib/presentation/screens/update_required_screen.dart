@@ -20,7 +20,7 @@ class UpdateRequiredScreen extends StatelessWidget {
   Future<void> _openPlayStore() async {
     final uri = Uri.parse(_playStoreUrl);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      debugPrint('UpdateRequiredScreen: Could not open Play Store');
+      
     }
   }
 

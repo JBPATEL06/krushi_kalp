@@ -32,9 +32,7 @@ class RetryHelper {
 
         // Exponential backoff: 1s, 2s, 4s...
         final delay = initialDelay * (1 << (attempt - 1));
-        debugPrint(
-            'RetryHelper: Network error, retrying in ${delay.inSeconds}s '
-            '(attempt $attempt/$maxRetries)');
+        
         await Future.delayed(delay);
       }
     }

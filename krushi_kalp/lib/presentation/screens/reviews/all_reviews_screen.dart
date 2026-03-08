@@ -45,7 +45,7 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
         });
       }
     } catch (e) {
-      debugPrint("Error loading all reviews: $e");
+      
       if (mounted) setState(() => _isLoading = false);
     }
   }

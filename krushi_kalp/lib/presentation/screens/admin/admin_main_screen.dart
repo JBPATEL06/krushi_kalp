@@ -72,7 +72,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
               }
             },
             child: Scaffold(
-              backgroundColor: colorScheme.background,
+              backgroundColor: colorScheme.surface,
               appBar: AppBar(
                 leading: isLargeScreen ? const SizedBox.shrink() : null,
                 title: Text(_getAppBarTitle(provider.navIndex)),
@@ -135,9 +135,9 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: colorScheme.primary.withOpacity(0.1),
+        color: colorScheme.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppRadius.full),
-        border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -200,8 +200,8 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                     Text(
                       'Admin Panel',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                          color: colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.1)),
                     ),
                   ],
                 ),

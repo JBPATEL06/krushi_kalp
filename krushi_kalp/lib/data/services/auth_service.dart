@@ -146,7 +146,7 @@ class AuthService {
           .maybeSingle();
 
       if (profile == null) {
-        debugPrint('Creating new profile for ${user.email}');
+        
 
         // Extract real name from Google Auth metadata (usually 'full_name' or 'name')
         final metadata = user.userMetadata ?? {};
@@ -164,10 +164,10 @@ class AuthService {
           // 'created_at': DateTime.now().toIso8601String(), // Let DB handle default
         });
       } else {
-        debugPrint('Profile exists: ${profile['language']}');
+        
       }
     } catch (e) {
-      debugPrint('Error checking/creating profile: $e');
+      
       // Don't block login if profile fails, but might cause issues later
     }
   }
@@ -183,7 +183,7 @@ class AuthService {
     try {
       await GoogleSignIn().signOut();
     } catch (e) {
-      debugPrint('Error signing out of Google: $e');
+      
     }
     await _supabase.auth.signOut();
   }
@@ -198,7 +198,7 @@ class AuthService {
           .from('users')
           .update({'session_id': finalSessionId}).eq('id', userId);
     } catch (e) {
-      debugPrint('Error updating session ID: $e');
+      
     }
   }
 
@@ -211,7 +211,7 @@ class AuthService {
           .maybeSingle();
       return response?['session_id'] as String?;
     } catch (e) {
-      debugPrint('Error fetching session ID: $e');
+      
       return null;
     }
   }
@@ -231,7 +231,7 @@ class AuthService {
           .from('users')
           .update({'session_id': null}).eq('id', userId);
     } catch (e) {
-      debugPrint('Error clearing session ID: $e');
+      
     }
   }
 
@@ -257,7 +257,7 @@ class AuthService {
           await _supabase.from('users').select().eq('id', userId).maybeSingle();
       return response;
     } catch (e) {
-      debugPrint('Error fetching user profile: $e');
+      
       return null;
     }
   }
@@ -274,7 +274,7 @@ class AuthService {
     try {
       await _supabase.from('users').update(data).eq('id', userId);
     } catch (e) {
-      debugPrint('Error updating profile: $e');
+      
       throw Exception('Failed to update profile: $e');
     }
   }
@@ -298,7 +298,7 @@ class AuthService {
         return response['role'] as String?;
       }
     } catch (e) {
-      debugPrint('Error fetching user role: $e');
+      
     }
     return null;
   }
@@ -312,7 +312,7 @@ class AuthService {
           .maybeSingle();
       return response?['user_id'] as int?;
     } catch (e) {
-      debugPrint('AuthService: Error fetching DB ID: $e');
+      
       return null;
     }
   }

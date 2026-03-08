@@ -9,6 +9,7 @@ import 'package:krushi_kalp/presentation/widgets/common/network_error_state.dart
 import 'package:krushi_kalp/presentation/widgets/chat/chat_input.dart';
 import 'package:krushi_kalp/presentation/utils/chat_mapper.dart';
 import 'package:krushi_kalp/data/services/notification_service.dart';
+import '../../utils/error_utils.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -41,9 +42,7 @@ class _ChatScreenState extends State<ChatScreen> {
       await _chatService.sendMessage(message.text);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error sending message: $e')),
-        );
+        ErrorUtils.showError(context, e);
       }
     }
   }
@@ -77,9 +76,7 @@ class _ChatScreenState extends State<ChatScreen> {
         await _chatService.clearChat();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error clearing chat: $e')),
-          );
+          ErrorUtils.showError(context, e);
         }
       }
     }
@@ -133,9 +130,7 @@ class _ChatScreenState extends State<ChatScreen> {
         await _chatService.deleteMessage(message.id);
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting message: $e')),
-          );
+          ErrorUtils.showError(context, e);
         }
       }
     }

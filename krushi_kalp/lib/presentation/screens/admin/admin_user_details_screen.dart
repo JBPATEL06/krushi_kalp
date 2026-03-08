@@ -5,13 +5,17 @@ import 'admin_chat_detail_screen.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:krushi_kalp/presentation/widgets/common/modern_card.dart';
+import '../../../../utils/error_utils.dart';
 
 class AdminUserDetailsScreen extends StatefulWidget {
   final String userId;
   final String username;
 
-  const AdminUserDetailsScreen(
-      {super.key, required this.userId, required this.username});
+  const AdminUserDetailsScreen({
+    super.key,
+    required this.userId,
+    required this.username,
+  });
 
   @override
   State<AdminUserDetailsScreen> createState() => _AdminUserDetailsScreenState();
@@ -69,9 +73,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error promoting user: $e')),
-          );
+          ErrorUtils.showError(context, e);
         }
       }
     }
@@ -112,9 +114,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error demoting user: $e')),
-          );
+          ErrorUtils.showError(context, e);
         }
       }
     }
@@ -166,9 +166,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
       } catch (e) {
         if (mounted) {
           Navigator.pop(context); // Pop loading
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting user: $e')),
-          );
+          ErrorUtils.showError(context, e);
         }
       }
     }
@@ -180,7 +178,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: Text(widget.username),
         backgroundColor: colorScheme.surface,
@@ -239,7 +237,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
               compact: true,
               message: isNetworkError(snapshot.error)
                   ? 'Unable to load user details.'
-                  : 'Error: ${snapshot.error}',
+                  : 'Something went wrong.',
               onRetry: () => setState(() {}),
             ),
           );
@@ -277,7 +275,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                 children: [
                   CircleAvatar(
                     radius: 40,
-                    backgroundColor: colorScheme.primary.withOpacity(0.1),
+                    backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
                     child: Text(
                       widget.username.isNotEmpty
                           ? widget.username[0].toUpperCase()
@@ -343,7 +341,8 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                             style: OutlinedButton.styleFrom(
                               foregroundColor: colorScheme.primary,
                               side: BorderSide(
-                                  color: colorScheme.primary.withOpacity(0.5)),
+                                  color: colorScheme.primary
+                                      .withValues(alpha: 0.5)),
                               shape: RoundedRectangleBorder(
                                   borderRadius:
                                       BorderRadius.circular(AppRadius.md)),
@@ -365,7 +364,8 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                         icon: const Icon(Icons.admin_panel_settings_rounded),
                         label: const Text('Make Admin'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: colorScheme.primary.withOpacity(0.1),
+                          backgroundColor:
+                              colorScheme.primary.withValues(alpha: 0.1),
                           foregroundColor: colorScheme.primary,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -381,7 +381,8 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                         icon: const Icon(Icons.person_remove_rounded),
                         label: const Text('Delete User'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: colorScheme.error.withOpacity(0.1),
+                          backgroundColor:
+                              colorScheme.error.withValues(alpha: 0.1),
                           foregroundColor: colorScheme.error,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -397,10 +398,10 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                   padding: const EdgeInsets.symmetric(
                       vertical: 10, horizontal: AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withOpacity(0.1),
+                    color: const Color(0xFF10B981).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(
-                        color: const Color(0xFF10B981).withOpacity(0.2)),
+                        color: const Color(0xFF10B981).withValues(alpha: 0.2)),
                   ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -425,7 +426,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                         label: const Text('Make Student'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
-                              const Color(0xFFF59E0B).withOpacity(0.1),
+                              const Color(0xFFF59E0B).withValues(alpha: 0.1),
                           foregroundColor: const Color(0xFFF59E0B),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -441,7 +442,8 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                         icon: const Icon(Icons.person_remove_rounded),
                         label: const Text('Delete Admin'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: colorScheme.error.withOpacity(0.1),
+                          backgroundColor:
+                              colorScheme.error.withValues(alpha: 0.1),
                           foregroundColor: colorScheme.error,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -472,9 +474,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
         }
         if (snapshot.hasError) {
           return NetworkErrorState(
-            message: isNetworkError(snapshot.error)
-                ? 'Unable to load purchases.'
-                : 'Error: ${snapshot.error}',
+            message: 'Something went wrong. Please try again.',
             onRetry: () => setState(() {}),
           );
         }
@@ -532,9 +532,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
         }
         if (snapshot.hasError) {
           return NetworkErrorState(
-            message: isNetworkError(snapshot.error)
-                ? 'Unable to load test attempts.'
-                : 'Error: ${snapshot.error}',
+            message: 'Something went wrong. Please try again.',
             onRetry: () => setState(() {}),
           );
         }
@@ -571,7 +569,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: colorScheme.primary.withOpacity(0.1),
+                    color: colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Text(
@@ -597,7 +595,8 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.inbox_rounded,
-              size: 48, color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+              size: 48,
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3)),
           const SizedBox(height: AppSpacing.md),
           Text(message, style: TextStyle(color: colorScheme.onSurfaceVariant)),
         ],

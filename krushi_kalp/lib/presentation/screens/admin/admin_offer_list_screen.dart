@@ -5,6 +5,8 @@ import '../../widgets/common/network_error_state.dart';
 import 'admin_offer_manage_screen.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../../utils/error_utils.dart';
+import '../../../utils/network_utils.dart';
 
 class AdminOfferListScreen extends StatefulWidget {
   final bool showOnlyActive;
@@ -91,11 +93,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text('Error: $e'),
-                backgroundColor: theme.colorScheme.error),
-          );
+          ErrorUtils.showError(context, e);
         }
       }
     }
@@ -172,7 +170,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: _isSelectionMode
             ? Text('${_selectedIds.length} Selected')
@@ -210,7 +208,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
             return NetworkErrorState(
               message: isNetworkError(snapshot.error)
                   ? 'Unable to load offers.'
-                  : 'Error: ${snapshot.error}',
+                  : 'Something went wrong.',
               onRetry: _refreshOffers,
             );
           }
@@ -234,9 +232,11 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
                       decoration: BoxDecoration(
                         color: colorScheme.surface,
                         border: Border(
-                            bottom: BorderSide(
-                                color: colorScheme.outlineVariant
-                                    .withOpacity(0.5))),
+                          bottom: BorderSide(
+                            color: colorScheme.outlineVariant
+                                .withValues(alpha: 0.5),
+                          ),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,7 +309,8 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
                     if (_isSelectionMode && _selectedIds.isNotEmpty)
                       Container(
                         width: double.infinity,
-                        color: colorScheme.primaryContainer.withOpacity(0.3),
+                        color:
+                            colorScheme.primaryContainer.withValues(alpha: 0.3),
                         padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.lg, vertical: 8),
                         child: Row(
@@ -364,7 +365,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
 
     return Material(
       color: isSelected
-          ? colorScheme.primaryContainer.withOpacity(0.1)
+          ? colorScheme.primaryContainer.withValues(alpha: 0.1)
           : Colors.transparent,
       child: InkWell(
         onLongPress: () {
@@ -395,7 +396,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
           decoration: BoxDecoration(
             border: Border(
                 bottom: BorderSide(
-                    color: colorScheme.outlineVariant.withOpacity(0.5))),
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5))),
           ),
           child: Row(
             children: [
@@ -416,8 +417,8 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
                 height: 48,
                 decoration: BoxDecoration(
                   color: isInactive
-                      ? colorScheme.surfaceVariant
-                      : colorScheme.primary.withOpacity(0.08),
+                      ? colorScheme.surfaceContainerHighest
+                      : colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -473,14 +474,15 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
                       height: 24,
                       child: Switch(
                         value: offer.isActive,
-                        activeColor: colorScheme.primary,
+                        activeThumbColor: colorScheme.primary,
                         onChanged: (v) => _toggleStatus(offer, v),
                       ),
                     ),
                   const SizedBox(height: 4),
                   IconButton(
                     icon: Icon(Icons.delete_outline_rounded,
-                        color: colorScheme.error.withOpacity(0.4), size: 16),
+                        color: colorScheme.error.withValues(alpha: 0.4),
+                        size: 16),
                     onPressed: () => _delete(offer.id),
                     constraints: const BoxConstraints(),
                     padding: EdgeInsets.zero,
@@ -508,7 +510,7 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
               children: [
                 Icon(Icons.local_offer_outlined,
                     size: 64,
-                    color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
                 const SizedBox(height: AppSpacing.md),
                 Text('No offers matching criteria',
                     style: TextStyle(color: colorScheme.onSurfaceVariant)),
@@ -528,13 +530,13 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
       label: Text(label),
       selected: isSelected,
       onSelected: onSelected,
-      selectedColor: colorScheme.primary.withOpacity(0.1),
+      selectedColor: colorScheme.primary.withValues(alpha: 0.1),
       checkmarkColor: colorScheme.primary,
       backgroundColor: colorScheme.surface,
       side: BorderSide(
           color: isSelected
               ? colorScheme.primary
-              : colorScheme.outline.withOpacity(0.2)),
+              : colorScheme.outline.withValues(alpha: 0.2)),
       labelStyle: theme.textTheme.labelSmall?.copyWith(
         color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -552,12 +554,12 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
       label: Text(label),
       selected: isSelected,
       onSelected: (_) => onTap(),
-      selectedColor: colorScheme.primary.withOpacity(0.1),
+      selectedColor: colorScheme.primary.withValues(alpha: 0.1),
       backgroundColor: colorScheme.surface,
       side: BorderSide(
           color: isSelected
               ? colorScheme.primary
-              : colorScheme.outline.withOpacity(0.2)),
+              : colorScheme.outline.withValues(alpha: 0.2)),
       labelStyle: theme.textTheme.labelSmall?.copyWith(
         color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

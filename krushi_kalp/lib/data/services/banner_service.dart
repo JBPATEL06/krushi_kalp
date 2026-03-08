@@ -29,7 +29,7 @@ class BannerService {
           .map((json) => HomeBanner.fromJson(json))
           .toList();
     } catch (e) {
-      debugPrint('BannerService: fetchActiveBanners error: $e');
+      
       return [];
     }
   }
@@ -77,9 +77,9 @@ class BannerService {
         'priority': priority,
       });
 
-      debugPrint('BannerService: Uploaded $fileName');
+      
     } catch (e) {
-      debugPrint('BannerService: uploadBanner error: $e');
+      
       rethrow;
     }
   }
@@ -115,9 +115,9 @@ class BannerService {
       // 4. Delete old image from storage (best effort)
       _deleteStorageFile(oldImageUrl);
 
-      debugPrint('BannerService: Replaced image for banner $bannerId');
+      
     } catch (e) {
-      debugPrint('BannerService: replaceBannerImage error: $e');
+      
       rethrow;
     }
   }
@@ -141,7 +141,7 @@ class BannerService {
     try {
       await _supabase.from(_table).update(updates).eq('id', bannerId);
     } catch (e) {
-      debugPrint('BannerService: updateBannerMeta error: $e');
+      
       rethrow;
     }
   }
@@ -157,9 +157,9 @@ class BannerService {
       // 2. Delete storage file (best effort)
       _deleteStorageFile(imageUrl);
 
-      debugPrint('BannerService: Deleted banner $id');
+      
     } catch (e) {
-      debugPrint('BannerService: deleteBanner error: $e');
+      
       rethrow;
     }
   }
@@ -177,7 +177,7 @@ class BannerService {
         _supabase.storage.from(_bucket).remove([storagePath]);
       }
     } catch (e) {
-      debugPrint('BannerService: _deleteStorageFile skipped: $e');
+      
     }
   }
 }

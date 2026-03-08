@@ -11,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // MUST initialize Firebase in the background isolate before anything else
   await Firebase.initializeApp();
-  debugPrint("Handling a background message: ${message.messageId}");
+  
 
   // 1. Initialize Local Notifications Plugin in the background isolate
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -72,7 +72,7 @@ class FCMService {
       sound: true,
     );
 
-    debugPrint('User granted permission: ${settings.authorizationStatus}');
+    
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       // 2. Background Handler
@@ -81,11 +81,11 @@ class FCMService {
 
       // 3. Foreground Handler
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        debugPrint('Got a message whilst in the foreground!');
-        debugPrint('Message data: ${message.data}');
+        
+        
 
         if (message.notification != null || message.data.isNotEmpty) {
-          debugPrint('Message contained a notification or data payload.');
+          
           // 3. Show Notification (User App Offset: +0)
           final AndroidNotificationDetails androidDetails =
               AndroidNotificationDetails(
@@ -120,18 +120,18 @@ class FCMService {
 
         if (role == 'Admin') {
           await _firebaseMessaging.subscribeToTopic('admin_updates');
-          debugPrint("Subscribed to 'admin_updates' topic (Admin Mode)");
+          
         } else {
           await _firebaseMessaging.unsubscribeFromTopic('admin_updates');
-          debugPrint("Unsubscribed from 'admin_updates' topic (User Mode)");
+          
         }
       }
 
-      debugPrint("Subscribed to 'all_users' topic");
+      
 
       // 5. Get Token
       String? token = await _firebaseMessaging.getToken();
-      debugPrint("FCM Token: $token");
+      
 
       if (token != null) {
         final prefs = await SharedPreferences.getInstance();
@@ -160,10 +160,9 @@ class FCMService {
       // However, 'all_users' might be relevant for general app updates?
       // Let's unsubscribe from personal topics surely.
       // But FCM topics are device-based.
-      debugPrint(
-          "FCMService: Handling Logout - Unsubscribing from restricted topics.");
+      
     } catch (e) {
-      debugPrint("Error handling FCM logout: $e");
+      
     }
   }
 
@@ -178,9 +177,9 @@ class FCMService {
           'fcm_token': token,
         });
 
-        debugPrint("FCM Token Saved to Database");
+        
       } catch (e) {
-        debugPrint("Error saving FCM Token: $e");
+        
       }
     }
   }
@@ -200,8 +199,7 @@ class FCMService {
       // If notification is from Admin -> Suppress it.
       if (currentChatUserId == 'admin_support_chat') {
         if (isFromAdmin) {
-          debugPrint(
-              "🚫 Suppressing FCM notification: User is chatting with Admin");
+          
           return;
         }
       }
@@ -212,8 +210,7 @@ class FCMService {
         // Only suppress if message is FROM that user (not from another admin/system)
         // And ensure it's NOT from admin (which would be weird self-notification, but good check)
         if (!isFromAdmin && msgUserId == currentChatUserId) {
-          debugPrint(
-              "🚫 Suppressing FCM notification: Admin is chatting with User $msgUserId");
+          
           return;
         }
       }

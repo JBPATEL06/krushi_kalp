@@ -19,6 +19,7 @@ import 'cart/widgets/cart_order_summary.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/cart_provider.dart';
 import '../../utils/supabase_url_helper.dart'; // Ensure correct URL construction
+import '../../utils/error_utils.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -112,12 +113,9 @@ class _CartScreenState extends State<CartScreen> {
 
               if (path != null && !path.startsWith('http')) {
                 try {
-                  imageUrl = await SupabaseUrlHelper.getFreshSignedUrl(
-                    bucketName: 'mock_test',
-                    storagePath: path,
-                  );
+                  imageUrl = await SupabaseUrlHelper()
+                      .getFreshSignedUrl('mock_test', path);
                 } catch (e) {
-                  debugPrint('CartScreen: Failed to sign url ($path): $e');
                   imageUrl = path;
                 }
               } else {
@@ -284,9 +282,7 @@ class _CartScreenState extends State<CartScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ErrorUtils.showError(context, e);
       }
     }
   }
@@ -407,7 +403,7 @@ class _CartScreenState extends State<CartScreen> {
             return NetworkErrorState(
               message: isNetworkError(snapshot.error)
                   ? 'Unable to load cart. Check your connection.'
-                  : 'Error: ${snapshot.error}',
+                  : 'Something went wrong.',
               onRetry: _refreshCart,
             );
           }
@@ -540,7 +536,7 @@ class _CartScreenState extends State<CartScreen> {
                                           borderSide: BorderSide(
                                             color: theme
                                                 .colorScheme.outlineVariant
-                                                .withOpacity(0.5),
+                                                .withValues(alpha: 0.5),
                                           ),
                                         ),
                                       ),
@@ -558,10 +554,12 @@ class _CartScreenState extends State<CartScreen> {
                                             : _removeOrderCoupon),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: _hasAutoSale
-                                          ? theme.colorScheme.surfaceVariant
+                                          ? theme.colorScheme
+                                              .surfaceContainerHighest
                                               .withValues(alpha: 0.5)
                                           : (_appliedGlobalOffer == null
-                                              ? theme.colorScheme.surfaceVariant
+                                              ? theme.colorScheme
+                                                  .surfaceContainerHighest
                                               : theme.colorScheme.errorContainer
                                                   .withValues(alpha: 0.3)),
                                       foregroundColor: _hasAutoSale

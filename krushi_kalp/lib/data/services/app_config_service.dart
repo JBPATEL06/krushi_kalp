@@ -12,7 +12,7 @@ class AppConfigService {
   /// Fetch all configs and update cache
   static Future<void> fetchConfigs() async {
     try {
-      debugPrint("AppConfig: Fetching from table 'app_config'...");
+      
       final response = await RetryHelper.run(
         () => _supabase
             .from('app_config')
@@ -21,7 +21,7 @@ class AppConfigService {
       );
 
       final List<dynamic> data = response as List<dynamic>;
-      debugPrint("AppConfig: Raw Data Count: ${data.length}");
+      
 
       final List<AppConfig> configs =
           data.map((e) => AppConfig.fromJson(e)).toList();
@@ -29,11 +29,11 @@ class AppConfigService {
       _configCache.clear();
       for (var config in configs) {
         _configCache[config.key] = config;
-        debugPrint("AppConfig: Cached key '${config.key}'");
+        
       }
-      debugPrint("AppConfig: Loaded ${_configCache.length} configurations.");
+      
     } catch (e) {
-      debugPrint("AppConfig Error: $e");
+      
     }
   }
 
@@ -82,7 +82,7 @@ class AppConfigService {
             key: key, value: newValue, description: "Updated via Admin Panel");
       }
     } catch (e) {
-      debugPrint("AppConfig Update Error: $e");
+      
       rethrow;
     }
   }
@@ -122,13 +122,13 @@ class AppConfigService {
 
   static int get bannerInterval {
     final val = getValue('banner_settings', 'interval', defaultValue: 15);
-    debugPrint("AppConfig: Banner Interval = $val");
+    
     return val;
   }
 
   static bool get bannerAutoScroll {
     final val = getValue('banner_settings', 'auto_scroll', defaultValue: false);
-    debugPrint("AppConfig: Banner Auto Scroll = $val");
+    
     return val;
   }
 

@@ -11,6 +11,8 @@ import '../screens/mock_test_detail_screen.dart';
 import '../screens/resource_detail_screen.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/test_service.dart';
+import '../../utils/price_calculator.dart';
+import '../../utils/error_utils.dart';
 import '../../core/theme/app_radius.dart';
 import '../widgets/common/responsive_wrapper.dart';
 
@@ -32,7 +34,7 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('[FreeContent] 🚀 Screen initialized');
+
     _searchController.addListener(_onSearchChanged);
 
     // Safely fetch data after frame is built
@@ -43,7 +45,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
 
   @override
   void dispose() {
-    debugPrint('[FreeContent] 🔴 Screen disposed');
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
@@ -52,7 +53,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
   void _onSearchChanged() {
     setState(() {
       _searchQuery = _searchController.text.trim().toLowerCase();
-      debugPrint('[FreeContent] 🔍 Search query updated: "$_searchQuery"');
     });
   }
 
@@ -61,17 +61,14 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
     Resource? resource,
   }) async {
     final String itemName = test?.title ?? resource?.title ?? 'Item';
-    debugPrint('[FreeContent] 💡 _claimItem called for $itemName');
 
     if (_isProcessing) {
-      debugPrint('[FreeContent] ⚠️ Already processing, ignoring tap');
       return;
     }
 
     try {
       final user = AuthService.instance.currentUser;
       if (user == null) {
-        debugPrint('[FreeContent] ❌ No user logged in');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Please login to claim')),
@@ -83,7 +80,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
       setState(() => _isProcessing = true);
 
       if (test != null) {
-        debugPrint('[FreeContent] 🧪 Claiming test: ${test.id}');
         await TestService.instance.claimFreeTest(
           testId: test.id,
           authUserId: user.id,
@@ -94,7 +90,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
           await testProvider.fetchTests(forceRefresh: true);
         }
       } else if (resource != null) {
-        debugPrint('[FreeContent] 📚 Claiming resource: ${resource.id}');
         await context
             .read<ResourceProvider>()
             .claimResource(resource.id, user.id);
@@ -113,12 +108,8 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
         await _fetchData();
       }
     } catch (e) {
-      debugPrint('[FreeContent] ❌ Claim failed: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Claim failed: $e'), backgroundColor: Colors.red),
-        );
+        ErrorUtils.showError(context, e);
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
@@ -126,7 +117,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
   }
 
   Future<void> _fetchData() async {
-    debugPrint('[FreeContent] 📥 Starting data fetch...');
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -136,9 +126,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
       final user = AuthService.instance.currentUser;
       final testProvider = context.read<TestProvider>();
       final resourceProvider = context.read<ResourceProvider>();
-
-      debugPrint(
-          '[FreeContent] 📡 Fetching tests and resources from providers...');
 
       // Fetch with caching support
       await Future.wait([
@@ -154,18 +141,12 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
           resourceProvider.pyqs.length +
           resourceProvider.currentAffairs.length;
 
-      debugPrint(
-          '[FreeContent] ✅ Fetch complete: $testCount tests, $resourceCount resources');
-
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
     } catch (e, stackTrace) {
-      debugPrint('[FreeContent] ❌ Error fetching data: $e');
-      debugPrint('[FreeContent] Stack trace: $stackTrace');
-
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -179,9 +160,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
     TestProvider testProvider,
     ResourceProvider resourceProvider,
   ) {
-    debugPrint(
-        '[FreeContent] 🔧 Filtering items with filter: "$_selectedFilter", search: "$_searchQuery"');
-
     List<dynamic> items = [];
 
     // Gather all items based on filter
@@ -203,9 +181,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
       items.addAll(resourceProvider.currentAffairs
           .where((r) => r.price == 0 && !purchasedIds.contains(r.id)));
     }
-
-    debugPrint(
-        '[FreeContent] 📊 Found ${items.length} free items before search filter');
 
     // Apply search filter (Title, Description, Category)
     if (_searchQuery.isNotEmpty) {
@@ -230,9 +205,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
             description.contains(_searchQuery) ||
             category.contains(_searchQuery);
       }).toList();
-
-      debugPrint(
-          '[FreeContent] 🔎 Search results: ${items.length} items match "$_searchQuery"');
     }
 
     return items;
@@ -240,7 +212,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('[FreeContent] 🎨 Building UI (isLoading: $_isLoading)');
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -292,7 +263,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
                                   size: context.sp(20)),
                               onPressed: () {
                                 _searchController.clear();
-                                debugPrint('[FreeContent] 🧹 Search cleared');
                               },
                             )
                           : null,
@@ -329,8 +299,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
                             onTap: () {
                               setState(() {
                                 _selectedFilter = filter;
-                                debugPrint(
-                                    '[FreeContent] 🏷️ Filter changed to: $filter');
                               });
                             },
                             borderRadius: BorderRadius.circular(AppRadius.full),
@@ -394,14 +362,12 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
       TestProvider testProvider, ResourceProvider resourceProvider) {
     final theme = Theme.of(context);
     if (_isLoading) {
-      debugPrint('[FreeContent] ⏳ Showing loading indicator');
       return const Center(
         child: CircularProgressIndicator(),
       );
     }
 
     if (_errorMessage != null) {
-      debugPrint('[FreeContent] ⚠️ Showing error message: $_errorMessage');
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -438,7 +404,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
     final items = _getFilteredItems(testProvider, resourceProvider);
 
     if (items.isEmpty) {
-      debugPrint('[FreeContent] 📭 No items to display');
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -464,8 +429,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
         ),
       );
     }
-
-    debugPrint('[FreeContent] 📱 Displaying ${items.length} items in grid');
 
     return RefreshIndicator(
       onRefresh: _fetchData,
@@ -501,7 +464,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
   }
 
   Widget _buildTestCard(MockTest test, int index, TestProvider provider) {
-    debugPrint('[FreeContent] 🧪 Building card for test: ${test.title}');
     final uniqueTag = 'test_${test.id}_$index';
     final isPurchased = provider.purchasedTestIds.contains(test.id);
 
@@ -514,7 +476,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
       actionLabel: 'Claim Free',
       isPurchased: isPurchased,
       onTap: () {
-        debugPrint('[FreeContent] 🎯 Navigating to test detail: ${test.id}');
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -533,9 +494,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
 
   Widget _buildResourceCard(
       Resource resource, int index, ResourceProvider provider) {
-    debugPrint(
-        '[FreeContent] 📚 Building card for resource: ${resource.title}');
-
     String typeLabel = '';
     switch (resource.type) {
       case ResourceType.eBook:
@@ -562,8 +520,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
       actionLabel: 'Claim Free',
       isPurchased: isPurchased,
       onTap: () {
-        debugPrint(
-            '[FreeContent] 🎯 Navigating to resource detail: ${resource.id}');
         Navigator.push(
           context,
           MaterialPageRoute(

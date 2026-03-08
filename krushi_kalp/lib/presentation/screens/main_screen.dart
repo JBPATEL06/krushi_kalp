@@ -39,7 +39,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint("MainScreen: InitState");
+    
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _authProvider?.addListener(_handleAuthChange);
 
@@ -53,7 +53,7 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _checkAppStatus() async {
     final auth = context.read<AuthProvider>();
     if (auth.isAdmin) {
-      debugPrint("MainScreen: Admin detected. Bypassing app status checks.");
+      
       return;
     }
 
@@ -62,7 +62,7 @@ class _MainScreenState extends State<MainScreen> {
 
     // 1. Maintenance Check
     if (AppConfigService.isMaintenanceMode) {
-      debugPrint("MainScreen: Maintenance mode detected. Redirecting...");
+      
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -86,8 +86,7 @@ class _MainScreenState extends State<MainScreen> {
       final info = await PackageInfo.fromPlatform();
       final current = info.version;
       if (_isVersionBelow(current, minVer)) {
-        debugPrint(
-            "MainScreen: Update required. Current: $current, Required: $minVer");
+        
         if (mounted) {
           Navigator.pushReplacement(
             context,
@@ -124,7 +123,7 @@ class _MainScreenState extends State<MainScreen> {
     final auth = context.read<AuthProvider>();
     if (auth.isLoggedIn) {
       final userId = auth.currentUser!.id;
-      debugPrint("MainScreen: Triggering background sync for user: $userId");
+      
 
       // Trigger background fetches (Non-blocking)
       final testProvider = context.read<TestProvider>();
@@ -157,7 +156,7 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint("MainScreen: Build");
+    
     final theme = Theme.of(context);
     return Consumer<NavigationProvider>(
       builder: (context, navProvider, child) {

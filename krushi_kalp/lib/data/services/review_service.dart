@@ -28,7 +28,7 @@ class ReviewService {
           .from('reviews')
           .upsert(data, onConflict: 'user_id, item_id, item_type');
     } catch (e) {
-      debugPrint('Error submitting review: $e');
+      
       throw Exception('Failed to submit review');
     }
   }
@@ -73,7 +73,7 @@ class ReviewService {
 
       return reviewsData.map((e) => Review.fromJson(e)).toList();
     } catch (e) {
-      debugPrint('Error fetching reviews: $e');
+      
       return [];
     }
   }
@@ -93,7 +93,7 @@ class ReviewService {
       if (response == null) return null;
       return Review.fromJson(response);
     } catch (e) {
-      debugPrint('Error checking user review: $e');
+      
       return null;
     }
   }
@@ -168,7 +168,7 @@ class ReviewService {
       }
       return result;
     } catch (e) {
-      debugPrint('Error fetching bulk rating stats: $e');
+      
       return {};
     }
   }
@@ -218,7 +218,7 @@ class ReviewService {
 
       return reviewsData.map((json) => Review.fromJson(json)).toList();
     } catch (e) {
-      debugPrint('Error fetching all reviews: $e');
+      
       return [];
     }
   }
@@ -231,7 +231,7 @@ class ReviewService {
           .delete()
           .eq('id', reviewId);
     } catch (e) {
-      debugPrint('Error deleting review: $e');
+      
       throw e;
     }
   }

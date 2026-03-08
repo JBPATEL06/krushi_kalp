@@ -12,11 +12,10 @@ class PriceCalculator {
     int? resourceId,
     String? userId,
   }) {
-    debugPrint(
-        'PriceCalculator: Calculating for basePrice: $basePrice, baseMrp: $baseMrp, testId: $testId, resourceId: $resourceId, userId: $userId');
+    
 
     if (activeOffers == null || activeOffers.isEmpty) {
-      debugPrint('PriceCalculator: No activeOffers provided.');
+      
     }
 
     Offer? bestOffer;
@@ -24,12 +23,10 @@ class PriceCalculator {
     double mrp = baseMrp ?? basePrice;
 
     if (activeOffers != null) {
-      debugPrint(
-          'PriceCalculator: Evaluating ${activeOffers.length} offers...');
+      
       for (var offer in activeOffers) {
         final applicable = _isApplicable(offer, testId, resourceId, userId);
-        debugPrint(
-            'PriceCalculator: Checking Offer [${offer.id}] ${offer.title}. Applicable: $applicable');
+        
 
         if (!applicable) continue;
 
@@ -81,8 +78,7 @@ class PriceCalculator {
         }
 
         if (isBetter) {
-          debugPrint(
-              'PriceCalculator: New Best Offer Found! [${offer.id}] Price: $currentPrice, MRP: $currentMrp');
+          
           bestOffer = offer;
           finalPrice = currentPrice;
           mrp = currentMrp;
@@ -90,13 +86,11 @@ class PriceCalculator {
       }
     }
 
-    debugPrint(
-        'PriceCalculator: Result -> Final: $finalPrice, MRP: $mrp, BestOffer: ${bestOffer?.title ?? "None"}');
+    
 
     // Ensure price never goes negative
     if (finalPrice < 0) {
-      debugPrint(
-          'PriceCalculator: Clamping negative finalPrice ($finalPrice) to 0');
+      
       finalPrice = 0;
     }
 

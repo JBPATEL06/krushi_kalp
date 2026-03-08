@@ -72,7 +72,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
 
   void _applyInitialOffer() {
     final user = AuthService.instance.currentUser;
-    debugPrint('DirectCheckout: Applying Initial Offer. User: ${user?.id}');
+    
     final priceData = PriceCalculator.calculateDisplayPrice(
       basePrice: _basePrice,
       baseMrp: (widget.resource?.mrp ?? widget.test?.mrp)?.toDouble(),
@@ -87,8 +87,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
     // Check if the Sale actually applied successfully
     _hasAutoSale = _appliedOffer != null && _appliedOffer!.isSale;
 
-    debugPrint(
-        'DirectCheckout: Initial Result -> Offer: ${_appliedOffer?.title}, Price: $_finalPrice');
+    
   }
 
   @override
@@ -127,8 +126,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
             );
             _appliedOffer = offer;
             _finalPrice = priceData['finalPrice'];
-            debugPrint(
-                'DirectCheckout: Coupon Applied -> ${offer.code}, ID: ${offer.id}, New Price: $_finalPrice');
+            
           });
         } else {
           setState(() => _couponError = "Coupon not valid for this item/order");
@@ -170,8 +168,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
     setState(() => _isProcessing = true);
 
     try {
-      debugPrint(
-          'DirectCheckout: Initiating Purchase. Item: $_title, Offer: ${_appliedOffer?.id}');
+      
 
       // Fire off profile fetch in parallel to hide network latency
       Future<Map<String, dynamic>?> profileFuture = Future.value(null);
@@ -196,12 +193,12 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
         );
       }
 
-      debugPrint('DirectCheckout: Order Created: $orderId');
+      
 
       if (!mounted) return; // PRO FIX: Check mounted after async DB call
 
       if (_finalPrice <= 0) {
-        debugPrint('DirectCheckout: Zero Price detected. Skipping Razorpay.');
+        
         _pendingOrderId = orderId;
         await _completeCheckout(
             "FREE_CLAIM_${DateTime.now().millisecondsSinceEpoch}");
@@ -250,8 +247,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
     }
 
     try {
-      debugPrint(
-          'DirectCheckout: Completing Checkout. Order: $_pendingOrderId, Payment: $paymentId');
+      
       await TestService.instance.checkout(
         orderId: _pendingOrderId!,
         paymentId: paymentId,
@@ -260,7 +256,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
         discountAmount: (_basePrice - _finalPrice),
         userId: user.id,
       );
-      debugPrint('DirectCheckout: Checkout Service Completed Successfully');
+      
 
       if (mounted) {
         setState(() {

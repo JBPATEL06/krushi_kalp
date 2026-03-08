@@ -81,8 +81,8 @@ class CartProvider extends ChangeNotifier {
           // For now, only signing MockTests as before.
           if (item.mockTest != null) {
             try {
-              imageUrl = await SupabaseUrlHelper.getFreshSignedUrl(
-                  bucketName: 'mock_test', storagePath: path);
+              imageUrl = await SupabaseUrlHelper()
+                  .getFreshSignedUrl('mock_test', path);
             } catch (e) {
               // ignore
             }

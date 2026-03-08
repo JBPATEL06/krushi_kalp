@@ -175,7 +175,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.lg),_buildSectionHeader(context, 'TOP PERFORMING TESTS'),
+                const SizedBox(height: AppSpacing.lg),
+                _buildSectionHeader(context, 'TOP PERFORMING TESTS'),
                 const SizedBox(height: AppSpacing.sm),
                 StreamBuilder<List<Map<String, dynamic>>>(
                   stream: _topTestsStream,
@@ -184,13 +185,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       return const _LoadingState();
                     }
                     if (snapshot.hasError) {
-                      return _buildErrorState(context, "Unable to load tests.");
+                      return _buildErrorState(context, "Something went wrong.");
                     }
                     final tests = snapshot.data ?? [];
                     return _buildTopTestsList(context, tests, width);
                   },
                 ),
-                const SizedBox(height: AppSpacing.lg),_buildSectionHeader(context, 'TOP RANKED USERS'),
+                const SizedBox(height: AppSpacing.lg),
+                _buildSectionHeader(context, 'TOP RANKED USERS'),
                 const SizedBox(height: AppSpacing.sm),
                 StreamBuilder<List<Map<String, dynamic>>>(
                   stream: _topUsersStream,
@@ -199,7 +201,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       return const _LoadingState();
                     }
                     if (snapshot.hasError) {
-                      return _buildErrorState(context, "Unable to load users.");
+                      return _buildErrorState(context, "Something went wrong.");
                     }
                     final users = snapshot.data ?? [];
                     return _buildTopUsersList(users, width);

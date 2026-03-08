@@ -6,7 +6,7 @@ class MockRepository {
   Future<void> submitFeedback(dynamic feedback) async {
     // In a real app, this would send data to a backend
     // ignore: avoid_print
-    print('Submitting Feedback: $feedback');
+
     await Future.delayed(const Duration(seconds: 1)); // Mimic network delay
   }
 
@@ -95,49 +95,49 @@ class MockRepository {
     // Return dummy questions
     return [
       Question(
-        id: 1,
-        text: 'What is Flutter?',
+        id: 1, // CHANGED
+        text: 'What is Flutter?', // CHANGED
         options: [
           'A bird',
           'A UI Toolkit by Google',
           'A web framework',
           'A database',
         ],
-        correctOptionIndex: 1,
+        correctAnswer: 'A UI Toolkit by Google', // CHANGED
       ),
       Question(
-        id: 2,
-        text: 'Which language is used by Flutter?',
-        options: ['Java', 'Kotlin', 'Dart', 'Swift'],
-        correctOptionIndex: 2,
+        id: 2, // CHANGED
+        text: 'Which language is used by Flutter?', // CHANGED
+        options: ['Java', 'Kotlin', 'Dart', 'Swift'], // CHANGED
+        correctAnswer: 'Dart', // CHANGED
       ),
       Question(
-        id: 3,
-        text: 'What is a Widget?',
+        id: 3, // CHANGED
+        text: 'What is a Widget?', // CHANGED
         options: [
           'A small app',
           'A building block of UI',
           'A database table',
           'A function',
         ],
-        correctOptionIndex: 1,
+        correctAnswer: 'A building block of UI', // CHANGED
       ),
       Question(
-        id: 4,
-        text: 'StatefulWidget is immutable.',
-        options: ['True', 'False'],
-        correctOptionIndex: 1, // False
+        id: 4, // CHANGED
+        text: 'StatefulWidget is immutable.', // CHANGED
+        options: ['True', 'False'], // CHANGED
+        correctAnswer: 'False', // CHANGED
       ),
       Question(
-        id: 5,
-        text: 'How do you create a stateless widget?',
+        id: 5, // CHANGED
+        text: 'How do you create a stateless widget?', // CHANGED
         options: [
           'Extend StatefulWidget',
           'Extend StatelessWidget',
           'Implement Widget',
           'None of the above',
         ],
-        correctOptionIndex: 1,
+        correctAnswer: 'Extend StatelessWidget', // CHANGED
       ),
     ];
   }

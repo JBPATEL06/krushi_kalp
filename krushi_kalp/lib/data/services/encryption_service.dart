@@ -18,7 +18,7 @@ class EncryptionService {
       // Return "IV_BASE64:CIPHERTEXT_BASE64"
       return '${iv.base64}:${encrypted.base64}';
     } catch (e) {
-      debugPrint('Encryption Error: $e');
+      
       return plainText;
     }
   }
@@ -40,7 +40,7 @@ class EncryptionService {
         throw Exception("Invalid format: Missing IV");
       }
     } catch (e) {
-      debugPrint('Decryption Error: $e');
+      
       return encryptedText; // Fail open or return null.
       // If we return encryptedText, the session check will fail (mismatch) and force logout, which is CORRECT behavior for corrupted data.
     }

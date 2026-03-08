@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/notification_service.dart';
+import '../../utils/network_utils.dart';
+import '../../utils/error_utils.dart';
 import '../widgets/common/network_error_state.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -47,9 +49,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               NotificationService().fetchNotificationsStream(intDbId);
         });
       }
-    } catch (e) {
-      debugPrint("Error fetching user ID for notifications: $e");
-    }
+    } catch (e) {}
   }
 
   Future<void> _deleteNotification(int id) async {
@@ -63,9 +63,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error deleting: $e')));
+        ErrorUtils.showError(context, e);
       }
     }
   }
@@ -93,7 +91,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             return NetworkErrorState(
               message: isNetworkError(snapshot.error)
                   ? 'Unable to load notifications.'
-                  : 'Error: ${snapshot.error}',
+                  : 'Something went wrong.',
               onRetry: _setupStream,
             );
           }

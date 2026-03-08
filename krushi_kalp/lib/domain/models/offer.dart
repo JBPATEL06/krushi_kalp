@@ -100,8 +100,8 @@ class Offer {
     final now = DateTime.now().toUtc(); // Use UTC
 
     // Debug logic for troubleshooting
-    // print("Checking Offer: $title ($code)");
-    // print("Time: $now vs Start: $startDate End: $endDate");
+    // 
+    // 
 
     if (!isActive) return false;
     if (startDate != null && now.isBefore(startDate!.toUtc())) return false;

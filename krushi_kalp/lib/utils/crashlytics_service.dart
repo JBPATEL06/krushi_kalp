@@ -20,7 +20,7 @@ class CrashlyticsService {
     if (kDebugMode) {
       // For development: You can toggle this to true to test your integration.
       await _crashlytics.setCrashlyticsCollectionEnabled(true);
-      debugPrint('CrashlyticsService: Collection enabled in Debug Mode');
+      
     } else {
       await _crashlytics.setCrashlyticsCollectionEnabled(true);
     }
@@ -33,7 +33,7 @@ class CrashlyticsService {
       await _crashlytics.setUserIdentifier(userId);
       log('User attributed: $userId');
     } catch (e) {
-      debugPrint('CrashlyticsService: Error setting user identifier: $e');
+      
     }
   }
 
@@ -44,13 +44,13 @@ class CrashlyticsService {
       await _crashlytics.setUserIdentifier('');
       log('User identifier cleared');
     } catch (e) {
-      debugPrint('CrashlyticsService: Error clearing user identifier: $e');
+      
     }
   }
 
   /// Adds a custom log message (breadcrumb) to the next crash report.
   void log(String message) {
-    debugPrint('Crashlytics [LOG]: $message');
+    
     _crashlytics.log(message);
   }
 
@@ -69,7 +69,7 @@ class CrashlyticsService {
         fatal: fatal,
       );
     } catch (e) {
-      debugPrint('CrashlyticsService: Error recording error: $e');
+      
     }
   }
 }

@@ -4,6 +4,8 @@ import '../../../../data/services/admin_service.dart';
 import '../../widgets/common/network_error_state.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
+import '../../../../utils/error_utils.dart';
+import '../../../utils/network_utils.dart';
 
 class AdminOrderListScreen extends StatefulWidget {
   const AdminOrderListScreen({super.key});
@@ -42,12 +44,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
     Navigator.pop(context); // Close loader
 
     if (order == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Could not load transaction details.'),
-          backgroundColor: colorScheme.error,
-        ),
-      );
+      ErrorUtils.showError(context, 'Could not load transaction details.');
       return;
     }
 
@@ -210,7 +207,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: emerald.withOpacity(0.1),
+                              color: colorScheme.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -231,7 +228,8 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                     child: Container(
                       constraints: const BoxConstraints(maxHeight: 200),
                       decoration: BoxDecoration(
-                        color: colorScheme.surfaceVariant.withOpacity(0.25),
+                        color: colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: items.isEmpty
@@ -283,7 +281,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                                                       vertical: 2),
                                               decoration: BoxDecoration(
                                                 color: colorScheme.primary
-                                                    .withOpacity(0.08),
+                                                    .withValues(alpha: 0.5),
                                                 borderRadius:
                                                     BorderRadius.circular(4),
                                               ),
@@ -385,7 +383,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
     final emerald = colorScheme.tertiary;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000),
@@ -407,7 +405,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   return NetworkErrorState(
                     message: isNetworkError(snapshot.error)
                         ? 'Unable to load orders. Check your connection.'
-                        : 'Error: ${snapshot.error}',
+                        : 'Something went wrong.',
                     onRetry: () => setState(() {
                       _ordersStream = AdminService.streamAllOrders();
                     }),
@@ -559,7 +557,8 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                       Text(
                         formattedDate,
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                          color: colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.5),
                           fontSize: 10,
                         ),
                       ),

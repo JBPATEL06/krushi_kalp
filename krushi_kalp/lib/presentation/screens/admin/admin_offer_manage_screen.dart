@@ -7,6 +7,7 @@ import '../../../../data/services/admin_service.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:intl/intl.dart';
+import '../../../../utils/error_utils.dart';
 
 class AdminOfferManageScreen extends StatefulWidget {
   final Offer? offer; // If provided, Edit mode. Else, Create mode.
@@ -72,7 +73,6 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
       _availableTests = await TestService.instance.fetchMockTests();
       _availableUsers = await AdminService.getAllUsers();
     } catch (e) {
-      debugPrint("Error loading selection data: $e");
     } finally {
       if (mounted) setState(() => _isLoadingData = false);
     }
@@ -83,18 +83,12 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
 
     final discountVal = double.tryParse(_valueController.text) ?? 0;
     if (_discountType == 'PERCENTAGE' && discountVal > 99.99) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Percentage discount cannot exceed 99.99%')),
-      );
+      ErrorUtils.showError(context, 'Percentage discount cannot exceed 99.99%');
       return;
     }
 
     if (_targetType != 'ALL' && _selectedTargetIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Please select at least one Test or User')),
-      );
+      ErrorUtils.showError(context, 'Please select at least one Test or User');
       return;
     }
 
@@ -127,8 +121,7 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ErrorUtils.showError(context, e);
       }
     }
   }

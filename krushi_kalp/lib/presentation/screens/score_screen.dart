@@ -66,7 +66,7 @@ class _ScoreScreenState extends State<ScoreScreen> {
           });
         }
       } catch (e) {
-        debugPrint("Error loading score data: $e");
+        
         if (mounted) {
           setState(() {
             _isLoading = false;
@@ -105,7 +105,7 @@ class _ScoreScreenState extends State<ScoreScreen> {
       await file.writeAsBytes(bytes);
       _openPdf(file, title);
     } catch (e) {
-      debugPrint('Download Error: $e');
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error downloading result: $e')),

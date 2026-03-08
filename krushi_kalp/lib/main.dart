@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/screens/splash_screen.dart';
 
@@ -24,22 +25,18 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
 import 'utils/crashlytics_service.dart';
 import 'utils/analytics_navigator_observer.dart';
+import 'data/services/notification_service.dart';
+import 'data/services/transfer_notification_service.dart';
 
 Future<void> main() async {
-  // ── Crashlytics: Initialize Platform Dispatcher (Catch-all for Asynchronous errors) ──
-  // This is the most modern way to catch unhandled errors in Flutter.
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Initialize Firebase
+  // 1. Initialize Firebase & Analytics
   await Firebase.initializeApp();
-
-  // 2. Initialize Crashlytics Service
   await CrashlyticsService.instance.init();
 
-  // ── Crashlytics: Log all synchronous Flutter framework errors ──
+  // 2. Setup Crashlytics error reporting
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-
-  // ── Crashlytics: Log all unhandled asynchronous errors (Modern Approach) ──
   if (!kIsWeb) {
     PlatformDispatcher.instance.onError = (error, stack) {
       CrashlyticsService.instance.recordError(error, stack, fatal: true);
@@ -47,13 +44,30 @@ Future<void> main() async {
     };
   }
 
+  // 3. Load Environment Variables
   await dotenv.load(fileName: ".env");
 
-  // Initialize Supabase
+  // 4. Initialize Supabase
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
+
+  // 5. Initialize Notification Engine
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+
+  // 6. Initialize specialized Transfer Notifications
+  final transferNotifications = TransferNotificationService();
+  transferNotifications.initialize(notificationService.plugin);
+  await transferNotifications.setupChannel();
+
+  // 7. Request Notification Permissions (Android 13+)
+  if (!kIsWeb) {
+    await Permission.notification.isDenied.then((value) {
+      if (value) Permission.notification.request();
+    });
+  }
 
   runApp(
     MultiProvider(
@@ -80,15 +94,12 @@ class MyApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       navigatorObservers: [AnalyticsNavigatorObserver()],
       debugShowCheckedModeBanner: false,
-      title: 'Krushi kalp',
-      // ── ACTIVE THEME: User Defined ──
+      title: 'Krushi Kalp',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
-      // Auto-detects device OS theme
       builder: (context, child) =>
           NetworkAwareWrapper(child: ResponsiveWrapper(child: child!)),
-
       home: const SplashScreen(),
     );
   }

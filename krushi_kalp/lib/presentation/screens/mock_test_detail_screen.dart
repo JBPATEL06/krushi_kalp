@@ -88,7 +88,7 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
         });
       }
     } catch (e) {
-      debugPrint("Error loading reviews: $e");
+      
       if (mounted) setState(() => _isLoadingReviews = false);
     }
   }

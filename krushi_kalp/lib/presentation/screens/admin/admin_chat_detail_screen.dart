@@ -9,6 +9,7 @@ import 'package:krushi_kalp/presentation/widgets/common/network_error_state.dart
 import 'package:krushi_kalp/presentation/utils/chat_mapper.dart';
 import 'package:krushi_kalp/presentation/widgets/chat/chat_input.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
+import '../../../utils/error_utils.dart';
 
 class AdminChatDetailScreen extends StatefulWidget {
   final String userId;
@@ -45,9 +46,7 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
       await _chatService.sendMessageAsAdmin(message.text, widget.userId);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ErrorUtils.showError(context, e);
       }
     }
   }
@@ -119,9 +118,7 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
         await _chatService.deleteMessage(message.id);
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting message: $e')),
-          );
+          ErrorUtils.showError(context, e);
         }
       }
     }
@@ -151,7 +148,7 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return NetworkErrorState(
-              message: 'Error loading messages',
+              message: 'Something went wrong.',
               onRetry: () => setState(() {}),
             );
           }

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
+import '../utils/ui_helpers.dart';
+import '../../utils/error_utils.dart';
 import 'main_screen.dart';
 import 'admin/admin_main_screen.dart';
 import '../../data/services/notification_service.dart';
@@ -66,15 +68,11 @@ class _LoginScreenState extends State<LoginScreen>
           MaterialPageRoute(builder: (context) => const AdminMainScreen()),
         );
       }
-    } else {
-      debugPrint(
-          "LoginScreen: Auth changed but not logged in or loading. SignedIn: ${authProvider.isLoggedIn}, Loading: ${authProvider.isLoading}");
-    }
+    } else {}
   }
 
   @override
   void dispose() {
-    debugPrint("LoginScreen: Disposing");
     try {
       context.read<AuthProvider>().removeListener(_onAuthChanged);
     } catch (_) {}
@@ -84,30 +82,15 @@ class _LoginScreenState extends State<LoginScreen>
 
   Future<void> _handleGoogleLogin() async {
     if (!_agreedToTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please agree to the Terms and Conditions to proceed.'),
-          backgroundColor: Colors.red, // Semantic error color for snackbar
-        ),
-      );
+      ErrorUtils.showError(
+          context, 'Please agree to the Terms and Conditions to proceed.');
       return;
     }
     try {
       await context.read<AuthProvider>().signInWithGoogle();
     } catch (e) {
       if (mounted) {
-        final msg = e.toString().toLowerCase().contains('timeout') ||
-                e.toString().toLowerCase().contains('socket') ||
-                e.toString().toLowerCase().contains('connection')
-            ? 'Connection failed. Please check your internet and try again.'
-            : 'Login Failed. Please try again.';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(msg),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            duration: const Duration(seconds: 4),
-          ),
-        );
+        ErrorUtils.showError(context, e);
       }
     }
   }
@@ -117,10 +100,7 @@ class _LoginScreenState extends State<LoginScreen>
         'https://example.com/terms-and-conditions'); // UPDATE THIS URL IF NEEDED
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Could not launch Terms and Conditions')),
-        );
+        ErrorUtils.showError(context, 'Could not launch Terms and Conditions');
       }
     }
   }

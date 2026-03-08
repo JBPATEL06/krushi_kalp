@@ -4,6 +4,8 @@ import '../../widgets/common/network_error_state.dart';
 import 'admin_user_details_screen.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
+import '../../../../utils/error_utils.dart';
+import '../../../utils/network_utils.dart';
 
 class AdminUserListScreen extends StatefulWidget {
   const AdminUserListScreen({super.key});
@@ -86,7 +88,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000),
@@ -109,7 +111,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
                   return NetworkErrorState(
                     message: isNetworkError(snapshot.error)
                         ? 'Unable to load users. Check connection.'
-                        : 'Error: ${snapshot.error}',
+                        : 'Something went wrong.',
                     onRetry: () => setState(
                         () => _usersStream = AdminService.streamUsers()),
                   );
@@ -211,12 +213,13 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.person_off_rounded,
-              size: 64, color: colorScheme.onSurfaceVariant.withOpacity(0.2)),
+              size: 64,
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.2)),
           const SizedBox(height: AppSpacing.md),
           Text(
             'No matching users found',
             style: TextStyle(
-                color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                 fontWeight: FontWeight.w500),
           ),
         ],
@@ -237,7 +240,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
         });
       },
       backgroundColor: Colors.transparent,
-      selectedColor: colorScheme.primary.withOpacity(0.1),
+      selectedColor: colorScheme.primary.withValues(alpha: 0.1),
       labelStyle: theme.textTheme.labelLarge?.copyWith(
         color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -246,8 +249,8 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
         borderRadius: BorderRadius.circular(AppRadius.full),
         side: BorderSide(
           color: isSelected
-              ? colorScheme.primary.withOpacity(0.3)
-              : colorScheme.outline.withOpacity(0.2),
+              ? colorScheme.primary.withValues(alpha: 0.3)
+              : colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       showCheckmark: false,
@@ -280,8 +283,8 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
-          bottom:
-              BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5)),
+          bottom: BorderSide(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
         ),
       ),
       child: InkWell(
@@ -303,7 +306,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: colorScheme.primary.withOpacity(0.08),
+                backgroundColor: colorScheme.primary.withValues(alpha: 0.08),
                 child: Text(
                   firstChar,
                   style: TextStyle(
@@ -354,7 +357,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
               const SizedBox(width: AppSpacing.md),
               Icon(Icons.chevron_right_rounded,
                   size: 20,
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.3)),
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3)),
             ],
           ),
         ),

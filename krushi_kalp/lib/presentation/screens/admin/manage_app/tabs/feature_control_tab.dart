@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../../data/services/app_config_service.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import '../../../../utils/ui_helpers.dart';
+import '../../../../../utils/error_utils.dart';
 
 class FeatureControlTab extends StatefulWidget {
   const FeatureControlTab({super.key});
@@ -224,7 +225,7 @@ class _FeatureControlTabState extends State<FeatureControlTab> {
         secondary: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.08),
+            color: colorScheme.primary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, color: colorScheme.primary, size: 24),
@@ -240,7 +241,7 @@ class _FeatureControlTabState extends State<FeatureControlTab> {
               ?.copyWith(color: colorScheme.onSurfaceVariant, fontSize: 13),
         ),
         value: value,
-        activeColor: colorScheme.primary,
+        activeThumbColor: colorScheme.primary,
         onChanged: onChanged,
       ),
     );

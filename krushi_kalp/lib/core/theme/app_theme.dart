@@ -34,12 +34,13 @@ class AppTheme {
       secondary: isDark ? AppColorsV2.secondaryDark : AppColorsV2.secondary,
       onSecondary: isDark ? AppColorsV2.backgroundDark : Colors.white,
       surface: isDark ? AppColorsV2.surfaceDark : AppColorsV2.surface,
+      tertiary: isDark ? AppColorsV2.tertiaryDark : AppColorsV2.tertiary,
       onTertiary: Colors.white,
       error: const Color(0xFFEF4444),
       onError: Colors.white, // ← Critical for visibility on red buttons
-      outline: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
+      outline: isDark ? const Color(0xFF4A4A4A) : const Color(0xFFCBD5E1),
       outlineVariant:
-          isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          isDark ? const Color(0xFF383838) : const Color(0xFFE2E8F0),
     );
 
     final scaffoldColor =

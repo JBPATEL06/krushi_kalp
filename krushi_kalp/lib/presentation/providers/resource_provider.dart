@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/services/resource_service.dart';
 import '../../domain/models/resource.dart';
 import '../../utils/crashlytics_service.dart';
+import '../../utils/supabase_url_helper.dart';
 
 class ResourceProvider extends ChangeNotifier {
   final ResourceService _resourceService = ResourceService.instance;
@@ -41,17 +42,14 @@ class ResourceProvider extends ChangeNotifier {
       final String? cachedData = prefs.getString(_purchasedResourcesKey);
       if (cachedData != null) {
         final List<dynamic> jsonList = json.decode(cachedData);
-        _purchasedResources = jsonList
-            .map((j) => Resource.fromJson(j))
-            .toList();
+        _purchasedResources =
+            jsonList.map((j) => Resource.fromJson(j)).toList();
         _purchasedResourceIds = _purchasedResources.map((r) => r.id).toSet();
-        debugPrint(
-          'ResourceProvider: Loaded ${_purchasedResources.length} resources from cache',
-        );
-        Future.microtask(() => notifyListeners());
+        
+        notifyListeners();
       }
     } catch (e, stack) {
-      debugPrint('ResourceProvider: Error loading from cache: $e');
+      
       CrashlyticsService.instance.recordError(
         e,
         stack,
@@ -67,11 +65,8 @@ class ResourceProvider extends ChangeNotifier {
         _purchasedResources.map((r) => r.toJson()).toList(),
       );
       await prefs.setString(_purchasedResourcesKey, encodedData);
-      debugPrint(
-        'ResourceProvider: Saved ${_purchasedResources.length} resources to cache',
-      );
     } catch (e, stack) {
-      debugPrint('ResourceProvider: Error saving to cache: $e');
+      
       CrashlyticsService.instance.recordError(
         e,
         stack,
@@ -109,9 +104,9 @@ class ResourceProvider extends ChangeNotifier {
     );
     try {
       final resources = await _resourceService.fetchResources(type: type);
-      debugPrint(
-        'ResourceProvider: Fetched ${resources.length} items for type $type',
-      );
+
+      // Bulk pre-sign both file and thumbnail URLs for the fetched resources
+      _preSignUrls(resources);
 
       switch (type) {
         case ResourceType.eBook:
@@ -130,7 +125,6 @@ class ResourceProvider extends ChangeNotifier {
       _errorMessage = null;
     } catch (e, stack) {
       _errorMessage = 'Failed to load ${type.toString().split('.').last}: $e';
-      debugPrint('ResourceProvider: Error fetching $type: $e');
       CrashlyticsService.instance.recordError(
         e,
         stack,
@@ -141,6 +135,36 @@ class ResourceProvider extends ChangeNotifier {
     }
   }
 
+  /// Internal method to trigger background pre-signing of file and thumbnail URLs.
+  void _preSignUrls(List<Resource> resources) {
+    if (resources.isEmpty) return;
+
+    Future(() async {
+      try {
+        final List<Future<String>> signFutures = [];
+
+        for (final r in resources) {
+          if (r.fileUrl?.isNotEmpty ?? false) {
+            signFutures.add(
+                SupabaseUrlHelper().getFreshSignedUrl('mock_test', r.fileUrl!));
+          }
+          if (r.thumbnailUrl?.isNotEmpty ?? false) {
+            signFutures.add(SupabaseUrlHelper()
+                .getFreshSignedUrl('mock_test', r.thumbnailUrl!));
+          }
+        }
+
+        if (signFutures.isNotEmpty) {
+          
+          await Future.wait(signFutures);
+          
+        }
+      } catch (e) {
+        
+      }
+    });
+  }
+
   Future<void> fetchPurchasedResources(String userId) async {
     _setLoading(true);
     _errorMessage = null;
@@ -148,17 +172,15 @@ class ResourceProvider extends ChangeNotifier {
       final resources = await _resourceService.fetchPurchasedResources(userId);
       _purchasedResources = resources;
       _purchasedResourceIds = resources.map((r) => r.id).toSet();
-      debugPrint(
-        'ResourceProvider: Updated purchasedResourceIds. Total: ${_purchasedResourceIds.length}, IDs: $_purchasedResourceIds',
-      );
+
+      // Pre-sign URLs for purchased resources
+      _preSignUrls(resources);
+
       _saveToPrefs();
       CrashlyticsService.instance.log(
         'ResourceProvider: Fetched purchased resources for $userId',
       );
     } catch (e, stack) {
-      debugPrint(
-        'ResourceProvider: Error fetching purchased resources for $userId: $e',
-      );
       _errorMessage = 'Failed to load purchased resources: $e';
       CrashlyticsService.instance.recordError(
         e,
@@ -191,39 +213,30 @@ class ResourceProvider extends ChangeNotifier {
   }
 
   Future<void> claimResource(int resourceId, String userId) async {
-    debugPrint(
-      'ResourceProvider: claimResource called for $resourceId (user: $userId)',
-    );
-    if (_isLoading) {
-      debugPrint('ResourceProvider: Skipping claim, already loading');
-      return;
-    }
+    if (_isLoading) return;
     _setLoading(true);
     try {
-      // ACTUALLY CALL THE SERVICE TO CLAIM IT (THIS WAS MISSING!)
       await _resourceService.claimResource(
         resourceId: resourceId,
         userId: userId,
       );
-
-      // Then re-fetch the purchased items to update the UI State
       await fetchPurchasedResources(userId);
       CrashlyticsService.instance.log(
         'ResourceProvider: Claimed resource $resourceId',
       );
     } catch (e, stack) {
-      debugPrint('Error claiming resource: $e');
       CrashlyticsService.instance.recordError(
         e,
         stack,
         reason: 'ResourceProvider: claimResource($resourceId)',
       );
       rethrow;
+    } finally {
+      _setLoading(false);
     }
   }
 
   int _loadingCount = 0;
-
   void _setLoading(bool value) {
     if (value) {
       _loadingCount++;

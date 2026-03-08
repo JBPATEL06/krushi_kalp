@@ -34,7 +34,7 @@ class AdminNotificationService {
             'notification_id': record['id'].toString(),
           });
     } catch (e) {
-      debugPrint("Failed to send broadcast: $e");
+      
       // throw Exception("Failed to send broadcast: $e");
     }
   }
@@ -77,11 +77,10 @@ class AdminNotificationService {
           'notification_id': record['id'].toString(),
         });
       } else {
-        debugPrint(
-            "User $userId has no FCM Token. Saved to DB but Push Skipped.");
+        
       }
     } catch (e) {
-      debugPrint("Failed to send to user: $e");
+      
     }
   }
 
@@ -119,11 +118,10 @@ class AdminNotificationService {
           'notification_id': record['id'].toString(),
         });
       } else {
-        debugPrint(
-            "User $userId has no FCM Token. Chat notification saved to DB only.");
+        
       }
     } catch (e) {
-      debugPrint("Failed to send chat reply notification: $e");
+      
     }
   }
 
@@ -142,7 +140,7 @@ class AdminNotificationService {
         data: data,
       );
     } catch (e) {
-      debugPrint("Failed to send to topic $topic: $e");
+      
     }
   }
 
@@ -156,7 +154,7 @@ class AdminNotificationService {
     try {
       final session = _supabase.auth.currentSession;
       if (session == null) {
-        debugPrint("FCM Error: No Active Session to invoke Edge Function");
+        
         return;
       }
 
@@ -174,9 +172,9 @@ class AdminNotificationService {
         },
       );
 
-      debugPrint("FCM Edge Function invoked. Status: ${response.status}");
+      
     } catch (e) {
-      debugPrint("Error invoking FCM Edge Function: $e");
+      
       // Optional: Check if token is expired and force refresh?
       // _supabase.auth.refreshSession();
     }

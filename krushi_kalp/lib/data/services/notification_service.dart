@@ -12,6 +12,11 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  /// Expose the underlying notifications plugin for use by other specialized
+  /// notification services (e.g., TransferNotificationService) to avoid
+  /// double-initialization issues.
+  FlutterLocalNotificationsPlugin get plugin => _notificationsPlugin;
+
   final _supabase = Supabase.instance.client;
 
   bool _isInitialized = false;
@@ -48,12 +53,12 @@ class NotificationService {
     await _notificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (details) {
-        debugPrint("Notification Tapped: ${details.payload}");
+        
       },
     );
 
     _isInitialized = true;
-    debugPrint("NotificationService Initialized (Foreground)");
+    
   }
 
   /// Initialize without permission requests (Safe for Background Isolates)
@@ -71,7 +76,7 @@ class NotificationService {
     await _notificationsPlugin.initialize(initializationSettings);
 
     _isInitialized = true;
-    debugPrint("NotificationService Initialized (Background Isolate)");
+    
   }
 
   void _initTimezones() {
@@ -79,7 +84,7 @@ class NotificationService {
       tz_data.initializeTimeZones();
       tz.setLocalLocation(tz.getLocation('UTC'));
     } catch (e) {
-      debugPrint("Timezone Init Error: $e");
+      
       tz.setLocalLocation(tz.getLocation('UTC'));
     }
   }
@@ -88,7 +93,7 @@ class NotificationService {
   Future<void> connectBackground(SupabaseClient supabase) async {
     // 1. Listen for NEW MOCK TESTS
     try {
-      debugPrint("📡 Setup MockTest Listener (Background)");
+      
       supabase
           .channel('public:mock_tests:updates')
           .onPostgresChanges(
@@ -97,7 +102,7 @@ class NotificationService {
             table: 'mock_tests',
             callback: (payload) {
               final newTest = payload.newRecord;
-              debugPrint("📝 New Mock Test: ${newTest['title']}");
+              
               showLocalNotification(
                 id: _generalIdBase + (newTest['test_id'] as int? ?? 0),
                 title: "New Mock Test Added!",
@@ -114,15 +119,15 @@ class NotificationService {
             },
           )
           .subscribe((status, error) {
-        debugPrint("📝 MockTest Listener Status: $status, Error: $error");
+        
       });
     } catch (e) {
-      debugPrint("Error setup MockTest listener: $e");
+      
     }
 
     // 2. Listen for NEW OFFERS
     try {
-      debugPrint("📡 Setup Offer Listener");
+      
       supabase
           .channel('public:offers:updates')
           .onPostgresChanges(
@@ -131,7 +136,7 @@ class NotificationService {
             table: 'offers',
             callback: (payload) {
               final newOffer = payload.newRecord;
-              debugPrint("🏷️ New Offer: ${newOffer['title']}");
+              
               showLocalNotification(
                 id: _generalIdBase + (newOffer['id'] as int? ?? 0),
                 title: "New Offer Available!",
@@ -141,10 +146,10 @@ class NotificationService {
             },
           )
           .subscribe((status, error) {
-        debugPrint("🏷️ Offer Listener Status: $status, Error: $error");
+        
       });
     } catch (e) {
-      debugPrint("Error setup Offer listener: $e");
+      
     }
   }
 
@@ -153,14 +158,14 @@ class NotificationService {
   Future<void> connectUser() async {
     await initialize(); // MUST init plugin before listening
     if (_isConnected) {
-      debugPrint("NotificationService: Already Connected. Skipping.");
+      
       return;
     }
 
     final supabase = Supabase.instance.client;
     final userId = supabase.auth.currentUser?.id;
     if (userId != null) {
-      debugPrint("NotificationService: Connecting User $userId");
+      
       _isConnected = true;
       await _listenForPersonalNotifications(supabase, userId);
       await _listenForBroadcastNotifications(
@@ -173,14 +178,14 @@ class NotificationService {
   Future<void> connectAdmin() async {
     await initialize(); // MUST init plugin before listening
     if (_isConnected) {
-      debugPrint("NotificationService: Already Connected (Admin). Skipping.");
+      
       return;
     }
 
     final supabase = Supabase.instance.client;
     final userId = supabase.auth.currentUser?.id;
     if (userId != null) {
-      debugPrint("NotificationService: Connecting Admin $userId");
+      
       _isConnected = true;
       // Admin also gets broadcasts/personal notifs
       await _listenForPersonalNotifications(supabase, userId);
@@ -210,12 +215,12 @@ class NotificationService {
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
-    debugPrint("Scheduled Purchase Reminder for 6 days from now.");
+    
   }
 
   Future<void> cancelPurchaseReminder() async {
     await _notificationsPlugin.cancel(_purchaseReminderId);
-    debugPrint("Cancelled Purchase Reminder.");
+    
   }
 
   // 1. Personal Notifications
@@ -224,7 +229,7 @@ class NotificationService {
     String authId,
   ) async {
     try {
-      debugPrint("🔔 Setup Personal Listener for $authId");
+      
       supabase
           .channel('public:notifications:personal:$authId')
           .onPostgresChanges(
@@ -237,7 +242,7 @@ class NotificationService {
               value: authId,
             ),
             callback: (payload) {
-              print("📩 Personal Payload Received: ${payload.newRecord}");
+              
               final newNotif = payload.newRecord;
 
               // Suppress CHAT reply notifications if chat screen is currently open
@@ -245,8 +250,7 @@ class NotificationService {
               if (NotificationService.currentChatUserId ==
                       'admin_support_chat' &&
                   notifType == 'chat') {
-                print(
-                    "Suppressing chat notification: User has chat screen open");
+                
                 return;
               }
 
@@ -258,17 +262,17 @@ class NotificationService {
             },
           )
           .subscribe((status, error) {
-        print("🔔 Personal Listener Status: $status, Error: $error");
+        
       });
     } catch (e) {
-      print("Error setting up personal listener: $e");
+      
     }
   }
 
   // 2. Broadcast Notifications
   Future<void> _listenForBroadcastNotifications(SupabaseClient supabase) async {
     try {
-      print("📡 Setup Broadcast Listener (No Filter)");
+      
       supabase
           .channel('public:notifications:broadcast_secure')
           .onPostgresChanges(
@@ -284,7 +288,7 @@ class NotificationService {
               // Only process if it is actually a broadcast (user_id is null)
               // to avoid duplicates if RLS sends us our own personal notifs here too.
               if (newNotif['user_id'] == null) {
-                print("📢 Broadcast Payload Received: $newNotif");
+                
                 showLocalNotification(
                   id: _broadcastIdBase +
                       (newNotif['notification_id'] as int? ?? 0),
@@ -295,10 +299,10 @@ class NotificationService {
             },
           )
           .subscribe((status, error) {
-        print("📡 Broadcast Listener Status: $status, Error: $error");
+        
       });
     } catch (e) {
-      print("Error setting up broadcast listener: $e");
+      
     }
   }
 
@@ -357,8 +361,7 @@ class NotificationService {
                   // Admin: Only notify if From User (Not From Admin)
                   if (!isFromAdmin) {
                     if (currentChatUserId == msgUserId) {
-                      print(
-                          "Suppressing notification: Admin is chatting with User $msgUserId");
+                      
                       return;
                     }
 
@@ -370,13 +373,13 @@ class NotificationService {
                   }
                 }
               } catch (e) {
-                print("Error inside chat listener callback: $e");
+                
               }
             },
           )
           .subscribe();
     } catch (e) {
-      print("Error setting up chat listener: $e");
+      
     }
   }
 

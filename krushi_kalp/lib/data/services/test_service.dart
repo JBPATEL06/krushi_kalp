@@ -10,16 +10,31 @@ import 'cart_service.dart';
 import 'auth_service.dart';
 import '../../utils/supabase_url_helper.dart';
 import 'admin_notification_service.dart';
+import '../../utils/crashlytics_service.dart';
 
+/// Service class for managing mock tests, results, and purchases.
 class TestService {
   // --- SINGLETON ---
   TestService._();
   static final TestService instance = TestService._();
 
+  /// Deletes a specific test result from the database.
+  Future<bool> deleteTestResult(int resultId) async {
+    try {
+      await _supabase.from('results').delete().eq('result_id', resultId);
+      return true;
+    } catch (e, stack) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'deleteTestResult failed');
+      throw Exception('Failed to delete test result: $e');
+    }
+  }
+
   final _supabase = Supabase.instance.client;
 
-  // --- MOCK TESTS READING ---
+  // ── MOCK TESTS READING ───────────────────────────────────────────────────
 
+  /// Fetches all available mock tests from the database.
   Future<List<MockTest>> fetchMockTests() async {
     try {
       final response = await RetryHelper.run(() => _supabase
@@ -32,11 +47,12 @@ class TestService {
 
       return await _populateSignedUrls(tests);
     } catch (e) {
-      debugPrint('Error fetching mock tests: $e');
+      
       throw Exception('Failed to load tests: $e');
     }
   }
 
+  /// Fetches a specific mock test by its ID.
   Future<MockTest?> fetchMockTestById(int testId) async {
     try {
       final response = await _supabase
@@ -50,19 +66,18 @@ class TestService {
       final List<MockTest> withUrl = await _populateSignedUrls([test]);
       return withUrl.first;
     } catch (e) {
-      debugPrint('Error fetching mock test by id: $e');
+      
       return null;
     }
   }
 
+  /// Fetches all unique test categories.
   Future<List<String>> fetchCategories() async {
     try {
-      // NOTE: Requires 'get_distinct_categories' RPC in Supabase
       final response = await _supabase.rpc('get_distinct_categories');
       return List<String>.from(response as List);
     } catch (e) {
-      debugPrint('Error fetching categories: $e. Falling back to table scan.');
-      // Fallback to legacy scan if RPC doesn't exist yet
+      
       final response = await _supabase.from('mock_tests').select('category');
       return (response as List)
           .map((e) => e['category'] as String)
@@ -71,28 +86,24 @@ class TestService {
     }
   }
 
+  /// Fetches all unique test languages.
   Future<List<String>> fetchLanguages() async {
     try {
-      // NOTE: Requires 'get_distinct_languages' RPC in Supabase
       final response = await _supabase.rpc('get_distinct_languages');
       final languages = List<String>.from(response as List);
-
-      // Ensure defaults exist
       final defaults = ['English', 'Gujarati'];
       for (var d in defaults) {
         if (!languages.contains(d)) languages.add(d);
       }
       return languages;
     } catch (e) {
-      debugPrint('Error fetching languages: $e. Falling back to table scan.');
+      
       final response = await _supabase.from('mock_tests').select('language');
-
       final List<String> languages = (response as List)
           .map((e) => e['language'] as String)
           .where((l) => l.isNotEmpty)
           .toSet()
           .toList();
-
       final defaults = ['English', 'Gujarati'];
       for (var d in defaults) {
         if (!languages.contains(d)) languages.add(d);
@@ -101,18 +112,7 @@ class TestService {
     }
   }
 
-  Stream<List<MockTest>> streamMockTests() {
-    return _supabase
-        .from('mock_tests')
-        .stream(primaryKey: ['test_id'])
-        .order('created_at', ascending: false)
-        .asyncMap((data) async {
-          List<MockTest> tests =
-              await compute(_parseMockTests, data as List<dynamic>);
-          return await _populateSignedUrls(tests);
-        });
-  }
-
+  /// Downloads and parses questions for a mock test.
   Future<List<Question>> fetchQuestions(String filePath) async {
     try {
       final Uint8List fileBytes =
@@ -120,16 +120,17 @@ class TestService {
       final String jsonString = utf8.decode(fileBytes);
       return await compute(_decodeAndParseQuestions, jsonString);
     } catch (e) {
-      debugPrint('Error fetching questions: $e');
+      
       throw Exception('Failed to load questions: $e');
     }
   }
 
-  // --- MOCK TESTS ADMIN (WRITE) ---
+  // ── MOCK TESTS ADMIN ─────────────────────────────────────────────────────
+
+  /// Creates a new mock test. Sanitizes storage paths before insertion.
   Future<void> createMockTest(MockTest test) async {
     try {
       final payload = test.toJson();
-      // Ensure we store paths, not signed URLs
       if (payload['file_path'] != null) {
         payload['file_path'] = SupabaseUrlHelper.extractPathFromUrl(
             payload['file_path'], 'mock_test');
@@ -141,24 +142,23 @@ class TestService {
 
       await _supabase.from('mock_tests').insert(payload);
 
-      // --- NOTIFICATION ---
       try {
         await AdminNotificationService().sendBroadcast(
           title: '🆕 New Mock Test Available!',
           body: 'Check out the new test: ${test.title}',
         );
       } catch (notiErr) {
-        debugPrint('Notification Error (Non-critical): $notiErr');
+        
       }
     } catch (e) {
-      debugPrint('Error creating mock test: $e');
+      
       throw Exception('Failed to create test: $e');
     }
   }
 
+  /// Deletes a mock test and its associated files.
   Future<void> deleteMockTest(int testId) async {
     try {
-      // 1. Fetch test details to get file paths (for Storage deletion)
       final testRow = await _supabase
           .from('mock_tests')
           .select()
@@ -188,18 +188,16 @@ class TestService {
         throw Exception(
             'Cannot delete this test because it has been purchased by one or more users.');
       }
-      debugPrint('Error deleting mock test (Postgrest): $e');
       throw Exception('Failed to delete test: ${e.message}');
     } catch (e) {
-      debugPrint('Error deleting mock test: $e');
       throw Exception('Failed to delete test: $e');
     }
   }
 
+  /// Updates an existing mock test.
   Future<void> updateMockTest(int testId, Map<String, dynamic> updates) async {
     try {
       final payload = Map<String, dynamic>.from(updates);
-      // Ensure we store paths, not signed URLs
       if (payload['file_path'] != null) {
         payload['file_path'] = SupabaseUrlHelper.extractPathFromUrl(
             payload['file_path'] as String, 'mock_test');
@@ -211,12 +209,41 @@ class TestService {
 
       await _supabase.from('mock_tests').update(payload).eq('test_id', testId);
     } catch (e) {
-      debugPrint('Error updating mock test: $e');
       throw Exception('Failed to update test: $e');
     }
   }
 
-  // --- RESULTS ---
+  // ── RESULTS ──────────────────────────────────────────────────────────────
+
+  /// Replaces storage paths with signed URLs for UI consumption.
+  Future<List<MockTest>> _populateSignedUrls(List<MockTest> tests) async {
+    return await Future.wait(
+      tests.map((test) async {
+        String? contentUrl;
+        String? imageUrl;
+        const bucket = 'mock_test';
+
+        if (test.filePath.isNotEmpty) {
+          final path =
+              SupabaseUrlHelper.extractPathFromUrl(test.filePath, bucket);
+          // Uses SupabaseUrlHelper with new 1-year expiry logic
+          contentUrl =
+              await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
+        }
+
+        if (test.coverImagePath != null && test.coverImagePath!.isNotEmpty) {
+          final path = SupabaseUrlHelper.extractPathFromUrl(
+              test.coverImagePath!, bucket);
+          imageUrl = await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
+        }
+
+        return test.copyWith(
+          contentUrl: contentUrl,
+          signedUrl: imageUrl,
+        );
+      }),
+    );
+  }
 
   Future<int?> submitTestResult({
     required int testId,
@@ -241,7 +268,6 @@ class TestService {
 
       return response['result_id'] as int?;
     } catch (e) {
-      debugPrint('Error submitting result: $e');
       throw Exception('Failed to submit result: $e');
     }
   }
@@ -255,11 +281,78 @@ class TestService {
           .order('attempt_date', ascending: false);
       return response as List<dynamic>;
     } catch (e) {
-      debugPrint('Error fetching results: $e');
       throw Exception('Failed to load history: $e');
     }
   }
 
+  // ── PURCHASES ────────────────────────────────────────────────────────────
+
+  Future<Set<int>> fetchPurchasedTestIds(String userId) async {
+    try {
+      final ordersResponse = await _supabase
+          .from('orders')
+          .select('order_id')
+          .eq('user_id', userId)
+          .inFilter('status', ['SUCCESS', 'COMPLETED']);
+
+      if ((ordersResponse as List).isEmpty) return {};
+
+      final orderIds = (ordersResponse).map((o) => o['order_id']).toList();
+
+      final itemsResponse = await _supabase
+          .from('order_items')
+          .select('test_id')
+          .inFilter('order_id', orderIds);
+
+      return (itemsResponse as List)
+          .where((i) => i['test_id'] != null)
+          .map((i) => i['test_id'] as int)
+          .toSet();
+    } catch (e) {
+      return {};
+    }
+  }
+
+  Future<List<MockTest>> fetchUserTests(String authUserId) async {
+    try {
+      final ordersResponse = await _supabase
+          .from('orders')
+          .select('order_id')
+          .eq('user_id', authUserId)
+          .inFilter('status', ['SUCCESS', 'COMPLETED']);
+
+      final orderIds =
+          (ordersResponse as List).map((o) => o['order_id']).toList();
+      if (orderIds.isEmpty) return [];
+
+      final itemsResponse = await _supabase
+          .from('order_items')
+          .select('test_id')
+          .inFilter('order_id', orderIds);
+
+      final testIds = (itemsResponse as List)
+          .where((i) => i['test_id'] != null)
+          .map((i) => i['test_id'] as int)
+          .toSet()
+          .toList();
+
+      if (testIds.isEmpty) return [];
+
+      final testsResponse = await _supabase
+          .from('mock_tests')
+          .select()
+          .inFilter('test_id', testIds);
+
+      final List<MockTest> purchasedTests =
+          await compute(_parseMockTests, testsResponse as List<dynamic>);
+
+      return await _populateSignedUrls(purchasedTests);
+    } catch (e) {
+      throw Exception('Failed to load purchased tests: $e');
+    }
+  }
+
+  /// Fetches the most recent test result for a user.
   Future<Map<String, dynamic>?> fetchLatestResult(String authUserId) async {
     try {
       final response = await _supabase
@@ -270,69 +363,17 @@ class TestService {
           .limit(1)
           .maybeSingle();
       return response;
-    } catch (e) {
-      debugPrint('Error fetching latest result: $e');
+    } catch (e, stack) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'fetchLatestResult failed');
       return null;
     }
   }
 
-  Future<bool> deleteTestResult(int resultId) async {
-    try {
-      final user = AuthService.instance.currentUser;
-      final userId = user?.id;
-
-      debugPrint('TestService: Attempting to delete result ID: $resultId');
-      debugPrint('TestService: Current User ID: $userId');
-
-      // 1. First, check if the record exists at all (helps differentiate between RLS and missing data)
-      final existing = await _supabase
-          .from('results')
-          .select('user_id')
-          .eq('result_id', resultId)
-          .maybeSingle();
-
-      if (existing == null) {
-        debugPrint('TestService: Result ID $resultId not found in database.');
-        return false;
-      }
-
-      final rowOwnerId = existing['user_id'] as String?;
-      debugPrint('TestService: Row Owner ID: $rowOwnerId');
-
-      if (userId != rowOwnerId) {
-        debugPrint(
-            'TestService: User $userId is NOT the owner of row $resultId. Deletion will likely fail due to RLS.');
-      }
-
-      // 2. Perform the deletion
-      final response = await _supabase
-          .from('results')
-          .delete()
-          .eq('result_id', resultId)
-          .select();
-
-      if ((response as List).isEmpty) {
-        debugPrint(
-            'TestService: Deletion failed or no rows matched for ID: $resultId. This strongly suggests an RLS (Policy) restriction.');
-        return false;
-      }
-
-      debugPrint(
-          'TestService: Successfully deleted ${response.length} row(s) for result ID: $resultId');
-      return true;
-    } catch (e) {
-      debugPrint('Error deleting result: $e');
-      // If we get an explicit error (like 403), it's definitely RLS
-      return false;
-    }
-  }
-
-  // --- PURCHASES & CART ---
-
+  /// Listens to purchased tests for real-time UI updates.
   Stream<List<MockTest>> streamPurchasedTests() {
     final authUserId = AuthService.instance.currentUser?.id;
     if (authUserId == null) return Stream.value([]);
-
     return _supabase
         .from('orders')
         .stream(primaryKey: ['order_id'])
@@ -345,107 +386,38 @@ class TestService {
                     o['status'] == 'SUCCESS' || o['status'] == 'COMPLETED')
                 .toList();
             if (successOrders.isEmpty) return <MockTest>[];
-
             final orderIds = successOrders.map((o) => o['order_id']).toList();
-
             final itemsResponse = await _supabase
                 .from('order_items')
                 .select('test_id')
                 .inFilter('order_id', orderIds);
-
             final testIds = (itemsResponse as List)
                 .where((i) => i['test_id'] != null)
                 .map((i) => i['test_id'] as int)
                 .toSet()
                 .toList();
-
             if (testIds.isEmpty) return <MockTest>[];
-
             final testsResponse = await _supabase
                 .from('mock_tests')
                 .select()
                 .inFilter('test_id', testIds);
-
             final List<MockTest> purchasedTests =
                 await compute(_parseMockTests, testsResponse as List<dynamic>);
-
             return await _populateSignedUrls(purchasedTests);
-          } catch (e) {
-            debugPrint("Stream Purchased Error: $e");
+          } catch (e, stack) {
+            CrashlyticsService.instance
+                .recordError(e, stack, reason: 'streamPurchasedTests failed');
             return <MockTest>[];
           }
         });
   }
 
-  Future<List<MockTest>> fetchUserTests(String authUserId) async {
-    try {
-      // 1. Fetch successful orders
-      final ordersResponse = await _supabase
-          .from('orders')
-          .select('order_id')
-          .eq('user_id', authUserId)
-          .inFilter('status', ['SUCCESS', 'COMPLETED']).order('created_at',
-              ascending: false);
-
-      debugPrint(
-          'TestService: fetchUserTests - Found ${ordersResponse.length} orders for user $authUserId');
-
-      final orderIds =
-          (ordersResponse as List).map((o) => o['order_id']).toList();
-      if (orderIds.isEmpty) {
-        debugPrint('TestService: No orders found.');
-        return [];
-      }
-
-      // 2. Fetch items for these orders
-      final itemsResponse = await _supabase
-          .from('order_items')
-          .select('test_id')
-          .inFilter('order_id', orderIds);
-
-      debugPrint('TestService: Found ${itemsResponse.length} order items.');
-
-      final testIds = (itemsResponse as List)
-          .where((i) => i['test_id'] != null)
-          .map((i) => i['test_id'] as int)
-          .toSet()
-          .toList();
-
-      if (testIds.isEmpty) {
-        debugPrint('TestService: No test IDs found in order items.');
-        return [];
-      }
-
-      debugPrint('TestService: Fetching specific tests: $testIds');
-
-      // 3. Fetch Tests
-      final testsResponse = await _supabase
-          .from('mock_tests')
-          .select()
-          .inFilter('test_id', testIds);
-
-      debugPrint(
-          'TestService: Found ${testsResponse.length} actual tests from DB.');
-
-      final List<MockTest> purchasedTests =
-          await compute(_parseMockTests, testsResponse as List<dynamic>);
-
-      return await _populateSignedUrls(purchasedTests);
-    } catch (e) {
-      debugPrint('Error fetching purchased tests: $e');
-      throw Exception('Failed to load purchased tests: $e');
-    }
-  }
-
+  /// Handles free test claims.
   Future<void> claimFreeTest({
     required int testId,
     required String authUserId,
   }) async {
     try {
-      debugPrint(
-          'TestService: Attempting to claim free test $testId for user $authUserId');
-
-      // 1. Check if already purchased/claimed
       final existingOrder = await _supabase
           .from('order_items')
           .select('order_id, orders!inner(user_id, status)')
@@ -453,14 +425,7 @@ class TestService {
           .eq('orders.user_id', authUserId)
           .eq('orders.status', 'SUCCESS')
           .maybeSingle();
-
-      if (existingOrder != null) {
-        debugPrint(
-            'TestService: Test $testId already claimed by user $authUserId. Order: ${existingOrder['order_id']}');
-        return;
-      }
-
-      // 2. Create SUCCESS order directly
+      if (existingOrder != null) return;
       final timestamp = DateTime.now().toUtc().toIso8601String();
       final newOrder = await _supabase
           .from('orders')
@@ -473,44 +438,31 @@ class TestService {
           })
           .select('order_id')
           .single();
-
-      final orderId = newOrder['order_id'];
-      debugPrint('TestService: Created FREE order: $orderId');
-
-      // 3. Add Item
       await _supabase.from('order_items').insert({
-        'order_id': orderId,
+        'order_id': newOrder['order_id'],
         'test_id': testId,
         'price_at_purchase': 0.0,
         'created_at': timestamp,
       });
-
-      debugPrint(
-          'TestService: Successfully claimed test $testId for user $authUserId');
-    } catch (e) {
-      debugPrint('Error claiming free test: $e');
+    } catch (e, stack) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'claimFreeTest failed');
       throw Exception('Failed to claim test: $e');
     }
   }
 
-  // --- DIRECT BUY FLOW ---
+  /// Initiates a direct purchase for a single test.
   Future<String> createDirectOrder({
     required int testId,
     required double price,
     required String authUserId,
   }) async {
     try {
-      // 0. OWNERSHIP CHECK
       final isOwned = await CartService.instance.checkOwnership(
         userId: authUserId,
         testId: testId,
       );
-
-      if (isOwned) {
-        throw Exception("You already own this item.");
-      }
-
-      // Create a specific order for Direct Checkout
+      if (isOwned) throw Exception("You already own this item.");
       final newOrder = await _supabase
           .from('orders')
           .insert({
@@ -521,23 +473,20 @@ class TestService {
           })
           .select('order_id')
           .single();
-
       final orderId = newOrder['order_id'];
-
       await _supabase.from('order_items').insert({
         'order_id': orderId,
         'test_id': testId,
         'price_at_purchase': price,
         'created_at': DateTime.now().toUtc().toIso8601String(),
       });
-
       return orderId;
     } catch (e) {
-      debugPrint('Error creating direct order: $e');
       throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }
 
+  /// Completes a purchase transaction.
   Future<void> checkout({
     required String orderId,
     required String paymentId,
@@ -545,13 +494,9 @@ class TestService {
     int? offerId,
     double discountAmount = 0,
     required String userId,
-    String paymentGateway = 'Razorpay', // NEW Param with default
+    String paymentGateway = 'Razorpay',
   }) async {
     try {
-      debugPrint(
-          'TestService: Completing checkout for Order $orderId (User: $userId, Offer: $offerId)');
-
-      // 1. Mark Order as Success
       final orderResponse = await _supabase
           .from('orders')
           .update({
@@ -565,28 +510,21 @@ class TestService {
           .eq('order_id', orderId)
           .select();
 
-      debugPrint(
-          'TestService: Order Update Status: ${orderResponse.isNotEmpty ? "Success" : "Failed (Empty Response)"}');
-
-      // --- ADMIN NOTIFICATION (SALE) ---
       if (orderResponse.isNotEmpty) {
         try {
           await AdminNotificationService().sendToTopic(
             topic: 'admin_updates',
-            title: '💰 New Sale! (₹$amount)',
+            title: '🎉 New Sale! (₹$amount)',
             body: 'Order #$orderId has been completed.',
             data: {
               'type': 'sale_alert',
               'order_id': orderId,
-              'amount': amount.toString(),
+              'amount': amount.toString()
             },
           );
-        } catch (notiErr) {
-          debugPrint('Admin Sale Notification Error: $notiErr');
-        }
+        } catch (_) {}
       }
 
-      // 2. CLEANUP CART (REMOVE PURCHASED ITEMS FROM PENDING ORDERS)
       try {
         final orderItems = await _supabase
             .from('order_items')
@@ -613,7 +551,6 @@ class TestService {
 
           if (pendingOrder != null) {
             final cartOrderId = pendingOrder['order_id'];
-
             if (purchasedTestIds.isNotEmpty) {
               await _supabase
                   .from('order_items')
@@ -621,7 +558,6 @@ class TestService {
                   .eq('order_id', cartOrderId)
                   .inFilter('test_id', purchasedTestIds);
             }
-
             if (purchasedResourceIds.isNotEmpty) {
               await _supabase
                   .from('order_items')
@@ -629,20 +565,12 @@ class TestService {
                   .eq('order_id', cartOrderId)
                   .inFilter('resource_id', purchasedResourceIds);
             }
-
-            debugPrint(
-                'TestService: Cleaned up purchased items from Cart (Order: $cartOrderId)');
           }
         }
-      } catch (cleanupError) {
-        debugPrint(
-            "TestService: Warning - Cart cleanup failed (non-critical): $cleanupError");
-      }
+      } catch (_) {}
 
-      // 3. Log redemption
       if (offerId != null) {
         try {
-          debugPrint('TestService: Logging redemption for Offer $offerId...');
           await _supabase.from('offer_redemptions').insert({
             'offer_id': offerId,
             'user_id': userId,
@@ -650,84 +578,74 @@ class TestService {
             'discount_amount': discountAmount,
             'redeemed_at': DateTime.now().toUtc().toIso8601String(),
           });
-        } catch (e) {
-          debugPrint("TestService: Redemption log error (likely RLS): $e");
-          // Don't throw here to avoid failing the whole checkout if only logging fails
-        }
+        } catch (_) {}
       }
-    } catch (e) {
-      debugPrint('TestService: Detailed Checkout error: $e');
+    } catch (e, stack) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'checkout failed');
       throw Exception('Checkout failed: $e');
     }
   }
 
-  // --- PER ITEM COUPON LOGIC (DEPRECATED but kept for now if needed, though we are moving away) ---
-  // We can remove the old per-item methods or leave them unused for safety until full transition.
-  // For cleanliness, I will comment them out or just leave them as is but we won't call them from UI.
-
-  Future<List<MockTest>> _populateSignedUrls(List<MockTest> tests) async {
-    return await Future.wait(
-      tests.map((test) async {
-        String? contentUrl;
-        String? imageUrl;
-
-        // 1. Generate Content URL (JSON)
-        if (test.filePath.isNotEmpty) {
-          final path =
-              SupabaseUrlHelper.extractPathFromUrl(test.filePath, 'mock_test');
-          contentUrl = await SupabaseUrlHelper.getFreshSignedUrl(
-              bucketName: 'mock_test', storagePath: path);
-        }
-
-        // 2. Generate Image URL
-        if (test.coverImagePath != null && test.coverImagePath!.isNotEmpty) {
-          final path = SupabaseUrlHelper.extractPathFromUrl(
-              test.coverImagePath!, 'mock_test');
-          imageUrl = await SupabaseUrlHelper.getFreshSignedUrl(
-              bucketName: 'mock_test', storagePath: path);
-        }
-
-        return test.copyWith(
-          contentUrl: contentUrl,
-          signedUrl: imageUrl,
+  /// Legacy admin method for uploading tests with images and JSON.
+  Future<void> uploadMockTestWithFiles({
+    required Map<String, dynamic> insertData,
+    required Uint8List imageBytes,
+    required String jsonString,
+  }) async {
+    final response = await _supabase
+        .from('mock_tests')
+        .insert(insertData)
+        .select('test_id')
+        .single();
+    final int testId = response['test_id'];
+    const imagePath = 'mock_test_cover/';
+    final fullImagePath = '$imagePath$testId.jpg';
+    await _supabase.storage.from('mock_test').uploadBinary(
+          fullImagePath,
+          imageBytes,
+          fileOptions:
+              const FileOptions(upsert: true, contentType: 'image/jpeg'),
         );
-      }),
-    );
+    final jsonBytes = utf8.encode(jsonString);
+    final jsonPath = 'mock_test_json_file/$testId.json';
+    await _supabase.storage.from('mock_test').uploadBinary(
+          jsonPath,
+          jsonBytes,
+          fileOptions:
+              const FileOptions(upsert: true, contentType: 'application/json'),
+        );
+    await _supabase.from('mock_tests').update({
+      'file_path': jsonPath,
+      'cover_image_path': fullImagePath,
+    }).eq('test_id', testId);
   }
 
-  Future<void> uploadResultPdf(String path, File file) async {
-    try {
-      await _supabase.storage.from('mock_test').upload(
-            path,
-            file,
-            fileOptions: const FileOptions(upsert: true),
-          );
-    } catch (e) {
-      debugPrint('Error uploading result PDF: $e');
-      throw Exception('Failed to upload result PDF: $e');
-    }
+  /// Admin stream for mock test management.
+  Stream<List<MockTest>> streamMockTests() {
+    return _supabase
+        .from('mock_tests')
+        .stream(primaryKey: ['test_id'])
+        .order('created_at', ascending: false)
+        .asyncMap((data) async {
+          List<MockTest> tests =
+              await compute(_parseMockTests, data as List<dynamic>);
+          return await _populateSignedUrls(tests);
+        });
   }
 
-  Future<Uint8List> downloadResultPdf(String bucketPath) async {
-    try {
-      return await _supabase.storage.from('mock_test').download(bucketPath);
-    } catch (e) {
-      debugPrint('Error downloading result PDF: $e');
-      throw Exception('Failed to download result PDF: $e');
-    }
-  }
-
+  /// Directly generates a signed URL.
   Future<String?> getSignedUrl(String path, String bucket) async {
     try {
-      return await _supabase.storage
-          .from(bucket)
-          .createSignedUrl(path, 60 * 60 * 24);
-    } catch (e) {
-      debugPrint('Error getting signed URL: $e');
+      return await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
+    } catch (e, stack) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'getSignedUrl failed');
       return null;
     }
   }
 
+  /// Fetches raw test data for admin tables.
   Future<List<dynamic>> fetchAllTestsRaw() async {
     return await _supabase
         .from('mock_tests')
@@ -735,87 +653,40 @@ class TestService {
         .order('created_at', ascending: false);
   }
 
-  Future<Set<int>> fetchPurchasedTestIds(String userId) async {
+  /// Uploads a generated result PDF.
+  Future<void> uploadResultPdf(String path, File file) async {
     try {
-      final ordersResponse = await _supabase
-          .from('orders')
-          .select('order_id')
-          .eq('user_id', userId)
-          .inFilter('status', ['SUCCESS', 'COMPLETED']);
-
-      if ((ordersResponse as List).isEmpty) {
-        return {};
-      }
-
-      final orderIds = (ordersResponse).map((o) => o['order_id']).toList();
-
-      final itemsResponse = await _supabase
-          .from('order_items')
-          .select('test_id')
-          .inFilter('order_id', orderIds);
-
-      final ids = (itemsResponse as List)
-          .where((i) => i['test_id'] != null)
-          .map((i) => i['test_id'] as int)
-          .toSet();
-      return ids;
-    } catch (e) {
-      return {};
+      await _supabase.storage.from('mock_test').upload(
+            path,
+            file,
+            fileOptions: const FileOptions(upsert: true),
+          );
+    } catch (e, stack) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'uploadResultPdf failed');
+      throw Exception('Failed to upload result PDF: $e');
     }
   }
 
-  Future<void> uploadMockTestWithFiles({
-    required Map<String, dynamic> insertData,
-    required Uint8List imageBytes,
-    required String jsonString,
-  }) async {
-    // 1. Insert Metadata
-    final response = await _supabase
-        .from('mock_tests')
-        .insert(insertData)
-        .select('test_id')
-        .single();
-
-    final int testId = response['test_id'];
-
-    // 2. Upload Image
-    const imagePath = 'mock_test_cover/';
-    final fullImagePath = '$imagePath$testId.jpg';
-    await _supabase.storage.from('mock_test').uploadBinary(
-          fullImagePath,
-          imageBytes,
-          fileOptions: const FileOptions(
-            upsert: true,
-            contentType: 'image/jpeg',
-          ),
-        );
-
-    // 3. Upload JSON
-    final jsonBytes = utf8.encode(jsonString);
-    final jsonPath = 'mock_test_json_file/$testId.json';
-
-    await _supabase.storage.from('mock_test').uploadBinary(
-          jsonPath,
-          jsonBytes,
-          fileOptions: const FileOptions(
-            upsert: true,
-            contentType: 'application/json',
-          ),
-        );
-
-    // 4. Update Path
-    await _supabase.from('mock_tests').update({
-      'file_path': jsonPath,
-      'cover_image_path': fullImagePath,
-    }).eq('test_id', testId);
+  /// Downloads a result PDF for viewing.
+  Future<Uint8List> downloadResultPdf(String bucketPath) async {
+    try {
+      return await _supabase.storage.from('mock_test').download(bucketPath);
+    } catch (e, stack) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'downloadResultPdf failed');
+      throw Exception('Failed to download result PDF: $e');
+    }
   }
 }
+
+// ── ISOLATED PARSERS ───────────────────────────────────────────────────────
 
 List<MockTest> _parseMockTests(List<dynamic> jsonList) {
   return jsonList.map((json) => MockTest.fromJson(json)).toList();
 }
 
 List<Question> _decodeAndParseQuestions(String jsonString) {
-  final List<dynamic> jsonList = jsonDecode(jsonString);
-  return jsonList.map((q) => Question.fromJson(q)).toList();
+  final List<dynamic> data = json.decode(jsonString);
+  return data.map((q) => Question.fromJson(q)).toList();
 }

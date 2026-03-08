@@ -109,7 +109,10 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
   }
 
   Widget _buildAnalysisCard(Question q, int index, int? selectedOption) {
-    final isCorrect = selectedOption == q.correctOptionIndex;
+    // CHANGED: Use string-based comparison for correct answer
+    final bool isCorrect = selectedOption != null &&
+        q.options[selectedOption].trim().toLowerCase() ==
+            q.correctAnswer.trim().toLowerCase(); // CHANGED
     final isSkipped = selectedOption == null;
 
     final theme = Theme.of(context);
@@ -168,7 +171,9 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
           const SizedBox(height: AppSpacing.lg),
           ...List.generate(q.options.length, (optIndex) {
             final isSelected = selectedOption == optIndex;
-            final isRealAnswer = q.correctOptionIndex == optIndex;
+            // CHANGED: Identify correct option by string match
+            final isRealAnswer = q.options[optIndex].trim().toLowerCase() ==
+                q.correctAnswer.trim().toLowerCase(); // CHANGED
 
             Color? bgColor;
             Color borderColor = theme.colorScheme.outline;

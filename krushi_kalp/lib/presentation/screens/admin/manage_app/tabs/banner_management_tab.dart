@@ -6,6 +6,7 @@ import '../../../../../domain/models/home_banner.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import '../../../../../data/services/app_config_service.dart';
 import '../../../../utils/ui_helpers.dart';
+import '../../../../../utils/error_utils.dart';
 
 class BannerManagementTab extends StatefulWidget {
   const BannerManagementTab({super.key});
@@ -43,11 +44,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error saving settings: $e")),
-        );
-      }
+      if (mounted) ErrorUtils.showError(context, e);
     }
   }
 
@@ -87,7 +84,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
                       max: 60,
                       divisions: 57,
                       activeColor: colorScheme.primary,
-                      inactiveColor: colorScheme.outline.withOpacity(0.3),
+                      inactiveColor: colorScheme.outline.withValues(alpha: 0.3),
                       label: "$tempInterval s",
                       onChanged: tempAutoScroll
                           ? (val) {
@@ -140,10 +137,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("Upload Error: $e")));
-      }
+      if (mounted) ErrorUtils.showError(context, e);
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
@@ -174,10 +168,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("Replace Error: $e")));
-      }
+      if (mounted) ErrorUtils.showError(context, e);
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
@@ -367,7 +358,8 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
                     Text(
                       "Tap to edit details",
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                        color:
+                            colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -415,12 +407,12 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
                               Icon(Icons.image_not_supported_rounded,
                                   size: 64,
                                   color: colorScheme.onSurfaceVariant
-                                      .withOpacity(0.2)),
+                                      .withValues(alpha: 0.2)),
                               const SizedBox(height: AppSpacing.md),
                               Text("No banners yet",
                                   style: TextStyle(
                                       color: colorScheme.onSurfaceVariant
-                                          .withOpacity(0.6))),
+                                          .withValues(alpha: 0.6))),
                             ],
                           ),
                         ),
@@ -501,7 +493,7 @@ class _BannerCard extends StatelessWidget {
         border: Border.all(color: colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.03),
+            color: colorScheme.shadow.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -521,12 +513,13 @@ class _BannerCard extends StatelessWidget {
                     imageUrl: banner.imageUrl,
                     fit: BoxFit.cover,
                     placeholder: (_, __) => Container(
-                      color: colorScheme.surfaceVariant.withOpacity(0.2),
+                      color: colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.2),
                       child: const Center(
                           child: CircularProgressIndicator(strokeWidth: 2)),
                     ),
                     errorWidget: (_, __, ___) => Container(
-                      color: colorScheme.errorContainer.withOpacity(0.2),
+                      color: colorScheme.errorContainer.withValues(alpha: 0.2),
                       child: Icon(Icons.broken_image_rounded,
                           color: colorScheme.error),
                     ),
@@ -539,7 +532,7 @@ class _BannerCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -651,7 +644,7 @@ class _BannerCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: (color ?? colorScheme.primary).withOpacity(0.08),
+            color: (color ?? colorScheme.primary).withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: color ?? colorScheme.primary, size: 20),

@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     } catch (e) {
-      debugPrint("Error loading home data: $e");
+      
     }
   }
 
@@ -116,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       context.read<AuthProvider>().currentUser?.id ?? ''),
                 ]).timeout(const Duration(seconds: 20));
               } catch (e) {
-                debugPrint("HomeScreen: Refresh error or timeout: $e");
+                
                 // The indicator will stop automatically when this async block finishes
               }
             },

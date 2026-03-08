@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../../../data/services/admin_service.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
+import '../../../../utils/error_utils.dart';
 
 class RevenueDetailsScreen extends StatefulWidget {
   const RevenueDetailsScreen({super.key});
@@ -35,17 +36,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading data: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            action: SnackBarAction(
-              label: 'Retry',
-              textColor: Colors.white,
-              onPressed: _fetchData,
-            ),
-          ),
-        );
+        ErrorUtils.showError(context, e);
       }
     }
   }

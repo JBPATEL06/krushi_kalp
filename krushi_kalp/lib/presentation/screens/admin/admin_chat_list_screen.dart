@@ -23,7 +23,7 @@ class _AdminChatListScreenState extends State<AdminChatListScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       body: Consumer<AdminProvider>(
         builder: (context, adminProvider, child) {
           return Column(
@@ -67,8 +67,8 @@ class _AdminChatListScreenState extends State<AdminChatListScreen> {
                     if (snapshot.hasError) {
                       return NetworkErrorState(
                         message: isNetworkError(snapshot.error)
-                            ? 'Unable to load conversations. Check your connection.'
-                            : 'Error: ${snapshot.error}',
+                            ? 'Unable to load conversations. Check connection.'
+                            : 'Something went wrong.',
                         onRetry: () => adminProvider.triggerRefresh(),
                       );
                     }
@@ -108,7 +108,7 @@ class _AdminChatListScreenState extends State<AdminChatListScreen> {
                               leading: CircleAvatar(
                                 radius: 24,
                                 backgroundColor:
-                                    colorScheme.primary.withOpacity(0.1),
+                                    colorScheme.primary.withValues(alpha: 0.1),
                                 child: Text(
                                   firstChar,
                                   style: TextStyle(
@@ -133,7 +133,7 @@ class _AdminChatListScreenState extends State<AdminChatListScreen> {
                               ),
                               trailing: Icon(Icons.chevron_right_rounded,
                                   color: colorScheme.onSurfaceVariant
-                                      .withOpacity(0.5),
+                                      .withValues(alpha: 0.5),
                                   size: 20),
                               onTap: () async {
                                 await Navigator.push(

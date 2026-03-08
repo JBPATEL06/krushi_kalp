@@ -12,6 +12,7 @@ import '../../data/services/review_service.dart'; // NEW
 import '../widgets/reviews/review_dialog.dart'; // NEW
 import 'main_screen.dart';
 import '../../data/services/test_service.dart';
+import '../../utils/error_utils.dart';
 
 class TestResultScreen extends StatefulWidget {
   final int? resultId;
@@ -146,9 +147,7 @@ class _TestResultScreenState extends State<TestResultScreen>
             finalQuestions =
                 await TranslationService.translateBatch(finalQuestions);
           }
-        } catch (e) {
-          debugPrint('PDF Translation Error: $e');
-        }
+        } catch (e) {}
       }
 
       // 2. Generate local encrypted PDF
@@ -178,11 +177,8 @@ class _TestResultScreenState extends State<TestResultScreen>
           );
         }
       } catch (e) {
-        debugPrint('Upload error: $e');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Upload failed: $e. Opening local copy.')),
-          );
+          ErrorUtils.showError(context, e);
         }
       }
 
@@ -202,9 +198,7 @@ class _TestResultScreenState extends State<TestResultScreen>
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error generating PDF: $e')),
-        );
+        ErrorUtils.showError(context, e);
       }
     } finally {
       if (mounted) {
@@ -745,9 +739,7 @@ class _TestResultScreenState extends State<TestResultScreen>
             }
           } catch (e) {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to submit: $e')),
-              );
+              ErrorUtils.showError(context, e);
             }
           }
         },

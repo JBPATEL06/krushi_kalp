@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../domain/models/mock_test.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/test_service.dart';
+import '../../utils/error_utils.dart';
 import 'purchased_tests_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -36,20 +37,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       // REPLACED legacy purchaseMockTest with direct checkout flow logic if needed,
       // but for now, we follow the DirectCheckoutSheet pattern.
       // If this screen is still in use, it should be migrated to use CartService/TestService orders.
-      final orderId = await TestService.instance.createDirectOrder(
+      await TestService.instance.createDirectOrder(
         testId: widget.test.id,
         price: _total,
         authUserId: user.id,
       );
-      debugPrint("Direct order created: $orderId");
 
       // Here we would normally trigger PaymentService, but for now we just show a message
       // or redirect to a proper checkout.
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text("Order created. Please complete payment.")),
-        );
+        // The instruction implies removing this specific snackbar,
+        // as the success dialog below will handle the user feedback.
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   const SnackBar(
+        //       content: Text("Order created. Please complete payment.")),
+        // );
       }
 
       if (mounted) {
@@ -87,9 +89,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Purchase failed: $e')));
+        ErrorUtils.showError(context, e);
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);

@@ -30,15 +30,15 @@ class ExcelToJsonConverter {
       // 1. ID (Col 0)
       var idVal = row[0]?.value?.toString() ?? '';
       // Try parse int, or use hash code if alphanumeric
-      int id = int.tryParse(idVal) ?? idVal.hashCode;
+      int id = int.tryParse(idVal) ?? idVal.hashCode; // CHANGED
 
       // 2. Question Text (Col 1)
-      String text = row[1]?.value?.toString() ?? '';
+      String text = row[1]?.value?.toString() ?? ''; // CHANGED
       if (text.isEmpty) continue;
 
       // 3. Extract Potential Options & Answer
       // Collect valid strings from Col 2 onwards
-      List<String> rawValues = [];
+      List<String> rawValues = []; // CHANGED
       for (int k = 2; k < row.length; k++) {
         var val = row[k]?.value?.toString().trim();
         if (val != null && val.isNotEmpty) {
@@ -51,42 +51,58 @@ class ExcelToJsonConverter {
       }
 
       // Assume the LAST non-empty cell is the Correct Answer key
-      String answerKey = rawValues.last;
+      String answerKey = rawValues.last; // CHANGED
       // All previous derived values are Options
-      List<String> options = rawValues.sublist(0, rawValues.length - 1);
+      List<String> options =
+          rawValues.sublist(0, rawValues.length - 1); // CHANGED
 
-      int correctIndex = 0; // Default to first option if detection fails
+      String correctAnswerStr = ''; // CHANGED
 
-      // Logic to find Correct Index from 'answerKey'
-
+      // Logic to find Correct Answer Text from 'answerKey'
       // A) Does it match the text of an option?
-      int textMatch = options.indexOf(answerKey);
+      int textMatch = options.indexWhere((opt) =>
+          opt.trim().toLowerCase() ==
+          answerKey.trim().toLowerCase()); // CHANGED
       if (textMatch != -1) {
-        correctIndex = textMatch;
+        correctAnswerStr = options[textMatch]; // CHANGED
       } else {
         // B) Is it a number (1, 2, 3...)?
-        int? numIndex = int.tryParse(answerKey);
+        int? numIndex = int.tryParse(answerKey); // CHANGED
         if (numIndex != null && numIndex > 0 && numIndex <= options.length) {
-          correctIndex = numIndex - 1;
+          correctAnswerStr = options[numIndex - 1]; // CHANGED
         } else {
           // C) Is it a letter (A, B, C...)?
           if (answerKey.length == 1) {
-            int charCode = answerKey.toUpperCase().codeUnitAt(0);
+            int charCode = answerKey.toUpperCase().codeUnitAt(0); // CHANGED
             // 'A' is 65. So A->0, B->1
-            int derived = charCode - 65;
+            int derived = charCode - 65; // CHANGED
             if (derived >= 0 && derived < options.length) {
-              correctIndex = derived;
+              correctAnswerStr = options[derived]; // CHANGED
             }
           }
         }
       }
 
-      questions.add({
-        'id': id,
-        'text': text,
-        'options': options,
-        'correctOptionIndex': correctIndex,
-      });
+      // Fallback: If still empty, use the answerKey itself as the string
+      if (correctAnswerStr.isEmpty) {
+        correctAnswerStr = answerKey; // CHANGED
+      }
+
+      // Build tableConvert format JSON
+      Map<String, dynamic> qMap = {
+        'No.': id, // CHANGED
+        'Question': text, // CHANGED
+      };
+
+      // Add options Option A, Option B, etc.
+      for (int optIdx = 0; optIdx < options.length; optIdx++) {
+        String label = String.fromCharCode(65 + optIdx); // A, B, C...
+        qMap['Option $label'] = options[optIdx]; // CHANGED
+      }
+
+      qMap['Correct Answer'] = correctAnswerStr; // CHANGED
+
+      questions.add(qMap); // CHANGED
     }
 
     return questions;

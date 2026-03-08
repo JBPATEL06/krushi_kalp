@@ -155,11 +155,13 @@ class _StoreGridState extends State<StoreGrid> {
       actionLabel: displayPrice == 0 ? 'Claim' : 'Buy Now',
       customAction: isPurchased
           ? DownloadActionButton(
+              testId: test.id.toString(),
               filename: 'mock_test_${test.id}.json',
               url: test.contentUrl,
               startLabel: "Start",
               isFullWidth: true, // Needs to be full width in the vertical card
               userId: AuthService.instance.currentUser?.id,
+              displayName: test.title, // CHANGED
               onAction: () async {
                 if (test.contentUrl == null) {
                   ScaffoldMessenger.of(context).showSnackBar(

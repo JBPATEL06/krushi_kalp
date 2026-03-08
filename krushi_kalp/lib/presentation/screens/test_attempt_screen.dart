@@ -87,8 +87,11 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
     int score = 0;
     for (var question in _questions) {
       final selected = _selectedAnswers[question.id];
-      if (selected != null && selected == question.correctOptionIndex) {
-        score++;
+      // CHANGED: Use string-based comparison instead of index
+      if (selected != null &&
+          question.options[selected].trim().toLowerCase() ==
+              question.correctAnswer.trim().toLowerCase()) {
+        score++; // CHANGED
       }
     }
 

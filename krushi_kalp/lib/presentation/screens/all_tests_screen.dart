@@ -67,7 +67,7 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
       await file.writeAsBytes(bytes);
       _openPdf(file, title);
     } catch (e) {
-      debugPrint('Download Error: $e');
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error downloading result: $e')),

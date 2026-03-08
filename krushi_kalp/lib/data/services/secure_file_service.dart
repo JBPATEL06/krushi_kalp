@@ -40,7 +40,7 @@ class SecureFileService {
       await file.writeAsBytes(response.bodyBytes);
       return file;
     } catch (e) {
-      debugPrint('SecureFileService Error: $e');
+      
       rethrow;
     }
   }

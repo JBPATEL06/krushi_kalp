@@ -71,6 +71,36 @@ class Resource {
     };
   }
 
+  Resource copyWith({
+    int? id,
+    String? title,
+    String? description,
+    ResourceType? type,
+    String? category,
+    String? fileUrl,
+    String? thumbnailUrl,
+    double? price,
+    double? mrp,
+    String? discount,
+    bool? isActive,
+    DateTime? createdAt,
+  }) {
+    return Resource(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      type: type ?? this.type,
+      category: category ?? this.category,
+      fileUrl: fileUrl ?? this.fileUrl,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      price: price ?? this.price,
+      mrp: mrp ?? this.mrp,
+      discount: discount ?? this.discount,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
   static ResourceType _parseType(String typeStr) {
     switch (typeStr) {
       case 'current_affair':

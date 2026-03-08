@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../pdf_viewer_screen.dart';
 import 'admin_resource_form.dart';
 import 'admin_resource_detail_screen.dart';
+import '../../../../../utils/error_utils.dart';
 import '../../../utils/ui_helpers.dart';
 
 class AdminResourceList extends StatefulWidget {
@@ -62,22 +63,7 @@ class _AdminResourceListState extends State<AdminResourceList> {
         }
       } catch (e) {
         if (mounted) {
-          String errorMessage = 'Error: $e';
-
-          // Handle specific PostgrestException for foreign key violation (code 23503)
-          if (e.toString().contains('23503') ||
-              e.toString().contains('violates foreign key constraint')) {
-            errorMessage =
-                'Cannot delete: This item has already been purchased or referenced by users.';
-          }
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: Theme.of(context).colorScheme.error,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          ErrorUtils.showError(context, e);
         }
       }
     }
@@ -105,7 +91,7 @@ class _AdminResourceListState extends State<AdminResourceList> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       floatingActionButton: FloatingActionButton(
         onPressed: () => _navigateToForm(),
         elevation: 2,
@@ -127,7 +113,7 @@ class _AdminResourceListState extends State<AdminResourceList> {
                     Icon(Icons.error_outline_rounded,
                         color: colorScheme.error, size: 48),
                     const SizedBox(height: AppSpacing.md),
-                    Text('Error: ${snapshot.error}',
+                    Text('Something went wrong. Please try again.',
                         style: theme.textTheme.bodySmall),
                   ],
                 ),
@@ -186,7 +172,7 @@ class _AdminResourceListState extends State<AdminResourceList> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceVariant.withOpacity(0.5),
+                  color: colorScheme.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: item.thumbnailUrl != null
@@ -204,7 +190,8 @@ class _AdminResourceListState extends State<AdminResourceList> {
                       )
                     : Icon(Icons.insert_drive_file_rounded,
                         size: 24,
-                        color: colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                        color: colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.5)),
               ),
               const SizedBox(width: AppSpacing.md),
               // Name and Category
@@ -246,7 +233,8 @@ class _AdminResourceListState extends State<AdminResourceList> {
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: item.isActive
                                 ? const Color(0xFF10B981)
-                                : colorScheme.onSurfaceVariant.withOpacity(0.5),
+                                : colorScheme.onSurfaceVariant
+                                    .withValues(alpha: 0.5),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -313,7 +301,7 @@ class _AdminResourceListState extends State<AdminResourceList> {
         child: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: (color ?? colorScheme.primary).withOpacity(0.08),
+            color: (color ?? colorScheme.primary).withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: color ?? colorScheme.primary, size: 18),
@@ -373,8 +361,7 @@ class _AdminResourceListState extends State<AdminResourceList> {
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // Close loader
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error opening PDF: $e')));
+        ErrorUtils.showError(context, e);
       }
     }
   }
@@ -411,8 +398,7 @@ class _AdminResourceListState extends State<AdminResourceList> {
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // Close loader
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error downloading PDF: $e')));
+        ErrorUtils.showError(context, e);
       }
     }
   }

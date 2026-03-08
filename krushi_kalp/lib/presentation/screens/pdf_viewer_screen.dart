@@ -80,22 +80,22 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
               setState(() {
                 errorMessage = error.toString();
               });
-              debugPrint(error.toString());
+              
             },
             onPageError: (page, error) {
               setState(() {
                 errorMessage = '$page: ${error.toString()}';
               });
-              debugPrint('$page: ${error.toString()}');
+              
             },
             onViewCreated: (PDFViewController pdfViewController) {
               // controller.complete(pdfViewController);
             },
             onLinkHandler: (String? uri) {
-              debugPrint('goto uri: $uri');
+              
             },
             onPageChanged: (int? page, int? total) {
-              debugPrint('page change: $page/$total');
+              
               setState(() {
                 currentPage = page;
               });

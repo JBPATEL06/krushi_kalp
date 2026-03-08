@@ -30,9 +30,9 @@ class NetworkUtils {
   /// Logs the error as a warning if it's a network error, otherwise logs normally.
   static void logError(String source, dynamic error, [StackTrace? stackTrace]) {
     if (isNetworkError(error)) {
-      debugPrint('Warning: Network Error in [$source] - $error');
+      
     } else {
-      debugPrint('Error in [$source]: $error');
+      
       if (stackTrace != null) {
         debugPrintStack(stackTrace: stackTrace);
       }

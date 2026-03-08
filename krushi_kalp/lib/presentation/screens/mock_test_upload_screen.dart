@@ -7,7 +7,10 @@ import '../../utils/excel_to_json_converter.dart';
 import '../utils/ui_helpers.dart';
 import '../../data/services/test_service.dart';
 import '../../data/services/admin_notification_service.dart';
+import '../../data/services/background_upload_service.dart';
+import '../../data/services/transfer_notification_service.dart';
 import '../../core/theme/app_spacing.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MockTestUploadScreen extends StatefulWidget {
   const MockTestUploadScreen({super.key});
@@ -64,8 +67,8 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
 
   // Files
   PlatformFile? _coverImage;
-  PlatformFile? _excelFile;
-  Uint8List? _excelBytes;
+  PlatformFile? _questionsFile;
+  Uint8List? _questionsBytes;
   Uint8List? _imageBytes;
 
   static const int maxImageSizeBytes = 200 * 1024; // 200KB
@@ -93,28 +96,27 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
     }
   }
 
-  Future<void> _pickExcelFile() async {
+  Future<void> _pickQuestionsFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['xlsx', 'xls'],
+      allowedExtensions: ['xlsx', 'xls', 'json'],
       withData: true,
     );
-
     if (result != null) {
       final file = result.files.first;
       setState(() {
-        _excelFile = file;
-        _excelBytes = file.bytes;
+        _questionsFile = file;
+        _questionsBytes = file.bytes;
       });
     }
   }
 
   Future<void> _uploadMockTest() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_coverImage == null || _excelFile == null) {
+    if (_coverImage == null || _questionsFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select both Cover Image and Excel File'),
+          content: Text('Please select both Cover Image and Questions File'),
         ),
       );
       return;
@@ -139,16 +141,86 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
         'language': _selectedLanguage,
         'is_active': true,
         'file_path': '',
+        'cover_image_path': '',
       };
 
-      if (_excelBytes == null) throw 'Excel file not selected';
+      if (_questionsBytes == null) throw 'Questions file not selected';
 
-      final jsonList = ExcelToJsonConverter.convert(_excelBytes!);
+      String jsonString;
+      if (_questionsFile!.extension?.toLowerCase() == 'json') {
+        jsonString = utf8.decode(_questionsBytes!);
+      } else {
+        final jsonList = ExcelToJsonConverter.convert(_questionsBytes!);
+        jsonString = jsonEncode(jsonList);
+      }
 
-      await TestService.instance.uploadMockTestWithFiles(
-        insertData: insertData,
-        imageBytes: _imageBytes!,
-        jsonString: jsonEncode(jsonList),
+      // 1. Create the database record first (waiting for ID)
+      final supabase = Supabase.instance.client;
+      final response = await supabase
+          .from('mock_tests')
+          .insert(insertData)
+          .select('test_id')
+          .single();
+      final int testId = response['test_id'];
+
+      // 2. Start background uploads
+      final imagePath = 'mock_test_cover/$testId.jpg';
+      final jsonPath = 'mock_test_json_file/$testId.json';
+
+      // Upload Cover Image
+      BackgroundUploadService().uploadFile(
+        fileName: 'Cover: ${_titleController.text}',
+        bucketName: 'mock_test',
+        storagePath: imagePath,
+        fileBytes: _imageBytes!,
+        fileType: 'mock_test_cover',
+        onProgress: (p) => TransferNotificationService().showUploadProgress(
+          taskId: 'image_$testId',
+          fileName: 'Cover for ${_titleController.text}',
+          progress: p,
+        ),
+        onComplete: (path) async {
+          await supabase
+              .from('mock_tests')
+              .update({'cover_image_path': path}).eq('test_id', testId);
+          TransferNotificationService().showUploadSuccess(
+            taskId: 'image_$testId',
+            fileName: 'Cover image',
+          );
+        },
+        onError: (err) => TransferNotificationService().showUploadFailure(
+          taskId: 'image_$testId',
+          fileName: 'Cover image',
+          error: err,
+        ),
+      );
+
+      // Upload JSON Content
+      BackgroundUploadService().uploadFile(
+        fileName: 'Questions: ${_titleController.text}',
+        bucketName: 'mock_test',
+        storagePath: jsonPath,
+        fileBytes: Uint8List.fromList(utf8.encode(jsonString)),
+        fileType: 'mock_test_json',
+        onProgress: (p) => TransferNotificationService().showUploadProgress(
+          taskId: 'json_$testId',
+          fileName: 'Questions for ${_titleController.text}',
+          progress: p,
+        ),
+        onComplete: (path) async {
+          await supabase
+              .from('mock_tests')
+              .update({'file_path': path}).eq('test_id', testId);
+          TransferNotificationService().showUploadSuccess(
+            taskId: 'json_$testId',
+            fileName: 'Questions file',
+          );
+        },
+        onError: (err) => TransferNotificationService().showUploadFailure(
+          taskId: 'json_$testId',
+          fileName: 'Questions file',
+          error: err,
+        ),
       );
 
       try {
@@ -157,12 +229,14 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
           body: 'Check out the new ${_titleController.text.trim()} test now!',
         );
       } catch (e) {
-        debugPrint("Notification Error: $e");
+        
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Mock Test Uploaded Successfully!')),
+          const SnackBar(
+              content: Text(
+                  'Mock Test metadata saved. Uploading files in background...')),
         );
         Navigator.pop(context);
       }
@@ -445,21 +519,23 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                           ),
                           const SizedBox(height: AppSpacing.md),
 
-                          // Excel File Picker
+                          // Questions File Picker (Excel or JSON)
                           ListTile(
                             leading: Icon(Icons.table_chart,
                                 color: theme.colorScheme.primary),
                             title: Text(
-                              _excelFile?.name ?? 'Select Excel File (.xlsx)',
+                              _questionsFile?.name ??
+                                  'Select Questions File (Excel or JSON)',
                               style: Theme.of(context).textTheme.bodyMedium,
                             ),
-                            subtitle: const Text('Will be converted to JSON'),
+                            subtitle: const Text(
+                                'Excel (.xlsx) or direct JSON (.json)'),
                             trailing: IconButton(
                               icon: const Icon(Icons.upload_file),
-                              onPressed: _pickExcelFile,
+                              onPressed: _pickQuestionsFile,
                               color: theme.colorScheme.primary,
                             ),
-                            tileColor: _excelFile != null
+                            tileColor: _questionsFile != null
                                 ? theme.colorScheme.primaryContainer
                                     .withValues(alpha: 0.1)
                                 : null,

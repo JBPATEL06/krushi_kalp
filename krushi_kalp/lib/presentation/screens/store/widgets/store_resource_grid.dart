@@ -164,11 +164,13 @@ class _StoreResourceGridState extends State<StoreResourceGrid> {
           isPurchased ? 'Download' : (displayPrice == 0 ? 'Claim' : 'Buy Now'),
       customAction: isPurchased
           ? DownloadActionButton(
+              testId: resource.id.toString(),
               filename: 'resource_${resource.id}.pdf',
               url: resource.fileUrl,
               startLabel: "Open",
               isFullWidth: false,
               userId: AuthService.instance.currentUser?.id,
+              displayName: resource.title, // CHANGED
               onAction: () async {
                 widget.onBuyTap(resource);
               },

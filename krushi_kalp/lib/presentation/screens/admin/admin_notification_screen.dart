@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../data/services/admin_notification_service.dart';
+import '../../../utils/error_utils.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 
 class AdminNotificationScreen extends StatefulWidget {
@@ -50,12 +51,7 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        ErrorUtils.showError(context, e);
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -141,8 +137,7 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
         title,
         style: theme.textTheme.titleSmall?.copyWith(
           fontWeight: FontWeight.w800,
-          color: colorScheme.onSurfaceVariant,
-          letterSpacing: 1.2,
+          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.1),
         ),
       ),
     );

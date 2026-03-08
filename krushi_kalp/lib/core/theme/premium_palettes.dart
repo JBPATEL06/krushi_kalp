@@ -11,11 +11,12 @@ class PremiumPalettes {
   static const Color cloudBackground = Color(0xFFF8FAFC); // Clean Surface
 
   // ── Neutral + Indigo (Premium Gray Dark Theme) ──
-  static const Color neutralDarkBackground =
-      Color(0xFF121212); // Deep Neutral Gray
-  static const Color neutralDarkSurface = Color(0xFF1E1E1E); // Surface Gray
+  static const Color neutralDarkBackground = Color(0xFF1C1C1C); // was 121212
+  static const Color neutralDarkSurface = Color(0xFF272727); // was 1E1E1E
   static const Color indigoDarkPrimary = Color(0xFF818CF8); // Indigo 400
   static const Color skyDarkSecondary = Color(0xFF38BDF8); // Sky 400
+  static const Color emeraldGreen = Color(0xFF10B981); // Emerald 500
+  static const Color jadeGreen = Color(0xFF34D399); // Jade/Mint Green
 }
 
 class AppColorsV2 {
@@ -26,10 +27,12 @@ class AppColorsV2 {
   static const Color surface = Colors.white;
   static const Color textPrimary = Color(0xFF0F172A); // Slate 900
   static const Color textSecondary = Color(0xFF64748B); // Slate 500
+  static const Color tertiary = PremiumPalettes.emeraldGreen;
 
   // ── Dark Theme (Neutral + Indigo) ──
   static const Color primaryDark = PremiumPalettes.indigoDarkPrimary;
   static const Color secondaryDark = PremiumPalettes.skyDarkSecondary;
+  static const Color tertiaryDark = PremiumPalettes.jadeGreen;
   static const Color backgroundDark = PremiumPalettes.neutralDarkBackground;
   static const Color surfaceDark = PremiumPalettes.neutralDarkSurface;
   static const Color textPrimaryDark = Color(0xFFF5F5F5); // Neutral 100

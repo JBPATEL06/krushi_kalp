@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:krushi_kalp/presentation/screens/pdf_viewer_screen.dart';
 import 'admin_resource_form.dart';
+import '../../../../utils/error_utils.dart';
 
 class AdminResourceDetailScreen extends StatefulWidget {
   final Resource resource;
@@ -80,8 +81,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text('Error: $e')));
+          ErrorUtils.showError(context, e);
         }
       }
     }
@@ -155,9 +155,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context); // Close loader
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ErrorUtils.showError(context, e);
       }
     }
   }
@@ -297,7 +295,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
 
             // Statistics Section
             _buildSectionHeader(context, "PERFORMANCE STATS"),
-                const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
                 Expanded(
@@ -350,7 +348,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
 
             // Actions Section
             _buildSectionHeader(context, "ACTIONS"),
-                const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
                 Expanded(

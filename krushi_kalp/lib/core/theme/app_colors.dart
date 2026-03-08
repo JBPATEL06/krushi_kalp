@@ -57,15 +57,15 @@ class AppColorsDark {
   static const Color onSecondary = Colors.white;
 
   // Dark surfaces (YouTube-style true neutral scale)
-  static const Color background = Color(0xFF0F0F0F); // deepest true black
-  static const Color surface = Color(0xFF212121); // dark grey card
-  static const Color surfaceHigh = Color(0xFF272727); // elevated sheet
+  static const Color background = Color(0xFF1C1C1C);
+  static const Color surface = Color(0xFF2E2E2E); // dark grey card
+  static const Color surfaceHigh = Color(0xFF2E2E2E); // elevated sheet
 
   // Neutral scale — true greys
-  static const Color neutral50 = Color(0xFF1A1A1A);
+  static const Color neutral50 = Color(0xFF242424);
   static const Color neutral100 = Color(0xFF2A2A2A);
-  static const Color neutral200 = Color(0xFF333333);
-  static const Color neutral300 = Color(0xFF4D4D4D);
+  static const Color neutral200 = Color(0xFF383838);
+  static const Color neutral300 = Color(0xFF545454);
   static const Color neutral400 = Color(0xFF808080);
   static const Color neutral500 = Color(0xFFAAAAAA);
   static const Color neutral600 = Color(0xFFCCCCCC);
@@ -80,7 +80,7 @@ class AppColorsDark {
   static const Color info = Color(0xFF60A5FA);
 
   // Borders
-  static const Color border = Color(0xFF303030); // Subtle youtube divider line
+  static const Color border = Color(0xFF3A3A3A); // Subtle youtube divider line
   static const Color borderFocus = primary;
   static const Color borderError = error;
 

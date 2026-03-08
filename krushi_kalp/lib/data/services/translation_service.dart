@@ -28,19 +28,27 @@ class TranslationService {
 
       final optionsTranslations = await Future.wait(optionsFutures);
 
-      // 3. Create new Question object
+      // 3. Find original correct index to map to translated option
+      final int originalCorrectIndex = q.options.indexWhere((opt) =>
+          opt.trim().toLowerCase() ==
+          q.correctAnswer.trim().toLowerCase()); // CHANGED
+
+      // 4. Create new Question object
+      final translatedOptions =
+          optionsTranslations.map((t) => t.text).toList(); // CHANGED
       final translatedQ = Question(
         id: q.id, // Keep original ID
         text: textTranslation.text,
-        options: optionsTranslations.map((t) => t.text).toList(),
-        correctOptionIndex: q.correctOptionIndex,
+        options: translatedOptions, // CHANGED
+        correctAnswer: originalCorrectIndex != -1
+            ? translatedOptions[originalCorrectIndex]
+            : q.correctAnswer, // CHANGED
       );
 
       // Save to cache
       _cache[cacheKey] = translatedQ;
       return translatedQ;
     } catch (e) {
-      debugPrint('Translation Error: $e');
       // Fallback: Return original question if translation fails
       return q;
     }

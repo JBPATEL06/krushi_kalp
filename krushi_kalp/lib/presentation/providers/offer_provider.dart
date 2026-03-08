@@ -20,8 +20,7 @@ class OfferProvider with ChangeNotifier {
 
   Future<void> fetchActiveOffers({bool forceRefresh = false}) async {
     if (!forceRefresh && _activeOffers.isNotEmpty) {
-      debugPrint(
-          'OfferProvider: Using cached offers (${_activeOffers.length})');
+      
       return;
     }
 
@@ -35,7 +34,7 @@ class OfferProvider with ChangeNotifier {
       _activeOffers = offers;
       _errorMessage = '';
     } catch (e, stack) {
-      debugPrint('OfferProvider: Error fetching offers: $e');
+      
       _errorMessage = e.toString();
       CrashlyticsService.instance
           .recordError(e, stack, reason: 'OfferProvider: fetchActiveOffers');

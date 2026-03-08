@@ -6,6 +6,7 @@ import '../../domain/models/mock_test.dart';
 import '../../data/services/test_service.dart';
 import '../../data/services/auth_service.dart';
 import '../../utils/crashlytics_service.dart';
+import '../../utils/supabase_url_helper.dart';
 
 class TestProvider with ChangeNotifier {
   static const String _purchasedTestsKey = 'cached_user_purchased_tests';
@@ -48,12 +49,11 @@ class TestProvider with ChangeNotifier {
         final List<dynamic> jsonList = json.decode(cachedData);
         _userTests = jsonList.map((j) => MockTest.fromJson(j)).toList();
         _purchasedTestIds = _userTests.map((t) => t.id).toSet();
-        debugPrint(
-            'TestProvider: Loaded ${_userTests.length} tests from cache');
+        
         notifyListeners();
       }
     } catch (e, stack) {
-      debugPrint('TestProvider: Error loading from cache: $e');
+      
       CrashlyticsService.instance
           .recordError(e, stack, reason: 'TestProvider: _loadFromPrefs');
     }
@@ -93,6 +93,12 @@ class TestProvider with ChangeNotifier {
 
       final fetchedTests = results[0] as List<MockTest>;
       _cachedTests = fetchedTests;
+
+      // Step: Perform bulk pre-signing of URLs after fetching the list.
+      // This populates the cache in SupabaseUrlHelper so the UI
+      // never waits for a network request when the user taps an item.
+      _preSignUrls(fetchedTests);
+
       filterAndSortTests();
     } catch (e, stack) {
       _errorMessage = 'Failed to load tests. Please check your connection.';
@@ -101,6 +107,32 @@ class TestProvider with ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  /// Internal method to trigger background pre-signing of all content URLs.
+  void _preSignUrls(List<MockTest> tests) {
+    if (tests.isEmpty) return;
+
+    // We start the signing process but don't 'await' it to avoid blocking
+    // the UI from rendering the list immediately.
+    Future(() async {
+      try {
+        final List<Future<String>> signFutures = tests
+            .where((t) => t.contentUrl?.isNotEmpty ?? false)
+            .map((t) => SupabaseUrlHelper()
+                .getFreshSignedUrl('mock_test', t.contentUrl!))
+            .toList();
+
+        if (signFutures.isNotEmpty) {
+          
+          await Future.wait(signFutures);
+          
+        }
+      } catch (e) {
+        // Silent error for pre-signing as individual taps will retry and report
+        
+      }
+    });
   }
 
   Future<void> fetchPurchasedStatus() async {
@@ -129,6 +161,10 @@ class TestProvider with ChangeNotifier {
       _userTests = await TestService.instance.fetchUserTests(userId);
       _purchasedTestIds = _userTests.map((t) => t.id).toSet();
       _saveToPrefs();
+
+      // Pre-sign content URLs for the user's purchased tests too
+      _preSignUrls(_userTests);
+
       CrashlyticsService.instance
           .log('TestProvider: Fetched ${_userTests.length} user tests');
     } catch (e, stack) {

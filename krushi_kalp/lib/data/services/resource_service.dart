@@ -5,6 +5,7 @@ import '../../domain/models/resource.dart';
 import '../../utils/supabase_url_helper.dart';
 import 'admin_notification_service.dart';
 
+/// Service class for interacting with the 'resources' table in Supabase.
 class ResourceService {
   // --- SINGLETON ---
   ResourceService._();
@@ -12,6 +13,7 @@ class ResourceService {
 
   final SupabaseClient _client = Supabase.instance.client;
 
+  /// Fetches a list of resources filtered by type and optionally category.
   Future<List<Resource>> fetchResources({
     required ResourceType type,
     String? category,
@@ -34,7 +36,7 @@ class ResourceService {
     return await _signResources(resources);
   }
 
-  // Get a single resource
+  /// Fetches a single resource by its ID.
   Future<Resource?> getResourceById(int id) async {
     final response =
         await _client.from('resources').select().eq('id', id).maybeSingle();
@@ -45,7 +47,7 @@ class ResourceService {
     return signed.first;
   }
 
-  // Fetch purchased resources for a user
+  /// Fetches all resources purchased or claimed by a specific user.
   Future<List<Resource>> fetchPurchasedResources(String userId) async {
     // 1. Get completed orders for user
     final response = await _client
@@ -61,7 +63,7 @@ class ResourceService {
     // 2. Get items for these orders that are resources
     final itemsRes = await _client
         .from('order_items')
-        .select('resource_id, resources(*)') // Select resource_id explicitly
+        .select('resource_id, resources(*)')
         .inFilter('order_id', orderIds)
         .not('resource_id', 'is', null);
 
@@ -79,18 +81,20 @@ class ResourceService {
     return await _signResources(resources);
   }
 
-  // Helper to sign URLs
+  /// Helper to convert storage paths into signed URLs with 1-year expiry.
+  /// Uses [SupabaseUrlHelper] for caching and performance.
   Future<List<Resource>> _signResources(List<Resource> resources) async {
     return await Future.wait(resources.map((r) async {
       String? signedFile;
       String? signedThumb;
-      const bucket = 'mock_test'; // Same bucket used for resources
+      const bucket = 'mock_test'; // Centralized bucket for resources and tests
 
       if (r.fileUrl != null && r.fileUrl!.isNotEmpty) {
         final path = SupabaseUrlHelper.extractPathFromUrl(r.fileUrl!, bucket);
         if (!path.startsWith('http')) {
-          signedFile = await SupabaseUrlHelper.getFreshSignedUrl(
-              bucketName: bucket, storagePath: path);
+          // getFreshSignedUrl now defaults to 1 year expiry via SupabaseUrlHelper
+          signedFile =
+              await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
         } else {
           signedFile = path;
         }
@@ -100,8 +104,8 @@ class ResourceService {
         final path =
             SupabaseUrlHelper.extractPathFromUrl(r.thumbnailUrl!, bucket);
         if (!path.startsWith('http')) {
-          signedThumb = await SupabaseUrlHelper.getFreshSignedUrl(
-              bucketName: bucket, storagePath: path);
+          signedThumb =
+              await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
         } else {
           signedThumb = path;
         }
@@ -124,13 +128,15 @@ class ResourceService {
     }));
   }
 
-  // Admin: Create Resource
+  // --- ADMIN OPERATIONS ---
+
+  /// Creates a new resource record. Sanitizes URLs to storage paths before insertion.
   Future<void> createResource(Resource resource) async {
     try {
       final payload = resource.toJson();
       payload.remove('id');
 
-      // Ensure we store paths, not signed URLs
+      // Ensure we store sanitized paths, not ephemeral signed URLs
       if (payload['file_url'] != null) {
         payload['file_url'] = SupabaseUrlHelper.extractPathFromUrl(
             payload['file_url'], 'mock_test');
@@ -142,7 +148,7 @@ class ResourceService {
 
       await _client.from('resources').insert(payload);
 
-      // --- NOTIFICATION ---
+      // Send broadcast notification for new content
       try {
         await AdminNotificationService().sendBroadcast(
           title: '📖 New Resource Published!',
@@ -150,20 +156,19 @@ class ResourceService {
               'New ${resource.type.name}: ${resource.title} is now available.',
         );
       } catch (notiErr) {
-        debugPrint('Resource Notification Error (Non-critical): $notiErr');
+        
       }
     } catch (e) {
       throw Exception('Failed to create resource: $e');
     }
   }
 
-  // Admin: Update Resource
+  /// Updates an existing resource record.
   Future<void> updateResource(int id, Map<String, dynamic> updates) async {
     try {
       final payload = Map<String, dynamic>.from(updates);
       payload.remove('id');
 
-      // Ensure we store paths, not signed URLs
       if (payload['file_url'] != null) {
         payload['file_url'] = SupabaseUrlHelper.extractPathFromUrl(
             payload['file_url'] as String, 'mock_test');
@@ -179,14 +184,12 @@ class ResourceService {
     }
   }
 
-  // Admin: Delete Resource
+  /// Deletes a resource and its associated files from storage.
   Future<void> deleteResource(int id) async {
     try {
-      // 1. Fetch resource details to get file paths
       final resource = await getResourceById(id);
 
       if (resource != null) {
-        // 2. Delete files from storage (best effort)
         if (resource.fileUrl != null) {
           await deleteFileFromStorage(resource.fileUrl!);
         }
@@ -195,14 +198,13 @@ class ResourceService {
         }
       }
 
-      // 3. Delete database row
       await _client.from('resources').delete().eq('id', id);
     } catch (e) {
       throw Exception('Failed to delete resource: $e');
     }
   }
 
-  /// Public helper to delete a file from Supabase storage given its URL or path
+  /// Deletes a file from Supabase Storage.
   Future<void> deleteFileFromStorage(String fileUrlOrPath) async {
     try {
       const bucket = 'mock_test';
@@ -212,20 +214,18 @@ class ResourceService {
         path = path.replaceAll('$bucket/', '');
       }
 
-      // Supabase remove expects a list of paths relative to the bucket
       await _client.storage.from(bucket).remove([path]);
-      debugPrint('ResourceService: Deleted storage file: $path');
+      
     } catch (e) {
-      debugPrint(
-          'ResourceService: Failed to delete storage file ($fileUrlOrPath): $e');
+      
     }
   }
 
-  // Upload File (PDF/Image)
+  /// Uploads a binary file to Supabase Storage.
   Future<String?> uploadFile({
     required String path,
     required Uint8List fileBytes,
-    String bucket = 'mock_test', // Default bucket changed to existing one
+    String bucket = 'mock_test',
   }) async {
     try {
       await _client.storage.from(bucket).uploadBinary(
@@ -233,24 +233,20 @@ class ResourceService {
             fileBytes,
             fileOptions: const FileOptions(upsert: true),
           );
-      // Return the relative path instead of a signed URL
       return path;
     } catch (e) {
-      // debugPrint('Error uploading file: $e');
       throw Exception('Upload failed: $e');
     }
   }
 
-  // Claim Resource
+  // --- SHOP FLOW ---
+
+  /// Handles free resource claims by creating a $0 order.
   Future<void> claimResource({
     required int resourceId,
     required String userId,
   }) async {
     try {
-      debugPrint(
-          'ResourceService: Attempting to claim free resource $resourceId for user $userId');
-
-      // 1. Check if already purchased/claimed
       final existingOrder = await _client
           .from('order_items')
           .select('order_id, orders!inner(user_id, status)')
@@ -259,13 +255,8 @@ class ResourceService {
           .eq('orders.status', 'SUCCESS')
           .maybeSingle();
 
-      if (existingOrder != null) {
-        debugPrint(
-            'ResourceService: Resource $resourceId already claimed by user $userId. Order: ${existingOrder['order_id']}');
-        return;
-      }
+      if (existingOrder != null) return;
 
-      // 2. Create Order
       final timestamp = DateTime.now().toUtc().toIso8601String();
       final newOrder = await _client
           .from('orders')
@@ -280,25 +271,19 @@ class ResourceService {
           .single();
 
       final orderId = newOrder['order_id'];
-      debugPrint('ResourceService: Created FREE order: $orderId');
 
-      // 3. Add Item
       await _client.from('order_items').insert({
         'order_id': orderId,
         'resource_id': resourceId,
         'price_at_purchase': 0.0,
         'created_at': timestamp,
       });
-
-      debugPrint(
-          'ResourceService: Successfully claimed resource $resourceId for user $userId');
     } catch (e) {
-      debugPrint('Error claiming free resource: $e');
       throw Exception('Failed to claim resource: $e');
     }
   }
 
-  // Create Direct Order
+  /// Initializes a direct purchase for a single resource.
   Future<String> createDirectOrder({
     required int resourceId,
     required double price,

@@ -213,10 +213,12 @@ class _ExamScreenState extends State<ExamScreen> {
       final selected = _selectedAnswers[i];
 
       if (selected != null) {
-        if (selected == q.correctOptionIndex) {
-          correctCount++;
+        // CHANGED: Use string-based comparison instead of index
+        if (q.options[selected].trim().toLowerCase() ==
+            q.correctAnswer.trim().toLowerCase()) {
+          correctCount++; // CHANGED
         } else {
-          wrongCount++;
+          wrongCount++; // CHANGED
         }
       }
     }
@@ -265,7 +267,6 @@ class _ExamScreenState extends State<ExamScreen> {
             );
           }
         }).catchError((e) {
-          debugPrint("Background submission failed: $e");
           if (mounted) {
             _navigateToResult(
               resultId: null,

@@ -254,7 +254,7 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
         }
       },
       onPageError: (page, error) {
-        debugPrint('Error on page $page: $error');
+        
       },
       onViewCreated: (PDFViewController controller) {
         // Controller can be used for additional controls if needed

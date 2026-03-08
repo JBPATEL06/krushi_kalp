@@ -40,6 +40,8 @@ Services handle the heavy lifting: database calls via Supabase, external APIs, a
 | `notification_service.dart` | Local & Stream listeners. | `initialize`, `connectUser`, `showLocalNotification`, `fetchNotificationsStream`. |
 | `fcm_service.dart` | Push notification setup. | `initialize`, `onMessage.listen`, `_saveTokenToDatabase`. |
 | `admin_notification_service.dart` | Sending FCM pushes. | `sendBroadcastNotification`, `sendPersonalNotification`. |
+| `background_upload_service.dart` | Non-blocking background uploads. | `uploadFile`, `cancelTask`. |
+| `transfer_notification_service.dart` | Unified transfer progress. | `showUploadProgress`, `showDownloadProgress`. |
 | `chat_service.dart` | Real-time support chat. | `fetchMessageStream`, `sendMessage`, `getAdminConversations`. |
 | `otp_service.dart` | SMS OTP via MSG91. | `sendOtp`, `resendOtp`, `verifyOtp`. |
 | `encryption_service.dart` | Security utilities. | `encryptData`, `decryptData` (used for session IDs). |
@@ -168,7 +170,8 @@ Located in `lib/presentation/screens/admin/`:
 ## Admin-Specific Capabilities
 
 ### 1. Mock Test Engine
-- **Excel Upload**: Admins upload Excel → converted to JSON → pushed to Supabase Storage.
+- **Direct JSON & Excel Upload**: Admins upload Excel (auto-converted) or `.json` (direct) → background upload to Supabase Storage via `BackgroundUploadService`.
+- **JSON Export/Download**: Admins can download and share current questions JSON from edit/detail screens via `share_plus`.
 - **Metadata Management**: Titles, categories, pricing, MRP.
 - **Signed URL Generation**: Access tokens for premium content.
 - **Cleanup**: Automatic deletion of JSON and Cover files from `mock_test` bucket on record removal.
@@ -443,25 +446,36 @@ flutter clean && flutter pub get && flutter run
 10. **Global UI Resilience**: System navigation bar overlap audit and fix across all management screens.
 
 ### Unified Infrastructure Fixes (Gemini Audit 2026-03-08)
-1. **N+1 Signed URL Caching**: 22-hour in-memory cache implemented for all Storage assets. Reduces API calls by ~90% for high-volume lists.
-2. **FCM Write Throttling**: Database updates for FCM tokens now gated by local `SharedPreferences`.
-3. **Translation Batch Throttling**: Sequential chunked processing (batch size: 5) for Google Translate requests to prevent HTTP 429 rate-limits.
-4. **Dead Code Purge**: Deleted orphaned files (`theme_test_screen.dart`, `feedback_model.dart`) and 100+ lines of unused methods/imports.
-5. **Admin Stream Optimization**: Removed problematic debounce that caused UI lag; shifted reliability to the URL cache layer.
-6. **Free Material Claim Recovery**: Identified and added missing call to backend `claimResource` inside `ResourceProvider` and fixed lack of `TestProvider` local updates.
-7. **Admin Panel Pull-to-Refresh**: Several admin screens were missing pull-to-refresh (`RefreshIndicator`). A systematic sweep was performed.
-8. **System Nav Bar Overlap Audit**: Completed audit and fix for reactive `MediaQuery` padding globally across 35+ user and admin screens to prevent gesture bar overlap.
-9. **Global Crashlytics Integration**:
-    - **Initialization**: Modernized `main()` with `PlatformDispatcher` error catching.
-    - **Tracking**: `AnalyticsNavigatorObserver` for automatic screen breadcrumbs.
-    - **Attribution**: User ID tagging in `AuthService` on login/logout.
-    - **Standardization**: Audited all providers for consistent `recordError` usage.
-10. **Cart Image Reliability**: Fixed "Missing Host" crashes in `CartScreen` by implementing centralized URL signing in `CartProvider` via `SupabaseUrlHelper`.
-11. **Splash Screen Production Readiness**: Cleaned up the splash screen for final release by removing debug print statements and refining the central logo container from a large square to a perfectly fitted circular bounding box.
+12. **Store UI Consistency**: Fixed the "GK & CA" (Current Affairs) tab rendering logic in `StoreScreen` to correctly use the uniform `StoreResourceGrid` card layout, ensuring visual consistency with E-Books and Study Materials rather than displaying a mismatched primitive list tile.
+13. **Centralized Error Handling Refactor**:
+    - Implementation of `ErrorUtils.showError(context, e)` as the unified gateway for all user-facing errors.
+    - Integration of `DbErrorHelper` to translate `PostgrestException` codes (e.g., 23503) into friendly, actionable messages.
+14. **Admin UI Global Stabilization**:
+    - Resolved structural syntax errors in `AdminMainScreen` and `AdminUserDetailsScreen`.
+    - Corrected broken relative import paths (`network_utils.dart`) across multiple management screens.
+    - Standardized `NetworkErrorState` usage by migrating to the named `message` parameter.
+    - Migrated 50+ instances of deprecated Material 3 members: `withOpacity()` → `.withValues(alpha: ...)`, `surfaceVariant` → `surfaceContainerHighest`, and `background` → `surface`.
+15. **Mock Test JSON Format Migration (2026-03-08)**:
+    - Migrated from flat JSON format to **tableConvert format** for better admin usability.
+    - Updated `Question` model: Replaced `correctOptionIndex: int` with `correctAnswer: String`.
+    - Implemented **String-Based Answer Matching**: Evaluation now uses trimmed, case-insensitive string comparison.
+    - Updated `ExcelToJsonConverter` to output the new table-centric keys and string answers.
+    - Refactored `ExamScreen`, `TestResultScreen`, `TestAnalysisScreen`, and `PdfService` to support string answer evaluation.
+    - Enhanced `Question.fromJson` with strict validation to ensure the `Correct Answer` exists in the options list.
+
+### Background Transfers & Notification Engine (Gemini Plan 2026-03-08)
+1.  **Background Upload Service**: Singleton service (`BackgroundUploadService`) for Admin panel to handle file uploads as background futures, preventing UI lockup and providing progress callbacks.
+2.  **Transfer Notification Service**: Unified local notification manager (`TransferNotificationService`) for both uploads (Admin) and downloads (User), displaying real-time progress bars and status updates.
+3.  **Maximum-Duration Signed URLs**: Storage URLs are now created with a 1-year expiry (`31536000s`) to ensure long-term availability of shared/cached content.
+4.  **Persistent URL Caching**: `SupabaseUrlHelper` utilizes both a 23-hour in-memory cache and a `SharedPreferences`-based persistent layer for signed URLs.
+5.  **Chunked Background Downloads**: `DownloadService` supports background downloads using chunked HTTP requests, allowing for granular progress tracking and mid-stream cancellation.
+6.  **Session-Aware Cancellation**: All active user downloads are automatically aborted and cleaned up during `AuthProvider.signOut()`, preventing orphaned files and unauthorized access during session switches.
+7.  **Bulk URL Pre-signing**: `TestProvider` and `ResourceProvider` pre-fetch signed URLs for all list items in parallel after data fetching to eliminate user-perceived signing latency.
 
 ---
 
 # File-by-File Reference
+
 
 This section provides a detailed breakdown of every file in the project, intended for developers to understand the purpose, logic, and connectivity of each component.
 
@@ -491,7 +505,7 @@ All models include `fromJson()` and `toJson()` methods for persistence.
 | `offer.dart` | Coupons and sales. | `id`, `code`, `discountValue`, `discountType`, `isActive`, `targetType`. |
 | `order.dart` | Purchase record. | `orderId`, `userId`, `totalAmount`, `status` (PENDING/SUCCESS). |
 | `order_item.dart` | Individual item in order. | `id`, `orderId`, `testId`, `resourceId`, `priceAtPurchase`. |
-| `question.dart` | Exam question structure. | `text`, `options` (List), `correctOptionIndex`. |
+| `question.dart` | Exam question structure. | `text`, `options` (List), `correctAnswer` (String). | // CHANGED
 | `resource.dart` | E-book/Material data. | `id`, `title`, `type` (ebook/study_material/etc), `fileUrl`, `thumbnailUrl`. |
 | `review.dart` | User feedback/rating. | `id`, `userId`, `itemId`, `itemType`, `rating`, `reviewText`. |
 | `test_result.dart` | Mock test attempt data. | `id`, `userId`, `testId`, `score`, `isPassed`, `attemptDate`. |
@@ -654,7 +668,37 @@ Helper classes shared across services and presentation layers.
 |------|---------|-----------|
 | `price_calculator.dart` | The brain of the store's pricing. | `calculateDisplayPrice`: Compares "Real" vs "Fake" offers to show the best perceived discount. |
 | `network_utils.dart` | Error signature handling. | `isNetworkError`: Identifies `SocketException`, timeouts, and DNS failures. |
-| `excel_to_json_converter.dart`| Mock test file parser. | Converts uploaded Excel bytes into structured `Question` JSON (handles A/B/C or 1/2/3 keys). |
+| `excel_to_json_converter.dart`| Mock test file parser. | Converts uploaded Excel bytes into **tableConvert** structured `Question` JSON with string answers. | // CHANGED
 | `retry_helper.dart` | Resilience utility. | Provides `retry()` logic with exponential backoff for flaky API calls. |
-| `responsive.dart` | Screen scaling engine. | Extension methods on `BuildContext` (`context.w()`, `context.h()`, `context.sp()`) for relative sizing. |
-| `navigator_key.dart` | Global context access. | Provides `navigatorKey` for navigation without `BuildContext` (e.g., in services). |
+| `responsive.dart` | Screen scaling engine. | Extension methods on `BuildContext` for relative sizing. |
+| `navigator_key.dart` | Global context access. | Provides `navigatorKey` for navigation without `BuildContext`. |
+
+---
+
+## 🏗 Mock Test System (Deep Dive)
+
+### 1. File Ingestion & Format
+- **Admin Upload**: Admins upload Excel (`.xlsx`) or JSON (`.json`) in `MockTestUploadScreen`.
+- **Parsing (`ExcelToJsonConverter`)**:
+  - **Column 0**: ID (Question Number). // CHANGED
+  - **Column 1**: Question Text. // CHANGED
+  - **Columns 2+**: Options (mapped to `Option A`, `Option B`, etc.). // CHANGED
+  - **Correct Answer Detection**: The very last non-empty cell in the row is treated as the key. // CHANGED
+- **Format (tableConvert)**: // CHANGED
+  ```json
+  [{"No.":1, "Question":"Question?", "Option A":"A", "Option B":"B", "Correct Answer":"B"}]
+  ```
+- **Conversion**: Excel bytes → `List<Question>` format → JSON String → Supabase Storage (`mock_test` bucket).
+
+### 2. MCQ Engine (`ExamScreen`)
+- **Loading**: Prefers local sandboxed JSON (from `DownloadService`) for offline stability.
+- **Answer Matching**: Uses trimmed, case-insensitive string comparison between the user's selected option and `question.correctAnswer`. // CHANGED
+- **Gujarati Translation**: Uses `TranslationService` with **Smart Buffering** (current + next 5 questions) which maps the `correctAnswer` string to its translated counterpart by index. // CHANGED
+- **Nav Lock**: Navigation is restricted to `currentQuestionIndex + 10` to prevent users from skipping large portions of the test.
+
+### 3. Scoring & Negative Marking
+- **Base Mark**: `MarksPerQ = totalMarks / totalQuestions`.
+- **Positive Score**: `correctCount * MarksPerQ`.
+- **Negative Penalty**: `if (test.negative_marking)` → `penalty = wrongCount * negativeMarksPerQ`.
+- **Final Score**: `(Positive - Penalty)`, clamped to a minimum of **0**.
+- **Persistence**: Results are saved to `test_results` table including score, counts, and language meta for PDF regeneration.

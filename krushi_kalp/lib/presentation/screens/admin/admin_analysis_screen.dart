@@ -39,7 +39,7 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
             return NetworkErrorState(
               message: isNetworkError(snapshot.error)
                   ? 'Unable to load analytics. Check your connection.'
-                  : 'Error: ${snapshot.error}',
+                  : 'Something went wrong. Please try again.',
               onRetry: () => setState(() {
                 _statsStream = AdminService.streamDashboardStats();
               }),

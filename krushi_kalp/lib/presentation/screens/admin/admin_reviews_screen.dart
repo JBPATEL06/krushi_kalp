@@ -4,6 +4,7 @@ import '../../../../domain/models/review.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:intl/intl.dart';
+import '../../../utils/error_utils.dart';
 
 class AdminReviewsScreen extends StatefulWidget {
   const AdminReviewsScreen({super.key});
@@ -36,7 +37,6 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
         });
       }
     } catch (e) {
-      debugPrint("Error loading reviews: $e");
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -54,9 +54,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete: $e')),
-        );
+        ErrorUtils.showError(context, e);
       }
     }
   }

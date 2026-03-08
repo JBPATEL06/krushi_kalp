@@ -114,11 +114,13 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
                           coverUrl: item.signedUrl,
                           heroTag: 'test_image_${item.id}',
                           customAction: DownloadActionButton(
+                            testId: item.id.toString(),
                             filename: 'mock_test_${item.id}.json',
                             url: item.contentUrl,
                             startLabel: "Start",
                             isFullWidth: false,
                             userId: AuthService.instance.currentUser?.id,
+                            displayName: item.title, // CHANGED
                             onAction: () async {
                               if (item.contentUrl == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
