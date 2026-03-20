@@ -51,12 +51,12 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _startProgressSimulation() {
-    // Simulate loading progress for a smoother visual experience
+    // MODIFIED: Reduced tick interval from 50ms → 20ms, step from 0.02 → 0.05 → total ~1.0s
     Future.doWhile(() async {
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future.delayed(const Duration(milliseconds: 20)); // MODIFIED
       if (_disposed || _progress >= 0.95) return false;
       setState(() {
-        _progress += 0.02;
+        _progress += 0.05; // MODIFIED: was 0.02 — faster fill
         if (_progress > 0.3) _statusText = 'Loading preferences...';
         if (_progress > 0.6) _statusText = 'Syncing data...';
         if (_progress > 0.8) _statusText = 'Ready';
@@ -95,7 +95,8 @@ class _SplashScreenState extends State<SplashScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     int attempts = 0;
-    while (!authProvider.isAuthCheckComplete && attempts < 10) {
+    while (!authProvider.isAuthCheckComplete && attempts < 4) {
+      // MODIFIED: max wait 800ms (was 2000ms)
       await Future.delayed(const Duration(milliseconds: 200));
       attempts++;
       if (_disposed) return;
@@ -188,10 +189,10 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // App Logo (New Branding)
                 Image.asset(
                   'assets/images/playstore.png',
-                  width: context.w(140), // FIXED
-                  height: context.w(140), // FIXED
+                  width: context.wp(40), // 40% of screen width for responsiveness
                   fit: BoxFit.contain,
                 ),
                 SizedBox(height: context.h(48)), // FIXED: Using context.h(48)

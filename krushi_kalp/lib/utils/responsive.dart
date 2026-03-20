@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class Responsive extends StatelessWidget {
   final Widget mobile;
@@ -56,6 +56,10 @@ extension ResponsiveContext on BuildContext {
       size * scaleFactor * 0.9; // Scaled pixels with 10% reduction
   double w(double width) => width * scaleFactor * 0.9;
   double h(double height) => height * scaleFactor * 0.9;
+
+  // Percentage based height and width
+  double hp(double percent) => MediaQuery.of(this).size.height * (percent / 100);
+  double wp(double percent) => MediaQuery.of(this).size.width * (percent / 100);
 
   bool get isTablet => MediaQuery.of(this).size.width > 600;
   bool get isDesktop => MediaQuery.of(this).size.width > 1200;

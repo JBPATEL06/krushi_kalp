@@ -150,9 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       .scale(begin: const Offset(0.95, 0.95)), // Animate Banner
                   SizedBox(height: context.h(AppSpacing.xl)),
                   _buildCategoryGrid(),
-                  SizedBox(
-                      height: context.h(AppSpacing.xxl) +
-                          MediaQuery.of(context).padding.bottom),
+                  SizedBox(height: context.h(AppSpacing.xxl)),
                 ],
               ),
             ),
@@ -253,6 +251,15 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pop(context);
               Share.share(
                   'Check out Krushi Kalp app for exam preparation: https://play.google.com/store/apps/details?id=com.krushikalp.app');
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.info_outline_rounded,
+                color: theme.colorScheme.onSurface),
+            title: const Text('About Krushi Kalp'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/about');
             },
           ),
           ListTile(

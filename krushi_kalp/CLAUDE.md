@@ -756,3 +756,30 @@ Helper classes shared across services and presentation layers.
 ### 4. Technical Improvements
 - **Fixed Provider Mismatch**: Resolved a naming error where `AdminMainScreen` incorrectly attempted to pull user data from `AdminProvider` instead of `AuthProvider`.
 - **Async Safety**: Added `mounted` and `navigator.context.mounted` checks in `AdminMainScreen` for logout and other async operations to prevent "context used across async gaps" warnings.
+
+## Login Performance Optimization (2026-03-09)
+
+### Root Causes Identified & Fixed
+
+**1. `splash_screen.dart` — Faster Progress & Auth Buffer**
+- `_startProgressSimulation()`: tick `50ms → 20ms`, step `0.02 → 0.05`. Total duration `~2.5s → ~1.0s`.
+- Auth state buffer loop: max attempts `10 → 4` (max wait `2000ms → 800ms`).
+
+**2. `login_screen.dart` — Snappier Entry Animation**
+- `AnimationController` duration: raw `Duration(milliseconds: 1200)` → `AppMotion.slow` (500ms token).
+- Corrects a token law violation (raw duration replaced with design system token).
+
+**3. Image Asset Compression (`assets/images/`)**
+
+| File | Before | After | Reduction |
+|---|---|---|---|
+| `notification_logo.png` | 1,649 KB | 70.5 KB | 95.7% |
+| `playstore.png` | 589 KB | 84.6 KB | 85.6% |
+| `homeBanner.png` | 2,245 KB | 181.1 KB | 91.9% |
+
+> `homeBanner.png` resized to 768×512. Filenames and PNG format preserved.
+> Scripts: `scripts/compress_assets.py`, `scripts/compress_banner.py` (Pillow).
+
+**What was NOT changed:** `main.dart` init order, auth logic, routing, providers, or animations (only made faster).
+
+git demo sd

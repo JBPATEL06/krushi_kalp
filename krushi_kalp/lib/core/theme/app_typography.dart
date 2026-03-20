@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
@@ -67,4 +67,9 @@ class AppTypography {
       ),
     );
   }
+
+  static TextStyle get display => getTextTheme().displayMedium!;
+  static TextStyle get heading => getTextTheme().headlineSmall!;
+  static TextStyle get bodyLabel => getTextTheme().labelLarge!;
+  static TextStyle get bodyLarge => getTextTheme().bodyLarge!;
 }

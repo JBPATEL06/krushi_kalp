@@ -17,9 +17,15 @@
                     <img src="app_logo.jpeg" alt="Krushi Kalp Logo">
                     <span>Krushi Kalp</span>
                 </a>
+
+                <input type="checkbox" id="nav-toggle" class="nav-toggle">
+                <label for="nav-toggle" class="nav-toggle-label">
+                    <span></span>
+                </label>
+
                 <ul class="nav-links">
                     <li><a href="index.html">Home</a></li>
-                    <li><a href="privacy-policy.html">Privacy</a></li>
+                    <li><a href="privacy-policy.html" class="active">Privacy</a></li>
                     <li><a href="terms-and-conditions.html">Terms</a></li>
                     <li><a href="contact-us.html">Contact</a></li>
                 </ul>
@@ -55,10 +61,13 @@
 
                     <h3>3. Data Usage for Support & Payments</h3>
                     <ul>
-                        <li><strong>Verification:</strong> Your email is used to verify your identity during login.</li>
-                        <li><strong>Payment Troubleshooting:</strong> We collect your mobile number and email to assist
-                            you in case of <strong>payment crashes or failures</strong>. This allows you to easily share
-                            transaction screenshots or documentation via our support channels for resolution.</li>
+                        <li><strong>Authentication & Security:</strong> Your email and **mobile number** are used to
+                            verify your identity and ensure secure access to your account.</li>
+                        <li><strong>Razorpay Payments:</strong> We collect your mobile number as it is required by our
+                            payment partner, **Razorpay**, to process transactions securely and provide you with digital
+                            receipts.</li>
+                        <li><strong>Troubleshooting:</strong> In case of payment crashes or failures, we use this
+                            information to help you resolve transaction issues quickly.</li>
                         <li><strong>Progress Tracking:</strong> Storing your scores and performance metrics.</li>
                     </ul>
 

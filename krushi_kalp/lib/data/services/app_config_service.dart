@@ -137,4 +137,19 @@ class AppConfigService {
   /// Returns null if no minimum is configured — meaning updates are not forced.
   static String? get minVersion =>
       getValue('app_status', 'min_version', defaultValue: null);
+
+  /// Fetches the about_page config block.
+  static Future<Map<String, dynamic>> fetchAboutConfig() async {
+    final response = await _supabase
+        .from('app_config')
+        .select('value')
+        .eq('key', 'about_page')
+        .single();
+    return Map<String, dynamic>.from(response['value'] as Map);
+  }
+
+  /// Upserts the entire about_page config block.
+  static Future<void> updateAboutConfig(Map<String, dynamic> data) async {
+    await updateConfig('about_page', data);
+  }
 }

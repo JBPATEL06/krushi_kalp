@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/screens/splash_screen.dart';
+import 'presentation/screens/about_screen.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'presentation/providers/auth_provider.dart';
@@ -98,6 +99,9 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
+      routes: {
+        '/about': (context) => const AboutScreen(),
+      },
       builder: (context, child) =>
           NetworkAwareWrapper(child: ResponsiveWrapper(child: child!)),
       home: const SplashScreen(),

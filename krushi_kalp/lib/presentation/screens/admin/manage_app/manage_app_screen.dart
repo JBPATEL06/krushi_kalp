@@ -1,7 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'tabs/feature_control_tab.dart';
 import 'tabs/banner_management_tab.dart';
 import 'tabs/content_management_tab.dart';
+import 'package:krushi_kalp/presentation/screens/admin/admin_about_screen.dart';
 
 class ManageAppScreen extends StatelessWidget {
   const ManageAppScreen({super.key});
@@ -12,7 +13,7 @@ class ManageAppScreen extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
@@ -26,6 +27,7 @@ class ManageAppScreen extends StatelessWidget {
               Tab(text: "Features", icon: Icon(Icons.toggle_on_rounded)),
               Tab(text: "Banners", icon: Icon(Icons.image_rounded)),
               Tab(text: "Content", icon: Icon(Icons.description_rounded)),
+              Tab(text: "About Page", icon: Icon(Icons.info_outline)),
             ],
           ),
         ),
@@ -34,6 +36,7 @@ class ManageAppScreen extends StatelessWidget {
             FeatureControlTab(),
             BannerManagementTab(),
             ContentManagementTab(),
+            AdminAboutScreen(),
           ],
         ),
       ),

@@ -1,0 +1,24 @@
+﻿flutter : The plugin `razorpay_flutter` doesn't 
+have a main class defined in C:\Users\jeelp\AppDat
+a\Local\Pub\Cache\hosted\pub.dev\razorpay_flutter-
+1.4.0\android\src\main\java\com\razorpay\razorpay_
+flutter\RazorpayFlutterPlugin.java or C:\Users\jee
+lp\AppData\Local\Pub\Cache\hosted\pub.dev\razorpay
+_flutter-1.4.0\android\src\main\kotlin\com\razorpa
+y\razorpay_flutter\RazorpayFlutterPlugin.kt. This 
+is likely to due to an incorrect `androidPackage: 
+com.razorpay.razorpay_flutter` or `mainClass` 
+entry in the plugin's pubspec.yaml.
+At line:1 char:1
++ flutter analyze > analyze_output.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (The 
+pl    ugin `raz...s pubspec.yaml.:String) [], 
+RemoteE    xception
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+If you are the author of this plugin, fix the 
+`androidPackage` entry or move the main class to 
+any of locations used above. Otherwise, please 
+contact the author of this plugin and consider 
+using a different plugin in the meanwhile. 

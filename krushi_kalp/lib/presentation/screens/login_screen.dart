@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:krushi_kalp/core/theme/app_motion.dart'; // MODIFIED: Added AppMotion token import
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -32,7 +33,8 @@ class _LoginScreenState extends State<LoginScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: AppMotion
+          .slow, // MODIFIED: was Duration(milliseconds: 1200) → now AppMotion.slow (500ms)
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:krushi_kalp/presentation/widgets/common/responsive_wrapper.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -64,7 +64,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _ensureProfile(User user) async {
     try {
       await AuthService.instance.ensureProfileExists(user);
-    } catch (e) {}
+    } catch (e) {
+      // Profile creation errors are handled non-critically
+    }
   }
 
   Future<void> _updateLanguage(String newLang) async {
@@ -317,6 +319,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       )),
                   _buildProfileOption(
                     context,
+                    icon: Icons.info_outline,
+                    title: 'About Krushi Kalp',
+                    onTap: () => Navigator.pushNamed(context, '/about'),
+                  ),
+                  _buildProfileOption(
+                    context,
                     icon: Icons.contact_support,
                     title: 'Contact Us',
                     onTap: () {
@@ -438,6 +446,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (confirmed == true && mounted) {
       try {
         // Show loading
+        if (!context.mounted) return;
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -473,14 +482,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => SafeArea(
-        child: Container(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg + MediaQuery.of(context).padding.bottom, // FIXED
-          ),
+      builder: (context) => Container(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg + MediaQuery.of(context).padding.bottom,
+        ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -519,7 +527,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 }

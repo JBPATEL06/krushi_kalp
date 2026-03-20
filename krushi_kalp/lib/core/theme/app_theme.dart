@@ -81,9 +81,9 @@ class AppTheme {
       // ── Navigation ──
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: surfaceColor,
-        indicatorColor: colorScheme.primary.withValues(alpha: 0.12),
-        elevation: 3,
-        height: 80,
+        indicatorColor: colorScheme.primary.withValues(alpha: 0.1),
+        elevation: 1,
+        height: 72,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:krushi_kalp/presentation/screens/purchased_tests_screen.dart'; // Show only mock tests
 import 'package:krushi_kalp/presentation/screens/store_screen.dart';
 import 'downloads_screen.dart';
@@ -243,95 +243,82 @@ class _MainScreenState extends State<MainScreen> {
                   bottomNavigationBar: navProvider.selectedIndex >= 4
                       ? null
                       : SafeArea(
-                          bottom: true,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              boxShadow: [
-                                BoxShadow(
-                                  color: theme.colorScheme.shadow
-                                      .withValues(alpha: 0.1),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, -5),
-                                ),
-                              ],
-                            ),
-                            child: NavigationBarTheme(
-                              data: NavigationBarThemeData(
-                                backgroundColor: theme.colorScheme.surface,
-                                elevation: 0,
-                                indicatorColor:
-                                    theme.colorScheme.primary.withValues(alpha: 0.1),
-                                labelBehavior:
-                                    NavigationDestinationLabelBehavior
-                                        .alwaysShow,
-                                labelTextStyle:
-                                    WidgetStateProperty.resolveWith((states) {
-                                  if (states.contains(WidgetState.selected)) {
-                                    return TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: theme.colorScheme.primary,
-                                    );
-                                  }
+                          top: false,
+                          child: NavigationBarTheme(
+                            data: NavigationBarThemeData(
+                              backgroundColor: theme.colorScheme.surface,
+                              elevation: 0,
+                              indicatorColor: theme.colorScheme.primary
+                                  .withValues(alpha: 0.1),
+                              labelBehavior: NavigationDestinationLabelBehavior
+                                  .alwaysShow,
+                              labelTextStyle:
+                                  WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) {
                                   return TextStyle(
                                     fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: theme.colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.primary,
                                   );
-                                }),
-                                iconTheme:
-                                    WidgetStateProperty.resolveWith((states) {
-                                  if (states.contains(WidgetState.selected)) {
-                                    return IconThemeData(
-                                      size: 26,
-                                      color: theme.colorScheme.primary,
-                                    );
-                                  }
+                                }
+                                return TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                );
+                              }),
+                              iconTheme:
+                                  WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) {
                                   return IconThemeData(
-                                    size: 24,
-                                    color: theme.colorScheme.onSurfaceVariant,
+                                    size: 26,
+                                    color: theme.colorScheme.primary,
                                   );
-                                }),
-                              ),
-                              child: NavigationBar(
-                                height: 70,
-                                backgroundColor: theme.colorScheme.surface,
-                                shadowColor: Colors.transparent,
-                                surfaceTintColor: theme.colorScheme.surface,
-                                selectedIndex: navProvider.selectedIndex,
-                                onDestinationSelected: (index) {
-                                  if (index == 2) {
-                                    navProvider.setStoreCategory('All');
-                                  }
-                                  navProvider.setIndex(index);
-                                },
-                                destinations: const [
-                                  NavigationDestination(
-                                    icon: Icon(Icons.home_outlined),
-                                    selectedIcon:
-                                        Icon(Icons.home_rounded, size: 28),
-                                    label: 'Home',
-                                  ),
-                                  NavigationDestination(
-                                    icon: Icon(Icons.quiz_outlined),
-                                    selectedIcon:
-                                        Icon(Icons.quiz_rounded, size: 28),
-                                    label: 'Mocks',
-                                  ),
-                                  NavigationDestination(
-                                    icon: Icon(Icons.storefront_outlined),
-                                    selectedIcon: Icon(Icons.storefront_rounded,
-                                        size: 28),
-                                    label: 'Store',
-                                  ),
-                                  NavigationDestination(
-                                    icon: Icon(Icons.download_outlined),
-                                    selectedIcon:
-                                        Icon(Icons.download_rounded, size: 28),
-                                    label: 'Downloads',
-                                  ),
-                                ],
-                              ),
+                                }
+                                return IconThemeData(
+                                  size: 24,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                );
+                              }),
+                            ),
+                            child: NavigationBar(
+                              height: 70,
+                              backgroundColor: theme.colorScheme.surface,
+                              shadowColor: Colors.transparent,
+                              surfaceTintColor: theme.colorScheme.surface,
+                              selectedIndex: navProvider.selectedIndex,
+                              onDestinationSelected: (index) {
+                                if (index == 2) {
+                                  navProvider.setStoreCategory('All');
+                                }
+                                navProvider.setIndex(index);
+                              },
+                              destinations: const [
+                                NavigationDestination(
+                                  icon: Icon(Icons.home_outlined),
+                                  selectedIcon:
+                                      Icon(Icons.home_rounded, size: 28),
+                                  label: 'Home',
+                                ),
+                                NavigationDestination(
+                                  icon: Icon(Icons.quiz_outlined),
+                                  selectedIcon:
+                                      Icon(Icons.quiz_rounded, size: 28),
+                                  label: 'Mocks',
+                                ),
+                                NavigationDestination(
+                                  icon: Icon(Icons.storefront_outlined),
+                                  selectedIcon:
+                                      Icon(Icons.storefront_rounded, size: 28),
+                                  label: 'Store',
+                                ),
+                                NavigationDestination(
+                                  icon: Icon(Icons.download_outlined),
+                                  selectedIcon:
+                                      Icon(Icons.download_rounded, size: 28),
+                                  label: 'Downloads',
+                                ),
+                              ],
                             ),
                           ),
                         ),

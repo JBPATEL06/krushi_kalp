@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -541,101 +541,103 @@ class _ExamScreenState extends State<ExamScreen> {
               ),
 
             // Bottom Buttons
-            SafeArea(
-              bottom: true,
-              child: Container(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.shadow.withValues(alpha: 0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, -5),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    // Previous Button
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _currentQuestionIndex > 0
-                            ? () => _changePage(_currentQuestionIndex - 1)
-                            : null,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 16), // FIXED: Standard vertical padding
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                                AppRadius.md), // FIXED: AppRadius.md
+            Container(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md + MediaQuery.of(context).padding.bottom,
+              ),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.colorScheme.shadow.withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // Previous Button
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _currentQuestionIndex > 0
+                          ? () => _changePage(_currentQuestionIndex - 1)
+                          : null,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16), // FIXED: Standard vertical padding
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                              AppRadius.md), // FIXED: AppRadius.md
+                        ),
+                        side: BorderSide(
+                            color: theme.colorScheme.outlineVariant),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.arrow_back,
+                              size: 18, color: theme.colorScheme.onSurface),
+                          const SizedBox(
+                              width: AppSpacing.sm), // FIXED: AppSpacing.sm
+                          Text(
+                            'Previous',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.onSurface),
                           ),
-                          side: BorderSide(
-                              color: theme.colorScheme.outlineVariant),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.arrow_back,
-                                size: 18, color: theme.colorScheme.onSurface),
-                            const SizedBox(
-                                width: AppSpacing.sm), // FIXED: AppSpacing.sm
-                            Text(
-                              'Previous',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                  color: theme.colorScheme.onSurface),
-                            ),
-                          ],
-                        ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
-                    // Next Button
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (_currentQuestionIndex < _questions.length - 1) {
-                            _changePage(_currentQuestionIndex + 1);
-                          } else {
-                            _showSubmitDialog(theme);
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 16), // FIXED: Standard vertical padding
-                          backgroundColor: theme.colorScheme.primary,
-                          foregroundColor: theme.colorScheme.onPrimary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                                AppRadius.md), // FIXED: AppRadius.md
-                          ),
-                          elevation: 0,
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  // Next Button
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (_currentQuestionIndex < _questions.length - 1) {
+                          _changePage(_currentQuestionIndex + 1);
+                        } else {
+                          _showSubmitDialog(theme);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16), // FIXED: Standard vertical padding
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                              AppRadius.md), // FIXED: AppRadius.md
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              _currentQuestionIndex < _questions.length - 1
-                                  ? 'Next Question'
-                                  : 'Submit Test',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: theme.colorScheme.onPrimary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(
-                                width: AppSpacing.sm), // FIXED: AppSpacing.sm
-                            Icon(
-                              Icons.arrow_forward,
-                              size: 18,
+                        elevation: 0,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _currentQuestionIndex < _questions.length - 1
+                                ? 'Next Question'
+                                : 'Submit Test',
+                            style: theme.textTheme.labelLarge?.copyWith(
                               color: theme.colorScheme.onPrimary,
+                              fontWeight: FontWeight.bold,
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(
+                              width: AppSpacing.sm), // FIXED: AppSpacing.sm
+                          Icon(
+                            Icons.arrow_forward,
+                            size: 18,
+                            color: theme.colorScheme.onPrimary,
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],

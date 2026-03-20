@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:provider/provider.dart';
 
@@ -718,110 +718,101 @@ class _CartScreenState extends State<CartScreen> {
     final theme = Theme.of(context);
     final total = _calculateTotal(items);
 
-    return SafeArea(
-      bottom: true,
-      child: Container(
-        padding: const EdgeInsets.only(
-            left: AppSpacing.xxl,
-            top: AppSpacing.xxl,
-            right: AppSpacing.xxl), // FIXED: AppSpacing.xxl (24)
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.only(
-              bottom: AppSpacing.xxl), // FIXED: AppSpacing.xxl (24)
-          child: Row(
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.xxl,
+        AppSpacing.xxl,
+        AppSpacing.xxl,
+        AppSpacing.xxl + MediaQuery.of(context).padding.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Total',
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: context.sp(14),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs), // FIXED: AppSpacing.xs
-                  Text(
-                    '₹${total.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: context.sp(24),
-                      fontWeight: FontWeight.bold,
-                      height: 1.0,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ],
+              Text(
+                'Total',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: context.sp(14),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              const SizedBox(width: AppSpacing.xxl), // FIXED: AppSpacing.xxl
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _isProcessing
-                      ? null
-                      : () async {
-                          if (_isProcessing) return;
-                          setState(() => _isProcessing = true);
-
-                          final user = AuthService.instance.currentUser;
-
-                          // Pre-fill phone if available locally, do not block network to fetch it.
-                          // Razorpay UI will prompt user if phone is missing.
-                          String? userPhone = user?.phone;
-
-                          PaymentService.instance.openCheckout(
-                            amount: total,
-                            orderId:
-                                'cart_checkout_${DateTime.now().millisecondsSinceEpoch}',
-                            email: user?.email,
-                            contact: userPhone,
-                          );
-
-                          if (mounted) {
-                            setState(() => _isProcessing = false);
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: theme.colorScheme.onPrimary,
-                    padding: EdgeInsets.symmetric(vertical: context.h(16)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        context.w(AppSpacing.radiusMd),
-                      ),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Proceed to Payment',
-                        style: TextStyle(
-                          fontSize: context.sp(16), // FIXED: context.sp(16)
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(
-                          width: AppSpacing.sm), // FIXED: AppSpacing.sm
-                      Icon(Icons.arrow_forward_rounded, size: context.sp(20)),
-                    ],
-                  ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                '₹${total.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: context.sp(24),
+                  fontWeight: FontWeight.bold,
+                  height: 1.0,
+                  color: theme.colorScheme.primary,
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(width: AppSpacing.xxl),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: _isProcessing
+                  ? null
+                  : () async {
+                      if (_isProcessing) return;
+                      setState(() => _isProcessing = true);
+
+                      final user = AuthService.instance.currentUser;
+                      String? userPhone = user?.phone;
+
+                      PaymentService.instance.openCheckout(
+                        amount: total,
+                        orderId:
+                            'cart_checkout_${DateTime.now().millisecondsSinceEpoch}',
+                        email: user?.email,
+                        contact: userPhone,
+                      );
+
+                      if (mounted) {
+                        setState(() => _isProcessing = false);
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
+                padding: EdgeInsets.symmetric(vertical: context.h(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    context.w(AppSpacing.radiusMd),
+                  ),
+                ),
+                elevation: 0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Proceed to Payment',
+                    style: TextStyle(
+                      fontSize: context.sp(16),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Icon(Icons.arrow_forward_rounded, size: context.sp(20)),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
