@@ -14,6 +14,7 @@ import 'test_result_screen.dart';
 import 'main_screen.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_radius.dart'; // FIXED: Added import for radius tokens
+import '../../utils/crashlytics_service.dart';
 
 class ExamScreen extends StatefulWidget {
   final MockTest test;
@@ -90,7 +91,8 @@ class _ExamScreenState extends State<ExamScreen> {
           }
         });
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'exam_screen');
       if (mounted) {
         setState(() {
           _isLoading = false;

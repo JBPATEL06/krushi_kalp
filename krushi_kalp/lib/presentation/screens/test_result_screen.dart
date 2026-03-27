@@ -196,7 +196,8 @@ class _TestResultScreenState extends State<TestResultScreen>
             const SnackBar(content: Text('PDF Uploaded Successfully')),
           );
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'test_result_screen');
         if (mounted) {
           ErrorUtils.showError(context, e);
         }
@@ -217,7 +218,8 @@ class _TestResultScreenState extends State<TestResultScreen>
           ),
         ),
       );
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_result_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
@@ -815,7 +817,8 @@ class _TestResultScreenState extends State<TestResultScreen>
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Thank you for your review!')),
             );
-          } catch (e) {
+          } catch (e, stack) {
+            CrashlyticsService.instance.recordError(e, stack, reason: 'test_result_screen');
             if (!context.mounted) return;
             ErrorUtils.showError(context, e);
           }
@@ -916,7 +919,8 @@ class _TestResultScreenState extends State<TestResultScreen>
             (route) => false,
           );
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'test_result_screen');
         if (mounted) {
           setState(() => _isDiscarding = false);
           ScaffoldMessenger.of(context).showSnackBar(

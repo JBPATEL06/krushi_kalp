@@ -18,6 +18,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../utils/supabase_url_helper.dart';
 import '../../../utils/error_utils.dart';
+import '../../../utils/crashlytics_service.dart';
 
 class MockTestEditScreen extends StatefulWidget {
   final MockTest test;
@@ -174,7 +175,8 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
 
       await Share.shareXFiles([XFile(file.path)],
           text: 'Mock Test Questions: ${widget.test.title}');
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'mock_test_edit_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
@@ -284,7 +286,8 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
                 'Test metadata updated. Files uploading in background if replaced.')));
         Navigator.pop(context, true);
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'mock_test_edit_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }

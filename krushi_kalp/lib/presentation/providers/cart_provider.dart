@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/cart_service.dart';
 import '../../utils/supabase_url_helper.dart';
@@ -83,7 +83,8 @@ class CartProvider extends ChangeNotifier {
             try {
               imageUrl = await SupabaseUrlHelper()
                   .getFreshSignedUrl('mock_test', path);
-            } catch (e) {
+            } catch (e, stack) {
+              CrashlyticsService.instance.recordError(e, stack, reason: 'cart_provider');
               // ignore
             }
           } else {
@@ -113,6 +114,7 @@ class CartProvider extends ChangeNotifier {
 
       _cartItems = processedItems;
     } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_provider');
       _errorMessage = e.toString();
       CrashlyticsService.instance
           .recordError(e, stack, reason: 'CartProvider: fetchCart');
@@ -154,6 +156,7 @@ class CartProvider extends ChangeNotifier {
 
       await fetchCart(forceRefresh: true);
     } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_provider');
       _errorMessage = e.toString();
       CrashlyticsService.instance
           .recordError(e, stack, reason: 'CartProvider: addToCart');

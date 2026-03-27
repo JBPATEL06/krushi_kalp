@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'network_utils.dart';
+import '../utils/crashlytics_service.dart';
 
 /// Wraps any async call with automatic retry on network errors.
 ///
@@ -20,7 +21,8 @@ class RetryHelper {
     while (true) {
       try {
         return await action();
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'retry_helper');
         attempt++;
         final isNetwork = NetworkUtils.isNetworkError(e);
 

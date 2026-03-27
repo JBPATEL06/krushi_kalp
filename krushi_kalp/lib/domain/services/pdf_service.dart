@@ -439,6 +439,7 @@ class PdfService {
             await rootBundle.load("assets/fonts/NotoSansGujarati-Regular.ttf");
         return pw.Font.ttf(fontData);
       } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'pdf_service');
         // Log if asset loading fails, will fall back to cache/download
         CrashlyticsService.instance.recordError(e, stack, reason: 'PdfService: Bundled font asset load failed');
       }
@@ -451,7 +452,8 @@ class PdfService {
         try {
           return pw.Font.ttf(
               await file.readAsBytes().then((b) => b.buffer.asByteData()));
-        } catch (e) {
+        } catch (e, stack) {
+          CrashlyticsService.instance.recordError(e, stack, reason: 'pdf_service');
           await file.delete();
         }
       }

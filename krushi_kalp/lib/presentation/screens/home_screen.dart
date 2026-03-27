@@ -24,6 +24,7 @@ import '../widgets/common/responsive_wrapper.dart';
 import '../../data/services/performance_service.dart';
 import '../../domain/models/user_performance.dart';
 import '../widgets/performance_card.dart';
+import '../../utils/crashlytics_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,7 +61,8 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         }
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'home_screen');
       // Ignore errors in user profile loading
     }
   }
@@ -119,7 +121,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   context.read<ResourceProvider>().fetchPurchasedResources(
                       context.read<AuthProvider>().currentUser?.id ?? ''),
                 ]).timeout(const Duration(seconds: 20));
-              } catch (e) {
+              } catch (e, stack) {
+                CrashlyticsService.instance.recordError(e, stack, reason: 'home_screen');
                 // The indicator will stop automatically when this async block finishes
               }
             },

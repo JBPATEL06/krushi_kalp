@@ -109,8 +109,9 @@ class _StoreResourceGridState extends State<StoreResourceGrid> {
     final saleOffers = widget.activeOffers?.where((o) => o.isSale).toList();
 
     double displayPrice = resource.price;
-    double? mrp = resource.mrp;
-    String? discountTag = resource.discount;
+    // mrp and discountTag come from PriceCalculator below, not from Resource model
+    double? mrp;
+    String? discountTag;
 
     if (widget.activeOffers != null && widget.activeOffers!.isNotEmpty) {
       final priceData = PriceCalculator.calculateDisplayPrice(
@@ -127,11 +128,6 @@ class _StoreResourceGridState extends State<StoreResourceGrid> {
         } else {
           discountTag = '₹${offer.discountValue.toStringAsFixed(0)} OFF';
         }
-      }
-    } else {
-      if (discountTag == null && mrp != null && mrp > displayPrice) {
-        final off = ((mrp - displayPrice) / mrp * 100).round();
-        if (off > 0) discountTag = '$off% OFF';
       }
     }
 

@@ -7,6 +7,7 @@ import '../../mock_test_upload_screen.dart';
 import 'admin_mock_test_detail_screen.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
+import '../../../../utils/crashlytics_service.dart';
 
 class AdminMockTestList extends StatefulWidget {
   final bool? isFree; // null = all, true = free only, false = paid only
@@ -139,7 +140,8 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
             const SnackBar(content: Text('Test deleted successfully')),
           );
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_mock_test_list');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error: $e')),

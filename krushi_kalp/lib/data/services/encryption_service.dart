@@ -1,5 +1,6 @@
 import 'package:encrypt/encrypt.dart' as encrypt;
 import '../../core/env/env.dart';
+import '../../utils/crashlytics_service.dart';
 
 class EncryptionService {
   // AES-256 key loaded from .env — never hardcoded in source
@@ -16,7 +17,8 @@ class EncryptionService {
 
       // Return "IV_BASE64:CIPHERTEXT_BASE64"
       return '${iv.base64}:${encrypted.base64}';
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'encryption_service');
       
       return plainText;
     }
@@ -38,7 +40,8 @@ class EncryptionService {
         // Actually, if it fails, the catch block handles it.
         throw Exception("Invalid format: Missing IV");
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'encryption_service');
       
       return encryptedText; // Fail open or return null.
       // If we return encryptedText, the session check will fail (mismatch) and force logout, which is CORRECT behavior for corrupted data.

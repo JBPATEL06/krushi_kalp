@@ -32,48 +32,38 @@ const ResourceEntitySchema = CollectionSchema(
       name: r'description',
       type: IsarType.string,
     ),
-    r'discount': PropertySchema(
-      id: 3,
-      name: r'discount',
-      type: IsarType.string,
-    ),
     r'fileUrl': PropertySchema(
-      id: 4,
+      id: 3,
       name: r'fileUrl',
       type: IsarType.string,
     ),
     r'isActive': PropertySchema(
-      id: 5,
+      id: 4,
       name: r'isActive',
       type: IsarType.bool,
     ),
-    r'mrp': PropertySchema(
-      id: 6,
-      name: r'mrp',
-      type: IsarType.double,
-    ),
     r'price': PropertySchema(
-      id: 7,
+      id: 5,
       name: r'price',
       type: IsarType.double,
     ),
     r'resourceId': PropertySchema(
-      id: 8,
+      id: 6,
       name: r'resourceId',
       type: IsarType.long,
     ),
     r'thumbnailUrl': PropertySchema(
-      id: 9,
+      id: 7,
       name: r'thumbnailUrl',
       type: IsarType.string,
     ),
     r'title': PropertySchema(
-      id: 10,
+      id: 8,
       name: r'title',
       type: IsarType.string,
     ),
     r'typeString': PropertySchema(
-      id: 11,
+      id: 9,
       name: r'typeString',
       type: IsarType.string,
     )
@@ -111,12 +101,6 @@ int _resourceEntityEstimateSize(
     }
   }
   {
-    final value = object.discount;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
-  {
     final value = object.fileUrl;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -142,15 +126,13 @@ void _resourceEntitySerialize(
   writer.writeString(offsets[0], object.category);
   writer.writeDateTime(offsets[1], object.createdAt);
   writer.writeString(offsets[2], object.description);
-  writer.writeString(offsets[3], object.discount);
-  writer.writeString(offsets[4], object.fileUrl);
-  writer.writeBool(offsets[5], object.isActive);
-  writer.writeDouble(offsets[6], object.mrp);
-  writer.writeDouble(offsets[7], object.price);
-  writer.writeLong(offsets[8], object.resourceId);
-  writer.writeString(offsets[9], object.thumbnailUrl);
-  writer.writeString(offsets[10], object.title);
-  writer.writeString(offsets[11], object.typeString);
+  writer.writeString(offsets[3], object.fileUrl);
+  writer.writeBool(offsets[4], object.isActive);
+  writer.writeDouble(offsets[5], object.price);
+  writer.writeLong(offsets[6], object.resourceId);
+  writer.writeString(offsets[7], object.thumbnailUrl);
+  writer.writeString(offsets[8], object.title);
+  writer.writeString(offsets[9], object.typeString);
 }
 
 ResourceEntity _resourceEntityDeserialize(
@@ -163,16 +145,14 @@ ResourceEntity _resourceEntityDeserialize(
   object.category = reader.readStringOrNull(offsets[0]);
   object.createdAt = reader.readDateTime(offsets[1]);
   object.description = reader.readStringOrNull(offsets[2]);
-  object.discount = reader.readStringOrNull(offsets[3]);
-  object.fileUrl = reader.readStringOrNull(offsets[4]);
+  object.fileUrl = reader.readStringOrNull(offsets[3]);
   object.id = id;
-  object.isActive = reader.readBool(offsets[5]);
-  object.mrp = reader.readDoubleOrNull(offsets[6]);
-  object.price = reader.readDouble(offsets[7]);
-  object.resourceId = reader.readLong(offsets[8]);
-  object.thumbnailUrl = reader.readStringOrNull(offsets[9]);
-  object.title = reader.readString(offsets[10]);
-  object.typeString = reader.readString(offsets[11]);
+  object.isActive = reader.readBool(offsets[4]);
+  object.price = reader.readDouble(offsets[5]);
+  object.resourceId = reader.readLong(offsets[6]);
+  object.thumbnailUrl = reader.readStringOrNull(offsets[7]);
+  object.title = reader.readString(offsets[8]);
+  object.typeString = reader.readString(offsets[9]);
   return object;
 }
 
@@ -192,20 +172,16 @@ P _resourceEntityDeserializeProp<P>(
     case 3:
       return (reader.readStringOrNull(offset)) as P;
     case 4:
-      return (reader.readStringOrNull(offset)) as P;
-    case 5:
       return (reader.readBool(offset)) as P;
-    case 6:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 7:
+    case 5:
       return (reader.readDouble(offset)) as P;
-    case 8:
+    case 6:
       return (reader.readLong(offset)) as P;
-    case 9:
+    case 7:
       return (reader.readStringOrNull(offset)) as P;
-    case 10:
+    case 8:
       return (reader.readString(offset)) as P;
-    case 11:
+    case 9:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -673,160 +649,6 @@ extension ResourceEntityQueryFilter
   }
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      discountIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'discount',
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      discountIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'discount',
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      discountEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'discount',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      discountGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'discount',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      discountLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'discount',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      discountBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'discount',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      discountStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'discount',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      discountEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'discount',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      discountContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'discount',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      discountMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'discount',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      discountIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'discount',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      discountIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'discount',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       fileUrlIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1041,90 +863,6 @@ extension ResourceEntityQueryFilter
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isActive',
         value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      mrpIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'mrp',
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      mrpIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'mrp',
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      mrpEqualTo(
-    double? value, {
-    double epsilon = Query.epsilon,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'mrp',
-        value: value,
-        epsilon: epsilon,
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      mrpGreaterThan(
-    double? value, {
-    bool include = false,
-    double epsilon = Query.epsilon,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'mrp',
-        value: value,
-        epsilon: epsilon,
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      mrpLessThan(
-    double? value, {
-    bool include = false,
-    double epsilon = Query.epsilon,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'mrp',
-        value: value,
-        epsilon: epsilon,
-      ));
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      mrpBetween(
-    double? lower,
-    double? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    double epsilon = Query.epsilon,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'mrp',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        epsilon: epsilon,
       ));
     });
   }
@@ -1726,19 +1464,6 @@ extension ResourceEntityQuerySortBy
     });
   }
 
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterSortBy> sortByDiscount() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'discount', Sort.asc);
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterSortBy>
-      sortByDiscountDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'discount', Sort.desc);
-    });
-  }
-
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterSortBy> sortByFileUrl() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fileUrl', Sort.asc);
@@ -1762,18 +1487,6 @@ extension ResourceEntityQuerySortBy
       sortByIsActiveDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isActive', Sort.desc);
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterSortBy> sortByMrp() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'mrp', Sort.asc);
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterSortBy> sortByMrpDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'mrp', Sort.desc);
     });
   }
 
@@ -1886,19 +1599,6 @@ extension ResourceEntityQuerySortThenBy
     });
   }
 
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterSortBy> thenByDiscount() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'discount', Sort.asc);
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterSortBy>
-      thenByDiscountDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'discount', Sort.desc);
-    });
-  }
-
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterSortBy> thenByFileUrl() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fileUrl', Sort.asc);
@@ -1934,18 +1634,6 @@ extension ResourceEntityQuerySortThenBy
       thenByIsActiveDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isActive', Sort.desc);
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterSortBy> thenByMrp() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'mrp', Sort.asc);
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QAfterSortBy> thenByMrpDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'mrp', Sort.desc);
     });
   }
 
@@ -2039,13 +1727,6 @@ extension ResourceEntityQueryWhereDistinct
     });
   }
 
-  QueryBuilder<ResourceEntity, ResourceEntity, QDistinct> distinctByDiscount(
-      {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'discount', caseSensitive: caseSensitive);
-    });
-  }
-
   QueryBuilder<ResourceEntity, ResourceEntity, QDistinct> distinctByFileUrl(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2056,12 +1737,6 @@ extension ResourceEntityQueryWhereDistinct
   QueryBuilder<ResourceEntity, ResourceEntity, QDistinct> distinctByIsActive() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isActive');
-    });
-  }
-
-  QueryBuilder<ResourceEntity, ResourceEntity, QDistinct> distinctByMrp() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'mrp');
     });
   }
 
@@ -2127,12 +1802,6 @@ extension ResourceEntityQueryProperty
     });
   }
 
-  QueryBuilder<ResourceEntity, String?, QQueryOperations> discountProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'discount');
-    });
-  }
-
   QueryBuilder<ResourceEntity, String?, QQueryOperations> fileUrlProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'fileUrl');
@@ -2142,12 +1811,6 @@ extension ResourceEntityQueryProperty
   QueryBuilder<ResourceEntity, bool, QQueryOperations> isActiveProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isActive');
-    });
-  }
-
-  QueryBuilder<ResourceEntity, double?, QQueryOperations> mrpProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'mrp');
     });
   }
 

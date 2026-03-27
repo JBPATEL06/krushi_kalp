@@ -101,7 +101,10 @@ class UniversalItemCard extends StatelessWidget {
               AspectRatio(
                 aspectRatio: _imagePaneAspect,
                 child: Hero(
-                  tag: heroTag ?? 'uic_${title}_$price',
+                  // FIX #2: Use hashCode of title+coverUrl+price to ensure uniqueness.
+                  // Previously 'uic_${title}_$price' caused crashes when two list
+                  // items shared the same title AND price (e.g., two free tests).
+                  tag: heroTag ?? 'uic_${Object.hash(title, coverUrl, price)}',
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -362,7 +365,7 @@ class UniversalItemCard extends StatelessWidget {
       ),
     );
 
-    if (!enableAnimation) return card;
+    if (!enableAnimation) return RepaintBoundary(child: card);
 
     // Light entrance animation when enabled
     return TweenAnimationBuilder<double>(

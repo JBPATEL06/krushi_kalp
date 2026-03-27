@@ -243,7 +243,8 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
         );
         Navigator.pop(context);
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'mock_test_upload_screen');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

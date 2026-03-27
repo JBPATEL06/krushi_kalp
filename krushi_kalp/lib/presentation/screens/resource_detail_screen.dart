@@ -23,6 +23,7 @@ import '../../data/services/download_service.dart';
 import 'pdf_viewer_screen.dart';
 import 'dart:io';
 import '../widgets/common/download_progress_dialog.dart';
+import '../../utils/crashlytics_service.dart';
 
 class ResourceDetailScreen extends StatefulWidget {
   final Resource resource;
@@ -85,7 +86,8 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
           _isLoadingReviews = false;
         });
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_detail_screen');
       if (mounted) setState(() => _isLoadingReviews = false);
     }
   }
@@ -120,7 +122,8 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
               const SnackBar(content: Text('Review submitted successfully!')),
             );
             _loadReviews();
-          } catch (e) {
+          } catch (e, stack) {
+            CrashlyticsService.instance.recordError(e, stack, reason: 'resource_detail_screen');
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Failed to submit: $e')),
@@ -137,7 +140,8 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
               const SnackBar(content: Text('Review deleted successfully')),
             );
             _loadReviews();
-          } catch (e) {
+          } catch (e, stack) {
+            CrashlyticsService.instance.recordError(e, stack, reason: 'resource_detail_screen');
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Failed to delete: $e')),

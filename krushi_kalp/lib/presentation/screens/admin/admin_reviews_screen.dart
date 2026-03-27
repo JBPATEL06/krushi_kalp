@@ -1,10 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../../data/services/review_service.dart';
 import '../../../../domain/models/review.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:intl/intl.dart';
 import '../../../utils/error_utils.dart';
+import '../../../utils/crashlytics_service.dart';
 
 class AdminReviewsScreen extends StatefulWidget {
   const AdminReviewsScreen({super.key});
@@ -36,7 +37,8 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
           _isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_reviews_screen');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -52,7 +54,8 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
           const SnackBar(content: Text('Review deleted successfully')),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_reviews_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }

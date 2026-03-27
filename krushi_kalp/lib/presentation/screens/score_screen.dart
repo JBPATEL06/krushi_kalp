@@ -13,6 +13,7 @@ import 'pdf_viewer_screen.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_radius.dart'; // FIXED: Added import for radius tokens
 import '../widgets/common/responsive_wrapper.dart'; // FIXED: Added import for responsive scaling
+import '../../utils/crashlytics_service.dart';
 
 class ScoreScreen extends StatefulWidget {
   const ScoreScreen({super.key});
@@ -67,7 +68,8 @@ class _ScoreScreenState extends State<ScoreScreen> {
             _isLoading = false;
           });
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'score_screen');
         if (mounted) {
           setState(() {
             _isLoading = false;
@@ -106,7 +108,8 @@ class _ScoreScreenState extends State<ScoreScreen> {
 
       await file.writeAsBytes(bytes);
       _openPdf(file, title);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'score_screen');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error downloading result: $e')),
@@ -513,7 +516,8 @@ class _ScoreScreenState extends State<ScoreScreen> {
             ),
           );
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'score_screen');
         // Rollback on error
         if (!mounted) return;
         setState(() {

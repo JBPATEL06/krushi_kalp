@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import '../mock_test_edit_screen.dart';
+import '../../../../utils/crashlytics_service.dart';
 
 class AdminMockTestDetailScreen extends StatefulWidget {
   final MockTest test;
@@ -43,7 +44,8 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
           _isLoadingStats = false;
         });
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_mock_test_detail_screen');
       if (mounted) {
         setState(() => _isLoadingStats = false);
       }
@@ -79,7 +81,8 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
         if (mounted) {
           Navigator.pop(context, true);
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_mock_test_detail_screen');
         if (mounted) {
           ScaffoldMessenger.of(context)
               .showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -105,7 +108,8 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
 
       await Share.shareXFiles([XFile(file.path)],
           text: 'Mock Test Questions: ${_test.title}');
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_mock_test_detail_screen');
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Download failed: $e')));

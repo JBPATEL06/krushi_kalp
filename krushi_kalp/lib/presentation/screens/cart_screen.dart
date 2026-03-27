@@ -21,6 +21,7 @@ import '../providers/cart_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // NEW: Expose Supabase RPC
 import '../../utils/supabase_url_helper.dart'; // Ensure correct URL construction
 import '../../utils/error_utils.dart';
+import '../../utils/crashlytics_service.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -116,7 +117,8 @@ class _CartScreenState extends State<CartScreen> {
                 try {
                   imageUrl = await SupabaseUrlHelper()
                       .getFreshSignedUrl('mock_test', path);
-                } catch (e) {
+                } catch (e, stack) {
+                  CrashlyticsService.instance.recordError(e, stack, reason: 'cart_screen');
                   imageUrl = path;
                 }
               } else {
@@ -126,8 +128,7 @@ class _CartScreenState extends State<CartScreen> {
               // --- Calculate Automatic Sale Price ---
               final priceData = PriceCalculator.calculateDisplayPrice(
                 basePrice: originalPrice,
-                baseMrp: (item.resource?.mrp ?? item.mockTest?.mrp)
-                    ?.toDouble(), // Fetch original MRP
+                baseMrp: item.mockTest?.mrp?.toDouble(), // Resource.mrp removed from model
                 activeOffers: saleOffers,
                 testId: item.testId,
                 resourceId: item.resourceId,
@@ -250,7 +251,8 @@ class _CartScreenState extends State<CartScreen> {
       } else {
         setState(() => _couponError = "Invalid Code");
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_screen');
       setState(() => _couponError = "Error applying coupon");
     } finally {
       if (mounted) setState(() => _isApplyingCoupon = false);
@@ -265,7 +267,8 @@ class _CartScreenState extends State<CartScreen> {
       await OfferService.instance.removeCouponFromOrder(orderId);
       _couponController.clear();
       await _refreshCart(); // Refresh to remove discount logic
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_screen');
       // handle error
     } finally {
       if (mounted) setState(() => _isApplyingCoupon = false);
@@ -281,7 +284,8 @@ class _CartScreenState extends State<CartScreen> {
           context,
         ).showSnackBar(const SnackBar(content: Text('Item removed')));
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }

@@ -4,6 +4,7 @@ import '../../domain/models/message.dart';
 import 'auth_service.dart';
 import 'admin_notification_service.dart'; // NEW
 import '../../utils/network_utils.dart'; // Import NetworkUtils
+import '../../utils/crashlytics_service.dart';
 
 class ChatService {
   // Singleton
@@ -77,7 +78,8 @@ class ChatService {
       if (!_conversationsController.isClosed) {
         _conversationsController.add(data);
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'chat_service');
       if (NetworkUtils.isNetworkError(e)) return;
     }
   }
@@ -144,7 +146,8 @@ class ChatService {
       if (!controller.isClosed) {
         controller.add(messages);
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'chat_service');
       if (NetworkUtils.isNetworkError(e)) return;
     }
   }
@@ -236,7 +239,8 @@ class ChatService {
           .select();
 
       _notifyRefresh();
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'chat_service');
       // If error is RLS related, it often throws or returns 0 rows if using select()
       // Note: .delete() by itself returns void/dynamic, adding .select() returns deleted rows.
       // If RLS blocks it, response might be empty.
@@ -326,7 +330,8 @@ class ChatService {
           'username': userDetails?['username'] ?? 'User',
         };
       }).toList();
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'chat_service');
       if (NetworkUtils.isNetworkError(e)) return [];
 
       return [];

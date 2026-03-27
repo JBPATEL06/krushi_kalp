@@ -63,7 +63,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           context,
         ).showSnackBar(const SnackBar(content: Text('Notification removed')));
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'notifications_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }

@@ -4,6 +4,7 @@ import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../data/services/app_config_service.dart';
 import '../../../../utils/responsive.dart';
+import '../../../utils/crashlytics_service.dart';
 
 class AdminAboutScreen extends StatefulWidget {
   const AdminAboutScreen({super.key});
@@ -80,7 +81,8 @@ class _AdminAboutScreenState extends State<AdminAboutScreen> {
         _sections = List<Map<String, dynamic>>.from(data['sections'] ?? []);
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_about_screen');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -117,7 +119,8 @@ class _AdminAboutScreenState extends State<AdminAboutScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('About page updated successfully')),
       );
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_about_screen');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to save: $e')),

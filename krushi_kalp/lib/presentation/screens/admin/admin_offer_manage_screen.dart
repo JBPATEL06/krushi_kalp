@@ -9,6 +9,7 @@ import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:intl/intl.dart';
 import '../../../../utils/error_utils.dart';
+import '../../../utils/crashlytics_service.dart';
 
 class AdminOfferManageScreen extends StatefulWidget {
   final Offer? offer; // If provided, Edit mode. Else, Create mode.
@@ -119,7 +120,8 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
         await OfferService.instance.updateOffer(newOffer);
       }
       if (mounted) Navigator.pop(context, true);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_offer_manage_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }

@@ -1,8 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import '../../../data/services/admin_notification_service.dart';
 import '../../../utils/error_utils.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
+import '../../../utils/crashlytics_service.dart';
 
 class AdminNotificationScreen extends StatefulWidget {
   const AdminNotificationScreen({super.key});
@@ -50,7 +51,8 @@ class _AdminNotificationScreenState extends State<AdminNotificationScreen> {
         _titleController.clear();
         _messageController.clear();
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_notification_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }

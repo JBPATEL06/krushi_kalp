@@ -28,6 +28,7 @@ import '../../data/services/download_service.dart'; // NEW
 import 'pdf_viewer_screen.dart'; // NEW
 import 'dart:io'; // NEW
 import '../../utils/error_utils.dart';
+import '../../utils/crashlytics_service.dart';
 
 class StoreScreen extends StatefulWidget {
   const StoreScreen({super.key});
@@ -188,7 +189,8 @@ class _StoreScreenState extends State<StoreScreen>
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'store_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
@@ -234,7 +236,8 @@ class _StoreScreenState extends State<StoreScreen>
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'store_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
@@ -321,7 +324,8 @@ class _StoreScreenState extends State<StoreScreen>
           Navigator.pop(context);
           _openPdf(File(path), resource.title);
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'store_screen');
         if (mounted) {
           Navigator.pop(context);
           ErrorUtils.showError(context, e);

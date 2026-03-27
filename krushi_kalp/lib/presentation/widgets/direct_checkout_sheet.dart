@@ -77,7 +77,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
 
     final priceData = PriceCalculator.calculateDisplayPrice(
       basePrice: _basePrice,
-      baseMrp: (widget.resource?.mrp ?? widget.test?.mrp)?.toDouble(),
+      baseMrp: widget.test?.mrp?.toDouble(), // Resource.mrp removed from model
       activeOffers: widget.initialOffer != null ? [widget.initialOffer!] : [],
       testId: _testId,
       resourceId: _resourceId,

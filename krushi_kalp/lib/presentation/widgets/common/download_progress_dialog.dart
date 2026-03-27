@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../data/services/download_service.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../utils/crashlytics_service.dart';
 
 /// A dialog that shows download progress with animated progress bar
 class DownloadProgressDialog extends StatefulWidget {
@@ -76,7 +77,8 @@ class _DownloadProgressDialogState extends State<DownloadProgressDialog> {
           return;
         }
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'download_progress_dialog');
       if (mounted) {
         setState(() {
           _status = DownloadStatus.error;

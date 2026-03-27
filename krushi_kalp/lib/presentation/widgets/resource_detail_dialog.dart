@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../domain/models/resource.dart';
 import '../../../../data/services/secure_file_service.dart';
 import '../screens/pdf_viewer_screen.dart';
+import '../../utils/crashlytics_service.dart';
 
 class ResourceDetailDialog extends StatefulWidget {
   final Resource resource;
@@ -64,7 +65,8 @@ class _ResourceDetailDialogState extends State<ResourceDetailDialog> {
         });
         _openFile(file);
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_detail_dialog');
       if (mounted) {
         setState(() {
           _isDownloading = false;

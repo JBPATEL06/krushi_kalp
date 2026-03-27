@@ -120,8 +120,6 @@ class ResourceService {
         fileUrl: signedFile ?? r.fileUrl,
         thumbnailUrl: signedThumb ?? r.thumbnailUrl,
         price: r.price,
-        mrp: r.mrp,
-        discount: r.discount,
         isActive: r.isActive,
         createdAt: r.createdAt,
       );

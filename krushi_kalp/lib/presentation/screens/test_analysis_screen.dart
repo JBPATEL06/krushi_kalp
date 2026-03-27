@@ -1,10 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:krushi_kalp/data/services/auth_service.dart';
 import '../../domain/models/question.dart';
 import '../../data/services/translation_service.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_radius.dart'; // FIXED: Added import for radius tokens
 import '../widgets/common/responsive_wrapper.dart'; // FIXED: Added import for responsive scaling
+import '../../utils/crashlytics_service.dart';
 
 class TestAnalysisScreen extends StatefulWidget {
   final String testTitle;
@@ -45,7 +46,8 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
             });
           }
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'test_analysis_screen');
         // Ignore error, default to English
       }
     }

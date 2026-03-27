@@ -35,7 +35,8 @@ class FreeItemCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Card(
+    return RepaintBoundary(
+      child: Card(
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
@@ -56,7 +57,7 @@ class FreeItemCard extends StatelessWidget {
               SizedBox(
                 width: context.w(110),
                 child: Hero(
-                  tag: heroTag ?? 'free_${title}_${DateTime.now().millisecond}',
+                  tag: heroTag ?? 'free_${Object.hash(title, coverUrl)}',
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -165,6 +166,7 @@ class FreeItemCard extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 

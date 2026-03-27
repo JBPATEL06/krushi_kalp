@@ -1,10 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../utils/crashlytics_service.dart';
 
 /// PDF Viewer that streams from network URL (temporary cache, not saved permanently)
 class NetworkPdfViewerScreen extends StatefulWidget {
@@ -70,7 +71,8 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
           _isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'network_pdf_viewer_screen');
       if (mounted) {
         setState(() {
           _errorMessage = e.toString();

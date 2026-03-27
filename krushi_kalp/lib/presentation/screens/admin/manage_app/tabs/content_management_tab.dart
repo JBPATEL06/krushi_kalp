@@ -1,9 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import '../../../../../data/services/app_config_service.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import '../../../../utils/ui_helpers.dart';
+import '../../../../../utils/crashlytics_service.dart';
 
 class ContentManagementTab extends StatefulWidget {
   const ContentManagementTab({super.key});
@@ -64,7 +65,8 @@ class _ContentManagementTabState extends State<ContentManagementTab> {
           const SnackBar(content: Text("Contact Info Saved")),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'content_management_tab');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error: $e")),
@@ -84,7 +86,8 @@ class _ContentManagementTabState extends State<ContentManagementTab> {
           const SnackBar(content: Text("Legal URLs Saved")),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'content_management_tab');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error: $e")),

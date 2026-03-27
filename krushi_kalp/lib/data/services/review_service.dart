@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/review.dart';
+import '../../utils/crashlytics_service.dart';
 
 class ReviewService {
   static final _supabase = Supabase.instance.client;
@@ -26,7 +27,8 @@ class ReviewService {
       await _supabase
           .from('reviews')
           .upsert(data, onConflict: 'user_id, item_id, item_type');
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'review_service');
       throw Exception('Failed to submit review');
     }
   }
@@ -70,7 +72,8 @@ class ReviewService {
       }
 
       return reviewsData.map((e) => Review.fromJson(e)).toList();
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'review_service');
       return [];
     }
   }
@@ -89,7 +92,8 @@ class ReviewService {
 
       if (response == null) return null;
       return Review.fromJson(response);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'review_service');
       return null;
     }
   }
@@ -121,7 +125,8 @@ class ReviewService {
         'average': double.parse(avg.toStringAsFixed(1)),
         'count': ratings.length,
       };
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'review_service');
       return {'average': 0.0, 'count': 0};
     }
   }
@@ -163,7 +168,8 @@ class ReviewService {
         }
       }
       return result;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'review_service');
       return {};
     }
   }
@@ -212,7 +218,8 @@ class ReviewService {
       }
 
       return reviewsData.map((json) => Review.fromJson(json)).toList();
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'review_service');
       return [];
     }
   }

@@ -3,6 +3,7 @@ import '../../domain/models/order_item.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/resource.dart';
 import '../../utils/supabase_url_helper.dart';
+import '../../utils/crashlytics_service.dart';
 
 /// Service class for managing the shopping cart and pending orders.
 class CartService {
@@ -59,7 +60,8 @@ class CartService {
 
       // 4. Transform items to include 1-year signed URLs for thumbnails
       return await _signCartItems(rawItems);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service');
       
       return [];
     }
@@ -127,7 +129,8 @@ class CartService {
 
       final response = await query.limit(1).maybeSingle();
       return response != null;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service');
       
       return false;
     }
@@ -206,7 +209,8 @@ class CartService {
         'price_at_purchase': price,
         'created_at': DateTime.now().toUtc().toIso8601String(),
       });
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service');
       
       throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
@@ -216,7 +220,8 @@ class CartService {
   Future<void> removeCartItem(int itemId) async {
     try {
       await _supabase.from('order_items').delete().eq('item_id', itemId);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service');
       
       throw Exception('Failed to remove item: $e');
     }

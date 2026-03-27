@@ -18,8 +18,6 @@ class ResourceEntity {
   String? fileUrl;
   String? thumbnailUrl;
   late double price;
-  double? mrp;
-  String? discount;
   late bool isActive;
   late DateTime createdAt;
 
@@ -34,8 +32,6 @@ class ResourceEntity {
       ..fileUrl = resource.fileUrl
       ..thumbnailUrl = resource.thumbnailUrl
       ..price = resource.price
-      ..mrp = resource.mrp
-      ..discount = resource.discount
       ..isActive = resource.isActive
       ..createdAt = resource.createdAt;
   }
@@ -57,8 +53,6 @@ class ResourceEntity {
       fileUrl: fileUrl,
       thumbnailUrl: thumbnailUrl,
       price: price,
-      mrp: mrp,
-      discount: discount,
       isActive: isActive,
       createdAt: createdAt,
     );

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../domain/models/mock_test.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/test_service.dart';
@@ -7,6 +7,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_radius.dart';
 import '../widgets/common/responsive_wrapper.dart';
 import 'purchased_tests_screen.dart';
+import '../../utils/crashlytics_service.dart';
 
 class CheckoutScreen extends StatefulWidget {
   final MockTest test;
@@ -81,7 +82,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'checkout_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }

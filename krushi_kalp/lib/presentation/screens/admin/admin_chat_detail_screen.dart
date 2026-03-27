@@ -10,6 +10,7 @@ import 'package:krushi_kalp/presentation/utils/chat_mapper.dart';
 import 'package:krushi_kalp/presentation/widgets/chat/chat_input.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import '../../../utils/error_utils.dart';
+import '../../../utils/crashlytics_service.dart';
 
 class AdminChatDetailScreen extends StatefulWidget {
   final String userId;
@@ -44,7 +45,8 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
   void _handleSendPressed(types.PartialText message) async {
     try {
       await _chatService.sendMessageAsAdmin(message.text, widget.userId);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_chat_detail_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
@@ -81,7 +83,8 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
             const SnackBar(content: Text('Chat cleared')),
           );
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_chat_detail_screen');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error: $e')),
@@ -116,7 +119,8 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
     if (confirmed == true) {
       try {
         await _chatService.deleteMessage(message.id);
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_chat_detail_screen');
         if (!context.mounted) return;
         ErrorUtils.showError(context, e);
       }

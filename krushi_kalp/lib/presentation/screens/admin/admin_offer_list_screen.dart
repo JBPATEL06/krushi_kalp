@@ -7,6 +7,7 @@ import 'admin_offer_manage_screen.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../../utils/error_utils.dart';
+import '../../../utils/crashlytics_service.dart';
 
 class AdminOfferListScreen extends StatefulWidget {
   final bool showOnlyActive;
@@ -91,7 +92,8 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
             );
           }
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_offer_list_screen');
         if (mounted) {
           ErrorUtils.showError(context, e);
         }

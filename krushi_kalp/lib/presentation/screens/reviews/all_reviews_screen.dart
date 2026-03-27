@@ -5,6 +5,7 @@ import '../../../../data/services/review_service.dart';
 import '../../../../domain/models/review.dart';
 import '../../widgets/reviews/review_card.dart';
 import '../../widgets/reviews/review_dialog.dart';
+import '../../../utils/crashlytics_service.dart';
 
 class AllReviewsScreen extends StatefulWidget {
   final int itemId;
@@ -44,7 +45,8 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
           _isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'all_reviews_screen');
       
       if (mounted) setState(() => _isLoading = false);
     }
@@ -79,7 +81,8 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
               const SnackBar(content: Text('Review updated successfully!')),
             );
             _loadAllReviews();
-          } catch (e) {
+          } catch (e, stack) {
+            CrashlyticsService.instance.recordError(e, stack, reason: 'all_reviews_screen');
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Failed to update: $e')),
@@ -94,7 +97,8 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
               const SnackBar(content: Text('Review deleted successfully')),
             );
             _loadAllReviews();
-          } catch (e) {
+          } catch (e, stack) {
+            CrashlyticsService.instance.recordError(e, stack, reason: 'all_reviews_screen');
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Failed to delete: $e')),

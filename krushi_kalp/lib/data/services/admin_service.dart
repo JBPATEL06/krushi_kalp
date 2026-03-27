@@ -1,7 +1,8 @@
-﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rxdart/rxdart.dart';
 import '../../utils/supabase_url_helper.dart';
 import '../../utils/network_utils.dart'; // Import NetworkUtils
+import '../../utils/crashlytics_service.dart';
 
 class AdminService {
   static final _supabase = Supabase.instance.client;
@@ -12,7 +13,8 @@ class AdminService {
       final response =
           await _supabase.from('users').select('id, email, username');
       return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
       if (NetworkUtils.isNetworkError(e)) {
         
         return [];
@@ -35,7 +37,8 @@ class AdminService {
         return response['id'] as String;
       }
       return null;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
       if (NetworkUtils.isNetworkError(e)) return null;
       
       return null;
@@ -90,7 +93,8 @@ class AdminService {
               .count(CountOption.exact)
               .eq('status', 'SUCCESS');
           totalPurchased = ordersCount;
-        } catch (e) {
+        } catch (e, stack) {
+          CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
           
           final ordersList = await _supabase
               .from('orders')
@@ -111,7 +115,8 @@ class AdminService {
           'revenue': revenue,
           'activeOffers': results[3] as int, // Adjusted index
         };
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
         
         return {
           'totalTests': 0,
@@ -153,7 +158,8 @@ class AdminService {
         'revenue': revenue,
         'activeOffers': activeOffersCount,
       };
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
       if (NetworkUtils.isNetworkError(e)) {
         
         return {
@@ -247,7 +253,8 @@ class AdminService {
         });
 
         return sortedUsers.take(10).toList();
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
         
         return [];
       }
@@ -314,7 +321,8 @@ class AdminService {
         }
 
         return result;
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
         
         return [];
       }
@@ -367,7 +375,8 @@ class AdminService {
       });
 
       return sortedUsers.take(10).toList();
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
       
       return [];
     }
@@ -412,7 +421,8 @@ class AdminService {
           'last_active': lastActiveMap[user['id']],
         };
       }).toList();
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
       if (NetworkUtils.isNetworkError(e)) {
         
         return [];
@@ -432,7 +442,8 @@ class AdminService {
           .order('created_at', ascending: false);
 
       return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
       if (NetworkUtils.isNetworkError(e)) return [];
       
       return [];
@@ -454,7 +465,8 @@ class AdminService {
             .limit(50);
 
         return List<Map<String, dynamic>>.from(orders);
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
         
         return [];
       }
@@ -470,7 +482,8 @@ class AdminService {
           .eq('id', userId)
           .single();
       return response;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
       if (NetworkUtils.isNetworkError(e)) return null;
       
       return null;
@@ -487,7 +500,8 @@ class AdminService {
           .eq('status', 'SUCCESS')
           .order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
       
       return [];
     }
@@ -503,7 +517,8 @@ class AdminService {
           .eq('user_id', userId)
           .order('attempt_date', ascending: false);
       return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
       
       return [];
     }
@@ -571,7 +586,8 @@ class AdminService {
             'last_active': lastActiveMap[user['id']],
           };
         }).toList();
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
         
         return [];
       }
@@ -660,7 +676,8 @@ class AdminService {
         'totalCount': countRes.count,
         'salesCount': (salesRes as List).length,
       };
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
       
       return {'totalCount': 0, 'salesCount': 0};
     }
@@ -688,7 +705,8 @@ class AdminService {
         'price': (itemRes['price'] as num?)?.toDouble() ?? 0.0,
         'salesCount': salesRes.count,
       };
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
       
       return {'price': 0.0, 'salesCount': 0};
     }
@@ -715,7 +733,8 @@ class AdminService {
         'price': (itemRes['price'] as num?)?.toDouble() ?? 0.0,
         'salesCount': salesRes.count,
       };
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
       
       return {'price': 0.0, 'salesCount': 0};
     }
@@ -737,7 +756,8 @@ class AdminService {
             )
           ''').eq('order_id', orderId).maybeSingle();
       return response;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
       if (NetworkUtils.isNetworkError(e)) return null;
       
       return null;
@@ -761,7 +781,8 @@ class AdminService {
           ''').eq('status', 'SUCCESS').order('created_at', ascending: false);
 
       return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service');
       if (NetworkUtils.isNetworkError(e)) {
         
         return [];

@@ -4,6 +4,7 @@ import 'package:krushi_kalp/core/theme/app_radius.dart';
 import '../../../../../data/services/app_config_service.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import '../../../../utils/ui_helpers.dart';
+import '../../../../../utils/crashlytics_service.dart';
 
 class FeatureControlTab extends StatefulWidget {
   const FeatureControlTab({super.key});
@@ -52,7 +53,8 @@ class _FeatureControlTabState extends State<FeatureControlTab> {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Review settings updated")));
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'feature_control_tab');
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text("Error: $e")));
@@ -78,7 +80,8 @@ class _FeatureControlTabState extends State<FeatureControlTab> {
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text("App Status updated")));
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'feature_control_tab');
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text("Error: $e")));

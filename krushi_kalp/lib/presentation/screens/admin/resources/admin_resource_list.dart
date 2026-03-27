@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import '../../../../data/services/resource_service.dart';
@@ -13,6 +13,7 @@ import 'admin_resource_form.dart';
 import 'admin_resource_detail_screen.dart';
 import '../../../../../utils/error_utils.dart';
 import '../../../utils/ui_helpers.dart';
+import '../../../../utils/crashlytics_service.dart';
 
 class AdminResourceList extends StatefulWidget {
   final ResourceType type;
@@ -62,7 +63,8 @@ class _AdminResourceListState extends State<AdminResourceList> {
               const SnackBar(content: Text('Item deleted successfully')));
           _refresh();
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_resource_list');
         if (mounted) {
           ErrorUtils.showError(context, e);
         }
@@ -367,7 +369,8 @@ class _AdminResourceListState extends State<AdminResourceList> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_resource_list');
       if (mounted) {
         Navigator.pop(context); // Close loader
         ErrorUtils.showError(context, e);
@@ -404,7 +407,8 @@ class _AdminResourceListState extends State<AdminResourceList> {
             name: '$fileName.pdf', mimeType: 'application/pdf');
         await Share.shareXFiles([xFile], text: 'Download PDF: $title');
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_resource_list');
       if (mounted) {
         Navigator.pop(context); // Close loader
         ErrorUtils.showError(context, e);

@@ -1,10 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:krushi_kalp/presentation/widgets/common/responsive_wrapper.dart'; // FIXED
 import '../../data/services/auth_service.dart';
 import '../../utils/error_utils.dart';
 import '../../core/theme/app_spacing.dart'; // FIXED
 import '../../core/theme/app_radius.dart'; // FIXED
+import '../../utils/crashlytics_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic> profile;
@@ -115,7 +116,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         );
         Navigator.pop(context, true); // Signal profile screen to refresh
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'edit_profile_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }

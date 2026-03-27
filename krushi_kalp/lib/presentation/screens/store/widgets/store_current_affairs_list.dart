@@ -100,15 +100,6 @@ class StoreCurrentAffairsList extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     if (!purchasedIds.contains(item.id)) ...[
-                      if (item.mrp != null && item.mrp! > item.price)
-                        Text(
-                          '₹${item.mrp!.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            decoration: TextDecoration.lineThrough,
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontSize: 10,
-                          ),
-                        ),
                       Text(
                         item.price <= 0
                             ? 'Free'

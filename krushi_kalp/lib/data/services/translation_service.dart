@@ -1,5 +1,6 @@
-﻿import 'package:translator/translator.dart';
+import 'package:translator/translator.dart';
 import '../../domain/models/question.dart';
+import '../../utils/crashlytics_service.dart';
 
 class TranslationService {
   static final _translator = GoogleTranslator();
@@ -47,7 +48,8 @@ class TranslationService {
       // Save to cache
       _cache[cacheKey] = translatedQ;
       return translatedQ;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'translation_service');
       // Fallback: Return original question if translation fails
       return q;
     }

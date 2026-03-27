@@ -5,6 +5,7 @@ import '../../../../data/services/admin_service.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import '../../../../utils/error_utils.dart';
+import '../../../utils/crashlytics_service.dart';
 
 class RevenueDetailsScreen extends StatefulWidget {
   const RevenueDetailsScreen({super.key});
@@ -34,7 +35,8 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
           _isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'revenue_details_screen');
       if (mounted) {
         setState(() => _isLoading = false);
         ErrorUtils.showError(context, e);

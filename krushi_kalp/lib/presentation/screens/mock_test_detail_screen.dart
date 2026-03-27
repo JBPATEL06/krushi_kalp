@@ -19,6 +19,7 @@ import '../widgets/reviews/review_dialog.dart';
 import '../widgets/reviews/rate_stars.dart';
 import 'reviews/all_reviews_screen.dart';
 import '../widgets/common/responsive_wrapper.dart';
+import '../../utils/crashlytics_service.dart';
 
 class MockTestDetailScreen extends StatefulWidget {
   final MockTest test;
@@ -88,7 +89,8 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
           _isLoadingReviews = false;
         });
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'mock_test_detail_screen');
       if (mounted) setState(() => _isLoadingReviews = false);
     }
   }
@@ -126,7 +128,8 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
               const SnackBar(content: Text('Review submitted successfully!')),
             );
             _loadReviews();
-          } catch (e) {
+          } catch (e, stack) {
+            CrashlyticsService.instance.recordError(e, stack, reason: 'mock_test_detail_screen');
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Failed to submit: $e')),
@@ -142,7 +145,8 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
               const SnackBar(content: Text('Review deleted successfully')),
             );
             _loadReviews();
-          } catch (e) {
+          } catch (e, stack) {
+            CrashlyticsService.instance.recordError(e, stack, reason: 'mock_test_detail_screen');
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Failed to delete: $e')),

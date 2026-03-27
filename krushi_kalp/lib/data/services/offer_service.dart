@@ -28,7 +28,8 @@ class OfferService {
           .order('created_at', ascending: false);
       final List<dynamic> data = response;
       return data.map((e) => Offer.fromJson(e)).toList();
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       if (NetworkUtils.isNetworkError(e)) {
         return [];
       }
@@ -67,7 +68,8 @@ class OfferService {
       }
 
       return counts;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       if (NetworkUtils.isNetworkError(e)) {
         return {};
       }
@@ -90,7 +92,8 @@ class OfferService {
 
       final List<dynamic> data = response;
       return data.map((e) => Offer.fromJson(e)).toList();
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       if (NetworkUtils.isNetworkError(e)) return [];
 
       return [];
@@ -116,7 +119,8 @@ class OfferService {
       final offers = data.map((e) => Offer.fromJson(e)).toList();
 
       return offers;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       if (NetworkUtils.isNetworkError(e)) {
         return [];
       }
@@ -133,7 +137,8 @@ class OfferService {
           .eq('code', code.toUpperCase())
           .maybeSingle();
       return response != null;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       return false; // Error assuming doesn't exist or DB issue
     }
   }
@@ -147,7 +152,8 @@ class OfferService {
           .eq('offer_id', offerId)
           .eq('user_id', userId);
       return count < limit;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       return true; // Allow if check fails to prevent blocking? Or fail? Fail safe preferred.
     }
   }
@@ -163,7 +169,8 @@ class OfferService {
       final data = offer.toJson();
       data.remove('offer_id'); // Let DB handle ID on insert
       await _supabase.from('offers').insert(data);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       if (NetworkUtils.isNetworkError(e)) {
         throw Exception('Network Error: Please check your connection.');
       }
@@ -192,7 +199,8 @@ class OfferService {
       final data = offer.toJson();
       // data.remove('offer_id'); // Optional, but better to keep for reference or rely on eq
       await _supabase.from('offers').update(data).eq('offer_id', offer.id);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       if (NetworkUtils.isNetworkError(e)) {
         throw Exception('Network Error: Please check your connection.');
       }
@@ -207,7 +215,8 @@ class OfferService {
     try {
       await _supabase.from('offers').delete().eq('offer_id', id);
       return 'DELETED';
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       // Check for Postgres Error Code 23503 (Foreign Key Violation)
       if (e.toString().contains('23503') ||
           e.toString().contains('violates foreign key constraint')) {
@@ -236,7 +245,8 @@ class OfferService {
 
       if (response == null) return null;
       return Offer.fromJson(response);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       if (NetworkUtils.isNetworkError(e)) return null;
 
       return null;
@@ -253,7 +263,8 @@ class OfferService {
         'offer_id': offerId,
         'updated_at': DateTime.now().toUtc().toIso8601String()
       }).eq('order_id', orderId);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       throw Exception('Failed to apply coupon');
     }
   }

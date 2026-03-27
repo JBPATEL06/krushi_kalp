@@ -6,6 +6,7 @@ import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:krushi_kalp/presentation/widgets/common/modern_card.dart';
 import '../../../../utils/error_utils.dart';
+import '../../../utils/crashlytics_service.dart';
 
 class AdminUserDetailsScreen extends StatefulWidget {
   final String userId;
@@ -71,7 +72,8 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                 content: Text('User promoted to Admin successfully')),
           );
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_user_details_screen');
         if (mounted) {
           ErrorUtils.showError(context, e);
         }
@@ -112,7 +114,8 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                 content: Text('User demoted to Student successfully')),
           );
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_user_details_screen');
         if (mounted) {
           ErrorUtils.showError(context, e);
         }
@@ -164,7 +167,8 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
           );
           Navigator.pop(context); // Go back to list
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_user_details_screen');
         if (mounted) {
           Navigator.pop(context); // Pop loading
           ErrorUtils.showError(context, e);

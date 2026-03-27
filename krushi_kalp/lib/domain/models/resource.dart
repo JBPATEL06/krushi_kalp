@@ -14,12 +14,10 @@ class Resource {
   final String? fileUrl;
   final String? thumbnailUrl;
   final double price;
-  final double? mrp; // Maximum Retail Price
-  final String? discount; // Discount description
   final bool isActive;
   final DateTime createdAt;
 
-  Resource({
+  const Resource({
     required this.id,
     required this.title,
     this.description,
@@ -28,32 +26,28 @@ class Resource {
     this.fileUrl,
     this.thumbnailUrl,
     this.price = 0.0,
-    this.mrp,
-    this.discount,
     required this.isActive,
     required this.createdAt,
   });
 
-  // Helper for Discount Percentage
-  int get discountPercentage {
-    if (mrp == null || mrp! <= price || mrp! == 0) return 0;
-    return ((mrp! - price) / mrp! * 100).round();
-  }
-
   factory Resource.fromJson(Map<String, dynamic> json) {
     return Resource(
-      id: json['id'],
-      title: json['title'],
-      description: json['description'],
-      type: _parseType(json['type']),
-      category: json['category'],
-      fileUrl: json['file_url'],
-      thumbnailUrl: json['thumbnail_url'],
+      // FIX #1: All non-nullable fields are null-safe — prevents startup crash
+      // when SharedPreferences cache has stale/incomplete entries.
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      title: (json['title'] as String?) ?? '',
+      description: json['description'] as String?,
+      type: _parseType((json['type'] as String?) ?? ''),
+      category: json['category'] as String?,
+      fileUrl: json['file_url'] as String?,
+      thumbnailUrl: json['thumbnail_url'] as String?,
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      mrp: (json['mrp'] as num?)?.toDouble(),
-      discount: json['discount'],
-      isActive: json['is_active'] ?? true,
-      createdAt: DateTime.parse(json['created_at']),
+      isActive: (json['is_active'] as bool?) ?? true,
+      // FIX #3: 'mrp' and 'discount' do NOT exist in the DB schema.
+      // 'created_at' is null-guarded to prevent crash on malformed cache.
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()
+          : DateTime.now(),
     );
   }
 
@@ -80,8 +74,6 @@ class Resource {
     String? fileUrl,
     String? thumbnailUrl,
     double? price,
-    double? mrp,
-    String? discount,
     bool? isActive,
     DateTime? createdAt,
   }) {
@@ -94,8 +86,6 @@ class Resource {
       fileUrl: fileUrl ?? this.fileUrl,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       price: price ?? this.price,
-      mrp: mrp ?? this.mrp,
-      discount: discount ?? this.discount,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
     );

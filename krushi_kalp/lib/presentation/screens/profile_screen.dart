@@ -19,6 +19,7 @@ import '../../data/services/auth_service.dart';
 import '../../data/services/app_config_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../utils/error_utils.dart';
+import '../../utils/crashlytics_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -64,7 +65,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _ensureProfile(User user) async {
     try {
       await AuthService.instance.ensureProfileExists(user);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'profile_screen');
       // Profile creation errors are handled non-critically
     }
   }
@@ -79,7 +81,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       await AuthService.instance.updateProfile(user.id, {'language': newLang});
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'profile_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
@@ -93,7 +96,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
         throw 'Could not launch $url';
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'profile_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
@@ -466,7 +470,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           );
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'profile_screen');
         if (context.mounted) {
           Navigator.pop(context); // Pop loading
           ErrorUtils.showError(context, e);

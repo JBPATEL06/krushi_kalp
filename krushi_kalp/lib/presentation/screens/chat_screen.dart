@@ -10,6 +10,7 @@ import 'package:krushi_kalp/presentation/widgets/chat/chat_input.dart';
 import 'package:krushi_kalp/presentation/utils/chat_mapper.dart';
 import 'package:krushi_kalp/data/services/notification_service.dart';
 import '../../utils/error_utils.dart';
+import '../../utils/crashlytics_service.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -40,7 +41,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void _handleSendPressed(types.PartialText message) async {
     try {
       await _chatService.sendMessage(message.text);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'chat_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
@@ -74,7 +76,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (confirmed == true) {
       try {
         await _chatService.clearChat();
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'chat_screen');
         if (mounted) {
           ErrorUtils.showError(context, e);
         }
@@ -129,7 +132,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (confirmed == true) {
       try {
         await _chatService.deleteMessage(message.id);
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'chat_screen');
         if (context.mounted) {
           ErrorUtils.showError(context, e);
         }

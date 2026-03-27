@@ -13,6 +13,7 @@ import '../../core/theme/app_spacing.dart';
 import '../widgets/common/primary_button.dart';
 import '../widgets/common/premium_card.dart';
 import 'package:krushi_kalp/presentation/widgets/common/responsive_wrapper.dart';
+import '../../utils/crashlytics_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -90,7 +91,8 @@ class _LoginScreenState extends State<LoginScreen>
     }
     try {
       await context.read<AuthProvider>().signInWithGoogle();
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'login_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }

@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import '../../utils/crashlytics_service.dart';
 
 /// Wraps form content in a standardized "Premium Card"
 Widget buildFormCard(BuildContext context,
@@ -185,7 +186,8 @@ String extractFilename(String? path) {
 
     // Remove common Supabase prefixes if present in filename
     return lastSegment.split('/').last.split('_').last;
-  } catch (e) {
+  } catch (e, stack) {
+    CrashlyticsService.instance.recordError(e, stack, reason: 'ui_helpers');
     // If parsing fails, just show a truncated version
     return truncateText(path, 30);
   }

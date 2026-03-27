@@ -45,7 +45,8 @@ class TestService {
       List<MockTest> tests = await compute(_parseMockTests, data);
 
       return await _populateSignedUrls(tests);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
       throw Exception('Failed to load tests: $e');
     }
   }
@@ -74,7 +75,8 @@ class TestService {
     try {
       final response = await _supabase.rpc('get_distinct_categories');
       return List<String>.from(response as List);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
       final response = await _supabase.from('mock_tests').select('category');
       return (response as List)
           .map((e) => e['category'] as String)
@@ -93,7 +95,8 @@ class TestService {
         if (!languages.contains(d)) languages.add(d);
       }
       return languages;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
       final response = await _supabase.from('mock_tests').select('language');
       final List<String> languages = (response as List)
           .map((e) => e['language'] as String)
@@ -115,7 +118,8 @@ class TestService {
           await _supabase.storage.from('mock_test').download(filePath);
       final String jsonString = utf8.decode(fileBytes);
       return await compute(_decodeAndParseQuestions, jsonString);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
       throw Exception('Failed to load questions: $e');
     }
   }
@@ -145,7 +149,8 @@ class TestService {
       } catch (notiErr, stack) {
         CrashlyticsService.instance.recordError(notiErr, stack, reason: 'Broadcast failed after creating mock test: ${test.title}');
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
       throw Exception('Failed to create test: $e');
     }
   }
@@ -187,7 +192,8 @@ class TestService {
             'Cannot delete this test because it has been purchased by one or more users.');
       }
       throw Exception('Failed to delete test: ${e.message}');
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
       throw Exception('Failed to delete test: $e');
     }
   }
@@ -206,7 +212,8 @@ class TestService {
       }
 
       await _supabase.from('mock_tests').update(payload).eq('test_id', testId);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
       throw Exception('Failed to update test: $e');
     }
   }
@@ -265,7 +272,8 @@ class TestService {
           .single();
 
       return response['result_id'] as int?;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
       throw Exception('Failed to submit result: $e');
     }
   }
@@ -278,7 +286,8 @@ class TestService {
           .eq('user_id', authUserId)
           .order('attempt_date', ascending: false);
       return response as List<dynamic>;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
       throw Exception('Failed to load history: $e');
     }
   }
@@ -346,7 +355,8 @@ class TestService {
           await compute(_parseMockTests, testsResponse as List<dynamic>);
 
       return await _populateSignedUrls(purchasedTests);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
       throw Exception('Failed to load purchased tests: $e');
     }
   }
@@ -480,7 +490,8 @@ class TestService {
         'created_at': DateTime.now().toUtc().toIso8601String(),
       });
       return orderId;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
       throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }

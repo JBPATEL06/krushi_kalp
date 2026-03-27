@@ -10,6 +10,7 @@ import '../widgets/common/network_error_state.dart';
 import 'pdf_viewer_screen.dart';
 import 'mock_test_detail_screen.dart'; // Import Detail Screen
 import '../../core/theme/app_spacing.dart';
+import '../../utils/crashlytics_service.dart';
 
 class AllTestsScreen extends StatefulWidget {
   const AllTestsScreen({super.key});
@@ -66,7 +67,8 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
 
       await file.writeAsBytes(bytes);
       _openPdf(file, title);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'all_tests_screen');
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -42,10 +42,11 @@ class DownloadItemCard extends StatelessWidget {
     // Card height: 18% of screen height — matches StoreItemCard for visual consistency
     final cardHeight = MediaQuery.of(context).size.height * 0.18;
 
-    return ModernCard(
-      animate: false,
-      onTap: onTap,
-      padding: EdgeInsets.zero,
+    return RepaintBoundary(
+      child: ModernCard(
+        animate: false,
+        onTap: onTap,
+        padding: EdgeInsets.zero,
       child: SizedBox(
         height: cardHeight,
         child: Row(
@@ -55,7 +56,7 @@ class DownloadItemCard extends StatelessWidget {
             Flexible(
               flex: 2,
               child: Hero(
-                tag: heroTag ?? 'download_item_$title',
+                tag: heroTag ?? 'download_${Object.hash(title, coverUrl)}',
                 child: ClipRRect(
                   borderRadius: BorderRadius.horizontal(
                     left: Radius.circular(AppRadius.lg),
@@ -120,6 +121,7 @@ class DownloadItemCard extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 

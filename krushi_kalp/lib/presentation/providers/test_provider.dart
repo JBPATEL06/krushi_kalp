@@ -118,6 +118,7 @@ class TestProvider with ChangeNotifier {
 
       filterAndSortTests();
     } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_provider');
       _errorMessage = 'Failed to load tests. Please check your connection.';
       CrashlyticsService.instance
           .recordError(e, stack, reason: 'TestProvider: fetchTests');
@@ -145,7 +146,8 @@ class TestProvider with ChangeNotifier {
           await Future.wait(signFutures);
           
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'test_provider');
         // Silent error for pre-signing as individual taps will retry and report
         
       }
@@ -185,6 +187,7 @@ class TestProvider with ChangeNotifier {
       CrashlyticsService.instance
           .log('TestProvider: Fetched ${_userTests.length} user tests');
     } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_provider');
       _errorMessage = 'Error loading your tests: $e';
       CrashlyticsService.instance
           .recordError(e, stack, reason: 'TestProvider: fetchUserTests');

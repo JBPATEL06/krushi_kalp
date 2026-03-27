@@ -1,6 +1,7 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
+import '../../utils/crashlytics_service.dart';
 
 class SecureFileService {
   // Singleton pattern
@@ -51,7 +52,8 @@ class SecureFileService {
       final cleanName = fileName.replaceAll(RegExp(r'[^\w\s\.-]'), '_');
       final file = File('${docsDir.path}/secure_resources/$cleanName');
       return await file.exists();
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'secure_file_service');
       return false;
     }
   }

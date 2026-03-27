@@ -9,6 +9,7 @@ import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import '../../../../../data/services/app_config_service.dart';
 import '../../../../utils/ui_helpers.dart';
 import '../../../../../utils/error_utils.dart';
+import '../../../../../utils/crashlytics_service.dart';
 
 class BannerManagementTab extends StatefulWidget {
   const BannerManagementTab({super.key});
@@ -45,7 +46,8 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
           const SnackBar(content: Text("Banner settings saved successfully")),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'banner_management_tab');
       if (mounted) ErrorUtils.showError(context, e);
     }
   }
@@ -138,7 +140,8 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
                   "${result.files.length} banner(s) uploaded successfully")),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'banner_management_tab');
       if (mounted) ErrorUtils.showError(context, e);
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -169,7 +172,8 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
           const SnackBar(content: Text("Banner image replaced successfully")),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'banner_management_tab');
       if (mounted) ErrorUtils.showError(context, e);
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -235,7 +239,8 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
             ScaffoldMessenger.of(context)
                 .showSnackBar(const SnackBar(content: Text("Banner updated")));
           }
-        } catch (e) {
+        } catch (e, stack) {
+          CrashlyticsService.instance.recordError(e, stack, reason: 'banner_management_tab');
           if (mounted) {
             ScaffoldMessenger.of(context)
                 .showSnackBar(SnackBar(content: Text("Error: $e")));
@@ -260,7 +265,8 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
             ScaffoldMessenger.of(context)
                 .showSnackBar(const SnackBar(content: Text("Banner deleted")));
           }
-        } catch (e) {
+        } catch (e, stack) {
+          CrashlyticsService.instance.recordError(e, stack, reason: 'banner_management_tab');
           if (mounted) {
             ScaffoldMessenger.of(context)
                 .showSnackBar(SnackBar(content: Text("Error: $e")));

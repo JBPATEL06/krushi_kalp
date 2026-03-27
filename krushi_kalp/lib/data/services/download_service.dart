@@ -141,7 +141,8 @@ class DownloadService {
       final raw = await file.readAsString();
       final decoded = json.decode(raw) as Map<String, dynamic>;
       return decoded.map((k, v) => MapEntry(k, v as String));
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'download_service');
       return {};
     }
   }
@@ -277,6 +278,7 @@ class DownloadService {
       onProgress(1.0);
       onComplete(localPath);
     } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'download_service');
       task.status = DownloadStatus.error;
       await _cleanupPartialFile(fileName, userId);
       CrashlyticsService.instance.recordError(e, stack,
@@ -352,7 +354,8 @@ class DownloadService {
         percentage: 100.0,
         status: DownloadStatus.completed,
       );
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'download_service');
       yield DownloadProgress(
         bytesReceived: 0,
         totalBytes: 0,
@@ -478,7 +481,8 @@ class DownloadService {
     try {
       final path = await getLocalPath(filename, userId: userId);
       return File(path).exists();
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'download_service');
       return false;
     }
   }
@@ -505,7 +509,8 @@ class DownloadService {
         }
       }
       return total;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'download_service');
       return 0;
     }
   }

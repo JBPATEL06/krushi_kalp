@@ -152,25 +152,6 @@ Krushi Kalp is an **agricultural education app** (Flutter) with:
 
 ---
 
-## 6. ⚠️ Critical Infrastructure Patches (Machine-Specific)
-
-### Isar Namespace Fix (Android)
-The `isar_flutter_libs` package (v3.1.0+1) is **incompatible with AGP 8.9.1** out of the box.
-
-**A manual patch was applied to the pub cache** on the development machine:
-
-**File:** `%APPDATA%\Pub\Cache\hosted\pub.dev\isar_flutter_libs-3.1.0+1\android\build.gradle`
-
-The following lines were added:
-```gradle
-android {
-    namespace 'dev.isar.isar_flutter_libs'  // ← ADDED
-    compileSdkVersion 34                      // ← CHANGED from 33
-}
-```
-
-> ⚠️ **Every new developer machine needs this patch applied manually.**
-> **Permanent fix:** Migrate to `isar 4.x` (planned, not done yet).
 
 ---
 
@@ -213,34 +194,3 @@ dart run build_runner build --delete-conflicting-outputs
 ```
 
 ---
-
-## 10. SQL Functions — Must Deploy to Supabase
-
-Both files in `context/` must be deployed using the Supabase SQL Editor (`CREATE OR REPLACE FUNCTION`):
-
-1. `calculate_secure_price.sql` — validates price for single item purchase
-2. `calculate_secure_cart_price.sql` — validates price for cart checkout
-
-**These are security-critical.** Without them, the payment buttons will show an error and abort.
-
----
-
-## 11. Branch Strategy
-
-| Branch | Purpose |
-|--------|---------|
-| `main` | Production-ready code |
-| `feature-backup` | Last stable snapshot before this handoff (2026-03-28) |
-
----
-
-## 12. First Day Checklist for New Engineer
-
-- [ ] Clone repo, install Flutter 3.27+ stable
-- [ ] Apply the Isar pub-cache patch (§6)
-- [ ] Create `.env` from team secrets
-- [ ] Run `flutter pub get` then `dart run build_runner build --delete-conflicting-outputs`
-- [ ] Deploy both SQL files from `context/` to Supabase SQL Editor
-- [ ] Verify RLS is enabled on `orders`, `order_items`, `results`, `users`
-- [ ] Run app on Android device and verify payment flow end-to-end
-- [ ] Read `GEMINI.md` for coding standards before writing any code

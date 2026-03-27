@@ -207,7 +207,8 @@ class AuthProvider with ChangeNotifier {
     if (_currentUser == null) return;
     try {
       _userRole = await AuthService.instance.getUserRole(_currentUser!.id);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'auth_provider');
       if (NetworkUtils.isNetworkError(e)) return;
       // Removed rethrow to prevent crashes during init if RLS/profiles are missing
     }

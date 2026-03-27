@@ -277,17 +277,6 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                                 fontSize: context.sp(20), // FIXED
                               ),
                             ),
-                            if (_resource.mrp != null &&
-                                _resource.mrp! > _resource.price) ...[
-                              const SizedBox(width: 8),
-                              Text(
-                                '₹${_resource.mrp!.toStringAsFixed(0)}',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  decoration: TextDecoration.lineThrough,
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                       ],

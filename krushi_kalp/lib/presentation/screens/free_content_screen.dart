@@ -14,6 +14,7 @@ import '../../data/services/test_service.dart';
 import '../../utils/error_utils.dart';
 import '../../core/theme/app_radius.dart';
 import '../widgets/common/responsive_wrapper.dart';
+import '../../utils/crashlytics_service.dart';
 
 class FreeContentScreen extends StatefulWidget {
   const FreeContentScreen({super.key});
@@ -106,7 +107,8 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
         // but we'll call it to ensure all state is synced
         await _fetchData();
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'free_content_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
@@ -139,7 +141,8 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
           _isLoading = false;
         });
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'free_content_screen');
       if (mounted) {
         setState(() {
           _isLoading = false;
