@@ -148,6 +148,7 @@ Krushi Kalp is an **agricultural education app** (Flutter) with:
 | **Offer/Discount logic** | ✅ Server enforced | SQL RPCs filter `is_real = true` |
 | **GoRouter Navigation** | ✅ Working | `lib/core/router/` |
 | **Admin panel** | ✅ Working | `lib/presentation/screens/admin/` |
+| **User Performance RPC** | ✅ Working | `PerformanceService.getUserPerformance` calls `get_user_performance` RPC |
 
 ---
 
@@ -180,11 +181,12 @@ Listed in priority order:
 | # | Bug | File | Fix |
 |---|-----|------|-----|
 | 1 | `Resource.fromJson` crashes if cache has null `id` | `domain/models/resource.dart:45` | Add `(json['id'] as num?)?.toInt() ?? 0` |
-| 2 | Duplicate Hero tags crash on navigation | `widgets/common/universal_item_card.dart:104` | Use item ID in hero tag instead of title+price |
-| 3 | `get_user_performance` RPC missing on Supabase | `data/services/performance_service.dart` | Create the SQL function on Supabase |
-| 4 | `Resource.mrp` / `Resource.discount` ghost fields | `domain/models/resource.dart:17-18` | Remove — not in DB schema |
-| 5 | No `RepaintBoundary` on list cards | All item card widgets | Wrap with `RepaintBoundary` |
-| 6 | Impeller opt-out deprecated | `AndroidManifest.xml` | Remove `EnableImpeller=false` entry |
+| 3 | Duplicate Hero tags crash on navigation | `widgets/common/universal_item_card.dart:104` | Use item ID in hero tag instead of title+price |
+| 4 | `Resource.mrp` / `Resource.discount` ghost fields | `resource.dart:17-18` | Remove — not in DB schema |
+| 5 | **175+ Silent Catch Blocks** | Project-wide | ❌ Critical Debt: 175+ blocks like `} catch (e) {}` found. All errors are silently swallowed. Needs `CrashlyticsService.recordError` everywhere. |
+| 6 | No `RepaintBoundary` on list cards | All item card widgets | Wrap with `RepaintBoundary` |
+| 7 | Impeller opt-out deprecated | `AndroidManifest.xml` | Remove `EnableImpeller=false` entry |
+| 8 | `hardwareAccelerated="false"` | `AndroidManifest.xml` | Remove — hurting UI performance |
 
 ---
 
