@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +7,8 @@ import '../../data/services/test_service.dart';
 import '../../data/services/auth_service.dart';
 import '../../utils/crashlytics_service.dart';
 import '../../utils/supabase_url_helper.dart';
+import '../../data/services/local_caching_service.dart'; // NEW
+import '../../data/local/entities/mock_test_entity.dart'; // NEW
 
 class TestProvider with ChangeNotifier {
   static const String _purchasedTestsKey = 'cached_user_purchased_tests';
@@ -86,6 +88,14 @@ class TestProvider with ChangeNotifier {
         .log('TestProvider: Fetching tests (force: $forceRefresh)');
 
     try {
+      // 1. Instantly load from Isar NoSQL (Local Cache)
+      final cachedEntities = await LocalCachingService.getCachedMockTests();
+      if (cachedEntities.isNotEmpty && _cachedTests.isEmpty) {
+        _cachedTests = cachedEntities.map((e) => e.toMockTest()).toList();
+        filterAndSortTests(); // Update UI instantly with local data
+      }
+
+      // 2. Fetch fresh data from Supabase silently in background
       final results = await Future.wait([
         TestService.instance.fetchMockTests(),
         fetchPurchasedStatus(),
@@ -93,6 +103,13 @@ class TestProvider with ChangeNotifier {
 
       final fetchedTests = results[0] as List<MockTest>;
       _cachedTests = fetchedTests;
+
+      // 3. Save fresh data to Isar for next un-networked launch
+      if (fetchedTests.isNotEmpty) {
+        final entitiesToSave =
+            fetchedTests.map((t) => MockTestEntity.fromMockTest(t)).toList();
+        LocalCachingService.saveMockTests(entitiesToSave);
+      }
 
       // Step: Perform bulk pre-signing of URLs after fetching the list.
       // This populates the cache in SupabaseUrlHelper so the UI

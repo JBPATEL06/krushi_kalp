@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../../core/env/env.dart';
 import 'package:http/http.dart' as http;
 
 /// Custom exceptions for clear UI error handling
@@ -31,11 +31,11 @@ class OtpWrongException implements Exception {
 /// Completely isolated from push_notification and send-fcm edge functions.
 class OtpService {
   static String get _edgeFnUrl {
-    final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
+    final supabaseUrl = Env.supabaseUrl;
     return '$supabaseUrl/functions/v1/otp';
   }
 
-  static String get _anonKey => dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+  static String get _anonKey => Env.supabaseAnonKey;
 
   static Future<void> _call(Map<String, dynamic> body) async {
     final uri = Uri.parse(_edgeFnUrl);

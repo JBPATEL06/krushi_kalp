@@ -1,8 +1,9 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/resource.dart';
 import '../../utils/supabase_url_helper.dart';
 import 'admin_notification_service.dart';
+import '../../utils/crashlytics_service.dart';
 
 /// Service class for interacting with the 'resources' table in Supabase.
 class ResourceService {
@@ -154,7 +155,9 @@ class ResourceService {
           body:
               'New ${resource.type.name}: ${resource.title} is now available.',
         );
-      } catch (notiErr) {}
+      } catch (notiErr, stack) {
+        CrashlyticsService.instance.recordError(notiErr, stack, reason: 'Broadcast failed after creating resource: ${resource.title}');
+      }
     } catch (e) {
       throw Exception('Failed to create resource: $e');
     }
@@ -212,7 +215,9 @@ class ResourceService {
       }
 
       await _client.storage.from(bucket).remove([path]);
-    } catch (e) {}
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to delete file from storage: $fileUrlOrPath');
+    }
   }
 
   /// Uploads a binary file to Supabase Storage.

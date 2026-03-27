@@ -1,17 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Light mode launch background -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- White background -->
     <item>
-        <color android:color="#FFFFFF"/>
+        <bitmap android:gravity="fill" android:src="@drawable/background"/>
     </item>
-    <!-- Logo — sized to ~180dp centered, not filling the screen -->
-    <item
-        android:width="180dp"
-        android:height="180dp"
-        android:gravity="center">
-        <bitmap
-            android:gravity="fill"
-            android:src="@drawable/splash"/>
+    <item>
+        <bitmap android:gravity="center" android:src="@drawable/splash"/>
     </item>
 </layer-list>

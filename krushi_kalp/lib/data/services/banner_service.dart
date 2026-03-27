@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import '../../domain/models/home_banner.dart';
+import '../../utils/crashlytics_service.dart';
 
 class BannerService {
   // Singleton
@@ -28,8 +29,8 @@ class BannerService {
       return (response as List)
           .map((json) => HomeBanner.fromJson(json))
           .toList();
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Fetch active banners failed');
       return [];
     }
   }
@@ -140,8 +141,8 @@ class BannerService {
 
     try {
       await _supabase.from(_table).update(updates).eq('id', bannerId);
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Update banner meta failed');
       rethrow;
     }
   }
@@ -158,8 +159,8 @@ class BannerService {
       _deleteStorageFile(imageUrl);
 
       
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Delete banner failed');
       rethrow;
     }
   }
@@ -176,8 +177,8 @@ class BannerService {
         final storagePath = segments.sublist(bucketIndex + 1).join('/');
         _supabase.storage.from(_bucket).remove([storagePath]);
       }
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Storage file deletion failed');
     }
   }
 }

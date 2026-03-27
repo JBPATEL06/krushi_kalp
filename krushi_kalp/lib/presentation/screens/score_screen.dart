@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
@@ -97,6 +97,7 @@ class _ScoreScreenState extends State<ScoreScreen> {
       }
 
       final bucketPath = 'exam_result/$testId.pdf';
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Downloading Result...')),
       );

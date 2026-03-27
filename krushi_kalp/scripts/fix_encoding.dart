@@ -38,12 +38,9 @@ void main() async {
       if (content != original) {
         await entity.writeAsString(content);
         fixedFiles++;
-        print('Fixed: ${entity.path}');
       }
     }
   }
-
-  print('\nDone!');
   print('Fixed files: $fixedFiles');
   print('Total replacements: $totalReplacements');
 }

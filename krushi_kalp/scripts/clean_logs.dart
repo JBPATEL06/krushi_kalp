@@ -3,7 +3,6 @@ import 'dart:io';
 void main() async {
   final libDir = Directory('lib');
   if (!await libDir.exists()) {
-    print('Error: lib directory not found.');
     return;
   }
 
@@ -31,15 +30,8 @@ void main() async {
         if (newContent != content) {
           await entity.writeAsString(newContent);
           modifiedFiles++;
-          print('Cleaned: ${entity.path}');
         }
       }
     }
   }
-
-  print('\nDone!');
-  print('Modified files: $modifiedFiles');
-  print('Removed print/debugPrint calls: $removedCount');
-  print(
-      'Please run "flutter format lib" and "flutter analyze" to ensure everything is clean.');
 }

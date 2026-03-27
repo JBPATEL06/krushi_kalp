@@ -63,7 +63,8 @@ class TestService {
       final test = MockTest.fromJson(response);
       final List<MockTest> withUrl = await _populateSignedUrls([test]);
       return withUrl.first;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'fetchMockTestById failed for ID: $testId');
       return null;
     }
   }
@@ -141,7 +142,9 @@ class TestService {
           title: '🆕 New Mock Test Available!',
           body: 'Check out the new test: ${test.title}',
         );
-      } catch (notiErr) {}
+      } catch (notiErr, stack) {
+        CrashlyticsService.instance.recordError(notiErr, stack, reason: 'Broadcast failed after creating mock test: ${test.title}');
+      }
     } catch (e) {
       throw Exception('Failed to create test: $e');
     }
@@ -163,13 +166,17 @@ class TestService {
         if (filePath != null && filePath.isNotEmpty) {
           try {
             await _supabase.storage.from('mock_test').remove([filePath]);
-          } catch (_) {}
+          } catch (e, stack) {
+            CrashlyticsService.instance.recordError(e, stack, reason: 'Storage removal failed for test file: $filePath');
+          }
         }
         if (coverImagePath != null && coverImagePath.isNotEmpty) {
           String cleanPath = coverImagePath.replaceAll('mock_test/', '');
           try {
             await _supabase.storage.from('mock_test').remove([cleanPath]);
-          } catch (_) {}
+          } catch (e, stack) {
+            CrashlyticsService.instance.recordError(e, stack, reason: 'Storage removal failed for cover image: $cleanPath');
+          }
         }
       }
 
@@ -299,7 +306,8 @@ class TestService {
           .where((i) => i['test_id'] != null)
           .map((i) => i['test_id'] as int)
           .toSet();
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'fetchPurchasedTestIds failed for user: $userId');
       return {};
     }
   }
@@ -513,7 +521,9 @@ class TestService {
               'amount': amount.toString()
             },
           );
-        } catch (_) {}
+        } catch (e, stack) {
+          CrashlyticsService.instance.recordError(e, stack, reason: 'Admin sale notification failed for order: $orderId');
+        }
       }
 
       try {
@@ -558,7 +568,9 @@ class TestService {
             }
           }
         }
-      } catch (_) {}
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'Post-checkout cart cleanup failed for order: $orderId');
+      }
 
       if (offerId != null) {
         try {
@@ -569,7 +581,9 @@ class TestService {
             'discount_amount': discountAmount,
             'redeemed_at': DateTime.now().toUtc().toIso8601String(),
           });
-        } catch (_) {}
+        } catch (e, stack) {
+          CrashlyticsService.instance.recordError(e, stack, reason: 'Offer redemption record failed for order: $orderId');
+        }
       }
     } catch (e, stack) {
       CrashlyticsService.instance

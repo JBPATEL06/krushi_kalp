@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:krushi_kalp/utils/crashlytics_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -84,8 +85,10 @@ class SupabaseUrlHelper {
           return url;
         }
       }
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack,
+          reason:
+              'SupabaseUrlHelper: Persistent cache read failed for $bucketName/$cleanPath');
     }
 
     // 3. Fallback to Supabase API
@@ -111,7 +114,6 @@ class SupabaseUrlHelper {
       }
 
       final cacheKey = '$bucketName|$cleanPath';
-      
 
       final signedUrl = await supabase.storage
           .from(bucketName)
@@ -135,13 +137,17 @@ class SupabaseUrlHelper {
               'url': signedUrl,
               'expiry': expiry.toIso8601String(),
             }));
-      } catch (e) {
-        
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack,
+            reason:
+                'SupabaseUrlHelper: Persistent cache write failed for $bucketName/$cleanPath');
       }
 
       return signedUrl;
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack,
+          reason:
+              'SupabaseUrlHelper: Signed URL creation failed for $bucketName/$storagePath');
       // If signing fails, return the original path as fallback
       return storagePath;
     }
@@ -158,8 +164,9 @@ class SupabaseUrlHelper {
       for (final key in keys) {
         await prefs.remove(key);
       }
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack,
+          reason: 'SupabaseUrlHelper: Clear cache failed');
     }
   }
 
@@ -180,8 +187,9 @@ class SupabaseUrlHelper {
         }
         return path;
       }
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack,
+          reason: 'SupabaseUrlHelper: Path extraction from URL failed: $url');
     }
 
     return url;

@@ -57,7 +57,7 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
       }
 
       final bucketPath = 'exam_result/$testId.pdf';
-
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Downloading Result...')),
       );

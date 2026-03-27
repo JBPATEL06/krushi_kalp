@@ -454,7 +454,6 @@ class _FooterText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     // REMOVED: Footer Text Section (jfjf field)
     return const SizedBox.shrink();
   }

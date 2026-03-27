@@ -1,5 +1,6 @@
-﻿import 'package:confetti/confetti.dart';
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import '../../utils/crashlytics_service.dart';
 import '../../data/services/auth_service.dart';
 import '../../domain/models/question.dart';
 import '../../domain/services/pdf_service.dart';
@@ -154,7 +155,10 @@ class _TestResultScreenState extends State<TestResultScreen>
             finalQuestions =
                 await TranslationService.translateBatch(finalQuestions);
           }
-        } catch (e) {}
+        } catch (e, stack) {
+          await CrashlyticsService.instance.recordError(e, stack,
+              reason: 'Failed to translate questions for PDF');
+        }
       }
 
       // 2. Generate local encrypted PDF
@@ -201,6 +205,7 @@ class _TestResultScreenState extends State<TestResultScreen>
       if (!mounted) return;
 
       // 4. Open in App
+      if (!mounted) return;
       final password = _pdfService.getSecurePassword(userId, widget.testTitle);
       Navigator.push(
         context,
@@ -805,13 +810,13 @@ class _TestResultScreenState extends State<TestResultScreen>
               reviewText: review,
             );
 
-            if (!mounted) return;
+            if (!context.mounted) return;
             setState(() => _hasRated = true);
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Thank you for your review!')),
             );
           } catch (e) {
-            if (!mounted) return;
+            if (!context.mounted) return;
             ErrorUtils.showError(context, e);
           }
         },

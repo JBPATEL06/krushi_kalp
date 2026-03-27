@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:provider/provider.dart';
 import 'package:krushi_kalp/presentation/providers/admin_provider.dart';
@@ -338,12 +338,11 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
 
                   if (confirm == true) {
                     await authProvider.signOut();
-                    if (mounted) {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
-                        (route) => false,
-                      );
-                    }
+                    if (!context.mounted) return;
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (route) => false,
+                    );
                   }
                 },
               ),
@@ -411,13 +410,13 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
         IconButton(
           onPressed: () async {
             // Sign out logic repeated or extracted
-            await context.read<AuthProvider>().signOut();
-            if (mounted) {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (route) => false,
-              );
-            }
+            final auth = context.read<AuthProvider>();
+            await auth.signOut();
+            if (!context.mounted) return;
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+              (route) => false,
+            );
           },
           icon: Icon(Icons.logout_rounded, color: colorScheme.error),
         ),

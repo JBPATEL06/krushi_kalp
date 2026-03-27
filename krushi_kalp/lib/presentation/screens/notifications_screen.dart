@@ -1,8 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/notification_service.dart';
 import '../../utils/error_utils.dart';
 import '../widgets/common/network_error_state.dart';
+import '../../utils/crashlytics_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -48,7 +49,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               NotificationService().fetchNotificationsStream(intDbId);
         });
       }
-    } catch (e) {}
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: '_fetchUserIdAndStream failed');
+    }
   }
 
   Future<void> _deleteNotification(int id) async {

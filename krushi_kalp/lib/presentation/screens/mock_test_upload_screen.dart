@@ -1,8 +1,10 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:krushi_kalp/utils/crashlytics_service.dart'
+    show CrashlyticsService;
 import '../../utils/excel_to_json_converter.dart';
 import '../utils/ui_helpers.dart';
 import '../../data/services/test_service.dart';
@@ -228,8 +230,9 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
           title: 'New Mock Test Available!',
           body: 'Check out the new ${_titleController.text.trim()} test now!',
         );
-      } catch (e) {
-        
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack,
+            reason: 'AdminNotification broadcast failed');
       }
 
       if (mounted) {

@@ -1,4 +1,4 @@
-﻿import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +10,7 @@ import '../../../utils/ui_helpers.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import '../../../../utils/supabase_url_helper.dart';
 import '../../../../utils/error_utils.dart';
+import '../../../../utils/crashlytics_service.dart';
 
 class AdminResourceForm extends StatefulWidget {
   final ResourceType type;
@@ -81,7 +82,9 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
           _fileName = result.files.first.name;
         });
       }
-    } catch (e) {}
+    } catch (e, stack) {
+      await CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to pick file');
+    }
   }
 
   Future<void> _pickCover() async {
@@ -97,7 +100,9 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
           _coverName = result.files.first.name;
         });
       }
-    } catch (e) {}
+    } catch (e, stack) {
+      await CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to pick cover');
+    }
   }
 
   /// Handles the "Fire and Forget" background upload logic.
@@ -258,8 +263,8 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
         } else {
           await _resourceService.updateResource(existingId, newItem.toJson());
         }
-      } catch (e) {
-        // Final fallback notification if something critical breaks after upload
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'AdminResourceForm background save failed');
       }
     });
   }

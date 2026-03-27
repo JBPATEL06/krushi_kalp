@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/offer.dart';
 import '../../utils/network_utils.dart'; // Import NetworkUtils
+import '../../utils/crashlytics_service.dart';
 
 class OfferService {
   // Singleton
@@ -263,6 +264,9 @@ class OfferService {
         'offer_id': null,
         'updated_at': DateTime.now().toIso8601String()
       }).eq('order_id', orderId);
-    } catch (e) {}
+    } catch (e, stack) {
+      await CrashlyticsService.instance.recordError(e, stack,
+          reason: 'Failed to remove coupon from order');
+    }
   }
 }

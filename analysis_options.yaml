@@ -1,0 +1,25 @@
+# Enforce industry-standard code quality
+include: package:very_good_analysis/analysis_options.yaml
+
+linter:
+  rules:
+    # Industry overrides for high-scale applications
+    public_member_api_docs: false
+    always_use_package_imports: true
+    avoid_redundant_argument_values: true
+    avoid_positional_boolean_parameters: false
+    lines_longer_than_80_chars: false
+    use_build_context_synchronously: true
+    prefer_const_constructors: true
+
+analyzer:
+  exclude:
+    - "**.g.dart"
+    - "**.freezed.dart"
+    - "lib/generated/**"
+  errors:
+    # Treat architectural flaws as hard errors
+    missing_required_param: error
+    missing_return: error
+    unused_import: warning
+    deprecated_member_use: warning

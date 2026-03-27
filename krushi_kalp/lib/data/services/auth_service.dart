@@ -1,6 +1,6 @@
-﻿import 'package:flutter/foundation.dart'; // For kIsWeb
+import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../../core/env/env.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../utils/crashlytics_service.dart';
 
@@ -20,7 +20,8 @@ class AuthService {
   User? get currentUser {
     try {
       return _supabase.auth.currentUser;
-    } catch (_) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Get current user failed');
       return null;
     }
   }
@@ -34,7 +35,7 @@ class AuthService {
     // Note: You must configure SHA-1 in Google Cloud for Android to work.
     // 'serverClientId' is REQUIRED for Android to get the valid ID token (use your WEB Client ID here).
 
-    final webClientId = dotenv.env['GOOGLE_WEB_CLIENT_ID'] ?? '';
+    final webClientId = Env.googleWebClientId;
 
     final GoogleSignIn googleSignIn = GoogleSignIn(
       // For WEB, we must explicitly pass 'clientId' and NOT 'serverClientId'
@@ -164,8 +165,8 @@ class AuthService {
       } else {
         
       }
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Profile sync failed during sign-in');
       // Don't block login if profile fails, but might cause issues later
     }
   }
@@ -173,17 +174,18 @@ class AuthService {
   // Sign out
   Future<void> signOut() async {
     final user = currentUser;
-    if (user != null) {
-      await clearSession(user.id);
-      CrashlyticsService.instance.log('User signing out: ${user.email}');
-      await CrashlyticsService.instance.clearUser();
-    }
     try {
-      await GoogleSignIn().signOut();
-    } catch (e) {
-      
+      if (user != null) {
+        await clearSession(user.id);
+        CrashlyticsService.instance.log('User signing out: ${user.email}');
+        await CrashlyticsService.instance.clearUser();
+      }
+    } catch (e, stack) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'Logout session cleanup failed');
+    } finally {
+      await _supabase.auth.signOut();
     }
-    await _supabase.auth.signOut();
   }
 
   // NEW: Update Session ID on Login
@@ -195,8 +197,8 @@ class AuthService {
       await _supabase
           .from('users')
           .update({'session_id': finalSessionId}).eq('id', userId);
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Session ID update failed');
     }
   }
 
@@ -208,8 +210,8 @@ class AuthService {
           .eq('id', userId)
           .maybeSingle();
       return response?['session_id'] as String?;
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Get session ID failed');
       return null;
     }
   }
@@ -228,8 +230,8 @@ class AuthService {
       await _supabase
           .from('users')
           .update({'session_id': null}).eq('id', userId);
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Session clear failed');
     }
   }
 
@@ -254,8 +256,8 @@ class AuthService {
       final response =
           await _supabase.from('users').select().eq('id', userId).maybeSingle();
       return response;
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Get user profile failed');
       return null;
     }
   }
@@ -271,8 +273,8 @@ class AuthService {
   Future<void> updateProfile(String userId, Map<String, dynamic> data) async {
     try {
       await _supabase.from('users').update(data).eq('id', userId);
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Update profile failed');
       throw Exception('Failed to update profile: $e');
     }
   }
@@ -295,8 +297,8 @@ class AuthService {
       if (response != null) {
         return response['role'] as String?;
       }
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Get user role failed');
     }
     return null;
   }
@@ -309,8 +311,8 @@ class AuthService {
           .eq('id', authId)
           .maybeSingle();
       return response?['user_id'] as int?;
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Get user DB ID failed');
       return null;
     }
   }

@@ -14,6 +14,8 @@ import '../providers/navigation_provider.dart';
 import '../widgets/common/app_button.dart';
 import '../providers/test_provider.dart';
 import '../providers/resource_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 
 class DirectCheckoutSheet extends StatefulWidget {
   final MockTest? test; // Make nullable
@@ -209,15 +211,45 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
       }
 
       if (!mounted) {
-        return; // PRO FIX: Avoid using context/opening Razorpay if disposed
+        return; 
       }
 
-      // 2. Open Razorpay
+      // Server-side price verification via Supabase RPC
+      double secureAmountToPay = _finalPrice;
+      try {
+        final priceResponse = await Supabase.instance.client.rpc(
+          'calculate_secure_price',
+          params: {
+            'p_item_type': widget.resource != null ? 'resource' : 'mock_test',
+            'p_item_id': widget.resource != null ? _resourceId : _testId,
+            'p_user_id': user.id,
+            'p_coupon_code': _appliedOffer?.code ?? '',
+          },
+        );
+        final Map<String, dynamic> secureData = Map<String, dynamic>.from(priceResponse);
+        secureAmountToPay = (secureData['final_price'] as num).toDouble();
+        _finalPrice = secureAmountToPay;
+      } catch (sqlError) {
+        if (mounted) {
+          setState(() => _isProcessing = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Price Sync Error: $sqlError')),
+          );
+        }
+        return;
+      }
+
+      if (secureAmountToPay <= 0) {
+        _pendingOrderId = orderId;
+        await _completeCheckout('FREE_CLAIM_${DateTime.now().millisecondsSinceEpoch}');
+        return;
+      }
+
       PaymentService.instance.openCheckout(
-        amount: _finalPrice,
+        amount: secureAmountToPay,
         orderId: orderId,
         email: user.email,
-        contact: userPhone, // Prefill if available
+        contact: userPhone,
       );
 
       _pendingOrderId = orderId;

@@ -1,5 +1,6 @@
 import 'package:razorpay_flutter/razorpay_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../../core/env/env.dart';
+import '../../utils/crashlytics_service.dart';
 
 class PaymentService {
   // --- SINGLETON ---
@@ -27,7 +28,7 @@ class PaymentService {
   late Razorpay _razorpay;
 
   // Key read from .env — never hardcoded in source code
-  static String get _razorpayKey => dotenv.env['RAZORPAY_KEY_ID'] ?? '';
+  static String get _razorpayKey => Env.razorpayKeyId;
 
   final Function(PaymentSuccessResponse) onSuccess;
   final Function(PaymentFailureResponse) onFailure;
@@ -78,8 +79,8 @@ class PaymentService {
 
     try {
       _razorpay.open(options);
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Razorpay checkout open failed');
     }
   }
 

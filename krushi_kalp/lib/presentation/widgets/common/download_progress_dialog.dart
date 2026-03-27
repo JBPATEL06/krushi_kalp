@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../data/services/download_service.dart';
 import '../../../core/theme/app_spacing.dart';
 
@@ -62,6 +62,7 @@ class _DownloadProgressDialogState extends State<DownloadProgressDialog> {
           if (mounted) {
             final path = await DownloadService()
                 .getLocalPath(widget.filename, userId: widget.userId);
+            if (!mounted) return;
             Navigator.of(context).pop();
             widget.onComplete(path);
           }

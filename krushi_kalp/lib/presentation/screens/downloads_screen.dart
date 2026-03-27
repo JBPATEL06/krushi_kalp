@@ -241,16 +241,15 @@ class _DownloadsScreenState extends State<DownloadsScreen>
 
     // 1. Ownership check — manifest must confirm this user downloaded the file
     final owned = await ds.verifyOwnership(filename, userId: uid);
+    if (!mounted) return;
     if (!owned) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-                Text('Access denied: this file belongs to another account.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('Access denied: this file belongs to another account.'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
@@ -292,16 +291,15 @@ class _DownloadsScreenState extends State<DownloadsScreen>
 
     // 1. Ownership check
     final owned = await ds.verifyOwnership(filename, userId: uid);
+    if (!mounted) return;
     if (!owned) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-                Text('Access denied: this file belongs to another account.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('Access denied: this file belongs to another account.'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 

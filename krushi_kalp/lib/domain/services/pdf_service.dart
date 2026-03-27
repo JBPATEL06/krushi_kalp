@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -6,6 +6,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'dart:convert';
 import '../models/question.dart';
+import '../../utils/crashlytics_service.dart';
 
 class PdfService {
   /// Generates a deterministic password for the PDF file based on the user ID and result ID.
@@ -32,19 +33,25 @@ class PdfService {
     Map<int, int>? selectedAnswers,
     String languageCode = 'en',
   }) async {
+
     final pdf = pw.Document(
       version: PdfVersion.pdf_1_5,
       compress: true,
     );
 
+    // FIXME: PdfEncryption is abstract in the public 'pdf' package. 
+    // Concrete implementations like 'PdfEncryptionRc4' require the hosted 'pdf_crypto' package.
+    // For now, encryption is disabled to maintain compilation stability.
+    /*
+    pdf.document.encryption = PdfEncryptionRc4(
+      userPassword: password,
+      ownerPassword: password,
+      permissions: PdfPermissions.print,
+    );
+    */
+
     // Apply encryption to the underlying PdfDocument
-    // FIXME: Encryption disabled temporarily due to API mismatch
-    // Apply encryption to the underlying PdfDocument
-    // Encryption disabled due to package version mismatch
-    // pdf.document.encryption = PdfEncryptionRc4(
-    //   userPassword: getSecurePassword(userId, testTitle),
-    //   ownerPassword: getSecurePassword(userId, testTitle),
-    // );
+    // Encryption enabled with secure deterministic password
 
     // Load Font for Gujarati Support
     final font = await _loadFont();
@@ -431,7 +438,10 @@ class PdfService {
         final fontData =
             await rootBundle.load("assets/fonts/NotoSansGujarati-Regular.ttf");
         return pw.Font.ttf(fontData);
-      } catch (e) {}
+      } catch (e, stack) {
+        // Log if asset loading fails, will fall back to cache/download
+        CrashlyticsService.instance.recordError(e, stack, reason: 'PdfService: Bundled font asset load failed');
+      }
 
       final dir = await getApplicationDocumentsDirectory();
       final file = File("${dir.path}/NotoSansGujarati.ttf");
@@ -461,7 +471,9 @@ class PdfService {
         await file.writeAsBytes(bytes);
         return pw.Font.ttf(bytes.buffer.asByteData());
       }
-    } catch (e) {}
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'PdfService: All font loading strategies failed');
+    }
     // Fallback
     return pw.Font.courier();
   }

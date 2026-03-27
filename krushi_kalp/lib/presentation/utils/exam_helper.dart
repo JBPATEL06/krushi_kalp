@@ -97,9 +97,9 @@ class ExamHelper {
     await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
+      builder: (ctx) {
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (ctx, setState) {
             return AlertDialog(
               title: const Text("Select Exam Language"),
               content: Column(
@@ -117,20 +117,20 @@ class ExamHelper {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  ListTile(
-                    title: const Text("English"),
-                    leading: Radio<String>(
-                      value: 'en',
-                      groupValue: tempLanguage,
-                      onChanged: (val) => setState(() => tempLanguage = val!),
-                    ),
-                  ),
-                  ListTile(
-                    title: const Text("Gujarati"),
-                    leading: Radio<String>(
-                      value: 'gu',
-                      groupValue: tempLanguage,
-                      onChanged: (val) => setState(() => tempLanguage = val!),
+                  RadioGroup<String>(
+                    groupValue: tempLanguage,
+                    onChanged: (val) => setState(() => tempLanguage = val!),
+                    child: Column(
+                      children: [
+                        RadioListTile<String>(
+                          title: const Text("English"),
+                          value: 'en',
+                        ),
+                        RadioListTile<String>(
+                          title: const Text("Gujarati"),
+                          value: 'gu',
+                        ),
+                      ],
                     ),
                   ),
                   const Divider(),

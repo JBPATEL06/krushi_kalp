@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../data/repositories/mock_repository.dart';
 import '../../domain/models/question.dart';
 import '../../core/theme/app_spacing.dart'; // FIXED: Added import for spacing tokens
@@ -132,9 +132,10 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
       canPop: false,
       onPopInvokedWithResult: (bool didPop, dynamic result) async {
         if (didPop) return;
+        final navigator = Navigator.of(context);
         final shouldPop = await _showExitConfirmation();
-        if (shouldPop && mounted) {
-          Navigator.of(context).pop();
+        if (shouldPop && navigator.mounted) {
+          navigator.pop();
         }
       },
       child: Scaffold(
@@ -151,7 +152,8 @@ class _TestAttemptScreenState extends State<TestAttemptScreen> {
             icon: const Icon(Icons.close),
             onPressed: () async {
               final shouldPop = await _showExitConfirmation();
-              if (shouldPop && mounted) {
+              if (!context.mounted) return;
+              if (shouldPop) {
                 Navigator.of(context).pop();
               }
             },

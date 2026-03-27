@@ -178,6 +178,7 @@ class _ExamScreenState extends State<ExamScreen> {
 
     // NAVIGATION LOCK: Cannot jump > 10 questions ahead of current
     if (index > _currentQuestionIndex + 10) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('You cannot jump more than 10 questions ahead.'),
@@ -290,6 +291,7 @@ class _ExamScreenState extends State<ExamScreen> {
       }
 
       if (autoSubmit) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Time is up! Test submitted automatically.'),

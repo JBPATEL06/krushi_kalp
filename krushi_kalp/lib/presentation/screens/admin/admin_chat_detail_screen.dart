@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart'
     show Chat, DefaultChatTheme;
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
@@ -117,9 +117,8 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
       try {
         await _chatService.deleteMessage(message.id);
       } catch (e) {
-        if (mounted) {
-          ErrorUtils.showError(context, e);
-        }
+        if (!context.mounted) return;
+        ErrorUtils.showError(context, e);
       }
     }
   }
@@ -175,7 +174,8 @@ class _AdminChatDetailScreenState extends State<AdminChatDetailScreen> {
             ),
             theme: DefaultChatTheme(
               primaryColor: colorScheme.primary,
-              secondaryColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              secondaryColor:
+                  colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               inputBackgroundColor: colorScheme.surface,
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               receivedMessageBodyTextStyle: theme.textTheme.bodyMedium!,

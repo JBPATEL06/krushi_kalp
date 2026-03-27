@@ -158,8 +158,9 @@ class _AdminOfferListScreenState extends State<AdminOfferListScreen> {
     if (_showActiveOnly) filtered = filtered.where((o) => o.isActive).toList();
     if (_filterType == 'COUPON') {
       filtered = filtered.where((o) => !o.isSale).toList();
-    } else if (_filterType == 'SALE')
+    } else if (_filterType == 'SALE') {
       filtered = filtered.where((o) => o.isSale).toList();
+    }
     if (_sortByNewest) filtered.sort((a, b) => b.id.compareTo(a.id));
     return filtered;
   }

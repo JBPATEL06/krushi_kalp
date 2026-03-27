@@ -97,7 +97,7 @@ class TransferNotificationService {
           autoCancel: false,
           playSound: false,
           enableVibration: false,
-          icon: '@mipmap/ic_launcher',
+          icon: '@drawable/ic_notification',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: false, // Silent during progress on iOS
@@ -130,7 +130,7 @@ class TransferNotificationService {
           priority: Priority.defaultPriority,
           ongoing: false,
           autoCancel: true,
-          icon: '@mipmap/ic_launcher',
+          icon: '@drawable/ic_notification',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
@@ -163,7 +163,7 @@ class TransferNotificationService {
           priority: Priority.high,
           ongoing: false,
           autoCancel: true,
-          icon: '@mipmap/ic_launcher',
+          icon: '@drawable/ic_notification',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
@@ -205,7 +205,7 @@ class TransferNotificationService {
           autoCancel: false,
           playSound: false,
           enableVibration: false,
-          icon: '@mipmap/ic_launcher',
+          icon: '@drawable/ic_notification',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: false,
@@ -238,7 +238,7 @@ class TransferNotificationService {
           priority: Priority.defaultPriority,
           ongoing: false,
           autoCancel: true,
-          icon: '@mipmap/ic_launcher',
+          icon: '@drawable/ic_notification',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
@@ -285,7 +285,7 @@ class TransferNotificationService {
           priority: Priority.high,
           ongoing: false,
           autoCancel: true,
-          icon: '@mipmap/ic_launcher',
+          icon: '@drawable/ic_notification',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,

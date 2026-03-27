@@ -34,7 +34,7 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  flutter_dotenv: ^5.2.1
+  envied: ^0.5.4
   supabase_flutter: ^2.12.0
   url_launcher: ^6.3.2
   google_sign_in: ^6.2.1
@@ -73,19 +73,24 @@ dependencies:
   flutter_chat_types: ^3.6.2
   package_info_plus: ^9.0.0
   auto_start_flutter: ^0.7.0
-
   uuid: any
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_launcher_icons: ^0.13.1
   flutter_native_splash: ^2.4.4
   flutter_lints: ^5.0.0
+  build_runner: ^2.4.13
+  isar_generator: ^3.1.0+1
+  envied_generator: ^0.5.4
+  very_good_analysis: ^10.2.0
 
 flutter_icons:
   android: true
   ios: false
-  image_path: "assets/images/playstore.png"
+  image_path: "assets/images/applogo.png"
 
 
 # For information on the generic Dart part of this file, see the
@@ -100,7 +105,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    - .env
     - assets/images/
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -126,9 +130,9 @@ flutter:
   
 flutter_native_splash:
   color: "#ffffff"
-  image: "assets/images/playstore.png"
+  image: "assets/images/splash_transparent_padded.png"
   android: true
   ios: false
   android_12:
-    image: "assets/images/playstore.png"
+    image: "assets/images/splash_transparent_padded.png"
     color: "#ffffff"

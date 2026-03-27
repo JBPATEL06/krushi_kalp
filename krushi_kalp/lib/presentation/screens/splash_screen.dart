@@ -111,6 +111,7 @@ class _SplashScreenState extends State<SplashScreen> {
       final minVer = AppConfigService.minVersion;
       if (minVer != null && minVer.isNotEmpty) {
         final info = await PackageInfo.fromPlatform();
+        if (!mounted) return;
         final current = info.version;
         if (_isVersionBelow(current, minVer)) {
           if (mounted) {
@@ -168,10 +169,12 @@ class _SplashScreenState extends State<SplashScreen> {
         }
       }
     } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
+      if (mounted && !_disposed) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      }
     }
   }
 
@@ -189,11 +192,13 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // App Logo (New Branding)
-                Image.asset(
-                  'assets/images/playstore.png',
-                  width: context.wp(40), // 40% of screen width for responsiveness
-                  fit: BoxFit.contain,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Image.asset(
+                    'assets/images/applogo.png',
+                    width: context.wp(40), // 40% of screen width for responsiveness
+                    fit: BoxFit.contain,
+                  ),
                 ),
                 SizedBox(height: context.h(48)), // FIXED: Using context.h(48)
                 // App Title

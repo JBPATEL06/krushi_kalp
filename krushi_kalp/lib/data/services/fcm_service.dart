@@ -1,4 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+
+import '../../utils/crashlytics_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -11,7 +13,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // MUST initialize Firebase in the background isolate before anything else
   await Firebase.initializeApp();
-  
 
   // 1. Initialize Local Notifications Plugin in the background isolate
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -72,8 +73,6 @@ class FCMService {
       sound: true,
     );
 
-    
-
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       // 2. Background Handler
       FirebaseMessaging.onBackgroundMessage(
@@ -81,11 +80,7 @@ class FCMService {
 
       // 3. Foreground Handler
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        
-        
-
         if (message.notification != null || message.data.isNotEmpty) {
-          
           // 3. Show Notification (User App Offset: +0)
           final AndroidNotificationDetails androidDetails =
               AndroidNotificationDetails(
@@ -120,18 +115,13 @@ class FCMService {
 
         if (role == 'Admin') {
           await _firebaseMessaging.subscribeToTopic('admin_updates');
-          
         } else {
           await _firebaseMessaging.unsubscribeFromTopic('admin_updates');
-          
         }
       }
 
-      
-
       // 5. Get Token
       String? token = await _firebaseMessaging.getToken();
-      
 
       if (token != null) {
         final prefs = await SharedPreferences.getInstance();
@@ -160,9 +150,9 @@ class FCMService {
       // However, 'all_users' might be relevant for general app updates?
       // Let's unsubscribe from personal topics surely.
       // But FCM topics are device-based.
-      
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'FCM logout unsubscription failed');
     }
   }
 
@@ -176,10 +166,9 @@ class FCMService {
         await AuthService.instance.updateProfile(user.id, {
           'fcm_token': token,
         });
-
-        
-      } catch (e) {
-        
+      } catch (e, stack) {
+        CrashlyticsService.instance
+            .recordError(e, stack, reason: 'Save FCM token failed');
       }
     }
   }
@@ -199,7 +188,6 @@ class FCMService {
       // If notification is from Admin -> Suppress it.
       if (currentChatUserId == 'admin_support_chat') {
         if (isFromAdmin) {
-          
           return;
         }
       }
@@ -210,7 +198,6 @@ class FCMService {
         // Only suppress if message is FROM that user (not from another admin/system)
         // And ensure it's NOT from admin (which would be weird self-notification, but good check)
         if (!isFromAdmin && msgUserId == currentChatUserId) {
-          
           return;
         }
       }

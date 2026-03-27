@@ -146,6 +146,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
     );
 
     if (confirm == true) {
+      if (!mounted) return;
       try {
         showDialog(
           context: context,

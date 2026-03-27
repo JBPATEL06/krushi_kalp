@@ -1,6 +1,6 @@
-﻿enum UserRole {
-  Student, // Capitalized to match DB string often, though exact string matching handles case
-  Admin
+enum UserRole {
+  student,
+  admin
 }
 
 class User {
@@ -16,7 +16,7 @@ class User {
     required this.id,
     required this.username,
     required this.email,
-    this.role = UserRole.Student,
+    this.role = UserRole.student,
     this.phoneNumber,
     this.degree,
     this.language = 'en',
@@ -27,7 +27,7 @@ class User {
       'id': id,
       'username': username, // Matches DB
       'email': email,
-      'role': role.toString().split('.').last, // 'Student' or 'Admin'
+      'role': role == UserRole.admin ? 'Admin' : 'Student', // Map to DB strings
       'phonenumber':
           phoneNumber, // Note: DB uses 'phonenumber' (no underscore based on schema provided, wait, schema said 'phonenumber')
       'degree': degree,
@@ -43,9 +43,9 @@ class User {
       email: json['email'] as String,
       role: UserRole.values.firstWhere(
         (e) =>
-            e.toString().split('.').last.toLowerCase() ==
+            e.name.toLowerCase() ==
             (json['role'] as String? ?? 'Student').toLowerCase(),
-        orElse: () => UserRole.Student,
+        orElse: () => UserRole.student,
       ),
       phoneNumber: json['phonenumber'] as String?, // Updated to match schema
       degree: json['degree'] as String?,

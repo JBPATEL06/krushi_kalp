@@ -18,6 +18,7 @@ import 'cart/widgets/cart_item_widget.dart';
 import 'cart/widgets/cart_order_summary.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/cart_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // NEW: Expose Supabase RPC
 import '../../utils/supabase_url_helper.dart'; // Ensure correct URL construction
 import '../../utils/error_utils.dart';
 
@@ -771,13 +772,48 @@ class _CartScreenState extends State<CartScreen> {
                       setState(() => _isProcessing = true);
 
                       final user = AuthService.instance.currentUser;
-                      String? userPhone = user?.phone;
+                      if (user == null) {
+                        setState(() => _isProcessing = false);
+                        return;
+                      }
+
+                      String? userPhone = user.phone;
+                      double secureTotal = total;
+
+                      // Server-side cart price verification
+                      try {
+                        final orderIdStr = _currentCartItems.first['order_id'] as String;
+                        final priceResponse = await Supabase.instance.client.rpc(
+                          'calculate_secure_cart_price',
+                          params: {
+                            'p_order_id': orderIdStr,
+                            'p_user_id': user.id,
+                            'p_coupon_code': _appliedGlobalOffer?.code ?? '',
+                          },
+                        );
+                        final Map<String, dynamic> secureData = Map<String, dynamic>.from(priceResponse);
+                        secureTotal = (secureData['final_total'] as num).toDouble();
+                      } catch (sqlError) {
+                        if (mounted) {
+                          setState(() => _isProcessing = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Cart Sync Error: $sqlError')),
+                          );
+                        }
+                        return;
+                      }
+
+                      if (secureTotal <= 0) {
+                        await _handlePaymentSuccess(PaymentSuccessResponse.fromMap({
+                          'razorpay_payment_id': 'FREE_CART_${DateTime.now().millisecondsSinceEpoch}'
+                        }));
+                        return;
+                      }
 
                       PaymentService.instance.openCheckout(
-                        amount: total,
-                        orderId:
-                            'cart_checkout_${DateTime.now().millisecondsSinceEpoch}',
-                        email: user?.email,
+                        amount: secureTotal,
+                        orderId: 'cart_checkout_${DateTime.now().millisecondsSinceEpoch}',
+                        email: user.email,
                         contact: userPhone,
                       );
 

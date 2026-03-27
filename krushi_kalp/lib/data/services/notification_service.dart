@@ -1,8 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
+import '../../utils/crashlytics_service.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -83,8 +84,8 @@ class NotificationService {
     try {
       tz_data.initializeTimeZones();
       tz.setLocalLocation(tz.getLocation('UTC'));
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Timezone initialization failed');
       tz.setLocalLocation(tz.getLocation('UTC'));
     }
   }
@@ -121,8 +122,8 @@ class NotificationService {
           .subscribe((status, error) {
         
       });
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Connect background (mock tests) failed');
     }
 
     // 2. Listen for NEW OFFERS
@@ -148,8 +149,8 @@ class NotificationService {
           .subscribe((status, error) {
         
       });
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Connect background (offers) failed');
     }
   }
 
@@ -264,8 +265,8 @@ class NotificationService {
           .subscribe((status, error) {
         
       });
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Personal notifications subscription failed');
     }
   }
 
@@ -301,8 +302,8 @@ class NotificationService {
           .subscribe((status, error) {
         
       });
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Broadcast notifications subscription failed');
     }
   }
 
@@ -372,14 +373,14 @@ class NotificationService {
                     );
                   }
                 }
-              } catch (e) {
-                
+              } catch (e, stack) {
+                CrashlyticsService.instance.recordError(e, stack, reason: 'Chat message processing failed');
               }
             },
           )
           .subscribe();
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Listen for chat messages failed');
     }
   }
 

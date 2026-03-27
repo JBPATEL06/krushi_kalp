@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../../../data/services/auth_service.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../data/services/review_service.dart';
@@ -74,35 +74,31 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
               reviewText: text,
             );
 
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Review updated successfully!')),
-              );
-              _loadAllReviews();
-            }
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Review updated successfully!')),
+            );
+            _loadAllReviews();
           } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to update: $e')),
-              );
-            }
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to update: $e')),
+            );
           }
         },
         onDelete: () async {
           try {
             await ReviewService.deleteReview(existingReview.id);
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Review deleted successfully')),
-              );
-              _loadAllReviews();
-            }
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Review deleted successfully')),
+            );
+            _loadAllReviews();
           } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to delete: $e')),
-              );
-            }
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to delete: $e')),
+            );
           }
         },
       ),

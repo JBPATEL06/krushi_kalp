@@ -19,8 +19,9 @@ import 'presentation/providers/resource_provider.dart';
 import 'presentation/utils/navigator_key.dart';
 import 'presentation/widgets/common/responsive_wrapper.dart';
 import 'presentation/widgets/common/network_aware_wrapper.dart';
+import 'data/services/local_caching_service.dart'; // NEW: Isar Caching Service
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'core/env/env.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
@@ -45,13 +46,13 @@ Future<void> main() async {
     };
   }
 
-  // 3. Load Environment Variables
-  await dotenv.load(fileName: ".env");
+  // 3. Load Environment Variables & DB
+  await LocalCachingService.init(); // Initialize Isar NoSQL
 
   // 4. Initialize Supabase
   await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    url: Env.supabaseUrl,
+    anonKey: Env.supabaseAnonKey,
   );
 
   // 5. Initialize Notification Engine

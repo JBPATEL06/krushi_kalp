@@ -1,13 +1,14 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/services/auth_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../../core/env/env.dart';
 import '../../utils/network_utils.dart';
 import '../utils/navigator_key.dart';
+import '../../utils/crashlytics_service.dart';
 import '../screens/login_screen.dart';
 import '../../data/services/fcm_service.dart';
 import '../../data/services/encryption_service.dart';
@@ -22,7 +23,7 @@ class AuthProvider with ChangeNotifier {
   RealtimeChannel? _sessionSubscription;
   bool _isExplicitLogin = false;
 
-  static String get _webClientId => dotenv.env['GOOGLE_WEB_CLIENT_ID'] ?? '';
+  static String get _webClientId => Env.googleWebClientId;
 
   User? get currentUser => _currentUser;
   String? get userRole => _userRole;
@@ -63,12 +64,12 @@ class AuthProvider with ChangeNotifier {
             _sessionSubscription = null;
           }
           notifyListeners();
-        } catch (e) {
-          
+        } catch (e, stack) {
+          CrashlyticsService.instance.recordError(e, stack, reason: 'AuthProvider: AuthStateChange listener failed');
         }
       });
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'AuthProvider: _init failed');
       _isAuthCheckComplete = true;
       notifyListeners();
     }
@@ -136,8 +137,8 @@ class AuthProvider with ChangeNotifier {
             },
           )
           .subscribe();
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'AuthProvider: _initSessionMonitoring failed');
     }
   }
 
@@ -161,8 +162,8 @@ class AuthProvider with ChangeNotifier {
         if ((now - localTs) < 15000) return;
         _handleForceLogout();
       }
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'AuthProvider: _verifySession failed');
     }
   }
 
@@ -225,7 +226,9 @@ class AuthProvider with ChangeNotifier {
       if (await googleSignIn.isSignedIn()) {
         try {
           await googleSignIn.disconnect();
-        } catch (_) {}
+        } catch (e, stack) {
+          CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to disconnect Google Sign In');
+        }
       }
       await googleSignIn.signOut();
 
@@ -305,17 +308,21 @@ class AuthProvider with ChangeNotifier {
 
     try {
       await AuthService.instance.updateSessionId(user.id, newSessionId);
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'AuthProvider: updateSessionId failed');
     }
 
     try {
       await FCMService().initialize();
-    } catch (_) {}
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'AuthProvider: FCM initialization failed during login');
+    }
 
     try {
       await DownloadService().migrateOldDownloads(user.id);
-    } catch (_) {}
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'AuthProvider: Download migration failed during login');
+    }
   }
 
   /// Logs the user out. Cancels any active downloads for this user BEFORE clearing state.
@@ -330,14 +337,18 @@ class AuthProvider with ChangeNotifier {
       if (clearDbSession && _currentUser != null) {
         try {
           await AuthService.instance.clearSession(_currentUser!.id);
-        } catch (_) {}
+        } catch (e, stack) {
+          CrashlyticsService.instance.recordError(e, stack, reason: 'AuthProvider: clearSession failed during signOut');
+        }
       }
 
       // Step 2: Clear platform-level auth
       await AuthService.instance.signOut();
       try {
         await FCMService().handleLogout();
-      } catch (_) {}
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'AuthProvider: FCM logout failed');
+      }
 
       try {
         final GoogleSignIn googleSignIn = GoogleSignIn(
@@ -345,7 +356,9 @@ class AuthProvider with ChangeNotifier {
           serverClientId: kIsWeb ? null : _webClientId,
         );
         await googleSignIn.signOut();
-      } catch (_) {}
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'AuthProvider: Google signOut failed');
+      }
 
       // Step 3: Wipe local state
       _currentUser = null;

@@ -1,4 +1,4 @@
-﻿import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 
 /// A centralized service to manage Firebase Crashlytics.
@@ -33,7 +33,7 @@ class CrashlyticsService {
       await _crashlytics.setUserIdentifier(userId);
       log('User attributed: $userId');
     } catch (e) {
-      
+      debugPrint('Crashlytics set user error: $e');
     }
   }
 
@@ -44,7 +44,7 @@ class CrashlyticsService {
       await _crashlytics.setUserIdentifier('');
       log('User identifier cleared');
     } catch (e) {
-      
+      debugPrint('Crashlytics clear user error: $e');
     }
   }
 
@@ -69,7 +69,7 @@ class CrashlyticsService {
         fatal: fatal,
       );
     } catch (e) {
-      
+      debugPrint('Crashlytics record error failure: $e');
     }
   }
 }

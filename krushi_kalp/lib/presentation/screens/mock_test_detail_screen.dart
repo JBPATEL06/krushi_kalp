@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../data/services/app_config_service.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/offer.dart';
@@ -96,6 +96,7 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
   void _showReviewDialog() {
     final user = AuthService.instance.currentUser;
     if (user == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please login to review')),
       );
@@ -120,13 +121,13 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
               reviewText: text,
             );
 
-            if (!mounted) return;
+            if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Review submitted successfully!')),
             );
             _loadReviews();
           } catch (e) {
-            if (!mounted) return;
+            if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Failed to submit: $e')),
             );
@@ -136,13 +137,13 @@ class _MockTestDetailScreenState extends State<MockTestDetailScreen> {
           if (_userReview == null) return;
           try {
             await ReviewService.deleteReview(_userReview!.id);
-            if (!mounted) return;
+            if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Review deleted successfully')),
             );
             _loadReviews();
           } catch (e) {
-            if (!mounted) return;
+            if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Failed to delete: $e')),
             );

@@ -151,8 +151,8 @@ class DownloadService {
     try {
       final file = await _manifestFile(userId);
       await file.writeAsString(json.encode(manifest));
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Manifest write failed for user: $userId');
     }
   }
 
@@ -468,8 +468,8 @@ class DownloadService {
         }
         await entity.delete();
       }
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Migration of old downloads failed');
     }
   }
 

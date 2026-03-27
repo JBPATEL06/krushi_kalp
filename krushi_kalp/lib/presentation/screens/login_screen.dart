@@ -1,4 +1,4 @@
-﻿import 'package:flutter/gestures.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:krushi_kalp/core/theme/app_motion.dart'; // MODIFIED: Added AppMotion token import
 import 'package:krushi_kalp/core/theme/app_radius.dart';
@@ -164,10 +164,14 @@ class _LoginScreenState extends State<LoginScreen>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Image.asset(
-                          "assets/images/notification_logo.png",
-                          height: context.h(130), // FIXED
-                          width: context.w(130), // FIXED
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: Image.asset(
+                            "assets/images/applogo.png",
+                            height: context.h(130), // FIXED
+                            width: context.w(130), // FIXED
+                            fit: BoxFit.cover,
+                          ),
                         ),
                         const SizedBox(
                             height: AppSpacing.lg), // FIXED: AppSpacing.lg

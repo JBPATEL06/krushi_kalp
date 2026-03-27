@@ -3,11 +3,9 @@ import 'dart:io';
 void main() {
   final presentationDir = Directory('lib/presentation');
   if (!presentationDir.existsSync()) {
-    print('Presentation directory not found.');
     return;
   }
 
-  print('--- Expanded Responsiveness Audit Report ---');
   int issuesFound = 0;
 
   final dartFiles = presentationDir
@@ -17,13 +15,13 @@ void main() {
   // Regex for raw numeric values in patterns
   final rawNum = r'[0-9]+(\.[0-9]+)?';
   final patternRegex = RegExp(
-    '(' +
-        '(width|height)\\s*:\\s*$rawNum|' + // width: 10, height: 10
-        'SizedBox\\s*\\(\\s*(width|height)\\s*:\\s*$rawNum|' + // SizedBox(width: 10)
-        'fontSize\\s*:\\s*$rawNum|' + // fontSize: 16
-        'EdgeInsets\\.(all|only|symmetric)\\s*\\(|' + // EdgeInsets.all(
-        'BorderRadius\\.circular\\s*\\(\\s*$rawNum' + // BorderRadius.circular(12)
-        ')',
+    '('
+            'width\\s*:\\s*$rawNum|height\\s*:\\s*$rawNum|'
+            'SizedBox\\s*\\(\\s*(width|height)\\s*:\\s*$rawNum|'
+            'fontSize\\s*:\\s*$rawNum|'
+            'EdgeInsets\\.(all|only|symmetric)\\s*\\(|'
+            'BorderRadius\\.circular\\s*\\(\\s*$rawNum'
+            ')',
     caseSensitive: false,
   );
 
@@ -61,12 +59,9 @@ void main() {
           if (!numRegex.hasMatch(line)) continue;
         }
 
-        print('${file.path}:${i + 1}: $line');
         issuesFound++;
       }
     }
   }
-
-  print('-------------------------------------------');
-  print('Total responsiveness issues found: $issuesFound');
+  print('Issues found: $issuesFound');
 }

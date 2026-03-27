@@ -1,10 +1,12 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:krushi_kalp/domain/models/resource.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/services/resource_service.dart';
-import '../../domain/models/resource.dart';
 import '../../utils/crashlytics_service.dart';
 import '../../utils/supabase_url_helper.dart';
+import '../../data/services/local_caching_service.dart'; // NEW
+import '../../data/local/entities/resource_entity.dart'; // NEW
 
 class ResourceProvider extends ChangeNotifier {
   final ResourceService _resourceService = ResourceService.instance;
@@ -45,11 +47,10 @@ class ResourceProvider extends ChangeNotifier {
         _purchasedResources =
             jsonList.map((j) => Resource.fromJson(j)).toList();
         _purchasedResourceIds = _purchasedResources.map((r) => r.id).toSet();
-        
+
         notifyListeners();
       }
     } catch (e, stack) {
-      
       CrashlyticsService.instance.recordError(
         e,
         stack,
@@ -66,7 +67,6 @@ class ResourceProvider extends ChangeNotifier {
       );
       await prefs.setString(_purchasedResourcesKey, encodedData);
     } catch (e, stack) {
-      
       CrashlyticsService.instance.recordError(
         e,
         stack,
@@ -103,7 +103,41 @@ class ResourceProvider extends ChangeNotifier {
       'ResourceProvider: Fetching resources (type: $type, force: $forceRefresh)',
     );
     try {
+      // 1. Instantly load from Isar NoSQL (Local Cache)
+      final cachedEntities = await LocalCachingService.getCachedResources();
+      if (cachedEntities.isNotEmpty) {
+        final localData = cachedEntities
+            .map((e) => e.toResource())
+            .where((r) => r.type == type)
+            .toList();
+
+        if (localData.isNotEmpty) {
+          switch (type) {
+            case ResourceType.eBook:
+              if (_ebooks.isEmpty) _ebooks = localData;
+              break;
+            case ResourceType.studyMaterial:
+              if (_studyMaterials.isEmpty) _studyMaterials = localData;
+              break;
+            case ResourceType.pyq:
+              if (_pyqs.isEmpty) _pyqs = localData;
+              break;
+            case ResourceType.currentAffair:
+              if (_currentAffairs.isEmpty) _currentAffairs = localData;
+              break;
+          }
+          Future.microtask(() => notifyListeners()); // Update UI instantly
+        }
+      }
+
+      // 2. Fetch fresh data from Supabase silently in background
       final resources = await _resourceService.fetchResources(type: type);
+
+      // 3. Save fresh data to Isar
+      if (resources.isNotEmpty) {
+        LocalCachingService.saveResources(
+            resources.map((r) => ResourceEntity.fromResource(r)).toList());
+      }
 
       // Bulk pre-sign both file and thumbnail URLs for the fetched resources
       _preSignUrls(resources);
@@ -155,12 +189,10 @@ class ResourceProvider extends ChangeNotifier {
         }
 
         if (signFutures.isNotEmpty) {
-          
           await Future.wait(signFutures);
-          
         }
-      } catch (e) {
-        
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: '_preSignUrls failed');
       }
     });
   }

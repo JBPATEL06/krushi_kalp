@@ -3,11 +3,8 @@ import 'dart:io';
 void main() {
   final libDir = Directory('lib');
   if (!libDir.existsSync()) {
-    print('Lib directory not found.');
     return;
   }
-
-  print('--- Unused Files & Dead Code Audit ---');
 
   final allFiles = libDir
       .listSync(recursive: true)
@@ -24,7 +21,7 @@ void main() {
   for (var file in allFiles) {
     final content = File(file).readAsStringSync();
     final importRegex =
-        RegExp(r"import\s+['" '"' r"]([^'" '"' r"]+)['" + '"' + r"]");
+        RegExp(r"import\s+['" '"' r"]([^'" '"' r"]+)['" '"' r"]");
     final matches = importRegex.allMatches(content);
 
     for (var match in matches) {
@@ -56,13 +53,10 @@ void main() {
     if (file.endsWith('main.dart') || file.contains('/generated/')) continue;
 
     if (importCounts[file] == 0) {
-      print('[UNUSED FILE] $file');
       unusedFiles++;
     }
   }
-
-  print('---------------------------------------');
-  print('Total unused files found: $unusedFiles');
+  print('Unused files: $unusedFiles');
 }
 
 String _resolveRelativePath(String currentDir, String relativePath) {

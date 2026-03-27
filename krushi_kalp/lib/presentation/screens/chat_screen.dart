@@ -130,7 +130,7 @@ class _ChatScreenState extends State<ChatScreen> {
       try {
         await _chatService.deleteMessage(message.id);
       } catch (e) {
-        if (mounted) {
+        if (context.mounted) {
           ErrorUtils.showError(context, e);
         }
       }

@@ -1,4 +1,5 @@
-﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../utils/crashlytics_service.dart';
 
 class AdminNotificationService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -32,8 +33,8 @@ class AdminNotificationService {
             'type': 'broadcast',
             'notification_id': record['id'].toString(),
           });
-    } catch (e) {
-      // throw Exception("Failed to send broadcast: $e");
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to send broadcast notification');
     }
   }
 
@@ -75,7 +76,9 @@ class AdminNotificationService {
           'notification_id': record['id'].toString(),
         });
       } else {}
-    } catch (e) {}
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to send personal notification to user: $userId');
+    }
   }
 
   // Send a CHAT REPLY notification (type = 'chat' so it can be suppressed when chat is open)
@@ -112,7 +115,9 @@ class AdminNotificationService {
           'notification_id': record['id'].toString(),
         });
       } else {}
-    } catch (e) {}
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to send chat reply notification to user: $userId');
+    }
   }
 
   // Send to Generic Topic (e.g. Admin Updates)
@@ -129,7 +134,9 @@ class AdminNotificationService {
         topic: topic,
         data: data,
       );
-    } catch (e) {}
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to send topic notification: $topic');
+    }
   }
 
   Future<void> _callEdgeFunction({
@@ -158,9 +165,8 @@ class AdminNotificationService {
           if (data != null) 'data': data,
         },
       );
-    } catch (e) {
-      // Optional: Check if token is expired and force refresh?
-      // _supabase.auth.refreshSession();
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Edge function send-fcm invocation failed');
     }
   }
 }

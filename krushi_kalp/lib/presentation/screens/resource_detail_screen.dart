@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../domain/models/resource.dart';
 import '../../core/theme/app_spacing.dart';
 
@@ -115,14 +115,13 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
               rating: rating,
               reviewText: text,
             );
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Review submitted successfully!')),
-              );
-              _loadReviews();
-            }
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Review submitted successfully!')),
+            );
+            _loadReviews();
           } catch (e) {
-            if (mounted) {
+            if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Failed to submit: $e')),
               );
@@ -133,18 +132,16 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
           if (_userReview == null) return;
           try {
             await ReviewService.deleteReview(_userReview!.id);
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Review deleted successfully')),
-              );
-              _loadReviews();
-            }
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Review deleted successfully')),
+            );
+            _loadReviews();
           } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to delete: $e')),
-              );
-            }
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to delete: $e')),
+            );
           }
         },
       ),
@@ -340,8 +337,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                                         horizontal: AppSpacing.sm, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: theme.colorScheme.primaryContainer
-                                          .withOpacity(
-                                              0.2), // Light faded primary
+                                          .withValues(alpha: 0.2), // Light faded primary
                                       borderRadius: BorderRadius.circular(4),
                                       border: Border.all(
                                           color: theme.colorScheme.primary

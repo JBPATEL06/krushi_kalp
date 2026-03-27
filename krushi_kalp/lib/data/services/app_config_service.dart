@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/app_config.dart';
 import '../../utils/retry_helper.dart';
+import '../../utils/crashlytics_service.dart';
 
 class AppConfigService {
   static final _supabase = Supabase.instance.client;
@@ -31,8 +32,8 @@ class AppConfigService {
         
       }
       
-    } catch (e) {
-      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Fetch configs failed');
     }
   }
 
