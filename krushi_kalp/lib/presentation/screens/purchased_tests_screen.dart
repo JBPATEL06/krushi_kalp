@@ -1,26 +1,26 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
-import 'package:provider/provider.dart';
-import '../../data/services/auth_service.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import '../../domain/models/mock_test.dart';
-import '../providers/test_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/test_notifier.dart';
+import '../providers/auth_notifier.dart';
 import '../utils/exam_helper.dart';
 import '../widgets/common/download_action_button.dart';
 import 'mock_test_detail_screen.dart';
 import '../../core/theme/app_spacing.dart';
 import 'package:shimmer/shimmer.dart';
 import '../widgets/common/download_item_card.dart';
-import '../providers/navigation_provider.dart';
+import '../providers/navigation_notifier.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../../domain/models/mock_test.dart';
 
-class PurchasedTestsScreen extends StatefulWidget {
+class PurchasedTestsScreen extends ConsumerStatefulWidget {
   const PurchasedTestsScreen({super.key});
 
   @override
-  State<PurchasedTestsScreen> createState() => _PurchasedTestsScreenState();
+  ConsumerState<PurchasedTestsScreen> createState() => _PurchasedTestsScreenState();
 }
 
-class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
+class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _sortOption = 'Newest';
@@ -46,9 +46,9 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
   Future<void> _loadData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
-    final user = AuthService.instance.currentUser;
+    final user = ref.read(authNotifierProvider).user;
     if (user != null) {
-      await context.read<TestProvider>().fetchUserTests(user.id);
+      await ref.read(testNotifierProvider.notifier).fetchUserTests(user.id);
     }
     if (mounted) {
       setState(() => _isLoading = false);
@@ -78,8 +78,8 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final testProvider = context.watch<TestProvider>();
-    final tests = testProvider.userTests;
+    final testState = ref.watch(testNotifierProvider);
+    final tests = testState.userTests;
     final filteredTests = _getFilteredData(tests);
 
     return Scaffold(
@@ -93,7 +93,7 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
             SliverToBoxAdapter(
               child: _buildSearchAndFilterBar(context, theme), // FIXED: context
             ),
-            if (_isLoading || (testProvider.isLoading && tests.isEmpty))
+            if (_isLoading || (testState.isLoading && tests.isEmpty))
               SliverToBoxAdapter(
                   child: _buildSkeletonLoader(context, theme)) // FIXED: context
             else if (filteredTests.isEmpty)
@@ -121,7 +121,7 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
                             url: item.contentUrl,
                             startLabel: "Start",
                             isFullWidth: false,
-                            userId: AuthService.instance.currentUser?.id,
+                            userId: ref.read(authNotifierProvider).user?.id,
                             displayName: item.title,
                             onAction: () async {
                               if (item.contentUrl == null) {
@@ -293,7 +293,7 @@ class _PurchasedTestsScreenState extends State<PurchasedTestsScreen> {
             const SizedBox(height: AppSpacing.md),
             ElevatedButton(
               onPressed: () {
-                context.read<NavigationProvider>().setIndex(2); // Store
+                ref.read(navigationProvider.notifier).setIndex(2); // Store
               },
               child: Text("Browse Store",
                   style: TextStyle(fontSize: context.sp(14))), // FIXED

@@ -1,17 +1,17 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
-import '../../providers/auth_provider.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/auth_notifier.dart';
 // import 'package:supabase_flutter/supabase_flutter.dart'; // REMOVED (unused)
 import '../login_screen.dart';
 import 'manage_app/manage_app_screen.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
 
-class AdminProfileScreen extends StatelessWidget {
+class AdminProfileScreen extends ConsumerWidget {
   const AdminProfileScreen({super.key});
 
-  Future<void> _logout(BuildContext context) async {
+  Future<void> _logout(BuildContext context, WidgetRef ref) async {
     final colorScheme = Theme.of(context).colorScheme;
     final confirm = await showDialog<bool>(
       context: context,
@@ -42,7 +42,7 @@ class AdminProfileScreen extends StatelessWidget {
     );
 
     if (confirm == true && context.mounted) {
-      await Provider.of<AuthProvider>(context, listen: false).signOut();
+      await ref.read(authNotifierProvider.notifier).signOut();
       if (context.mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -53,7 +53,7 @@ class AdminProfileScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -79,50 +79,7 @@ class AdminProfileScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Consumer<AuthProvider>(
-                builder: (context, auth, _) {
-                  final user = auth.currentUser;
-                  final metadata = user?.userMetadata;
-                  final name = metadata?['full_name'] ??
-                      metadata?['name'] ??
-                      'Administrator';
-                  final email = user?.email ?? 'admin@krushikalp.com';
-                  final photoUrl =
-                      metadata?['avatar_url'] ?? metadata?['picture'];
-
-                  return Column(
-                    children: [
-                      CircleAvatar(
-                        radius: context.sp(50), // FIXED
-                        backgroundColor: colorScheme.primaryContainer,
-                        backgroundImage:
-                            photoUrl != null ? NetworkImage(photoUrl) : null,
-                        child: photoUrl == null
-                            ? Icon(Icons.admin_panel_settings,
-                                size: context.sp(50),
-                                color: colorScheme.onPrimaryContainer) // FIXED
-                            : null,
-                      ),
-                      SizedBox(height: AppSpacing.xl),
-                      Text(
-                        name,
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: context.sp(24)), // FIXED
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: AppSpacing.xs),
-                      Text(
-                        email,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            fontSize: context.sp(14)), // FIXED
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  );
-                },
-              ),
+              _buildUserInfo(context, ref),
               SizedBox(height: AppSpacing.xxxl),
               SizedBox(
                 width: double.infinity,
@@ -154,7 +111,7 @@ class AdminProfileScreen extends StatelessWidget {
                 width: double.infinity,
                 height: context.h(56), // FIXED
                 child: ElevatedButton.icon(
-                  onPressed: () => _logout(context),
+                  onPressed: () => _logout(context, ref),
                   icon: Icon(Icons.logout, size: context.sp(20)), // FIXED
                   label: Text('LOGOUT',
                       style: TextStyle(fontSize: context.sp(14))), // FIXED
@@ -173,6 +130,47 @@ class AdminProfileScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildUserInfo(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authNotifierProvider);
+    final user = authState.user;
+    final metadata = user?.userMetadata;
+    final name = metadata?['full_name'] ?? metadata?['name'] ?? 'Administrator';
+    final email = user?.email ?? 'admin@krushikalp.com';
+    final photoUrl = metadata?['avatar_url'] ?? metadata?['picture'];
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      children: [
+        CircleAvatar(
+          radius: context.sp(50), // FIXED
+          backgroundColor: colorScheme.primaryContainer,
+          backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+          child: photoUrl == null
+              ? Icon(Icons.admin_panel_settings,
+                  size: context.sp(50),
+                  color: colorScheme.onPrimaryContainer) // FIXED
+              : null,
+        ),
+        SizedBox(height: AppSpacing.xl),
+        Text(
+          name,
+          style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold, fontSize: context.sp(24)), // FIXED
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: AppSpacing.xs),
+        Text(
+          email,
+          style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: context.sp(14)), // FIXED
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }

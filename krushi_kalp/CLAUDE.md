@@ -27,7 +27,10 @@
   - Deployed SQL RPC functions for price verification.
   - Refactored `DirectCheckoutSheet` and `CartScreen` to use server-side verification.
 - **Phase 3: Architecture Upgrades** [IN PROGRESS]
-  - Migrating from `flutter_dotenv` to `envied` (Secrets Obfuscation).
+  - Migrated from `flutter_dotenv` to `envied` (Secrets Obfuscation).
+  - Enforced API Type Safety in `TestService` (Typed models for all returns).
+  - Implemented `RepaintBoundary` on all high-frequency list cards for performance.
+  - Starting Migration from `Provider` to `Riverpod 3.0`.
 
 ---
 

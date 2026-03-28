@@ -1,4 +1,4 @@
-﻿class AppMotion {
+class AppMotion {
   AppMotion._();
 
   static const Duration fast = Duration(milliseconds: 150);

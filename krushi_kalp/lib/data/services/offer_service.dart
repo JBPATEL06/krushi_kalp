@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/offer.dart';
-import '../../utils/network_utils.dart'; // Import NetworkUtils
+import '../../utils/network_utils.dart';
 import '../../utils/crashlytics_service.dart';
+import 'auth_service.dart';
 
 class OfferService {
   // Singleton
@@ -33,7 +35,6 @@ class OfferService {
       if (NetworkUtils.isNetworkError(e)) {
         return [];
       }
-
       return [];
     }
   }
@@ -73,7 +74,6 @@ class OfferService {
       if (NetworkUtils.isNetworkError(e)) {
         return {};
       }
-
       return {};
     }
   }
@@ -95,18 +95,15 @@ class OfferService {
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       if (NetworkUtils.isNetworkError(e)) return [];
-
       return [];
     }
   }
 
   Future<List<Offer>> fetchActiveSaleOffers() async {
     try {
-      // Add a 5-minute grace period to account for slight clock drift
       final now = DateTime.now().toUtc();
       final adjustedNow = now.add(const Duration(minutes: 5)).toIso8601String();
 
-      // Use or() to include offers where dates are null or within range
       final response = await _supabase
           .from('offers')
           .select()
@@ -115,16 +112,12 @@ class OfferService {
           .or('end_date.is.null,end_date.gte.${now.toIso8601String()}');
 
       final List<dynamic> data = response;
-
-      final offers = data.map((e) => Offer.fromJson(e)).toList();
-
-      return offers;
+      return data.map((e) => Offer.fromJson(e)).toList();
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       if (NetworkUtils.isNetworkError(e)) {
         return [];
       }
-
       return [];
     }
   }
@@ -139,11 +132,10 @@ class OfferService {
       return response != null;
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
-      return false; // Error assuming doesn't exist or DB issue
+      return false;
     }
   }
 
-  // Check Usage Limit for a User
   Future<bool> checkUsageLimit(int offerId, String userId, int limit) async {
     try {
       final count = await _supabase
@@ -154,11 +146,10 @@ class OfferService {
       return count < limit;
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
-      return true; // Allow if check fails to prevent blocking? Or fail? Fail safe preferred.
+      return true;
     }
   }
 
-  // Create Offer (Admin)
   Future<void> createOffer(Offer offer) async {
     try {
       if (offer.code != null) {
@@ -167,60 +158,51 @@ class OfferService {
       }
 
       final data = offer.toJson();
-      data.remove('offer_id'); // Let DB handle ID on insert
+      data.remove('offer_id');
       await _supabase.from('offers').insert(data);
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       if (NetworkUtils.isNetworkError(e)) {
         throw Exception('Network Error: Please check your connection.');
       }
-
       throw Exception('$e');
     }
   }
 
-  // Update Offer (Admin)
   Future<void> updateOffer(Offer offer) async {
     try {
       if (offer.id == 0) throw Exception("Invalid Offer ID for update");
 
       if (offer.code != null) {
-        // Check existence but exclude current offer ID
         final response = await _supabase
             .from('offers')
             .select('offer_id')
             .eq('code', offer.code!.toUpperCase())
-            .neq('offer_id', offer.id) // Exclude self
+            .neq('offer_id', offer.id)
             .maybeSingle();
 
         if (response != null) throw Exception('Coupon Code already exists!');
       }
 
       final data = offer.toJson();
-      // data.remove('offer_id'); // Optional, but better to keep for reference or rely on eq
       await _supabase.from('offers').update(data).eq('offer_id', offer.id);
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       if (NetworkUtils.isNetworkError(e)) {
         throw Exception('Network Error: Please check your connection.');
       }
-
       throw Exception('$e');
     }
   }
 
-  // Delete/Deactivate
-  // Returns: 'DELETED', 'ARCHIVED', or throws error
   Future<String> deleteOffer(int id) async {
     try {
       await _supabase.from('offers').delete().eq('offer_id', id);
       return 'DELETED';
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
-      // Check for Postgres Error Code 23503 (Foreign Key Violation)
       if (e.toString().contains('23503') ||
           e.toString().contains('violates foreign key constraint')) {
-        // Soft Delete: Deactivate
         await _supabase
             .from('offers')
             .update({'is_active': false}).eq('offer_id', id);
@@ -230,7 +212,6 @@ class OfferService {
     }
   }
 
-  // Verify Coupon Code
   Future<Offer?> verifyCoupon(String code) async {
     try {
       final now = DateTime.now().toUtc().toIso8601String();
@@ -248,12 +229,10 @@ class OfferService {
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       if (NetworkUtils.isNetworkError(e)) return null;
-
       return null;
     }
   }
 
-  // --- ORDER COUPON MANAGEMENT ---
   Future<void> applyCouponToOrder({
     required String orderId,
     required int offerId,
@@ -263,8 +242,7 @@ class OfferService {
         'offer_id': offerId,
         'updated_at': DateTime.now().toUtc().toIso8601String()
       }).eq('order_id', orderId);
-    } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
+    } catch (e) {
       throw Exception('Failed to apply coupon');
     }
   }
@@ -278,6 +256,44 @@ class OfferService {
     } catch (e, stack) {
       await CrashlyticsService.instance.recordError(e, stack,
           reason: 'Failed to remove coupon from order');
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // DB-Driven Display Pricing
+  // ---------------------------------------------------------------------------
+  Future<Map<String, dynamic>> getDisplayPrice({
+    required String itemType,
+    required int itemId,
+    String? couponCode,
+  }) async {
+    try {
+      final user = AuthService.instance.currentUser;
+      final result = await _supabase.rpc('calculate_display_price', params: {
+        'p_item_type': itemType,
+        'p_item_id': itemId,
+        if (user != null) 'p_user_id': user.id,
+        if (couponCode != null && couponCode.isNotEmpty)
+          'p_coupon_code': couponCode,
+      });
+      final map = Map<String, dynamic>.from(result as Map);
+      return {
+        'base_price': (map['base_price'] as num).toDouble(),
+        'final_price': (map['final_price'] as num).toDouble(),
+        'mrp_display': (map['mrp_display'] as num).toDouble(),
+        'discount_label': map['discount_label'] as String?,
+        'has_discount': map['has_discount'] as bool,
+      };
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack,
+          reason: 'offer_service.getDisplayPrice');
+      return {
+        'base_price': 0.0,
+        'final_price': 0.0,
+        'mrp_display': 0.0,
+        'discount_label': null,
+        'has_discount': false,
+      };
     }
   }
 }

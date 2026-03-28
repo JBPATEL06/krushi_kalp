@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/services/auth_service.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/offer.dart';
-import '../../utils/price_calculator.dart';
 import '../../data/services/offer_service.dart';
 import '../../data/services/payment_service.dart';
 import '../../data/services/test_service.dart';
 import '../../domain/models/resource.dart';
 import '../../data/services/resource_service.dart';
-import '../providers/navigation_provider.dart';
+import '../providers/navigation_notifier.dart';
 import '../widgets/common/app_button.dart';
-import '../providers/test_provider.dart';
-import '../providers/resource_provider.dart';
+import '../providers/test_notifier.dart';
+import '../providers/resource_notifier.dart';
+import '../providers/auth_notifier.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 
-class DirectCheckoutSheet extends StatefulWidget {
+class DirectCheckoutSheet extends ConsumerStatefulWidget {
   final MockTest? test; // Make nullable
   final Resource? resource; // Add Resource
   final Offer? initialOffer;
@@ -28,10 +28,10 @@ class DirectCheckoutSheet extends StatefulWidget {
             'Either test or resource must be provided');
 
   @override
-  State<DirectCheckoutSheet> createState() => _DirectCheckoutSheetState();
+  ConsumerState<DirectCheckoutSheet> createState() => _DirectCheckoutSheetState();
 }
 
-class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
+class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
   final TextEditingController _couponController = TextEditingController();
 
   Offer? _appliedOffer;
@@ -73,21 +73,23 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
   }
 
   void _applyInitialOffer() {
-    final user = AuthService.instance.currentUser;
-
-    final priceData = PriceCalculator.calculateDisplayPrice(
-      basePrice: _basePrice,
-      baseMrp: widget.test?.mrp?.toDouble(), // Resource.mrp removed from model
-      activeOffers: widget.initialOffer != null ? [widget.initialOffer!] : [],
-      testId: _testId,
-      resourceId: _resourceId,
-      userId: user?.id,
-    );
-    _appliedOffer = priceData['offer'];
-    _finalPrice = priceData['finalPrice'];
-
-    // Check if the Sale actually applied successfully
-    _hasAutoSale = _appliedOffer != null && _appliedOffer!.isSale;
+    // Fetch display price from DB RPC (async — updates state when done)
+    OfferService.instance
+        .getDisplayPrice(
+          itemType: _testId != null ? 'mock_test' : 'resource',
+          itemId: (_testId ?? _resourceId)!,
+        )
+        .then((priceData) {
+      if (!mounted) return;
+      setState(() {
+        _finalPrice = (priceData['final_price'] as double?) ?? _basePrice;
+        _hasAutoSale = priceData['has_discount'] == true;
+        // If there's a sale, set applied offer from widget if provided
+        if (_hasAutoSale && widget.initialOffer != null) {
+          _appliedOffer = widget.initialOffer;
+        }
+      });
+    });
   }
 
   @override
@@ -107,10 +109,20 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
     });
 
     try {
-      final user = AuthService.instance.currentUser;
+      final user = ref.read(authNotifierProvider).user;
       final offer = await OfferService.instance.verifyCoupon(code);
 
       if (offer != null) {
+        // Fetch updated price with coupon via DB RPC
+        final priceData = await OfferService.instance.getDisplayPrice(
+          itemType: _testId != null ? 'mock_test' : 'resource',
+          itemId: (_testId ?? _resourceId)!,
+          couponCode: code,
+        );
+        final double newPrice =
+            (priceData['final_price'] as double?) ?? _basePrice;
+
+        if (!mounted) return;
         // Validate specific constraints
         if (user != null &&
             offer.isValid(
@@ -118,17 +130,11 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                 cartTotal: _basePrice,
                 cartTestIds: _testId != null ? [_testId!] : [])) {
           setState(() {
-            final priceData = PriceCalculator.calculateDisplayPrice(
-              basePrice: _basePrice,
-              activeOffers: [offer],
-              testId: _testId,
-              userId: user.id,
-            );
             _appliedOffer = offer;
-            _finalPrice = priceData['finalPrice'];
+            _finalPrice = newPrice;
           });
         } else {
-          setState(() => _couponError = "Coupon not valid for this item/order");
+          setState(() => _couponError = 'Coupon not valid for this item/order');
         }
       } else {
         setState(() => _couponError = "Invalid Coupon Code");
@@ -154,7 +160,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
   }
 
   Future<void> _initiatePurchase() async {
-    final user = AuthService.instance.currentUser;
+    final user = ref.read(authNotifierProvider).user;
     if (user == null) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -265,7 +271,7 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
   String? _pendingOrderId; // To track the order being paid for
 
   Future<void> _completeCheckout(String paymentId) async {
-    final user = AuthService.instance.currentUser;
+    final user = ref.read(authNotifierProvider).user;
     if (user == null || _pendingOrderId == null) {
       if (mounted) setState(() => _isProcessing = false);
       return;
@@ -293,13 +299,13 @@ class _DirectCheckoutSheetState extends State<DirectCheckoutSheet> {
                     color: Theme.of(context).colorScheme.onPrimaryContainer)),
             backgroundColor: Theme.of(context).colorScheme.primaryContainer));
         // Navigate to Home tab
-        Provider.of<NavigationProvider>(context, listen: false).setIndex(0);
+        ref.read(navigationProvider.notifier).setIndex(0);
 
         // SYNC FIX: Auto-refresh data in background
         if (widget.test != null) {
-          context.read<TestProvider>().fetchUserTests(user.id);
+          ref.read(testNotifierProvider.notifier).fetchUserTests(user.id);
         } else if (widget.resource != null) {
-          context.read<ResourceProvider>().fetchPurchasedResources(user.id);
+          ref.read(resourceNotifierProvider.notifier).fetchPurchasedResources(user.id);
         }
       }
     } catch (e) {

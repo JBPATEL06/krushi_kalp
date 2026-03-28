@@ -1,4 +1,4 @@
-﻿class AppRadius {
+class AppRadius {
   AppRadius._();
 
   static const double xs = 2.0;

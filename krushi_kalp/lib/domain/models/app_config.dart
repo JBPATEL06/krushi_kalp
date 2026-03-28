@@ -1,4 +1,4 @@
-﻿class AppConfig {
+class AppConfig {
   final String key;
   final Map<String, dynamic> value;
   final String? description;

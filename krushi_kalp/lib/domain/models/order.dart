@@ -1,4 +1,4 @@
-﻿import 'order_item.dart';
+import 'order_item.dart';
 
 class Order {
   final String orderId;

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart'; // NEW
 import '../../core/theme/app_spacing.dart';
-import '../providers/auth_provider.dart';
-import '../providers/test_provider.dart';
-import '../providers/resource_provider.dart';
+import '../providers/auth_notifier.dart';
+import '../providers/test_notifier.dart';
+import '../providers/resource_notifier.dart';
+import '../providers/test_state.dart';
+import '../providers/resource_state.dart';
 import '../widgets/common/universal_item_card.dart';
 import '../utils/exam_helper.dart';
 import 'mock_test_detail_screen.dart';
@@ -12,14 +14,14 @@ import 'resource_detail_screen.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/resource.dart';
 
-class MyLibraryScreen extends StatefulWidget {
+class MyLibraryScreen extends ConsumerStatefulWidget {
   const MyLibraryScreen({super.key});
 
   @override
-  State<MyLibraryScreen> createState() => _MyLibraryScreenState();
+  ConsumerState<MyLibraryScreen> createState() => _MyLibraryScreenState();
 }
 
-class _MyLibraryScreenState extends State<MyLibraryScreen> {
+class _MyLibraryScreenState extends ConsumerState<MyLibraryScreen> {
   bool _isLoading = true;
   String _searchQuery = '';
   String _selectedSort = 'Newest';
@@ -59,11 +61,11 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
     if (!mounted) return;
     setState(() => _isLoading = true);
 
-    final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
+    final user = ref.read(authNotifierProvider).user;
     if (user != null) {
       await Future.wait([
-        context.read<TestProvider>().fetchUserTests(user.id),
-        context.read<ResourceProvider>().fetchPurchasedResources(user.id),
+        ref.read(testNotifierProvider.notifier).fetchUserTests(user.id),
+        ref.read(resourceNotifierProvider.notifier).fetchPurchasedResources(user.id),
       ]);
     }
 
@@ -197,11 +199,11 @@ class _MyLibraryScreenState extends State<MyLibraryScreen> {
 
   Widget _buildContentList() {
     final theme = Theme.of(context);
-    final testProvider = context.watch<TestProvider>();
-    final resourceProvider = context.watch<ResourceProvider>();
+    final testState = ref.watch(testNotifierProvider);
+    final resourceState = ref.watch(resourceNotifierProvider);
 
-    final tests = testProvider.userTests;
-    final resources = resourceProvider.purchasedResources;
+    final tests = testState.userTests;
+    final resources = resourceState.purchasedResources;
 
     List<dynamic> items = [];
 

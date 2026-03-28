@@ -1,36 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/services/payment_service.dart';
-import '../../data/services/auth_service.dart';
 import '../../data/services/cart_service.dart';
 import '../../data/services/offer_service.dart';
 import '../../data/services/test_service.dart';
 import '../../domain/models/offer.dart';
 import '../../domain/models/order_item.dart';
-import '../../utils/price_calculator.dart';
 import '../../core/theme/app_spacing.dart';
 
 import '../widgets/common/network_error_state.dart';
 import '../widgets/common/responsive_wrapper.dart';
 import 'cart/widgets/cart_item_widget.dart';
 import 'cart/widgets/cart_order_summary.dart';
-import '../providers/navigation_provider.dart';
-import '../providers/cart_provider.dart';
+import '../providers/cart_notifier.dart';
+import '../providers/auth_notifier.dart';
+import '../providers/navigation_notifier.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // NEW: Expose Supabase RPC
-import '../../utils/supabase_url_helper.dart'; // Ensure correct URL construction
+import '../../utils/supabase_url_helper.dart'; 
+import '../../utils/network_utils.dart'; // NEW: Expose NetworkUtils
 import '../../utils/error_utils.dart';
 import '../../utils/crashlytics_service.dart';
 
-class CartScreen extends StatefulWidget {
+class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
   @override
-  State<CartScreen> createState() => _CartScreenState();
+  ConsumerState<CartScreen> createState() => _CartScreenState();
 }
 
-class _CartScreenState extends State<CartScreen> {
+class _CartScreenState extends ConsumerState<CartScreen> {
   late Future<List<Map<String, dynamic>>> _cartFuture;
 
   List<Map<String, dynamic>> _currentCartItems = [];
@@ -79,7 +79,7 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   void _loadCart() {
-    final user = AuthService.instance.currentUser;
+    final user = ref.read(authNotifierProvider).user;
     if (user != null) {
       setState(() {
         _cartFuture = Future.wait([
@@ -125,20 +125,20 @@ class _CartScreenState extends State<CartScreen> {
                 imageUrl = path;
               }
 
-              // --- Calculate Automatic Sale Price ---
-              final priceData = PriceCalculator.calculateDisplayPrice(
-                basePrice: originalPrice,
-                baseMrp: item.mockTest?.mrp?.toDouble(), // Resource.mrp removed from model
-                activeOffers: saleOffers,
-                testId: item.testId,
-                resourceId: item.resourceId,
-                userId: user.id,
+              // --- Calculate Display Price via DB RPC ---
+              final itemType = item.testId != null ? 'mock_test' : 'resource';
+              final itemId = (item.testId ?? item.resourceId)!;
+              final priceData = await OfferService.instance.getDisplayPrice(
+                itemType: itemType,
+                itemId: itemId,
               );
 
-              final double finalPrice = priceData['finalPrice'];
-              final double mrp = priceData['mrp'];
-              final Offer? appliedSale = priceData['offer'];
-              // --------------------------------------
+              final double finalPrice =
+                  (priceData['final_price'] as double?) ?? originalPrice;
+              final double mrp =
+                  (priceData['mrp_display'] as double?) ?? originalPrice;
+              final bool hasSale = priceData['has_discount'] == true;
+              // ------------------------------------------
 
               return {
                 'item_id': item.itemId,
@@ -153,7 +153,7 @@ class _CartScreenState extends State<CartScreen> {
                 'image_url': imageUrl,
                 'color': Colors.blue[50], // Placeholder color
                 'offers': item.offers,
-                'appliedSale': appliedSale, // Store to detect later
+                'appliedSale': hasSale, // Store to detect auto-sale
               };
             }),
           );
@@ -235,7 +235,7 @@ class _CartScreenState extends State<CartScreen> {
             _currentCartItems.map((e) => e['test_id'] as int).toList();
 
         if (offer.isValid(
-          userId: AuthService.instance.currentUser!.id,
+          userId: ref.read(authNotifierProvider).user!.id,
           cartTotal: total,
           cartTestIds: testIds,
         )) {
@@ -277,7 +277,7 @@ class _CartScreenState extends State<CartScreen> {
 
   Future<void> _deleteItem(int itemId) async {
     try {
-      await context.read<CartProvider>().removeFromCart(itemId: itemId);
+      await ref.read(cartNotifierProvider.notifier).removeFromCart(itemId: itemId);
       await _refreshCart();
       if (mounted) {
         ScaffoldMessenger.of(
@@ -308,7 +308,7 @@ class _CartScreenState extends State<CartScreen> {
     final orderId = _currentCartItems.first['order_id'] as String;
     final total = _calculateTotal(_currentCartItems);
     final discount = _calculateTotalDiscount(_currentCartItems);
-    final user = AuthService.instance.currentUser;
+    final user = ref.read(authNotifierProvider).user;
 
     try {
       if (mounted) {
@@ -334,7 +334,7 @@ class _CartScreenState extends State<CartScreen> {
           ),
         );
         // Navigate to Home tab and pop the cart screen
-        Provider.of<NavigationProvider>(context, listen: false).setIndex(0);
+        ref.read(navigationProvider.notifier).setIndex(0);
         Navigator.pop(context);
       }
     } finally {
@@ -406,7 +406,7 @@ class _CartScreenState extends State<CartScreen> {
           }
           if (snapshot.hasError) {
             return NetworkErrorState(
-              message: isNetworkError(snapshot.error)
+              message: NetworkUtils.isNetworkError(snapshot.error)
                   ? 'Unable to load cart. Check your connection.'
                   : 'Something went wrong.',
               onRetry: _refreshCart,
@@ -704,10 +704,7 @@ class _CartScreenState extends State<CartScreen> {
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    Provider.of<NavigationProvider>(
-                      context,
-                      listen: false,
-                    ).setIndex(2); // 2 = Store tab
+                    ref.read(navigationProvider.notifier).setIndex(2); // 2 = Store tab
                   },
                   child: const Text('Go to Store'),
                 ),
@@ -775,7 +772,7 @@ class _CartScreenState extends State<CartScreen> {
                       if (_isProcessing) return;
                       setState(() => _isProcessing = true);
 
-                      final user = AuthService.instance.currentUser;
+                      final user = ref.read(authNotifierProvider).user;
                       if (user == null) {
                         setState(() => _isProcessing = false);
                         return;

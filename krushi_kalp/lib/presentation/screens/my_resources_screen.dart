@@ -1,11 +1,12 @@
-﻿import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import '../../data/services/auth_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../domain/models/resource.dart';
-import '../providers/resource_provider.dart';
-import '../providers/auth_provider.dart';
+import '../providers/resource_notifier.dart';
+import '../providers/auth_notifier.dart';
+import '../providers/resource_state.dart';
 import '../widgets/common/download_item_card.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../data/services/download_service.dart';
@@ -14,7 +15,7 @@ import '../widgets/common/download_action_button.dart';
 import 'pdf_viewer_screen.dart';
 import 'resource_detail_screen.dart';
 
-class MyResourcesScreen extends StatefulWidget {
+class MyResourcesScreen extends ConsumerStatefulWidget {
   final String title;
   final String category;
 
@@ -25,10 +26,10 @@ class MyResourcesScreen extends StatefulWidget {
   });
 
   @override
-  State<MyResourcesScreen> createState() => _MyResourcesScreenState();
+  ConsumerState<MyResourcesScreen> createState() => _MyResourcesScreenState();
 }
 
-class _MyResourcesScreenState extends State<MyResourcesScreen> {
+class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -53,31 +54,31 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    final user = context.read<AuthProvider>().currentUser;
+    final user = ref.read(authNotifierProvider).user;
     if (user != null) {
-      await context.read<ResourceProvider>().fetchPurchasedResources(user.id);
+      await ref.read(resourceNotifierProvider.notifier).fetchPurchasedResources(user.id);
     }
     if (mounted) {
       setState(() => _isLoading = false);
     }
   }
 
-  List<Resource> _getFilteredResources(ResourceProvider provider) {
+  List<Resource> _getFilteredResources(ResourceState state) {
     List<Resource> allResources;
     if (widget.category == 'E-Books') {
-      allResources = provider.ebooks;
+      allResources = state.ebooks;
     } else if (widget.category == 'Study Materials') {
-      allResources = provider.studyMaterials;
+      allResources = state.studyMaterials;
     } else if (widget.category == 'PYQs') {
-      allResources = provider.pyqs;
+      allResources = state.pyqs;
     } else if (widget.category == 'Current Affairs') {
-      allResources = provider.currentAffairs;
+      allResources = state.currentAffairs;
     } else {
       allResources = [];
     }
 
     var filtered = allResources
-        .where((r) => provider.purchasedResourceIds.contains(r.id))
+        .where((r) => state.purchasedResourceIds.contains(r.id))
         .toList();
 
     if (_searchQuery.isNotEmpty) {
@@ -100,8 +101,8 @@ class _MyResourcesScreenState extends State<MyResourcesScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final provider = context.watch<ResourceProvider>();
-    final resources = _getFilteredResources(provider);
+    final resourceState = ref.watch(resourceNotifierProvider);
+    final resources = _getFilteredResources(resourceState);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,

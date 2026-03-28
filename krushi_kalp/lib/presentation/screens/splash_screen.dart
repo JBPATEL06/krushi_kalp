@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import '../providers/auth_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/auth_notifier.dart';
 import '../../data/services/notification_service.dart';
 import '../../data/services/app_config_service.dart';
 import 'login_screen.dart';
 import 'main_screen.dart';
 import 'admin/admin_main_screen.dart';
 import 'update_required_screen.dart';
-import 'package:provider/provider.dart';
 import 'maintenance_screen.dart';
 import 'package:krushi_kalp/presentation/widgets/common/responsive_wrapper.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   /// Returns true if [current] is strictly less than [minimum].
   /// Both strings must be in "major.minor.patch" format, e.g. "1.2.0".
   bool _isVersionBelow(String current, String minimum) {
@@ -92,10 +92,11 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // ── Force Update Check ──────────────────────────────────────────────────
     if (!mounted) return;
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authState = ref.read(authNotifierProvider);
+    final authNotifier = ref.read(authNotifierProvider.notifier);
 
     int attempts = 0;
-    while (!authProvider.isAuthCheckComplete && attempts < 4) {
+    while (!authState.isAuthCheckComplete && attempts < 4) {
       // MODIFIED: max wait 800ms (was 2000ms)
       await Future.delayed(const Duration(milliseconds: 200));
       attempts++;
@@ -103,7 +104,7 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     if (!mounted) return;
-    final role = authProvider.userRole;
+    final role = authState.userRole;
 
     // ── App Status Checks (Skip for Admins) ──────────────────────────────────
     if (role != 'Admin') {
@@ -150,7 +151,7 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     // Final navigation
-    if (authProvider.isLoggedIn) {
+    if (authState.isLoggedIn) {
       if (role != 'Admin') {
         NotificationService().connectUser();
         if (mounted && !_disposed) {

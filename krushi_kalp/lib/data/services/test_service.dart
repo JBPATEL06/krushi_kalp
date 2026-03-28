@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/question.dart';
+import '../../domain/models/test_result.dart';
 import '../../utils/retry_helper.dart';
 import 'cart_service.dart';
 import 'auth_service.dart';
@@ -278,16 +279,18 @@ class TestService {
     }
   }
 
-  Future<List<dynamic>> fetchUserResults(String authUserId) async {
+  Future<List<TestResult>> fetchUserResults(String authUserId) async {
     try {
       final response = await _supabase
           .from('results')
           .select('*, mock_tests(title, total_marks)')
           .eq('user_id', authUserId)
           .order('attempt_date', ascending: false);
-      return response as List<dynamic>;
+      
+      final List<dynamic> data = response as List<dynamic>;
+      return data.map((json) => TestResult.fromJson(json)).toList();
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: fetchUserResults failed');
       throw Exception('Failed to load history: $e');
     }
   }
@@ -662,11 +665,19 @@ class TestService {
   }
 
   /// Fetches raw test data for admin tables.
-  Future<List<dynamic>> fetchAllTestsRaw() async {
-    return await _supabase
-        .from('mock_tests')
-        .select()
-        .order('created_at', ascending: false);
+  Future<List<MockTest>> fetchAllTestsRaw() async {
+    try {
+      final response = await _supabase
+          .from('mock_tests')
+          .select()
+          .order('created_at', ascending: false);
+      
+      final List<dynamic> data = response as List<dynamic>;
+      return await compute(_parseMockTests, data);
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: fetchAllTestsRaw failed');
+      rethrow;
+    }
   }
 
   /// Uploads a generated result PDF.

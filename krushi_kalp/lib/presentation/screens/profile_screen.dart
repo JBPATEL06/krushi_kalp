@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:krushi_kalp/presentation/widgets/common/responsive_wrapper.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../providers/auth_provider.dart';
-import '../providers/network_provider.dart';
-import '../providers/navigation_provider.dart';
+import '../providers/auth_notifier.dart';
+import '../providers/navigation_notifier.dart';
 import 'score_screen.dart';
 import 'main_screen.dart';
 import 'edit_profile_screen.dart';
-import '../../core/theme/app_spacing.dart'; // FIXED: Add import for AppSpacing
-import '../../core/theme/app_radius.dart'; // FIXED: Add import for AppRadius
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart';
 
 import 'package:krushi_kalp/presentation/screens/chat_screen.dart';
 
@@ -21,44 +20,31 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../utils/error_utils.dart';
 import '../../utils/crashlytics_service.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Stream<Map<String, dynamic>?> _profileStream = Stream.empty();
-
-  String? _selectedLanguage; // Optimistic UI state
-  bool _hadNetworkError = false;
+  String? _selectedLanguage;
 
   @override
   void initState() {
     super.initState();
-    _setupStream();
-    NetworkProvider().addListener(_onNetworkChange);
-  }
-
-  @override
-  void dispose() {
-    NetworkProvider().removeListener(_onNetworkChange);
-    super.dispose();
-  }
-
-  void _onNetworkChange() {
-    final isConnected = NetworkProvider().isConnected;
-    if (isConnected && _hadNetworkError && mounted) {
-      _hadNetworkError = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       _setupStream();
-    }
+    });
   }
 
   void _setupStream() {
-    final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
+    final user = ref.read(authNotifierProvider).user;
     if (user != null) {
-      _profileStream = AuthService.instance.streamUserProfile(user.id);
+      setState(() {
+        _profileStream = AuthService.instance.streamUserProfile(user.id);
+      });
     }
   }
 
@@ -67,12 +53,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await AuthService.instance.ensureProfileExists(user);
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'profile_screen');
-      // Profile creation errors are handled non-critically
     }
   }
 
   Future<void> _updateLanguage(String newLang) async {
-    final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
+    final user = ref.read(authNotifierProvider).user;
     if (user == null) return;
 
     setState(() {
@@ -107,27 +92,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // FIX: Use AuthProvider
-    final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.currentUser;
+    final user = ref.watch(authNotifierProvider).user;
     final meta = user?.userMetadata ?? {};
-    final name =
-        meta['full_name'] as String? ?? meta['name'] as String? ?? 'User';
+    final name = meta['full_name'] as String? ?? meta['name'] as String? ?? 'User';
     final email = user?.email ?? 'No Email';
-    final avatarUrl =
-        meta['avatar_url'] as String? ?? meta['picture'] as String?;
+    final avatarUrl = meta['avatar_url'] as String? ?? meta['picture'] as String?;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Profile',
-            style: TextStyle(fontSize: context.sp(20))), // FIXED
+        title: Text('Profile', style: TextStyle(fontSize: context.sp(20))),
         actions: [
           IconButton(
-            icon: Icon(Icons.edit_outlined, size: context.sp(24)), // FIXED
+            icon: Icon(Icons.edit_outlined, size: context.sp(24)),
             tooltip: 'Edit Profile',
             onPressed: () async {
-              final data = await AuthService.instance.getUserProfile(user!.id);
-              if (context.mounted && data != null) {
+              if (user == null) return;
+              final data = await AuthService.instance.getUserProfile(user.id);
+              if (mounted && data != null) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -138,9 +119,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
           ),
           IconButton(
-            icon: Icon(Icons.home, size: context.sp(28)), // FIXED
+            icon: Icon(Icons.home, size: context.sp(28)),
             onPressed: () {
-              context.read<NavigationProvider>().setIndex(0);
+              ref.read(navigationProvider.notifier).setIndex(0);
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (_) => const MainScreen()),
@@ -158,99 +139,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
           }
 
           if (snapshot.hasError) {
-            _hadNetworkError = isNetworkError(snapshot.error);
             return NetworkErrorState(
-              message: isNetworkError(snapshot.error)
-                  ? 'Unable to load profile.'
-                  : 'Something went wrong.',
+              message: 'Something went wrong.',
               onRetry: _setupStream,
             );
           }
 
           final data = snapshot.data;
-          // ... null check logic ...
-          if (data == null && !snapshot.hasError) {
+          if (data == null && !snapshot.hasError && user != null) {
             return Center(
-                child: ElevatedButton(
-                    onPressed: () => _ensureProfile(user!),
-                    child: const Text("Create Profile")));
+              child: ElevatedButton(
+                onPressed: () => _ensureProfile(user),
+                child: const Text("Create Profile"),
+              ),
+            );
           }
 
-          // Use optimistic value if set, otherwise stream value
-          final language =
-              _selectedLanguage ?? data?['language'] as String? ?? 'en';
+          final language = _selectedLanguage ?? data?['language'] as String? ?? 'en';
 
           return RefreshIndicator(
             onRefresh: () async {
-              setState(() {
-                _setupStream();
-              });
-              // Small delay to simulate refresh if stream is fast
+              _setupStream();
               await Future.delayed(const Duration(milliseconds: 500));
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.fromLTRB(
-                AppSpacing.md, // FIXED: AppSpacing.md
-                AppSpacing.md, // FIXED: AppSpacing.md
-                AppSpacing.md, // FIXED: AppSpacing.md
-                AppSpacing.md + MediaQuery.of(context).padding.bottom, // FIXED
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md + MediaQuery.of(context).padding.bottom,
               ),
               child: Column(
                 children: [
                   CircleAvatar(
-                    radius: context.w(50), // FIXED
+                    radius: context.w(50),
                     backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                    backgroundImage:
-                        avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                    child: avatarUrl == null
-                        ? Icon(Icons.person, size: context.sp(50)) // FIXED
-                        : null,
+                    backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                    child: avatarUrl == null ? Icon(Icons.person, size: context.sp(50)) : null,
                   ),
-                  SizedBox(height: AppSpacing.md), // FIXED: AppSpacing.md
-                  Text(name,
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
-                          ?.copyWith(fontSize: context.sp(24))), // FIXED
+                  const SizedBox(height: AppSpacing.md),
+                  Text(name, style: theme.textTheme.headlineSmall?.copyWith(fontSize: context.sp(24))),
                   Text(
                     email,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant
-                            .withValues(alpha: 0.7), // FIXED
-                        fontSize: context.sp(16)), // FIXED
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      fontSize: context.sp(16),
+                    ),
                   ),
-                  SizedBox(height: AppSpacing.xl), // FIXED: AppSpacing.xl
+                  const SizedBox(height: AppSpacing.xl),
 
                   // Language Toggle
                   Container(
-                    padding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.sm), // FIXED
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer
-                          .withValues(alpha: 0.1),
-                      borderRadius:
-                          BorderRadius.circular(AppRadius.lg), // FIXED
-                      border: Border.all(
-                          color: theme.colorScheme.primaryContainer
-                              .withValues(alpha: 0.2)),
+                      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      border: Border.all(color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.language,
-                                color: theme.colorScheme.primary,
-                                size: context.sp(24)), // FIXED
-                            SizedBox(width: AppSpacing.sm), // FIXED
+                            Icon(Icons.language, color: theme.colorScheme.primary, size: context.sp(24)),
+                            const SizedBox(width: AppSpacing.sm),
                             Text(
                               'Language',
                               style: TextStyle(
-                                fontSize: context.sp(16), // FIXED
+                                fontSize: context.sp(16),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -260,16 +217,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           value: language,
                           underline: const SizedBox(),
                           items: [
-                            DropdownMenuItem(
-                                value: 'en',
-                                child: Text('English',
-                                    style: TextStyle(
-                                        fontSize: context.sp(14)))), // FIXED
-                            DropdownMenuItem(
-                                value: 'gu',
-                                child: Text('Gujarati',
-                                    style: TextStyle(
-                                        fontSize: context.sp(14)))), // FIXED
+                            DropdownMenuItem(value: 'en', child: Text('English', style: TextStyle(fontSize: context.sp(14)))),
+                            DropdownMenuItem(value: 'gu', child: Text('Gujarati', style: TextStyle(fontSize: context.sp(14)))),
                           ],
                           onChanged: (val) {
                             if (val != null) _updateLanguage(val);
@@ -278,7 +227,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
-                  SizedBox(height: AppSpacing.lg), // FIXED
+                  const SizedBox(height: AppSpacing.lg),
 
                   _buildProfileOption(
                     context,
@@ -287,8 +236,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) => const ScoreScreen()),
+                        MaterialPageRoute(builder: (context) => const ScoreScreen()),
                       );
                     },
                   ),
@@ -299,28 +247,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => const ChatScreen(),
-                        ),
+                        MaterialPageRoute(builder: (context) => const ChatScreen()),
                       );
                     },
                   ),
 
-                  SizedBox(height: AppSpacing.lg), // FIXED
+                  const SizedBox(height: AppSpacing.lg),
 
-                  // About & Support Section
                   const Divider(),
                   Padding(
-                      padding: EdgeInsets.symmetric(
-                          vertical: AppSpacing.sm,
-                          horizontal: AppSpacing.xs), // FIXED
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text("About App",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: context.sp(14))), // FIXED
-                      )),
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.xs),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text("About App", style: TextStyle(fontWeight: FontWeight.bold, fontSize: context.sp(14))),
+                    ),
+                  ),
                   _buildProfileOption(
                     context,
                     icon: Icons.info_outline,
@@ -331,9 +272,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     context,
                     icon: Icons.contact_support,
                     title: 'Contact Us',
-                    onTap: () {
-                      _showContactOptions(context);
-                    },
+                    onTap: () => _showContactOptions(context),
                   ),
                   _buildProfileOption(
                     context,
@@ -348,50 +287,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onTap: () => _launchUrl(AppConfigService.termsUrl),
                   ),
 
-                  SizedBox(height: AppSpacing.xl), // FIXED
+                  const SizedBox(height: AppSpacing.xl),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () async {
-                        // FIX: Use AuthProvider
-                        await context.read<AuthProvider>().signOut();
-                        if (context.mounted) {
-                          Navigator.of(
-                            context,
-                          ).pushNamedAndRemoveUntil('/', (route) => false);
+                        await ref.read(authNotifierProvider.notifier).signOut();
+                        if (mounted) {
+                          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
                         }
                       },
-                      icon: Icon(Icons.logout, size: context.sp(20)), // FIXED
-                      label: Text('Logout',
-                          style: TextStyle(fontSize: context.sp(14))), // FIXED
+                      icon: Icon(Icons.logout, size: context.sp(20)),
+                      label: Text('Logout', style: TextStyle(fontSize: context.sp(14))),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: theme.colorScheme.error,
                         side: BorderSide(color: theme.colorScheme.error),
-                        padding: EdgeInsets.all(AppSpacing.md), // FIXED
+                        padding: const EdgeInsets.all(AppSpacing.md),
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.md), // FIXED
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(height: AppSpacing.md), // FIXED
+                  const SizedBox(height: AppSpacing.md),
                   SizedBox(
                     width: double.infinity,
                     child: TextButton.icon(
                       onPressed: () => _confirmDeleteAccount(context),
-                      icon: Icon(Icons.delete_forever,
-                          size: context.sp(20)), // FIXED
-                      label: Text('Delete Account',
-                          style: TextStyle(fontSize: context.sp(14))), // FIXED
+                      icon: Icon(Icons.delete_forever, size: context.sp(20)),
+                      label: Text('Delete Account', style: TextStyle(fontSize: context.sp(14))),
                       style: TextButton.styleFrom(
-                        foregroundColor: theme.colorScheme.onSurfaceVariant
-                            .withValues(alpha: 0.6), // FIXED
-                        padding: EdgeInsets.all(AppSpacing.md), // FIXED
+                        foregroundColor: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                        padding: const EdgeInsets.all(AppSpacing.md),
                       ),
                     ),
                   ),
-                  SizedBox(height: AppSpacing.lg), // FIXED
+                  const SizedBox(height: AppSpacing.lg),
                 ],
               ),
             ),
@@ -410,15 +341,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }) {
     final theme = Theme.of(context);
     return ListTile(
-      leading: Icon(icon,
-          color: theme.colorScheme.primary, size: context.sp(24)), // FIXED
-      title: Text(title, style: TextStyle(fontSize: context.sp(16))), // FIXED
-      subtitle: subtitle != null
-          ? Text(subtitle, style: TextStyle(fontSize: context.sp(13))) // FIXED
-          : null,
-      trailing: Icon(Icons.chevron_right,
-          color: theme.colorScheme.onSurfaceVariant,
-          size: context.sp(24)), // FIXED
+      leading: Icon(icon, color: theme.colorScheme.primary, size: context.sp(24)),
+      title: Text(title, style: TextStyle(fontSize: context.sp(16))),
+      subtitle: subtitle != null ? Text(subtitle, style: TextStyle(fontSize: context.sp(13))) : null,
+      trailing: Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant, size: context.sp(24)),
       onTap: onTap,
     );
   }
@@ -439,8 +365,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style:
-                TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
+            style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
             child: const Text('Send Request'),
           ),
         ],
@@ -449,31 +374,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (confirmed == true && mounted) {
       try {
-        // Show loading
-        if (!context.mounted) return;
         showDialog(
           context: context,
           barrierDismissible: false,
           builder: (_) => const Center(child: CircularProgressIndicator()),
         );
 
-        await ChatService.instance.sendMessage(
-            "I need to delete account. Please process my request.");
+        await ChatService.instance.sendMessage("I need to delete account. Please process my request.");
 
-        if (context.mounted) {
-          Navigator.pop(context); // Pop loading
+        if (mounted) {
+          Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Deletion request sent to admin support.'),
-              backgroundColor:
-                  theme.colorScheme.primary, // Using primary for success
+              content: const Text('Deletion request sent to admin support.'),
+              backgroundColor: theme.colorScheme.primary,
             ),
           );
         }
       } catch (e, stack) {
         CrashlyticsService.instance.recordError(e, stack, reason: 'profile_screen');
-        if (context.mounted) {
-          Navigator.pop(context); // Pop loading
+        if (mounted) {
+          Navigator.pop(context);
           ErrorUtils.showError(context, e);
         }
       }
@@ -494,44 +415,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
           AppSpacing.lg,
           AppSpacing.lg + MediaQuery.of(context).padding.bottom,
         ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Contact Us",
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontSize: context.sp(20), // FIXED
-                    ),
-              ),
-              SizedBox(height: AppSpacing.lg), // FIXED
-              ListTile(
-                leading: Icon(Icons.email,
-                    color: theme.colorScheme.primary,
-                    size: context.sp(24)), // FIXED
-                title: Text("Email Support",
-                    style: TextStyle(fontSize: context.sp(16))), // FIXED
-                onTap: () {
-                  Navigator.pop(context);
-                  final email = AppConfigService.email;
-                  _launchUrl("mailto:$email");
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.send,
-                    color: theme.colorScheme.tertiary,
-                    size: context.sp(24)), // FIXED
-                title: Text("Telegram",
-                    style: TextStyle(fontSize: context.sp(16))), // FIXED
-                onTap: () {
-                  Navigator.pop(context);
-                  final username =
-                      AppConfigService.telegramUsername.replaceAll('@', '');
-                  _launchUrl("https://t.me/$username");
-                },
-              ),
-            ],
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Contact Us",
+              style: theme.textTheme.titleLarge?.copyWith(fontSize: context.sp(20)),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            ListTile(
+              leading: Icon(Icons.email, color: theme.colorScheme.primary, size: context.sp(24)),
+              title: Text("Email Support", style: TextStyle(fontSize: context.sp(16))),
+              onTap: () {
+                Navigator.pop(context);
+                final email = AppConfigService.email;
+                _launchUrl("mailto:$email");
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.send, color: theme.colorScheme.tertiary, size: context.sp(24)),
+              title: Text("Telegram", style: TextStyle(fontSize: context.sp(16))),
+              onTap: () {
+                Navigator.pop(context);
+                final username = AppConfigService.telegramUsername.replaceAll('@', '');
+                _launchUrl("https://t.me/$username");
+              },
+            ),
+          ],
         ),
+      ),
     );
   }
 }

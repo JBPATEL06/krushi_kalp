@@ -1,21 +1,13 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/screens/splash_screen.dart';
 import 'presentation/screens/about_screen.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'presentation/providers/auth_provider.dart';
-import 'presentation/providers/test_provider.dart';
-import 'presentation/providers/admin_provider.dart';
-
-import 'presentation/providers/offer_provider.dart';
-import 'presentation/providers/navigation_provider.dart';
-import 'presentation/providers/cart_provider.dart';
-import 'presentation/providers/resource_provider.dart';
 import 'presentation/utils/navigator_key.dart';
 import 'presentation/widgets/common/responsive_wrapper.dart';
 import 'presentation/widgets/common/network_aware_wrapper.dart';
@@ -72,17 +64,8 @@ Future<void> main() async {
   }
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => TestProvider()),
-        ChangeNotifierProvider(create: (_) => AdminProvider()),
-        ChangeNotifierProvider(create: (_) => OfferProvider()),
-        ChangeNotifierProvider(create: (_) => NavigationProvider()),
-        ChangeNotifierProvider(create: (_) => CartProvider()),
-        ChangeNotifierProvider(create: (_) => ResourceProvider()),
-      ],
-      child: const MyApp(),
+    const ProviderScope(
+      child: MyApp(),
     ),
   );
 }

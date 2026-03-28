@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class ChatInput extends StatefulWidget {
   final Function(String) onSendPressed;

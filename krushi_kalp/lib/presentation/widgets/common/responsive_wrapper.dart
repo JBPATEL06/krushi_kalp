@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 export 'package:krushi_kalp/utils/responsive.dart';
 
 class ResponsiveWrapper extends StatelessWidget {

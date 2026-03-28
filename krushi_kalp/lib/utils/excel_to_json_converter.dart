@@ -1,4 +1,4 @@
-﻿import 'package:excel/excel.dart';
+import 'package:excel/excel.dart';
 
 /// A utility class to convert Excel files into JSON-compatible Lists.
 class ExcelToJsonConverter {

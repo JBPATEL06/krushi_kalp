@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../../../domain/models/resource.dart';
-import '../../../../data/services/auth_service.dart';
 import '../../../../domain/models/offer.dart';
 import '../../../../core/theme/app_spacing.dart';
 import 'store_item_card.dart';
-import '../../../../utils/price_calculator.dart';
+import '../../../../data/services/offer_service.dart';
 import '../../../../data/services/review_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../widgets/common/download_action_button.dart';
 import '../../../widgets/common/responsive_wrapper.dart';
 
-class StoreResourceGrid extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../providers/auth_notifier.dart';
+
+class StoreResourceGrid extends ConsumerStatefulWidget {
   final List<Resource> resources;
   final List<Offer>? activeOffers;
   final Set<int> purchasedIds;
@@ -33,17 +35,18 @@ class StoreResourceGrid extends StatefulWidget {
   });
 
   @override
-  State<StoreResourceGrid> createState() => _StoreResourceGridState();
+  ConsumerState<StoreResourceGrid> createState() => _StoreResourceGridState();
 }
 
-class _StoreResourceGridState extends State<StoreResourceGrid> {
-  // Cache: resourceId -> {average: double, count: int}
+class _StoreResourceGridState extends ConsumerState<StoreResourceGrid> {
   final Map<int, Map<String, dynamic>> _ratingsCache = {};
+  final Map<int, Map<String, dynamic>> _pricesCache = {};
 
   @override
   void initState() {
     super.initState();
     _fetchAllRatings();
+    _fetchAllPrices();
   }
 
   @override
@@ -51,26 +54,42 @@ class _StoreResourceGridState extends State<StoreResourceGrid> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.resources != widget.resources) {
       _fetchAllRatings();
+      _fetchAllPrices();
     }
   }
 
   Future<void> _fetchAllRatings() async {
-    // Only fetch IDs not already in cache
     final uncachedIds = widget.resources
         .map((r) => r.id)
         .where((id) => !_ratingsCache.containsKey(id))
         .toList();
-
     if (uncachedIds.isEmpty) return;
-
     try {
       final bulk =
           await ReviewService.getBulkRatingStats(uncachedIds, 'resource');
-      if (mounted) {
-        setState(() => _ratingsCache.addAll(bulk));
-      }
+      if (mounted) setState(() => _ratingsCache.addAll(bulk));
     } catch (_) {
       // Silently skip — cards will render without ratings
+    }
+  }
+
+  Future<void> _fetchAllPrices() async {
+    final uncached = widget.resources
+        .where((r) => !_pricesCache.containsKey(r.id))
+        .toList();
+    if (uncached.isEmpty) return;
+    final results = await Future.wait(
+      uncached.map((r) => OfferService.instance.getDisplayPrice(
+        itemType: 'resource',
+        itemId: r.id,
+      )),
+    );
+    if (mounted) {
+      setState(() {
+        for (int i = 0; i < uncached.length; i++) {
+          _pricesCache[uncached[i].id] = results[i];
+        }
+      });
     }
   }
 
@@ -103,33 +122,16 @@ class _StoreResourceGridState extends State<StoreResourceGrid> {
   }
 
   Widget _buildCard(BuildContext context, Resource resource) {
-    final isInCart = widget.cartItemIds.contains(resource.id);
+    final isInCart    = widget.cartItemIds.contains(resource.id);
     final isPurchased = widget.purchasedIds.contains(resource.id);
 
-    final saleOffers = widget.activeOffers?.where((o) => o.isSale).toList();
-
-    double displayPrice = resource.price;
-    // mrp and discountTag come from PriceCalculator below, not from Resource model
-    double? mrp;
-    String? discountTag;
-
-    if (widget.activeOffers != null && widget.activeOffers!.isNotEmpty) {
-      final priceData = PriceCalculator.calculateDisplayPrice(
-        basePrice: resource.price,
-        activeOffers: saleOffers,
-        resourceId: resource.id,
-      );
-      if (priceData['offer'] != null) {
-        displayPrice = priceData['finalPrice'];
-        mrp = priceData['mrp'];
-        final Offer offer = priceData['offer'];
-        if (offer.discountType == 'PERCENTAGE') {
-          discountTag = '${offer.discountValue.toStringAsFixed(0)}% OFF';
-        } else {
-          discountTag = '₹${offer.discountValue.toStringAsFixed(0)} OFF';
-        }
-      }
-    }
+    // Use DB-cached price data; fall back to base price until RPC returns
+    final priceData    = _pricesCache[resource.id];
+    final displayPrice = (priceData?['final_price'] as double?) ?? resource.price;
+    final double? mrp  = (priceData?['has_discount'] == true)
+        ? (priceData!['mrp_display'] as double?)
+        : null;
+    final String? discountTag = priceData?['discount_label'] as String?;
 
     String subtitle = resource.type.toString().split('.').last.toUpperCase();
     if (resource.category != null) {
@@ -165,7 +167,7 @@ class _StoreResourceGridState extends State<StoreResourceGrid> {
               url: resource.fileUrl,
               startLabel: "Open",
               isFullWidth: false,
-              userId: AuthService.instance.currentUser?.id,
+              userId: ref.read(authNotifierProvider).user?.id,
               displayName: resource.title, // CHANGED
               onAction: () async {
                 widget.onBuyTap(resource);

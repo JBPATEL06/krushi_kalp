@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:krushi_kalp/presentation/providers/admin_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:krushi_kalp/presentation/providers/admin_notifier.dart';
 import 'package:krushi_kalp/data/services/admin_service.dart';
 import 'package:krushi_kalp/presentation/widgets/common/network_error_state.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
@@ -9,14 +9,14 @@ import 'admin_offer_list_screen.dart';
 import 'admin_store_screen.dart';
 import 'revenue_details_screen.dart';
 
-class AdminAnalysisScreen extends StatefulWidget {
+class AdminAnalysisScreen extends ConsumerStatefulWidget {
   const AdminAnalysisScreen({super.key});
 
   @override
-  State<AdminAnalysisScreen> createState() => _AdminAnalysisScreenState();
+  ConsumerState<AdminAnalysisScreen> createState() => _AdminAnalysisScreenState();
 }
 
-class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
+class _AdminAnalysisScreenState extends ConsumerState<AdminAnalysisScreen> {
   late Stream<Map<String, dynamic>> _statsStream;
 
   @override
@@ -94,7 +94,7 @@ class _AdminAnalysisScreenState extends State<AdminAnalysisScreen> {
                         Icons.people_rounded,
                         const Color(0xFF3B82F6), // Blue
                         onTap: () =>
-                            context.read<AdminProvider>().setNavIndex(2),
+                            ref.read(adminNotifierProvider.notifier).setNavIndex(2),
                       ),
                       _buildStatCard(
                         context,

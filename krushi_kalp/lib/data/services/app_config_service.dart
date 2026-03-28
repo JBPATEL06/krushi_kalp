@@ -38,22 +38,26 @@ class AppConfigService {
   }
 
   /// Get a specific config value (from cache or default)
-  static dynamic getValue(String key, String field, {dynamic defaultValue}) {
+  static T getValue<T>(String key, String field, {required T defaultValue}) {
     if (_configCache.containsKey(key)) {
       final val = _configCache[key]!.value[field];
       if (val == null) return defaultValue;
 
       // Type safety: handle String-to-Int/Bool conversions if necessary
       if (defaultValue is int && val is! int) {
-        return int.tryParse(val.toString()) ?? defaultValue;
+        return (int.tryParse(val.toString()) ?? defaultValue) as T;
       }
       if (defaultValue is bool && val is! bool) {
-        if (val.toString().toLowerCase() == 'true') return true;
-        if (val.toString().toLowerCase() == 'false') return false;
+        if (val.toString().toLowerCase() == 'true') return true as T;
+        if (val.toString().toLowerCase() == 'false') return false as T;
         return defaultValue;
       }
 
-      return val;
+      try {
+        return val as T;
+      } catch (e) {
+        return defaultValue;
+      }
     }
     return defaultValue;
   }
@@ -92,42 +96,42 @@ class AppConfigService {
   // REPLACED: isReviewsEnabled -> areReviewsVisible & canWriteReviews
 
   static bool get areReviewsVisible =>
-      getValue('feature_reviews', 'show_reviews', defaultValue: true);
+      getValue<bool>('feature_reviews', 'show_reviews', defaultValue: true);
 
   static bool get canWriteReviews =>
-      getValue('feature_reviews', 'allow_writing', defaultValue: true);
+      getValue<bool>('feature_reviews', 'allow_writing', defaultValue: true);
 
   static bool get isMaintenanceMode =>
-      getValue('app_status', 'maintenance_mode', defaultValue: false);
+      getValue<bool>('app_status', 'maintenance_mode', defaultValue: false);
 
-  static String get maintenanceMessage => getValue('app_status', 'message',
+  static String get maintenanceMessage => getValue<String>('app_status', 'message',
       defaultValue: "App is under maintenance. Please try again later.");
 
   static String get whatsappNumber =>
-      getValue('contact_info', 'whatsapp', defaultValue: "");
+      getValue<String>('contact_info', 'whatsapp', defaultValue: "");
 
   static String get email =>
-      getValue('contact_info', 'email', defaultValue: "support@krushikalp.com");
+      getValue<String>('contact_info', 'email', defaultValue: "support@krushikalp.com");
 
   static String get telegramUsername =>
-      getValue('contact_info', 'telegram', defaultValue: "krushi_kalp");
+      getValue<String>('contact_info', 'telegram', defaultValue: "krushi_kalp");
 
-  static String get privacyPolicyUrl => getValue('legal_urls', 'privacy_policy',
+  static String get privacyPolicyUrl => getValue<String>('legal_urls', 'privacy_policy',
       defaultValue: "https://krushikalp.netlify.app/privacy-policy");
 
-  static String get termsUrl => getValue('legal_urls', 'terms_conditions',
+  static String get termsUrl => getValue<String>('legal_urls', 'terms_conditions',
       defaultValue: "https://krushikalp.netlify.app/terms-and-conditions");
 
   // --- Banner Settings ---
 
   static int get bannerInterval {
-    final val = getValue('banner_settings', 'interval', defaultValue: 15);
+    final val = getValue<int>('banner_settings', 'interval', defaultValue: 15);
     
     return val;
   }
 
   static bool get bannerAutoScroll {
-    final val = getValue('banner_settings', 'auto_scroll', defaultValue: false);
+    final val = getValue<bool>('banner_settings', 'auto_scroll', defaultValue: false);
     
     return val;
   }
@@ -137,7 +141,7 @@ class AppConfigService {
   /// The minimum version string users must have (e.g. "1.2.0").
   /// Returns null if no minimum is configured — meaning updates are not forced.
   static String? get minVersion =>
-      getValue('app_status', 'min_version', defaultValue: null);
+      getValue<String?>('app_status', 'min_version', defaultValue: null);
 
   /// Fetches the about_page config block.
   static Future<Map<String, dynamic>> fetchAboutConfig() async {

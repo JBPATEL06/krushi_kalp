@@ -1,4 +1,4 @@
-﻿class AppSpacing {
+class AppSpacing {
   // 8-Point Grid System
   static const double xs = 4.0;
   static const double sm = 8.0;

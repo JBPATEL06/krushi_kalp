@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import '../../providers/network_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/network_notifier.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../utils/navigator_key.dart';
 
@@ -15,16 +15,16 @@ const String _kNoInternetRoute = '/no-internet';
 /// When connectivity is lost â†’ pushes [NoInternetScreen] on top of everything.
 /// When connectivity returns â†’ pops [NoInternetScreen] automatically.
 /// Back-button on [NoInternetScreen] â†’ exits the app.
-class NetworkAwareWrapper extends StatefulWidget {
+class NetworkAwareWrapper extends ConsumerStatefulWidget {
   final Widget child;
 
   const NetworkAwareWrapper({super.key, required this.child});
 
   @override
-  State<NetworkAwareWrapper> createState() => _NetworkAwareWrapperState();
+  ConsumerState<NetworkAwareWrapper> createState() => _NetworkAwareWrapperState();
 }
 
-class _NetworkAwareWrapperState extends State<NetworkAwareWrapper> {
+class _NetworkAwareWrapperState extends ConsumerState<NetworkAwareWrapper> {
   bool _isNoInternetVisible = false;
 
   @override
@@ -32,29 +32,23 @@ class _NetworkAwareWrapperState extends State<NetworkAwareWrapper> {
     super.initState();
     // Listen after the first frame so navigatorKey.currentState is ready.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final networkProvider = NetworkProvider();
-      networkProvider.addListener(_onConnectivityChanged);
-      // Check current state immediately
-      if (networkProvider.isInitialized && !networkProvider.isConnected) {
-        _showGate();
-      }
+      _checkInitialState();
     });
+  }
+
+  void _checkInitialState() {
+    final isConnected = ref.read(networkNotifierProvider);
+    if (!isConnected) {
+      _showGate();
+    }
   }
 
   @override
   void dispose() {
-    NetworkProvider().removeListener(_onConnectivityChanged);
     super.dispose();
   }
 
-  void _onConnectivityChanged() {
-    final isConnected = NetworkProvider().isConnected;
-    if (!isConnected && !_isNoInternetVisible) {
-      _showGate();
-    } else if (isConnected && _isNoInternetVisible) {
-      _hideGate();
-    }
-  }
+
 
   void _showGate() {
     if (_isNoInternetVisible) return;
@@ -89,11 +83,16 @@ class _NetworkAwareWrapperState extends State<NetworkAwareWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    // Also provide NetworkProvider to the widget tree for other consumers.
-    return ChangeNotifierProvider<NetworkProvider>.value(
-      value: NetworkProvider(),
-      child: widget.child,
-    );
+    // Listen for connectivity changes
+    ref.listen(networkNotifierProvider, (previous, next) {
+      if (!next && !_isNoInternetVisible) {
+        _showGate();
+      } else if (next && _isNoInternetVisible) {
+        _hideGate();
+      }
+    });
+
+    return widget.child;
   }
 }
 
@@ -101,14 +100,14 @@ class _NetworkAwareWrapperState extends State<NetworkAwareWrapper> {
 //  Full-screen No Internet gate
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-class NoInternetScreen extends StatefulWidget {
+class NoInternetScreen extends ConsumerStatefulWidget {
   const NoInternetScreen({super.key});
 
   @override
-  State<NoInternetScreen> createState() => _NoInternetScreenState();
+  ConsumerState<NoInternetScreen> createState() => _NoInternetScreenState();
 }
 
-class _NoInternetScreenState extends State<NoInternetScreen>
+class _NoInternetScreenState extends ConsumerState<NoInternetScreen>
     with TickerProviderStateMixin {
   bool _isRetrying = false;
 
@@ -159,7 +158,7 @@ class _NoInternetScreenState extends State<NoInternetScreen>
   Future<void> _retry() async {
     if (_isRetrying) return;
     setState(() => _isRetrying = true);
-    await NetworkProvider().checkConnectivity();
+    await ref.read(networkNotifierProvider.notifier).checkConnectivity();
     if (mounted) setState(() => _isRetrying = false);
   }
 

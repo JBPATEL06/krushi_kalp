@@ -1,12 +1,11 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:krushi_kalp/data/services/performance_service.dart';
-import 'package:krushi_kalp/presentation/utils/navigator_key.dart';
-import 'package:provider/provider.dart';
-import 'package:krushi_kalp/presentation/providers/auth_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:krushi_kalp/presentation/providers/auth_notifier.dart';
 
-class PdfViewerScreen extends StatefulWidget {
+class PdfViewerScreen extends ConsumerStatefulWidget {
   final File file;
   final String? password;
   final String title;
@@ -19,10 +18,10 @@ class PdfViewerScreen extends StatefulWidget {
   });
 
   @override
-  State<PdfViewerScreen> createState() => _PdfViewerScreenState();
+  ConsumerState<PdfViewerScreen> createState() => _PdfViewerScreenState();
 }
 
-class _PdfViewerScreenState extends State<PdfViewerScreen> {
+class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
   int? pages = 0;
   int? currentPage = 0;
   bool isReady = false;
@@ -50,10 +49,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
     if (_openedAt != null) {
       final durationSeconds = DateTime.now().difference(_openedAt!).inSeconds;
       if (durationSeconds >= 300) {
-        // Get userId via global navigatorKey — safe in dispose
-        final ctx = navigatorKey.currentContext;
-        final userId =
-            ctx != null ? (ctx.read<AuthProvider>().currentUser?.id ?? '') : '';
+        final userId = ref.read(authNotifierProvider).user?.id ?? '';
         if (userId.isNotEmpty) {
           PerformanceService.instance
               .updateUserStreak(userId, durationSeconds, 'resource_read')

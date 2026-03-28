@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import '../../domain/models/resource.dart';
 import '../../core/theme/app_spacing.dart';
 
-import 'package:provider/provider.dart';
-import '../../data/services/auth_service.dart';
-import '../providers/resource_provider.dart';
-import '../providers/offer_provider.dart';
-import '../../utils/price_calculator.dart';
+import '../providers/resource_notifier.dart';
+import '../providers/offer_notifier.dart';
+import '../providers/auth_notifier.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/services/offer_service.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -25,7 +25,7 @@ import 'dart:io';
 import '../widgets/common/download_progress_dialog.dart';
 import '../../utils/crashlytics_service.dart';
 
-class ResourceDetailScreen extends StatefulWidget {
+class ResourceDetailScreen extends ConsumerStatefulWidget {
   final Resource resource;
   final bool isPurchased;
   final String? heroTag;
@@ -38,20 +38,31 @@ class ResourceDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<ResourceDetailScreen> createState() => _ResourceDetailScreenState();
+  ConsumerState<ResourceDetailScreen> createState() => _ResourceDetailScreenState();
 }
 
-class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
+class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
   bool _isLoadingReviews = true;
   bool _configLoaded = false;
   List<Review> _reviews = [];
   Review? _userReview;
   Map<String, dynamic> _ratingStats = {'average': 0.0, 'count': 0};
+  // DB-driven display price
+  Map<String, dynamic>? _priceData;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _fetchDisplayPrice();
+  }
+
+  Future<void> _fetchDisplayPrice() async {
+    final data = await OfferService.instance.getDisplayPrice(
+      itemType: 'resource',
+      itemId: widget.resource.id,
+    );
+    if (mounted) setState(() => _priceData = data);
   }
 
   Future<void> _loadData() async {
@@ -64,7 +75,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
     if (!mounted) return;
     setState(() => _isLoadingReviews = true);
     try {
-      final user = AuthService.instance.currentUser;
+      final user = ref.read(authNotifierProvider).user;
       final futures = <Future>[
         ReviewService.getReviewsForItem(widget.resource.id, 'resource'),
         ReviewService.getRatingStats(widget.resource.id, 'resource'),
@@ -83,17 +94,20 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
           } else {
             _userReview = null;
           }
-          _isLoadingReviews = false;
+          // _isLoadingReviews = false; // Moved to finally block
         });
       }
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_detail_screen');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'resource_detail_screen');
+      // if (mounted) setState(() => _isLoadingReviews = false); // Moved to finally block
+    } finally {
       if (mounted) setState(() => _isLoadingReviews = false);
     }
   }
 
   void _showReviewDialog() {
-    final user = AuthService.instance.currentUser;
+    final user = ref.read(authNotifierProvider).user;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please login to review')),
@@ -123,7 +137,8 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
             );
             _loadReviews();
           } catch (e, stack) {
-            CrashlyticsService.instance.recordError(e, stack, reason: 'resource_detail_screen');
+            CrashlyticsService.instance
+                .recordError(e, stack, reason: 'resource_detail_screen');
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Failed to submit: $e')),
@@ -141,7 +156,8 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
             );
             _loadReviews();
           } catch (e, stack) {
-            CrashlyticsService.instance.recordError(e, stack, reason: 'resource_detail_screen');
+            CrashlyticsService.instance
+                .recordError(e, stack, reason: 'resource_detail_screen');
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Failed to delete: $e')),
@@ -154,12 +170,11 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
 
   Future<void> _openResource(Resource resource) async {
     final filename = 'resource_${resource.id}.pdf';
-    final userId = AuthService.instance.currentUser?.id;
+    final user = ref.read(authNotifierProvider).user;
+    final userId = user?.id;
     if (userId == null) return;
-
     final isDownloaded =
         await DownloadService().isFileDownloaded(filename, userId: userId);
-
     if (isDownloaded) {
       final path =
           await DownloadService().getLocalPath(filename, userId: userId);
@@ -168,10 +183,8 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => PdfViewerScreen(
-                file: File(path),
-                title: resource.title,
-              ),
+              builder: (_) =>
+                  PdfViewerScreen(file: File(path), title: resource.title),
             ),
           );
         }
@@ -194,7 +207,6 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
       Resource resource, String filename, String userId) async {
     if (!mounted) return;
     final outerContext = context;
-
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -208,10 +220,8 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
           Navigator.push(
             outerContext,
             MaterialPageRoute(
-              builder: (_) => PdfViewerScreen(
-                file: File(path),
-                title: resource.title,
-              ),
+              builder: (_) =>
+                  PdfViewerScreen(file: File(path), title: resource.title),
             ),
           );
         },
@@ -232,29 +242,24 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final resource = widget.resource;
-    final isPurchased = context
-        .watch<ResourceProvider>()
+    final isPurchased = ref.watch(resourceNotifierProvider)
         .purchasedResourceIds
         .contains(resource.id);
 
-    final activeOffers = context.watch<OfferProvider>().activeOffers;
-    final user = AuthService.instance.currentUser;
-    final priceData = PriceCalculator.calculateDisplayPrice(
-      basePrice: resource.price,
-      activeOffers: activeOffers,
-      resourceId: resource.id,
-      userId: user?.id,
-    );
-    final double finalPrice = priceData['finalPrice'];
-    final double originalPrice = priceData['mrp'];
-    final bool hasDiscount = finalPrice < originalPrice;
+    // Watch for offer changes (for reactivity if offers update)
+    ref.watch(offerNotifierProvider);
+
+    // DB-driven display pricing from _priceData
+    final double finalPrice =
+        (_priceData?['final_price'] as double?) ?? resource.price;
+    final double originalPrice =
+        (_priceData?['mrp_display'] as double?) ?? resource.price;
+    final bool hasDiscount = _priceData?['has_discount'] == true;
 
     double percentOff = 0;
     if (hasDiscount && originalPrice > 0) {
       percentOff = ((originalPrice - finalPrice) / originalPrice) * 100;
     }
-
-    // final inCart = context.watch<CartProvider>().isResourceInCart(resource.id);
 
     // Base layout colors from theme
     final bgColor = theme.scaffoldBackgroundColor;
@@ -271,7 +276,6 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
         centerTitle: false,
         foregroundColor: textPrimary,
       ),
-      // bottomNavigationBar removed entirely per user request
       body: RefreshIndicator(
         onRefresh: () async => await _loadReviews(),
         child: SingleChildScrollView(
@@ -341,7 +345,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                                         horizontal: AppSpacing.sm, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: theme.colorScheme.primaryContainer
-                                          .withValues(alpha: 0.2), // Light faded primary
+                                          .withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(4),
                                       border: Border.all(
                                           color: theme.colorScheme.primary
@@ -353,8 +357,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                                           .textTheme
                                           .labelMedium
                                           ?.copyWith(
-                                            color: theme.colorScheme
-                                                .primary, // Primary color defined by your themes
+                                            color: theme.colorScheme.primary,
                                             fontWeight: FontWeight.w800,
                                           ),
                                     ),
@@ -381,7 +384,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                                       color: theme.colorScheme.secondary),
                                   const SizedBox(width: 4),
                                   Text(
-                                    "Purchased",
+                                    'Purchased',
                                     style: Theme.of(context)
                                         .textTheme
                                         .titleMedium
@@ -401,9 +404,9 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                               testId: resource.id.toString(),
                               filename: 'resource_${resource.id}.pdf',
                               url: resource.fileUrl,
-                              startLabel: "Open PDF",
+                              startLabel: 'Open PDF',
                               isFullWidth: true,
-                              userId: AuthService.instance.currentUser?.id,
+                              userId: ref.read(authNotifierProvider).user?.id,
                               displayName: resource.title,
                               onAction: () => _openResource(resource),
                             ),
@@ -449,7 +452,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Description",
+                            'Description',
                             style: Theme.of(context)
                                 .textTheme
                                 .titleLarge
@@ -460,8 +463,8 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                           ),
                           const SizedBox(height: AppSpacing.sm),
                           Text(
-                            (resource.description ?? "").isEmpty
-                                ? "No description available for this resource."
+                            (resource.description ?? '').isEmpty
+                                ? 'No description available for this resource.'
                                 : resource.description!,
                             style: Theme.of(context)
                                 .textTheme
@@ -477,7 +480,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
 
                     const SizedBox(height: AppSpacing.md),
 
-                    // Student Reviews Section (Rendered on scaffold directly)
+                    // Student Reviews Section
                     _buildReviewsSection(isPurchased, isDark, textPrimary),
 
                     const SizedBox(height: 60),
@@ -541,9 +544,8 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
       child: Container(
         height: 260,
         width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors
-              .transparent, // Blends with the UI background per user request
+        decoration: const BoxDecoration(
+          color: Colors.transparent,
         ),
         child: CachedNetworkImage(
           imageUrl: widget.resource.thumbnailUrl!,
@@ -560,7 +562,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
       return const SizedBox.shrink();
     }
 
-    final user = AuthService.instance.currentUser;
+    final user = ref.read(authNotifierProvider).user;
     final positiveReviews = _reviews.where((r) => r.rating >= 4).toList();
     final displayedReviews = positiveReviews.take(3).toList();
     final hasMoreReviews = _reviews.length > displayedReviews.length;
@@ -575,7 +577,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              "Reviews",
+              'Reviews',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
@@ -589,7 +591,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                   padding: EdgeInsets.zero,
                 ),
                 child: Text(
-                    _userReview != null ? "Edit Review" : "Write a Review"),
+                    _userReview != null ? 'Edit Review' : 'Write a Review'),
               ),
           ],
         ),
@@ -600,7 +602,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
           Center(
               child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Text("No reviews yet. Be the first to review!",
+                  child: Text('No reviews yet. Be the first to review!',
                       style: TextStyle(
                           color: theme.colorScheme.onSurfaceVariant))))
         else if (displayedReviews.isEmpty)
@@ -609,7 +611,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
               : Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 20),
-                    child: Text("No positive reviews to display.",
+                    child: Text('No positive reviews to display.',
                         style: TextStyle(
                             color: theme.colorScheme.onSurfaceVariant)),
                   ),
@@ -642,7 +644,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
                             itemTitle: widget.resource.title)));
               },
               icon: const Icon(Icons.arrow_forward, size: 16),
-              label: const Text("View All Reviews"),
+              label: const Text('View All Reviews'),
             ),
           ),
       ],

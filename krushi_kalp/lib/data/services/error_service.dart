@@ -11,7 +11,7 @@ class ErrorService {
 
     // 1. Network Errors
     if (NetworkUtils.isNetworkError(error)) {
-      return "Connection lost! 📡 Please check your internet. I'll be here waiting when you're back online.";
+      return "Connection lost! ?? Please check your internet. I'll be here waiting when you're back online.";
     }
 
     final String errorStr = error.toString();
@@ -21,13 +21,13 @@ class ErrorService {
     if (error is AuthException) {
       if (lowercaseError.contains('invalid login credentials') ||
           lowercaseError.contains('invalid credentials')) {
-        return "Oops! The email or password doesn't seem right. 🧠 Please double-check and try again.";
+        return "Oops! The email or password doesn't seem right. ?? Please double-check and try again.";
       }
       if (lowercaseError.contains('email not confirmed')) {
-        return "Almost there! 📧 Your email needs a quick confirmation. Please check your inbox for a verification link.";
+        return "Almost there! ?? Your email needs a quick confirmation. Please check your inbox for a verification link.";
       }
       if (lowercaseError.contains('user already exists')) {
-        return "It looks like you've been here before! ✨ This email is already registered. Try signing in instead.";
+        return "It looks like you've been here before! ? This email is already registered. Try signing in instead.";
       }
       return error.message;
     }
@@ -36,11 +36,11 @@ class ErrorService {
     if (error is PostgrestException) {
       switch (error.code) {
         case '23503': // Foreign Key
-          return "This item is currently 'popular'! 📁 It's linked to other active records (like user purchases), so it can't be deleted right now.";
+          return "This item is currently 'popular'! ?? It's linked to other active records (like user purchases), so it can't be deleted right now.";
         case '23505': // Unique Constraint
-          return "Duplicate alert! 📋 Something with this exact information already exists.";
+          return "Duplicate alert! ?? Something with this exact information already exists.";
         case '23502': // Not Null
-          return "Missing information. 📌 Please fill in all the required fields.";
+          return "Missing information. ?? Please fill in all the required fields.";
         default:
           return error.message;
       }
@@ -48,15 +48,15 @@ class ErrorService {
 
     // 4. Storage Errors
     if (lowercaseError.contains('payload too large')) {
-      return "File too large! 🏔️ Please pick something a bit smaller to keep things moving smoothly.";
+      return "File too large! ??? Please pick something a bit smaller to keep things moving smoothly.";
     }
     if (lowercaseError.contains('invalid file type')) {
-      return "Invalid format. 📄 I only accept PDFs for this one!";
+      return "Invalid format. ?? I only accept PDFs for this one!";
     }
 
     // 5. Common String Matches
     if (lowercaseError.contains('timeout')) {
-      return "The server is taking a little nap. ☕ Please try again in a moment!";
+      return "The server is taking a little nap. ? Please try again in a moment!";
     }
 
     // 6. Generic Fallback

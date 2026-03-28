@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'crashlytics_service.dart';
 
 /// A NavigatorObserver that logs screen transitions to Firebase Crashlytics as breadcrumbs.

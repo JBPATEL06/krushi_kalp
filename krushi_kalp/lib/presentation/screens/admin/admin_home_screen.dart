@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:krushi_kalp/data/services/admin_service.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
@@ -398,7 +398,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               ),
                             ),
                             Text(
-                              '₹${test['price'] ?? 0}',
+                              '?${test['price'] ?? 0}',
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.bold,

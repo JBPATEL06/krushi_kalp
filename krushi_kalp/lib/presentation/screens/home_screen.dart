@@ -1,19 +1,19 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/test_provider.dart';
+import '../providers/test_notifier.dart';
 import '../../data/services/banner_service.dart';
 import '../../domain/models/home_banner.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_radius.dart'; // FIXED: Added import for radius tokens
-import '../providers/navigation_provider.dart';
+import '../providers/navigation_notifier.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/services/app_config_service.dart';
 import 'login_screen.dart';
 import 'my_resources_screen.dart';
-import '../providers/resource_provider.dart';
-import '../providers/auth_provider.dart';
-import '../../data/services/auth_service.dart';
+import '../providers/resource_notifier.dart';
+import '../providers/auth_notifier.dart';
+import '../../utils/responsive.dart';
 import 'free_content_screen.dart';
 import 'cart_screen.dart';
 import 'score_screen.dart';
@@ -26,46 +26,25 @@ import '../../domain/models/user_performance.dart';
 import '../widgets/performance_card.dart';
 import '../../utils/crashlytics_service.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  String _userName = 'Aspirant';
-  String _userEmail = '';
+class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
     // _loadBanners(); // REMOVED
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TestProvider>().fetchTests();
+      ref.read(testNotifierProvider.notifier).fetchTests();
       // fetchPurchasedResources is already called by MainScreen
     });
   }
 
-  Future<void> _loadUserData() async {
-    try {
-      final user = AuthService.instance.currentUser;
-      if (user != null) {
-        final profile = await AuthService.instance.getUserProfile(user.id);
-
-        if (profile != null && mounted) {
-          setState(() {
-            _userName = profile['username'] ?? 'Aspirant';
-            _userEmail = user.email ?? '';
-          });
-        }
-      }
-    } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'home_screen');
-      // Ignore errors in user profile loading
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,17 +88,20 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       drawer: _buildDrawer(),
-      body: Consumer<TestProvider>(
-        builder: (context, provider, child) {
+      body: Consumer(
+        builder: (context, ref, child) {
+          final testState = ref.watch(testNotifierProvider);
+          final authState = ref.watch(authNotifierProvider);
           return RefreshIndicator(
             onRefresh: () async {
               try {
+                final authState = ref.read(authNotifierProvider);
                 await Future.wait([
-                  _loadUserData(),
+                  ref.read(authNotifierProvider.notifier).refreshProfile(),
                   AppConfigService.fetchConfigs(),
-                  provider.fetchTests(forceRefresh: true),
-                  context.read<ResourceProvider>().fetchPurchasedResources(
-                      context.read<AuthProvider>().currentUser?.id ?? ''),
+                  ref.read(testNotifierProvider.notifier).fetchTests(forceRefresh: true),
+                  ref.read(resourceNotifierProvider.notifier).fetchPurchasedResources(
+                      authState.user?.id ?? ''),
                 ]).timeout(const Duration(seconds: 20));
               } catch (e, stack) {
                 CrashlyticsService.instance.recordError(e, stack, reason: 'home_screen');
@@ -136,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     child: Text(
-                      'Hello, $_userName',
+                      'Hello, ${ref.watch(authNotifierProvider).username ?? 'Aspirant'}',
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurface,
@@ -165,6 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildDrawer() {
     final theme = Theme.of(context);
+    final authState = ref.watch(authNotifierProvider);
     return Drawer(
       backgroundColor: theme.colorScheme.surface,
       child: ListView(
@@ -175,21 +158,21 @@ class _HomeScreenState extends State<HomeScreen> {
               color: theme.colorScheme.primary,
             ),
             accountName: Text(
-              _userName,
+              authState.username ?? 'Aspirant',
               style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: context.sp(18)), // FIXED: context.sp(18)
             ),
-            accountEmail: Text(_userEmail),
+            accountEmail: Text(authState.user?.email ?? ''),
             currentAccountPicture: GestureDetector(
               onTap: () {
                 Navigator.pop(context); // Close drawer
-                context.read<NavigationProvider>().setIndex(4); // Goto Profile
+                ref.read(navigationProvider.notifier).setIndex(4); // Goto Profile
               },
               child: CircleAvatar(
                 backgroundColor: theme.colorScheme.surface,
                 child: Text(
-                  _userName.isNotEmpty ? _userName[0].toUpperCase() : 'A',
+                  (authState.username ?? 'A').isNotEmpty ? (authState.username ?? 'A')[0].toUpperCase() : 'A',
                   style: TextStyle(
                       fontSize: context.sp(32),
                       color:
@@ -199,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             onDetailsPressed: () {
               Navigator.pop(context); // Close drawer
-              context.read<NavigationProvider>().setIndex(4); // Goto Profile
+              ref.read(navigationProvider.notifier).setIndex(4); // Goto Profile
             },
           ),
           ListTile(
@@ -240,9 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
             title: const Text('Profile'),
             onTap: () {
               Navigator.pop(context);
-              context
-                  .read<NavigationProvider>()
-                  .setIndex(4); // Navigate to Profile
+              ref.read(navigationProvider.notifier).setIndex(4); // Navigate to Profile
             },
           ),
           const Divider(),
@@ -291,7 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
               );
 
               if (confirm == true && mounted) {
-                await context.read<AuthProvider>().signOut();
+                await ref.read(authNotifierProvider.notifier).signOut();
                 if (mounted) {
                   Navigator.pushAndRemoveUntil(
                     context,
@@ -342,7 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPerformanceCard() {
-    final userId = context.read<AuthProvider>().currentUser?.id ?? '';
+    final userId = ref.watch(authNotifierProvider).user?.id ?? '';
     if (userId.isEmpty) return const SizedBox.shrink();
     return FutureBuilder<UserPerformance>(
       future: PerformanceService.instance.getUserPerformance(userId),
@@ -478,9 +459,9 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.newspaper,
             color: theme.colorScheme.primary,
             onTap: () {
-              final provider = context.read<ResourceProvider>();
-              final hasCurrentAffairs = provider.currentAffairs
-                  .any((r) => provider.purchasedResourceIds.contains(r.id));
+              final resourceState = ref.read(resourceNotifierProvider);
+              final hasCurrentAffairs = resourceState.currentAffairs
+                  .any((r) => resourceState.purchasedResourceIds.contains(r.id));
 
               if (hasCurrentAffairs) {
                 Navigator.push(
@@ -493,10 +474,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 );
               } else {
-                context
-                    .read<NavigationProvider>()
+                ref.read(navigationProvider.notifier)
                     .setStoreCategory('Current Affairs');
-                context.read<NavigationProvider>().setIndex(2); // Store
+                ref.read(navigationProvider.notifier).setIndex(2); // Store
               }
             },
           ),
@@ -505,15 +485,13 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.quiz_outlined,
             color: theme.colorScheme.secondary,
             onTap: () {
-              final hasPurchased =
-                  context.read<TestProvider>().purchasedTests.isNotEmpty;
+              final testState = ref.read(testNotifierProvider);
+              final hasPurchased = testState.purchasedTestIds.isNotEmpty;
               if (hasPurchased) {
-                context.read<NavigationProvider>().setIndex(1); // My Tests
+                ref.read(navigationProvider.notifier).setIndex(1); // My Tests
               } else {
-                context
-                    .read<NavigationProvider>()
-                    .setStoreCategory('Mock Tests');
-                context.read<NavigationProvider>().setIndex(2); // Store
+                ref.read(navigationProvider.notifier).setStoreCategory('Mock Tests');
+                ref.read(navigationProvider.notifier).setIndex(2); // Store
               }
             },
           ),
@@ -522,9 +500,9 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.menu_book_rounded,
             color: theme.colorScheme.tertiary,
             onTap: () {
-              final provider = context.read<ResourceProvider>();
-              final hasPurchased = provider.ebooks
-                  .any((r) => provider.purchasedResourceIds.contains(r.id));
+              final resourceState = ref.read(resourceNotifierProvider);
+              final hasPurchased = resourceState.ebooks
+                  .any((r) => resourceState.purchasedResourceIds.contains(r.id));
 
               if (hasPurchased) {
                 Navigator.push(
@@ -537,8 +515,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 );
               } else {
-                context.read<NavigationProvider>().setStoreCategory('E-Books');
-                context.read<NavigationProvider>().setIndex(2); // Store
+                ref.read(navigationProvider.notifier).setStoreCategory('E-Books');
+                ref.read(navigationProvider.notifier).setIndex(2); // Store
               }
             },
           ),
@@ -547,9 +525,9 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.description_rounded,
             color: theme.colorScheme.primary,
             onTap: () {
-              final provider = context.read<ResourceProvider>();
-              final hasPurchased = provider.studyMaterials
-                  .any((r) => provider.purchasedResourceIds.contains(r.id));
+              final resourceState = ref.read(resourceNotifierProvider);
+              final hasPurchased = resourceState.studyMaterials
+                  .any((r) => resourceState.purchasedResourceIds.contains(r.id));
 
               if (hasPurchased) {
                 Navigator.push(
@@ -562,10 +540,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 );
               } else {
-                context
-                    .read<NavigationProvider>()
+                ref.read(navigationProvider.notifier)
                     .setStoreCategory('Study Materials');
-                context.read<NavigationProvider>().setIndex(2); // Store
+                ref.read(navigationProvider.notifier).setIndex(2); // Store
               }
             },
           ),
@@ -587,9 +564,9 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.history_edu_rounded,
             color: theme.colorScheme.error,
             onTap: () {
-              final provider = context.read<ResourceProvider>();
-              final hasPurchased = provider.pyqs
-                  .any((r) => provider.purchasedResourceIds.contains(r.id));
+              final resourceState = ref.read(resourceNotifierProvider);
+              final hasPurchased = resourceState.pyqs
+                  .any((r) => resourceState.purchasedResourceIds.contains(r.id));
 
               if (hasPurchased) {
                 Navigator.push(
@@ -602,8 +579,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 );
               } else {
-                context.read<NavigationProvider>().setStoreCategory('PYQs');
-                context.read<NavigationProvider>().setIndex(2); // Store
+                ref.read(navigationProvider.notifier).setStoreCategory('PYQs');
+                ref.read(navigationProvider.notifier).setIndex(2); // Store
               }
             },
           ),

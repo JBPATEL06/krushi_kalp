@@ -1,11 +1,12 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../providers/network_provider.dart';
+import '../../providers/network_notifier.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_spacing.dart';
 
 /// A premium, animated network error state widget.
 /// Supports both full-page and compact inline variants.
-class NetworkErrorState extends StatefulWidget {
+class NetworkErrorState extends ConsumerStatefulWidget {
   final VoidCallback? onRetry;
   final String? message;
   final bool compact;
@@ -18,10 +19,10 @@ class NetworkErrorState extends StatefulWidget {
   });
 
   @override
-  State<NetworkErrorState> createState() => _NetworkErrorStateState();
+  ConsumerState<NetworkErrorState> createState() => _NetworkErrorStateState();
 }
 
-class _NetworkErrorStateState extends State<NetworkErrorState>
+class _NetworkErrorStateState extends ConsumerState<NetworkErrorState>
     with TickerProviderStateMixin {
   bool _isRetrying = false;
 
@@ -103,7 +104,7 @@ class _NetworkErrorStateState extends State<NetworkErrorState>
     if (_isRetrying || widget.onRetry == null) return;
     setState(() => _isRetrying = true);
 
-    final isConnected = await NetworkProvider().checkConnectivity();
+    final isConnected = await ref.read(networkNotifierProvider.notifier).checkConnectivity();
     if (isConnected && widget.onRetry != null) {
       widget.onRetry!();
     }

@@ -305,18 +305,20 @@ class StoreItemCard extends StatelessWidget {
       ),
     );
 
-    if (!enableAnimation) return card;
+    if (!enableAnimation) return RepaintBoundary(child: card);
 
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeOut,
-      builder: (context, v, child) => Opacity(
-        opacity: v,
-        child:
-            Transform.translate(offset: Offset(0, 10 * (1 - v)), child: child),
+    return RepaintBoundary(
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOut,
+        builder: (context, v, child) => Opacity(
+          opacity: v,
+          child:
+              Transform.translate(offset: Offset(0, 10 * (1 - v)), child: child),
+        ),
+        child: card,
       ),
-      child: card,
     );
   }
 

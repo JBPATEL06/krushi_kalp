@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../providers/auth_provider.dart';
-import '../providers/network_provider.dart';
+import '../providers/auth_notifier.dart';
+import '../providers/network_notifier.dart';
 import '../../data/services/test_service.dart';
 import '../../domain/models/test_result.dart';
 import '../widgets/common/network_error_state.dart';
@@ -14,15 +14,16 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_radius.dart'; // FIXED: Added import for radius tokens
 import '../widgets/common/responsive_wrapper.dart'; // FIXED: Added import for responsive scaling
 import '../../utils/crashlytics_service.dart';
+import '../../utils/network_utils.dart';
 
-class ScoreScreen extends StatefulWidget {
+class ScoreScreen extends ConsumerStatefulWidget {
   const ScoreScreen({super.key});
 
   @override
-  State<ScoreScreen> createState() => _ScoreScreenState();
+  ConsumerState<ScoreScreen> createState() => _ScoreScreenState();
 }
 
-class _ScoreScreenState extends State<ScoreScreen> {
+class _ScoreScreenState extends ConsumerState<ScoreScreen> {
   List<TestResult> _results = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -32,17 +33,15 @@ class _ScoreScreenState extends State<ScoreScreen> {
   void initState() {
     super.initState();
     _loadData();
-    NetworkProvider().addListener(_onNetworkChange);
   }
 
   @override
   void dispose() {
-    NetworkProvider().removeListener(_onNetworkChange);
     super.dispose();
   }
 
   void _onNetworkChange() {
-    final isConnected = NetworkProvider().isConnected;
+    final isConnected = ref.read(networkNotifierProvider);
     if (isConnected && _hadNetworkError && mounted) {
       _hadNetworkError = false;
       _errorMessage = null;
@@ -51,7 +50,7 @@ class _ScoreScreenState extends State<ScoreScreen> {
   }
 
   Future<void> _loadData() async {
-    final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
+    final user = ref.read(authNotifierProvider).user;
     if (user != null) {
       if (mounted) {
         setState(() {
@@ -64,7 +63,7 @@ class _ScoreScreenState extends State<ScoreScreen> {
 
         if (mounted) {
           setState(() {
-            _results = data.map((json) => TestResult.fromJson(json)).toList();
+            _results = data;
             _isLoading = false;
           });
         }
@@ -74,7 +73,7 @@ class _ScoreScreenState extends State<ScoreScreen> {
           setState(() {
             _isLoading = false;
             _errorMessage = e.toString();
-            _hadNetworkError = isNetworkError(e);
+            _hadNetworkError = NetworkUtils.isNetworkError(e);
           });
         }
       }
@@ -133,6 +132,15 @@ class _ScoreScreenState extends State<ScoreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to network changes
+    ref.listen(networkNotifierProvider, (previous, next) {
+      if (next && _hadNetworkError && mounted) {
+        _hadNetworkError = false;
+        _errorMessage = null;
+        _loadData();
+      }
+    });
+
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,

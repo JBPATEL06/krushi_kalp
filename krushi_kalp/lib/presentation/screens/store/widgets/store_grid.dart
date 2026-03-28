@@ -2,17 +2,19 @@ import 'package:flutter/material.dart';
 import '../../../../domain/models/mock_test.dart';
 import '../../../../domain/models/offer.dart';
 import 'store_item_card.dart';
-import '../../../../utils/price_calculator.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../data/services/auth_service.dart';
+import '../../../../data/services/offer_service.dart';
 import '../../../../data/services/review_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../widgets/common/download_action_button.dart';
 import '../../../widgets/common/responsive_wrapper.dart';
 import '../../../utils/exam_helper.dart';
 
-class StoreGrid extends StatefulWidget {
-  final List<MockTest> tests;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../providers/auth_notifier.dart';
+
+class StoreGrid extends ConsumerStatefulWidget {
+  final List<MockTest> allTests;
   final List<Offer>? activeOffers;
   final Set<int>? cartItemIds;
   final Set<int>? purchasedTestIds;
@@ -25,7 +27,7 @@ class StoreGrid extends StatefulWidget {
 
   const StoreGrid({
     super.key,
-    required this.tests,
+    required this.allTests,
     this.activeOffers,
     this.cartItemIds,
     this.purchasedTestIds,
@@ -36,50 +38,69 @@ class StoreGrid extends StatefulWidget {
   });
 
   @override
-  State<StoreGrid> createState() => _StoreGridState();
+  ConsumerState<StoreGrid> createState() => _StoreGridState();
 }
 
-class _StoreGridState extends State<StoreGrid> {
+class _StoreGridState extends ConsumerState<StoreGrid> {
   // Cache: testId -> {average: double, count: int}
   final Map<int, Map<String, dynamic>> _ratingsCache = {};
+  // Cache: testId -> {final_price, mrp_display, discount_label, has_discount}
+  final Map<int, Map<String, dynamic>> _pricesCache = {};
 
   @override
   void initState() {
     super.initState();
     _fetchAllRatings();
+    _fetchAllPrices();
   }
 
   @override
   void didUpdateWidget(StoreGrid oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Re-fetch only if the test list changed
-    if (oldWidget.tests != widget.tests) {
+    if (oldWidget.allTests != widget.allTests) {
       _fetchAllRatings();
+      _fetchAllPrices();
     }
   }
 
   Future<void> _fetchAllRatings() async {
-    // Only fetch IDs not already in cache
-    final uncachedIds = widget.tests
+    final uncachedIds = widget.allTests
         .map((t) => t.id)
         .where((id) => !_ratingsCache.containsKey(id))
         .toList();
-
     if (uncachedIds.isEmpty) return;
-
     try {
       final bulk = await ReviewService.getBulkRatingStats(uncachedIds, 'test');
-      if (mounted) {
-        setState(() => _ratingsCache.addAll(bulk));
-      }
+      if (mounted) setState(() => _ratingsCache.addAll(bulk));
     } catch (_) {
       // Silently skip — cards will render without ratings
     }
   }
 
+  Future<void> _fetchAllPrices() async {
+    final uncached = widget.allTests
+        .where((t) => !_pricesCache.containsKey(t.id))
+        .toList();
+    if (uncached.isEmpty) return;
+    // Fire all RPCs concurrently
+    final results = await Future.wait(
+      uncached.map((t) => OfferService.instance.getDisplayPrice(
+        itemType: 'mock_test',
+        itemId: t.id,
+      )),
+    );
+    if (mounted) {
+      setState(() {
+        for (int i = 0; i < uncached.length; i++) {
+          _pricesCache[uncached[i].id] = results[i];
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (widget.tests.isEmpty) {
+    if (widget.allTests.isEmpty) {
       return const SliverFillRemaining(
         child: Center(
           child: Text(
@@ -97,36 +118,21 @@ class _StoreGridState extends State<StoreGrid> {
           (context, index) {
             return Padding(
               padding: EdgeInsets.only(bottom: context.h(AppSpacing.lg)),
-              child: _buildCard(context, widget.tests[index]),
+              child: _buildCard(context, widget.allTests[index]),
             ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
           },
-          childCount: widget.tests.length,
+          childCount: widget.allTests.length,
         ),
       ),
     );
   }
 
   Widget _buildCard(BuildContext context, MockTest test) {
-    final saleOffers = widget.activeOffers?.where((o) => o.isSale).toList();
-
-    final priceData = PriceCalculator.calculateDisplayPrice(
-      basePrice: test.price,
-      activeOffers: saleOffers,
-      testId: test.id,
-    );
-
-    final double displayPrice = priceData['finalPrice'];
-    final double mrp = priceData['mrp'];
-    final Offer? offer = priceData['offer'];
-
-    String? discountTag;
-    if (offer != null) {
-      if (offer.discountType == 'PERCENTAGE') {
-        discountTag = '${offer.discountValue.toStringAsFixed(0)}% OFF';
-      } else {
-        discountTag = '₹${offer.discountValue.toStringAsFixed(0)} OFF';
-      }
-    }
+    // Use DB-cached price data; fall back to base price until RPC returns
+    final priceData = _pricesCache[test.id];
+    final double displayPrice = (priceData?['final_price'] as double?) ?? test.price;
+    final double mrp         = (priceData?['mrp_display'] as double?) ?? test.price;
+    final String? discountTag = priceData?['discount_label'] as String?;
 
     final isInCart = widget.cartItemIds?.contains(test.id) ?? false;
     final isPurchased = widget.purchasedTestIds?.contains(test.id) ?? false;
@@ -160,7 +166,7 @@ class _StoreGridState extends State<StoreGrid> {
               url: test.contentUrl,
               startLabel: "Start",
               isFullWidth: true, // Needs to be full width in the vertical card
-              userId: AuthService.instance.currentUser?.id,
+              userId: ref.read(authNotifierProvider).user?.id,
               displayName: test.title, // CHANGED
               onAction: () async {
                 if (test.contentUrl == null) {

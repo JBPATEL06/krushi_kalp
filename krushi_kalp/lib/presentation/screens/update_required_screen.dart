@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart';
 
 /// Shown when the installed app version is below the server-required minimum.
 /// The user cannot bypass this screen — they must update via the Play Store.
@@ -101,7 +102,7 @@ class UpdateRequiredScreen extends StatelessWidget {
                     foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
                 ),

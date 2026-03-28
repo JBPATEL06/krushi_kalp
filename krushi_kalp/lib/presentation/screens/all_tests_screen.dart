@@ -33,13 +33,17 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
   Future<void> _fetchUserResults() async {
     final userId = AuthService.instance.currentUser?.id;
     if (userId != null) {
-      final results = await TestService.instance.fetchUserResults(userId);
-      if (mounted) {
-        setState(() {
-          _completedTestIds = results.map((r) => r['test_id'] as int).toList();
-        });
+      try {
+        final results = await TestService.instance.fetchUserResults(userId);
+        if (mounted) {
+          setState(() {
+            _completedTestIds = results.map((r) => r.testId).toList();
+          });
+        }
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'all_tests_screen: _fetchUserResults failed');
       }
-    } else {}
+    }
   }
 
   Future<void> _downloadAndOpenResult(int testId, String title) async {

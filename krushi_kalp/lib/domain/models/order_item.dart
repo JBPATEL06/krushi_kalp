@@ -1,4 +1,4 @@
-﻿import 'mock_test.dart';
+import 'mock_test.dart';
 import 'resource.dart';
 
 class OrderItem {

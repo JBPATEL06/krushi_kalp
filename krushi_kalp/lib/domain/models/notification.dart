@@ -1,4 +1,4 @@
-﻿enum NotificationType { feedbackReply, systemAlert, examUpdate }
+enum NotificationType { feedbackReply, systemAlert, examUpdate }
 
 class NotificationModel {
   final int id;

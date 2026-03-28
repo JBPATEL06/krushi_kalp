@@ -1,4 +1,4 @@
-﻿class TestResult {
+class TestResult {
   final int resultId;
   final String userId; // Changed to String
   final int testId;

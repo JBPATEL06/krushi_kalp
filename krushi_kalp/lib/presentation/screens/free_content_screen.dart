@@ -1,29 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:flutter_animate/flutter_animate.dart'; // NEW
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_spacing.dart';
-import '../providers/test_provider.dart';
-import '../providers/resource_provider.dart';
+import '../providers/test_notifier.dart';
+import '../providers/resource_notifier.dart';
+import '../providers/auth_notifier.dart';
+import '../providers/test_state.dart';
+import '../providers/resource_state.dart';
 import '../widgets/free_content/free_item_card.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/resource.dart';
 import '../screens/mock_test_detail_screen.dart';
 import '../screens/resource_detail_screen.dart';
-import '../../data/services/auth_service.dart';
 import '../../data/services/test_service.dart';
 import '../../utils/error_utils.dart';
 import '../../core/theme/app_radius.dart';
-import '../widgets/common/responsive_wrapper.dart';
 import '../../utils/crashlytics_service.dart';
 
-class FreeContentScreen extends StatefulWidget {
+class FreeContentScreen extends ConsumerStatefulWidget {
   const FreeContentScreen({super.key});
 
   @override
-  State<FreeContentScreen> createState() => _FreeContentScreenState();
+  ConsumerState<FreeContentScreen> createState() => _FreeContentScreenState();
 }
 
-class _FreeContentScreenState extends State<FreeContentScreen> {
+class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
   String _selectedFilter = 'All';
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -34,10 +34,7 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
   @override
   void initState() {
     super.initState();
-
     _searchController.addListener(_onSearchChanged);
-
-    // Safely fetch data after frame is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchData();
     });
@@ -61,13 +58,10 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
     Resource? resource,
   }) async {
     final String itemName = test?.title ?? resource?.title ?? 'Item';
-
-    if (_isProcessing) {
-      return;
-    }
+    if (_isProcessing) return;
 
     try {
-      final user = AuthService.instance.currentUser;
+      final user = ref.read(authNotifierProvider).user;
       if (user == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -85,15 +79,13 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
           authUserId: user.id,
         );
         if (mounted) {
-          final testProvider = context.read<TestProvider>();
-          await testProvider.fetchUserTests(user.id);
-          await testProvider.fetchTests(forceRefresh: true);
+          await ref.read(testNotifierProvider.notifier).fetchUserTests(user.id);
+          await ref.read(testNotifierProvider.notifier).fetchTests(forceRefresh: true);
         }
       } else if (resource != null) {
-        await context
-            .read<ResourceProvider>()
+        await ref
+            .read(resourceNotifierProvider.notifier)
             .claimResource(resource.id, user.id);
-        // Provider.claimResource already calls fetchPurchasedResources
       }
 
       if (mounted) {
@@ -103,8 +95,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
             backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
-        // No need to call _fetchData here if using Consumer,
-        // but we'll call it to ensure all state is synced
         await _fetchData();
       }
     } catch (e, stack) {
@@ -124,22 +114,16 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
     });
 
     try {
-      final user = AuthService.instance.currentUser;
-      final testProvider = context.read<TestProvider>();
-      final resourceProvider = context.read<ResourceProvider>();
-
-      // Fetch with caching support
+      final user = ref.read(authNotifierProvider).user;
       await Future.wait([
-        testProvider.fetchTests(forceRefresh: true),
-        resourceProvider.fetchAll(forceRefresh: true),
-        if (user != null) testProvider.fetchUserTests(user.id),
-        if (user != null) resourceProvider.fetchPurchasedResources(user.id),
+        ref.read(testNotifierProvider.notifier).fetchTests(forceRefresh: true),
+        ref.read(resourceNotifierProvider.notifier).fetchAll(forceRefresh: true),
+        if (user != null) ref.read(testNotifierProvider.notifier).fetchUserTests(user.id),
+        if (user != null) ref.read(resourceNotifierProvider.notifier).fetchPurchasedResources(user.id),
       ]);
 
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'free_content_screen');
@@ -153,32 +137,29 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
   }
 
   List<dynamic> _getFilteredItems(
-    TestProvider testProvider,
-    ResourceProvider resourceProvider,
+    TestState testState,
+    ResourceState resourceState,
   ) {
     List<dynamic> items = [];
 
-    // Gather all items based on filter
     if (_selectedFilter == 'All' || _selectedFilter == 'Tests') {
-      final purchasedTestIds = testProvider.purchasedTestIds;
-      items.addAll(testProvider.tests.where(
+      final purchasedTestIds = testState.purchasedTestIds;
+      items.addAll(testState.allTests.where(
           (test) => test.price == 0 && !purchasedTestIds.contains(test.id)));
     }
 
     if (_selectedFilter == 'All' || _selectedFilter == 'Resources') {
-      final purchasedIds = resourceProvider.purchasedResourceIds;
-
-      items.addAll(resourceProvider.ebooks
+      final purchasedIds = resourceState.purchasedResourceIds;
+      items.addAll(resourceState.ebooks
           .where((r) => r.price == 0 && !purchasedIds.contains(r.id)));
-      items.addAll(resourceProvider.studyMaterials
+      items.addAll(resourceState.studyMaterials
           .where((r) => r.price == 0 && !purchasedIds.contains(r.id)));
-      items.addAll(resourceProvider.pyqs
+      items.addAll(resourceState.pyqs
           .where((r) => r.price == 0 && !purchasedIds.contains(r.id)));
-      items.addAll(resourceProvider.currentAffairs
+      items.addAll(resourceState.currentAffairs
           .where((r) => r.price == 0 && !purchasedIds.contains(r.id)));
     }
 
-    // Apply search filter (Title, Description, Category)
     if (_searchQuery.isNotEmpty) {
       items = items.where((item) {
         final String title;
@@ -220,7 +201,6 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
       ),
       body: Column(
         children: [
-          // Unified Top Section (Search + Filters)
           Container(
             decoration: BoxDecoration(
               color: theme.colorScheme.surface,
@@ -233,57 +213,24 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
             ),
             child: Column(
               children: [
-                // Search Bar
                 Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    AppSpacing.md,
-                    AppSpacing.md,
-                    AppSpacing.md,
-                    AppSpacing.sm,
-                  ),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   child: TextField(
                     controller: _searchController,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      fontSize: context.sp(15),
-                    ),
                     decoration: InputDecoration(
                       hintText: 'Search free content...',
-                      prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                        size: context.sp(22),
-                      ),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: Icon(Icons.close_rounded,
-                                  size: context.sp(20)),
-                              onPressed: () {
-                                _searchController.clear();
-                              },
-                            )
-                          : null,
+                      prefixIcon: const Icon(Icons.search_rounded),
                       filled: true,
-                      fillColor: theme.colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.3),
+                      fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.md,
-                      ),
                     ),
                   ),
                 ),
-
-                // Filter Chips
                 Padding(
-                  padding: EdgeInsets.only(
-                    left: AppSpacing.md,
-                    right: AppSpacing.md,
-                    bottom: AppSpacing.md,
-                  ),
+                  padding: const EdgeInsets.only(left: AppSpacing.md, right: AppSpacing.md, bottom: AppSpacing.md),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -291,46 +238,10 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
                         final isSelected = _selectedFilter == filter;
                         return Padding(
                           padding: const EdgeInsets.only(right: AppSpacing.sm),
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                _selectedFilter = filter;
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(AppRadius.full),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: context.w(20),
-                                vertical: context.h(8),
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? theme.colorScheme.primary
-                                    : theme.colorScheme.surfaceContainerHighest
-                                        .withValues(alpha: 0.5),
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.full),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? theme.colorScheme.primary
-                                      : theme.colorScheme.outline
-                                          .withValues(alpha: 0.2),
-                                ),
-                              ),
-                              child: Text(
-                                filter,
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: isSelected
-                                      ? theme.colorScheme.onPrimary
-                                      : theme.colorScheme.onSurfaceVariant,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w900
-                                      : FontWeight.w600,
-                                  fontSize: context.sp(13),
-                                ),
-                              ),
-                            ),
+                          child: FilterChip(
+                            label: Text(filter),
+                            selected: isSelected,
+                            onSelected: (val) => setState(() => _selectedFilter = filter),
                           ),
                         );
                       }).toList(),
@@ -340,12 +251,12 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
               ],
             ),
           ),
-
-          // Content Area
           Expanded(
-            child: Consumer2<TestProvider, ResourceProvider>(
-              builder: (context, testProvider, resourceProvider, _) {
-                return _buildContent(testProvider, resourceProvider);
+            child: Consumer(
+              builder: (context, ref, _) {
+                final testState = ref.watch(testNotifierProvider);
+                final resourceState = ref.watch(resourceNotifierProvider);
+                return _buildContent(testState, resourceState);
               },
             ),
           ),
@@ -354,119 +265,52 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
     );
   }
 
-  Widget _buildContent(
-      TestProvider testProvider, ResourceProvider resourceProvider) {
+  Widget _buildContent(TestState testState, ResourceState resourceState) {
     final theme = Theme.of(context);
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
     if (_errorMessage != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: theme.colorScheme.error,
-            ),
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: AppSpacing.md),
-            Text(
-              _errorMessage!,
-              style: TextStyle(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontSize: 16,
-              ),
-              textAlign: TextAlign.center,
-            ),
+            Text(_errorMessage!),
             const SizedBox(height: AppSpacing.lg),
-            ElevatedButton.icon(
-              onPressed: _fetchData,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
-                foregroundColor: theme.colorScheme.onPrimary,
-              ),
-            ),
+            ElevatedButton(onPressed: _fetchData, child: const Text('Retry')),
           ],
         ),
       );
     }
 
-    final items = _getFilteredItems(testProvider, resourceProvider);
-
-    if (items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: 64,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              _searchQuery.isNotEmpty
-                  ? 'No results found for "$_searchQuery"'
-                  : 'No free content available',
-              style: TextStyle(
-                color:
-                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                fontSize: 16,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
-    }
+    final items = _getFilteredItems(testState, resourceState);
+    if (items.isEmpty) return const Center(child: Text("No items found."));
 
     return RefreshIndicator(
       onRefresh: _fetchData,
       child: ListView.separated(
-        padding: EdgeInsets.only(
-          left: AppSpacing.md,
-          right: AppSpacing.md,
-          top: AppSpacing.md,
-          bottom: AppSpacing.md + MediaQuery.of(context).padding.bottom,
-        ),
+        padding: const EdgeInsets.all(AppSpacing.md),
         itemCount: items.length,
-        separatorBuilder: (context, index) =>
-            const SizedBox(height: AppSpacing.md),
+        separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.md),
         itemBuilder: (context, index) {
           final item = items[index];
-          Widget card;
-
           if (item is MockTest) {
-            card = _buildTestCard(item, index, testProvider);
+            return _buildTestCard(item, index, testState);
           } else if (item is Resource) {
-            card = _buildResourceCard(item, index, resourceProvider);
-          } else {
-            return const SizedBox.shrink();
+            return _buildResourceCard(item, index, resourceState);
           }
-
-          return card
-              .animate(delay: (index < 5 ? index * 100 : 0).ms)
-              .fadeIn(duration: 400.ms)
-              .slideY(begin: 0.1, end: 0);
+          return const SizedBox.shrink();
         },
       ),
     );
   }
 
-  Widget _buildTestCard(MockTest test, int index, TestProvider provider) {
+  Widget _buildTestCard(MockTest test, int index, TestState state) {
     final uniqueTag = 'test_${test.id}_$index';
-    final isPurchased = provider.purchasedTestIds.contains(test.id);
-
+    final isPurchased = state.purchasedTestIds.contains(test.id);
     return FreeItemCard(
       title: test.title,
-      subtitle:
-          '${test.totalQuestions} Questions • ${test.totalMarks} Marks • ${test.durationMinutes ?? 0} mins',
+      subtitle: '${test.totalQuestions} Questions',
       typeLabel: 'Mock Test',
       coverUrl: test.signedUrl,
       actionLabel: 'Claim Free',
@@ -488,30 +332,13 @@ class _FreeContentScreenState extends State<FreeContentScreen> {
     );
   }
 
-  Widget _buildResourceCard(
-      Resource resource, int index, ResourceProvider provider) {
-    String typeLabel = '';
-    switch (resource.type) {
-      case ResourceType.eBook:
-        typeLabel = 'E-Book';
-        break;
-      case ResourceType.studyMaterial:
-        typeLabel = 'Study Material';
-        break;
-      case ResourceType.pyq:
-        typeLabel = 'PYQ';
-        break;
-      case ResourceType.currentAffair:
-        typeLabel = 'Current Affair';
-        break;
-    }
+  Widget _buildResourceCard(Resource resource, int index, ResourceState state) {
     final uniqueTag = 'resource_${resource.id}_$index';
-    final isPurchased = provider.purchasedResourceIds.contains(resource.id);
-
+    final isPurchased = state.purchasedResourceIds.contains(resource.id);
     return FreeItemCard(
       title: resource.title,
       subtitle: resource.category ?? 'Free Material',
-      typeLabel: typeLabel,
+      typeLabel: 'Resource',
       coverUrl: resource.thumbnailUrl,
       actionLabel: 'Claim Free',
       isPurchased: isPurchased,
