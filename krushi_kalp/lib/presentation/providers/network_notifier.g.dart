@@ -6,7 +6,7 @@ part of 'network_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$networkNotifierHash() => r'2b613c3cc4b2da17e02eb239c93ae064b9895a53';
+String _$networkNotifierHash() => r'cb6b79606aed832a20582b7b498a14e44e9d232c';
 
 /// See also [NetworkNotifier].
 @ProviderFor(NetworkNotifier)

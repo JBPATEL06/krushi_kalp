@@ -258,7 +258,8 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
             (route) => false,
           );
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'test_result_screen');
         if (mounted) ErrorUtils.showError(context, e);
       } finally {
         if (mounted) setState(() => _isDiscarding = false);

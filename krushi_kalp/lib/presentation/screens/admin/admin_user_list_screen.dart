@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import '../../../../data/services/admin_service.dart';
 import '../../widgets/common/network_error_state.dart';
 import 'admin_user_details_screen.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
+import '../../widgets/common/debounced_search_bar.dart';
 
 class AdminUserListScreen extends StatefulWidget {
   const AdminUserListScreen({super.key});
@@ -14,160 +16,116 @@ class AdminUserListScreen extends StatefulWidget {
 }
 
 class _AdminUserListScreenState extends State<AdminUserListScreen> {
+  static const _pageSize = 20;
+
+  final PagingController<int, Map<String, dynamic>> _pagingController =
+      PagingController(firstPageKey: 0);
+
   String _selectedFilter = 'All'; // All, New, Active
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  late Stream<List<Map<String, dynamic>>> _usersStream;
 
   @override
   void initState() {
     super.initState();
-    _usersStream = AdminService.streamUsers();
+    _pagingController.addPageRequestListener((pageKey) {
+      _fetchPage(pageKey);
+    });
+  }
+
+  Future<void> _fetchPage(int pageKey) async {
+    try {
+      final newItems = await AdminService.getPaginatedUsers(
+        offset: pageKey,
+        limit: _pageSize,
+        searchQuery: _searchQuery,
+        statusFilter: _selectedFilter,
+      );
+
+      final isLastPage = newItems.length < _pageSize;
+      if (isLastPage) {
+        _pagingController.appendLastPage(newItems);
+      } else {
+        final nextPageKey = pageKey + newItems.length;
+        _pagingController.appendPage(newItems, nextPageKey);
+      }
+    } catch (error) {
+      _pagingController.error = error;
+    }
+  }
+
+  void _updateSearch(String query) {
+    _searchQuery = query;
+    _pagingController.refresh();
+  }
+
+  void _updateFilter(String filter) {
+    setState(() {
+      _selectedFilter = filter;
+    });
+    _pagingController.refresh();
   }
 
   @override
   void dispose() {
+    _pagingController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  List<Map<String, dynamic>>? _cachedAllUsers;
-  List<Map<String, dynamic>>? _cachedFilteredUsers;
-  String? _lastSearch;
-  String? _lastFilter;
-
-  List<Map<String, dynamic>> _applyFilters(
-      List<Map<String, dynamic>> allUsers) {
-    if (identical(allUsers, _cachedAllUsers) &&
-        _searchQuery == _lastSearch &&
-        _selectedFilter == _lastFilter &&
-        _cachedFilteredUsers != null) {
-      return _cachedFilteredUsers!;
-    }
-
-    final query = _searchQuery.toLowerCase().trim();
-    final now = DateTime.now();
-
-    final filtered = allUsers.where((user) {
-      final username = (user['username'] ?? '').toString().toLowerCase();
-      final email = (user['email'] ?? '').toString().toLowerCase();
-      final matchesSearch =
-          query.isEmpty || username.contains(query) || email.contains(query);
-
-      if (!matchesSearch) return false;
-
-      if (_selectedFilter == 'New') {
-        final createdAtStr = user['created_at'] as String?;
-        if (createdAtStr == null) return false;
-        final createdAt = DateTime.tryParse(createdAtStr);
-        if (createdAt == null) return false;
-        return now.difference(createdAt).inDays <= 30;
-      } else if (_selectedFilter == 'Active') {
-        final lastActiveStr = user['last_active'] as String?;
-        if (lastActiveStr == null) return false;
-        final lastActive = DateTime.tryParse(lastActiveStr);
-        if (lastActive == null) return false;
-        return now.difference(lastActive).inDays <= 15;
-      }
-
-      return true;
-    }).toList();
-
-    _cachedAllUsers = allUsers;
-    _cachedFilteredUsers = filtered;
-    _lastSearch = _searchQuery;
-    _lastFilter = _selectedFilter;
-
-    return filtered;
-  }
+  
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000),
-          child: RefreshIndicator(
-            onRefresh: () async {
-              setState(() {
-                _usersStream = AdminService.streamUsers();
-              });
-              await Future.delayed(const Duration(milliseconds: 600));
-            },
-            child: StreamBuilder<List<Map<String, dynamic>>>(
-              stream: _usersStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting &&
-                    snapshot.data == null) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (snapshot.hasError) {
-                  return NetworkErrorState(
-                    message: isNetworkError(snapshot.error)
-                        ? 'Unable to load users. Check connection.'
-                        : 'Something went wrong.',
-                    onRetry: () => setState(
-                        () => _usersStream = AdminService.streamUsers()),
-                  );
-                }
-
-                final allUsers = snapshot.data ?? [];
-                final filteredUsers = _applyFilters(allUsers);
-
-                return Column(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionHeader(context, "USER DIRECTORY"),
-                          const SizedBox(height: AppSpacing.md),
-                          _buildSearchBar(context, theme),
-                          const SizedBox(height: AppSpacing.md),
-                          Row(
-                            children: [
-                              _buildFilterChip(context, 'All'),
-                              const SizedBox(width: AppSpacing.sm),
-                              _buildFilterChip(context, 'New'),
-                              const SizedBox(width: AppSpacing.sm),
-                              _buildFilterChip(context, 'Active'),
-                              const Spacer(),
-                              Text(
-                                '${filteredUsers.length} Users',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: filteredUsers.isEmpty
-                          ? _buildEmptyState(context)
-                          : ListView.builder(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding:
-                                  const EdgeInsets.only(top: AppSpacing.sm),
-                              itemCount: filteredUsers.length,
-                              itemBuilder: (context, index) {
-                                final user = filteredUsers[index];
-                                return _buildUserRow(context, user);
-                              },
-                            ),
+                    _buildSectionHeader(context, "USER DIRECTORY"),
+                    const SizedBox(height: AppSpacing.md),
+                    _buildSearchBar(context, theme),
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: [
+                        _buildFilterChip(context, 'All'),
+                        const SizedBox(width: AppSpacing.sm),
+                        _buildFilterChip(context, 'New'),
+                        const SizedBox(width: AppSpacing.sm),
+                        _buildFilterChip(context, 'Active'),
+                        const Spacer(),
+                      ],
                     ),
                   ],
-                );
-              },
-            ),
+                ),
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async => _pagingController.refresh(),
+                  child: PagedListView<int, Map<String, dynamic>>(
+                    pagingController: _pagingController,
+                    padding: const EdgeInsets.only(top: AppSpacing.sm),
+                    builderDelegate: PagedChildBuilderDelegate<Map<String, dynamic>>(
+                      itemBuilder: (context, user, index) => _buildUserRow(context, user),
+                      firstPageErrorIndicatorBuilder: (context) => NetworkErrorState(
+                        message: 'Failed to load users',
+                        onRetry: () => _pagingController.refresh(),
+                      ),
+                      noItemsFoundIndicatorBuilder: (context) => _buildEmptyState(context),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -188,20 +146,10 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
   }
 
   Widget _buildSearchBar(BuildContext context, ThemeData theme) {
-    return TextField(
+    return DebouncedSearchBar(
+      hintText: 'Search by username or email...',
       controller: _searchController,
-      onChanged: (v) => setState(() => _searchQuery = v),
-      decoration: InputDecoration(
-        hintText: 'Search by username or email...',
-        prefixIcon: const Icon(Icons.search_rounded),
-        filled: true,
-        fillColor: theme.colorScheme.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      ),
+      onChanged: _updateSearch,
     );
   }
 
@@ -234,11 +182,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
     return FilterChip(
       label: Text(label),
       selected: isSelected,
-      onSelected: (bool selected) {
-        setState(() {
-          _selectedFilter = label;
-        });
-      },
+      onSelected: (bool selected) => _updateFilter(label),
       backgroundColor: Colors.transparent,
       selectedColor: colorScheme.primary.withValues(alpha: 0.1),
       labelStyle: theme.textTheme.labelLarge?.copyWith(
@@ -386,3 +330,5 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
     );
   }
 }
+
+

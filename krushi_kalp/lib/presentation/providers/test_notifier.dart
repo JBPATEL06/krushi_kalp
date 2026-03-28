@@ -20,7 +20,8 @@ class TestNotifier extends _$TestNotifier {
 
   @override
   TestState build() {
-    _loadFromPrefs();
+    // Load from cached settings after build completion ensures safety
+    Future(() => _loadFromPrefs());
     return const TestState();
   }
 
@@ -52,6 +53,9 @@ class TestNotifier extends _$TestNotifier {
   }
 
   Future<void> fetchTests({bool forceRefresh = false}) async {
+    // Defer to next event loop tick to avoid "setState during build"
+    await Future(() {});
+
     if (!forceRefresh && state.cachedTests.isNotEmpty) {
       _applyFiltering();
       return;
@@ -100,7 +104,7 @@ class TestNotifier extends _$TestNotifier {
     final user = AuthService.instance.currentUser;
     if (user == null) return {};
     try {
-      final ids = await TestService.instance.fetchPurchasedTestIds(user.id);
+      final ids = await TestService.instance.fetchPurchasedTestIds(user.id).timeout(const Duration(seconds: 15));
       state = state.copyWith(purchasedTestIds: ids);
       return ids;
     } catch (e, stack) {
@@ -110,6 +114,9 @@ class TestNotifier extends _$TestNotifier {
   }
 
   Future<void> fetchUserTests(String userId) async {
+    // Defer to next event loop tick to avoid "setState during build"
+    await Future(() {});
+    
     state = state.copyWith(isLoading: true, errorMessage: '');
     try {
       final userTests = await TestService.instance.fetchUserTests(userId);

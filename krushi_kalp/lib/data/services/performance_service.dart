@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:krushi_kalp/domain/models/user_performance.dart';
+import '../../utils/crashlytics_service.dart';
 
 class PerformanceService {
   PerformanceService._();
@@ -15,7 +16,7 @@ class PerformanceService {
           .rpc('get_user_performance', params: {'p_user_id': userId});
       if (result == null) return UserPerformance.empty();
       return UserPerformance.fromJson(result as Map<String, dynamic>);
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('[PerformanceService] getUserPerformance error: $e');
       return UserPerformance.empty();
     }
@@ -38,7 +39,7 @@ class PerformanceService {
           (results[1] as num?)?.toDouble() ?? 0.0;
 
       return adminStats;
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('[PerformanceService] getAdminPerformance error: $e');
       return {};
     }
@@ -56,7 +57,7 @@ class PerformanceService {
         'p_duration_seconds': durationSeconds,
         'p_activity_type': activityType,
       });
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('[PerformanceService] updateUserStreak error: $e');
       // Intentionally swallowed — streak update is best-effort
     }

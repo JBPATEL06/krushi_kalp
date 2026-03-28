@@ -19,10 +19,7 @@ import '../widgets/reviews/review_dialog.dart';
 import '../widgets/reviews/rate_stars.dart';
 import 'reviews/all_reviews_screen.dart';
 import '../widgets/common/download_action_button.dart';
-import '../../data/services/download_service.dart';
-import 'pdf_viewer_screen.dart';
-import 'dart:io';
-import '../widgets/common/download_progress_dialog.dart';
+import '../../utils/resource_helper.dart';
 import '../../utils/crashlytics_service.dart';
 
 class ResourceDetailScreen extends ConsumerStatefulWidget {
@@ -169,71 +166,13 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
   }
 
   Future<void> _openResource(Resource resource) async {
-    final filename = 'resource_${resource.id}.pdf';
     final user = ref.read(authNotifierProvider).user;
-    final userId = user?.id;
-    if (userId == null) return;
-    final isDownloaded =
-        await DownloadService().isFileDownloaded(filename, userId: userId);
-    if (isDownloaded) {
-      final path =
-          await DownloadService().getLocalPath(filename, userId: userId);
-      if (await File(path).exists()) {
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  PdfViewerScreen(file: File(path), title: resource.title),
-            ),
-          );
-        }
-      }
-    } else {
-      if (resource.fileUrl == null || resource.fileUrl!.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('File URL not available')),
-          );
-        }
-        return;
-      }
-      if (!mounted) return;
-      _downloadAndOpen(resource, filename, userId);
-    }
-  }
-
-  Future<void> _downloadAndOpen(
-      Resource resource, String filename, String userId) async {
-    if (!mounted) return;
-    final outerContext = context;
-    showDialog(
+    
+    // Use the unified ResourceHelper (strictly in-app)
+    await ResourceHelper.openResource(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => DownloadProgressDialog(
-        url: resource.fileUrl!,
-        filename: filename,
-        displayName: resource.title,
-        userId: userId,
-        onComplete: (path) {
-          if (!outerContext.mounted) return;
-          Navigator.push(
-            outerContext,
-            MaterialPageRoute(
-              builder: (_) =>
-                  PdfViewerScreen(file: File(path), title: resource.title),
-            ),
-          );
-        },
-        onError: () {
-          if (mounted) {
-            ScaffoldMessenger.of(outerContext).showSnackBar(
-              const SnackBar(
-                  content: Text('Download failed. Please try again.')),
-            );
-          }
-        },
-      ),
+      resource: resource,
+      userId: user?.id,
     );
   }
 

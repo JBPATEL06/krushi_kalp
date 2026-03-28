@@ -5,17 +5,12 @@ import 'downloads_screen.dart';
 import '../providers/auth_notifier.dart';
 import '../providers/test_notifier.dart';
 import '../providers/resource_notifier.dart';
-import 'login_screen.dart';
 import 'home_screen.dart';
 import 'profile_screen.dart';
 import '../providers/navigation_notifier.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/auth_state.dart';
-
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../data/services/app_config_service.dart';
-import 'maintenance_screen.dart';
-import 'update_required_screen.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -38,7 +33,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     // Initial Sync for logged in user
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAppStatus(); // NEW: Gate check
@@ -49,7 +44,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Future<void> _checkAppStatus() async {
     final authState = ref.read(authNotifierProvider);
     if (authState.isAdmin) {
-      
       return;
     }
 
@@ -58,21 +52,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
     // 1. Maintenance Check
     if (AppConfigService.isMaintenanceMode) {
-      
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MaintenanceScreen(
-              error: AppConfigService.maintenanceMessage,
-              onRetry: () => Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const MainScreen()),
-              ),
-            ),
-          ),
-        );
-      }
       return;
     }
 
@@ -82,18 +61,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       final info = await PackageInfo.fromPlatform();
       final current = info.version;
       if (_isVersionBelow(current, minVer)) {
-        
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => UpdateRequiredScreen(
-                currentVersion: current,
-                requiredVersion: minVer,
-              ),
-            ),
-          );
-        }
         return;
       }
     }
@@ -119,29 +86,20 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final authState = ref.read(authNotifierProvider);
     if (authState.isLoggedIn && authState.user != null) {
       final userId = authState.user!.id;
-      
 
       // Trigger background fetches (Non-blocking)
       ref.read(testNotifierProvider.notifier).fetchTests();
       ref.read(testNotifierProvider.notifier).fetchUserTests(userId);
       ref.read(resourceNotifierProvider.notifier).fetchAll();
-      ref.read(resourceNotifierProvider.notifier).fetchPurchasedResources(userId);
+      ref
+          .read(resourceNotifierProvider.notifier)
+          .fetchPurchasedResources(userId);
     }
   }
 
   @override
   void dispose() {
     super.dispose();
-  }
-
-  void _handleAuthChange(AuthState? previous, AuthState next) {
-    if (!next.isLoggedIn && previous?.isLoggedIn == true) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false,
-      );
-    }
   }
 
   @override
@@ -151,7 +109,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final navNotifier = ref.read(navigationProvider.notifier);
 
     // Listen for auth state changes to handle logout
-    ref.listen<AuthState>(authNotifierProvider, _handleAuthChange);
 
     return PopScope(
       canPop: navState.selectedIndex == 0, // Allow pop only on Home tab
@@ -208,14 +165,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   if (navState.selectedIndex < 4)
                     const VerticalDivider(thickness: 1, width: 1),
                   Expanded(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      switchInCurve: Curves.easeOut,
-                      switchOutCurve: Curves.easeIn,
-                      child: IndexedStack(
-                        index: navState.selectedIndex,
-                        children: _screens,
-                      ),
+                    child: IndexedStack(
+                      index: navState.selectedIndex,
+                      children: _screens,
                     ),
                   ),
                 ],
@@ -224,14 +176,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           } else {
             // Mobile
             return Scaffold(
-              body: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                switchInCurve: Curves.easeOut,
-                switchOutCurve: Curves.easeIn,
-                child: IndexedStack(
-                  index: navState.selectedIndex,
-                  children: _screens,
-                ),
+              body: IndexedStack(
+                index: navState.selectedIndex,
+                children: _screens,
               ),
               bottomNavigationBar: navState.selectedIndex >= 4
                   ? null
@@ -241,10 +188,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                         data: NavigationBarThemeData(
                           backgroundColor: theme.colorScheme.surface,
                           elevation: 0,
-                          indicatorColor: theme.colorScheme.primary
-                              .withValues(alpha: 0.1),
-                          labelBehavior: NavigationDestinationLabelBehavior
-                              .alwaysShow,
+                          indicatorColor:
+                              theme.colorScheme.primary.withValues(alpha: 0.1),
+                          labelBehavior:
+                              NavigationDestinationLabelBehavior.alwaysShow,
                           labelTextStyle:
                               WidgetStateProperty.resolveWith((states) {
                             if (states.contains(WidgetState.selected)) {
@@ -260,8 +207,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                               color: theme.colorScheme.onSurfaceVariant,
                             );
                           }),
-                          iconTheme:
-                              WidgetStateProperty.resolveWith((states) {
+                          iconTheme: WidgetStateProperty.resolveWith((states) {
                             if (states.contains(WidgetState.selected)) {
                               return IconThemeData(
                                 size: 26,
@@ -289,14 +235,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                           destinations: const [
                             NavigationDestination(
                               icon: Icon(Icons.home_outlined),
-                              selectedIcon:
-                                  Icon(Icons.home_rounded, size: 28),
+                              selectedIcon: Icon(Icons.home_rounded, size: 28),
                               label: 'Home',
                             ),
                             NavigationDestination(
                               icon: Icon(Icons.quiz_outlined),
-                              selectedIcon:
-                                  Icon(Icons.quiz_rounded, size: 28),
+                              selectedIcon: Icon(Icons.quiz_rounded, size: 28),
                               label: 'Mocks',
                             ),
                             NavigationDestination(

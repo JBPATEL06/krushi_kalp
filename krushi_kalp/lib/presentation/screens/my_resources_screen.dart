@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:io';
 import '../../data/services/auth_service.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../domain/models/resource.dart';
@@ -9,10 +8,8 @@ import '../providers/auth_notifier.dart';
 import '../providers/resource_state.dart';
 import '../widgets/common/download_item_card.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../data/services/download_service.dart';
-import '../widgets/common/download_progress_dialog.dart';
+import '../../utils/resource_helper.dart';
 import '../widgets/common/download_action_button.dart';
-import 'pdf_viewer_screen.dart';
 import 'resource_detail_screen.dart';
 
 class MyResourcesScreen extends ConsumerStatefulWidget {
@@ -144,7 +141,7 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
                             startLabel: "Open",
                             isFullWidth: false,
                             userId: AuthService.instance.currentUser?.id,
-                            displayName: resource.title, // CHANGED
+                            displayName: resource.title,
                             onAction: () => _openResource(resource),
                           ),
                           onTap: () {
@@ -299,86 +296,13 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
   }
 
   Future<void> _openResource(Resource resource) async {
-    final filename = 'resource_${resource.id}.pdf';
-    final userId = AuthService.instance.currentUser?.id;
-    if (userId == null) return;
-
-    // Check if already downloaded
-    final isDownloaded =
-        await DownloadService().isFileDownloaded(filename, userId: userId);
-
-    if (isDownloaded) {
-      // Already downloaded - open file directly
-      final path =
-          await DownloadService().getLocalPath(filename, userId: userId);
-      if (await File(path).exists()) {
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => PdfViewerScreen(
-                file: File(path),
-                title: resource.title,
-              ),
-            ),
-          );
-        }
-      }
-    } else {
-      // Not downloaded - directly download (no online view option)
-      if (resource.fileUrl == null || resource.fileUrl!.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('File URL not available')),
-          );
-        }
-        return;
-      }
-
-      if (!mounted) return;
-
-      // Directly download and open
-      _downloadAndOpen(resource, filename, userId);
-    }
-  }
-
-  Future<void> _downloadAndOpen(
-      Resource resource, String filename, String userId) async {
-    if (!mounted) return;
-
-    // Capture outer context for use inside onComplete
-    final outerContext = context;
-
-    showDialog(
+    final user = ref.read(authNotifierProvider).user;
+    
+    // Use the unified ResourceHelper (strictly in-app)
+    await ResourceHelper.openResource(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => DownloadProgressDialog(
-        url: resource.fileUrl!,
-        filename: filename,
-        displayName: resource.title,
-        userId: userId, // â† REQUIRED for ownership manifest
-        onComplete: (path) {
-          // Open file after download
-          if (!outerContext.mounted) return;
-          Navigator.push(
-            outerContext,
-            MaterialPageRoute(
-              builder: (_) => PdfViewerScreen(
-                file: File(path),
-                title: resource.title,
-              ),
-            ),
-          );
-        },
-        onError: () {
-          if (mounted) {
-            ScaffoldMessenger.of(outerContext).showSnackBar(
-              const SnackBar(
-                  content: Text('Download failed. Please try again.')),
-            );
-          }
-        },
-      ),
+      resource: resource,
+      userId: user?.id,
     );
   }
 }

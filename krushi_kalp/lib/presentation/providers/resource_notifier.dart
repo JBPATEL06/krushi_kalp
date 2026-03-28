@@ -18,7 +18,8 @@ class ResourceNotifier extends _$ResourceNotifier {
 
   @override
   ResourceState build() {
-    _loadFromPrefs();
+    // Load from cache after build completion safely
+    Future(() => _loadFromPrefs());
     return const ResourceState();
   }
 
@@ -49,7 +50,10 @@ class ResourceNotifier extends _$ResourceNotifier {
     }
   }
 
-  Future<void> fetchResources(ResourceType type, {bool forceRefresh = false}) async {
+  Future<void> fetchResources(ResourceType type, {bool forceRefresh = false, bool isBatch = false}) async {
+    // Defer to next event loop tick to avoid "setState during build"
+    await Future(() {});
+
     if (!forceRefresh) {
       bool hasData = false;
       switch (type) {
@@ -61,7 +65,7 @@ class ResourceNotifier extends _$ResourceNotifier {
       if (hasData) return;
     }
 
-    state = state.copyWith(isLoading: true);
+    if (!isBatch) state = state.copyWith(isLoading: true);
     CrashlyticsService.instance.log('ResourceNotifier: Fetching resources (type: $type, force: $forceRefresh)');
 
     try {
@@ -75,7 +79,7 @@ class ResourceNotifier extends _$ResourceNotifier {
       }
 
       // 2. Fetch fresh data from Supabase
-      final resources = await ResourceService.instance.fetchResources(type: type);
+      final resources = await ResourceService.instance.fetchResources(type: type).timeout(const Duration(seconds: 15));
 
       // 3. Save to Isar
       if (resources.isNotEmpty) {
@@ -90,7 +94,7 @@ class ResourceNotifier extends _$ResourceNotifier {
       state = state.copyWith(errorMessage: 'Failed to load ${type.toString().split('.').last}: $e');
       CrashlyticsService.instance.recordError(e, stack, reason: 'ResourceNotifier: fetchResources($type)');
     } finally {
-      state = state.copyWith(isLoading: false);
+      if (!isBatch) state = state.copyWith(isLoading: false);
     }
   }
 
@@ -104,9 +108,12 @@ class ResourceNotifier extends _$ResourceNotifier {
   }
 
   Future<void> fetchPurchasedResources(String userId) async {
+    // Defer to next event loop tick to avoid "setState during build"
+    await Future(() {});
+    
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
-      final resources = await ResourceService.instance.fetchPurchasedResources(userId);
+      final resources = await ResourceService.instance.fetchPurchasedResources(userId).timeout(const Duration(seconds: 15));
       state = state.copyWith(
         purchasedResources: resources,
         purchasedResourceIds: resources.map((r) => r.id).toSet(),
@@ -122,16 +129,23 @@ class ResourceNotifier extends _$ResourceNotifier {
   }
 
   Future<void> fetchAll({bool forceRefresh = false}) async {
-    state = state.copyWith(isLoading: true);
+    // Defer to next event loop tick to avoid "setState during build"
+    await Future(() {});
+
+    if (state.isLoading) return; // Prevent concurrent batch fetches
+    state = state.copyWith(isLoading: true, errorMessage: null);
     try {
+      // Run all fetches in parallel, each will update its own slice of state
+      // We pass a flag or handle loading internally to prevent flickering
       await Future.wait([
-        fetchResources(ResourceType.eBook, forceRefresh: forceRefresh),
-        fetchResources(ResourceType.studyMaterial, forceRefresh: forceRefresh),
-        fetchResources(ResourceType.pyq, forceRefresh: forceRefresh),
-        fetchResources(ResourceType.currentAffair, forceRefresh: forceRefresh),
+        fetchResources(ResourceType.eBook, forceRefresh: forceRefresh, isBatch: true),
+        fetchResources(ResourceType.studyMaterial, forceRefresh: forceRefresh, isBatch: true),
+        fetchResources(ResourceType.pyq, forceRefresh: forceRefresh, isBatch: true),
+        fetchResources(ResourceType.currentAffair, forceRefresh: forceRefresh, isBatch: true),
       ]);
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'ResourceNotifier: fetchAll');
+      state = state.copyWith(errorMessage: 'Error refreshing library: $e');
     } finally {
       state = state.copyWith(isLoading: false);
     }

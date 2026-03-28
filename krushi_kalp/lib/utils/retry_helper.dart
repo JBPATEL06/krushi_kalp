@@ -10,21 +10,23 @@ import '../utils/crashlytics_service.dart';
 /// ```
 class RetryHelper {
   /// Retries [action] up to [maxRetries] times on network failure.
-  /// Uses exponential backoff: 1s â†’ 2s â†’ 4s between retries.
+  /// Uses exponential backoff: 1s -> 2s -> 4s between retries.
+  /// Enforces a hard [timeout] on the actual request to prevent hanging.
   static Future<T> run<T>(
     Future<T> Function() action, {
     int maxRetries = 2,
     Duration initialDelay = const Duration(seconds: 1),
+    Duration timeout = const Duration(seconds: 15),
   }) async {
     int attempt = 0;
 
     while (true) {
       try {
-        return await action();
+        return await action().timeout(timeout);
       } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'retry_helper');
+        CrashlyticsService.instance.recordError(e, stack, reason: 'retry_helper_attempt_$attempt');
         attempt++;
-        final isNetwork = NetworkUtils.isNetworkError(e);
+        final isNetwork = NetworkUtils.isNetworkError(e) || e is TimeoutException;
 
         if (!isNetwork || attempt > maxRetries) {
           // Not a network error or exhausted retries — rethrow

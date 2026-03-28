@@ -4,6 +4,13 @@
 
 ---
 
+## 📂 Project Context
+- **Rules & Standards:** [context/AGENTS.md](file:///f:/Krushi_kalp1/krushi_kalp/context/AGENTS.md), [context/GEMINI.md](file:///f:/Krushi_kalp1/krushi_kalp/context/GEMINI.md)
+- **Implementation History:** [context/implementation_plan.md](file:///f:/Krushi_kalp1/krushi_kalp/context/implementation_plan.md), [context/task_list.md](file:///f:/Krushi_kalp1/krushi_kalp/context/task_list.md)
+- **Code Audit:** [context/code_audit_report.md](file:///f:/Krushi_kalp1/krushi_kalp/context/code_audit_report.md)
+
+---
+
 ## 🚨 CRITICAL AI DIRECTIVES: DO NOT TOUCH WORKING FUNCTIONALITY 🚨
 
 **The following core systems are CURRENTLY STABLE AND FULLY FUNCTIONAL. As an AI Agent, you MUST NOT modify, refactor, or attempt to "optimize" these systems unless explicitly ordered to by the human user:**
@@ -14,6 +21,8 @@
 4. **Mock Exam Engine:** The test UI, timer, scoring, and string-based answer validation.
 5. **Offline Downloads:** Local sandboxing (`DownloadService`), PDF Generation, and JSON caching.
 6. **Background Uploads/Downloads:** Real-time transfer notifications and background isolate syncing.
+7. **Pagination Core:** `infinite_scroll_pagination` integration and `AdminService` range queries.
+8. **Navigation Scaffold:** `GoRouter` configuration and authentication-based redirection.
 
 *Rule of Thumb: If a feature is listed in this document, assume it works perfectly. Do not alter existing business logic when applying UI updates or adding new features.*
 
@@ -22,70 +31,46 @@
 ## Current Progress (Modernization Phases)
 - **Phase 1: Database Bill Protection** [COMPLETED] 
   - Integrated `Isar` NoSQL for local caching.
-  - Refactored `TestProvider`, `ResourceProvider`, and `OfferProvider` for offline-first data flow.
 - **Phase 2: Secure Server-Side Pricing** [COMPLETED]
-  - Deployed SQL RPC functions for price verification.
-  - Refactored `DirectCheckoutSheet` and `CartScreen` to use server-side verification.
-- **Phase 3: Architecture Upgrades** [IN PROGRESS]
-  - Migrated from `flutter_dotenv` to `envied` (Secrets Obfuscation).
-  - Enforced API Type Safety in `TestService` (Typed models for all returns).
-  - Implemented `RepaintBoundary` on all high-frequency list cards for performance.
-  - Starting Migration from `Provider` to `Riverpod 3.0`.
+# Krushi Kalp Project Context
 
----
+## Status & Progress (Last Updated: March 2026)
+- **Networking**: Settlement on **Supabase SDK + native HttpClient** (Dio/Retrofit rejected for stability).
+- **Download Engine**: Refactored to use **direct file streaming (IOSink)** to prevent ANRs/OOM crashes.
+- **Cache Deduplication**: Fixed Isar ID mapping (Backend `id` -> Isar `id`) to prevent duplicate UI entries.
+- **UI Architecture**: "Agrarian Glass Prism" aesthetic established with unique `Hero` tag safety.
+- **Deduplication Migration**: One-time automatic cache clear implemented in `LocalCachingService`.
 
-## Tech Stack
-| Layer | Technology |
-|-------|-----------|
-| Framework | Flutter 3.27+ (Dart) |
-| State Management | Provider (Moving to Riverpod 3.0) |
-| Local Cache | Isar NoSQL (Offline-First) |
-| Backend / DB | Supabase (PostgreSQL) |
-| Auth | Supabase Auth + Google Sign-In |
-| Payments | Razorpay (Server-Verified via SQL RPC) |
-| Environment | `envied` (Obfuscated Secrets) |
+## 🛠 Tech Stack
+- **Framework**: Flutter 3.27+ (Stable Channel)
+- **State Management**: Riverpod 3.0 (AsyncValue / Notifiers)
+- **Database**: Isar (NoSQL) for high-speed local caching
+- **Networking**: Supabase SDK + Native `HttpClient`
+- **Navigation**: GoRouter (Declarative)
+- **Design System**: Agrarian Glass Prism (Indigo-Slate theme)
 
----
+## 📌 Development Standards
 
-## Architecture
+### 1. Networking & API
+- Always use the `SupabaseUrlHelper` for signed URLs.
+- For file downloads, use `DownloadService.downloadFileInBackground` to ensure background streaming.
+- **Rule**: Never read large files into byte lists in memory; use `IOSink` streams.
 
-```
-lib/
-├── core/
-│   ├── env/            # Envied configuration (env.dart)
-│   ├── theme/          # Design tokens (AppColors, AppSpacing, AppTypography, AppTheme, AppRadius, AppMotion)
-│   └── utils/          # db_error_helper.dart
-├── data/
-│   ├── local/          # Isar entities and schemas
-│   ├── services/       # Core APIs (auth, payment, download, admin, notifications, caching)
-├── domain/
-│   └── models/         # Data models (MockTest, Resource, Offer, Order, etc.)
-├── presentation/
-│   ├── providers/      # State management (Transitioning to Riverpod Notifiers)
-│   ├── screens/        # Admin and User screens
-│   ├── utils/          # exam_helper, responsive scales
-│   └── widgets/        # Reusable widgets
-└── utils/              # price_calculator, excel_to_json_converter
-```
+### 2. Local Caching (Isar)
+- **Rule**: Always map the backend unique ID (`testId`, `resourceId`, etc.) to the Isar `id` field in the entity's `fromModel` method to ensure "upsert" behavior and prevent duplicates.
+- Run `dart run build_runner build --delete-conflicting-outputs` after changing entity schemas.
 
----
+### 3. UI & UX Safety
+- **Anti-Crash**: Never call `Navigator.pop(context)` or `context.push()` directly after a long `await` without checking `if (mounted)`.
+- **Auto-Open**: Do not force-open files after download. Use a `ScaffoldMessenger` Snackbar with an action button for completion notifications.
 
-## Payment Security (Phase 2 Rule)
-- **NEVER** trust client-side math for payments.
-- All checkouts MUST call `Supabase.instance.client.rpc('calculate_secure_price', ...)` before initializing `PaymentService.instance.openCheckout`.
-- If RPC fails, abort checkout to prevent spoofing.
-
-## Download Flow
-- Tracks downloads via `DownloadService().isFileDownloaded()`.
-- Files securely housed in `getApplicationDocumentsDirectory()/user_{userId}/`.
-- Bypasses Supabase requests natively if downloaded locally.
-
----
-
-## Design System (Token Law)
-**Never use raw values.** Always use tokens from `AppTheme.colors`, `AppSpacing`, etc.
-- **Responsive:** Use `ResponsiveBreakpoints` and `.h()`, `.w()`, `.sp()` extensions.
-- **Asset Optimization:** Use `CachedNetworkImage` with custom `Shimmer` loaders.
+## 🚀 Action Items
+- [ ] **Lint Zeroing**: Systematically resolve remaining lint issues.
+- [ ] **Typography Refinement**: Integrate `google_fonts` into `AppTheme.dart` (Indigo/Slate palette).
+- [ ] **Feature Development**: Proceed with Store and Results screen refinements.
+2. **UI Polish:** Full implementation of "Agrarian Glass Prism" aesthetic across consistent widgets (e.g. `UniversalItemCard`).
+3. **Final Navigation Cleanup:** Systematically replace remaining `Navigator.push` with `context.push`.
+4. **Isar Offline Logic Improvement:** Ensure graceful recovery when database is empty and device is offline.
 
 ---
 

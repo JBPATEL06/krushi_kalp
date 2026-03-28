@@ -1,17 +1,14 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
-import 'package:flutter/foundation.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:krushi_kalp/data/services/resource_service.dart';
 import 'package:krushi_kalp/data/services/admin_service.dart';
 import 'package:krushi_kalp/domain/models/resource.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:krushi_kalp/presentation/screens/pdf_viewer_screen.dart';
+import 'package:krushi_kalp/utils/resource_helper.dart';
 import 'admin_resource_form.dart';
 import '../../../../utils/error_utils.dart';
+import '../../../../utils/crashlytics_service.dart';
 
 class AdminResourceDetailScreen extends StatefulWidget {
   final Resource resource;
@@ -45,7 +42,8 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
           _isLoadingStats = false;
         });
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_resource_detail_screen');
       if (mounted) {
         setState(() => _isLoadingStats = false);
       }
@@ -80,7 +78,8 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
         if (mounted) {
           Navigator.pop(context, true);
         }
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_resource_detail_screen');
         if (mounted) {
           ErrorUtils.showError(context, e);
         }
@@ -110,51 +109,17 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
     }
   }
 
-  Future<void> _handlePdfAction({bool isDownload = false}) async {
+  Future<void> _handlePdfAction() async {
     if (_resource.fileUrl == null) return;
 
     try {
-      showDialog(
+      await ResourceHelper.openResource(
         context: context,
-        barrierDismissible: false,
-        builder: (c) => const Center(child: CircularProgressIndicator()),
+        resource: _resource,
+        userId: 'admin', // Placeholder or actual admin ID
       );
-
-      final HttpClient httpClient = HttpClient();
-      final HttpClientRequest request =
-          await httpClient.getUrl(Uri.parse(_resource.fileUrl!));
-      final HttpClientResponse response = await request.close();
-
-      if (response.statusCode != 200) {
-        throw Exception('Failed to fetch file: HTTP ${response.statusCode}');
-      }
-
-      final Uint8List bytes =
-          await consolidateHttpClientResponseBytes(response);
-      final dir = await getTemporaryDirectory();
-      final fileName = _resource.title.replaceAll(' ', '_');
-      final file = File('${dir.path}/$fileName.pdf');
-      await file.writeAsBytes(bytes);
-
-      if (mounted) {
-        Navigator.pop(context); // Close loader
-
-        if (isDownload) {
-          final xFile = XFile(file.path,
-              name: '$fileName.pdf', mimeType: 'application/pdf');
-          await Share.shareXFiles([xFile],
-              text: 'Download PDF: ${_resource.title}');
-        } else {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  PdfViewerScreen(file: file, title: _resource.title),
-            ),
-          );
-        }
-      }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_resource_detail_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
@@ -170,7 +135,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Resource Details',
-            style: TextStyle(fontSize: context.sp(20))), // FIXED
+            style: TextStyle(fontSize: context.sp(20))),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_rounded),
@@ -208,8 +173,8 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                 children: [
                   // Thumbnail
                   Container(
-                    width: context.sp(100), // FIXED
-                    height: context.sp(140), // FIXED
+                    width: context.sp(100),
+                    height: context.sp(140),
                     decoration: BoxDecoration(
                       color: colorScheme.surfaceContainerHighest
                           .withValues(alpha: 0.5),
@@ -224,7 +189,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                             ),
                           )
                         : Icon(Icons.insert_drive_file_rounded,
-                            size: context.sp(48), // FIXED
+                            size: context.sp(48),
                             color: colorScheme.onSurfaceVariant
                                 .withValues(alpha: 0.5)),
                   ),
@@ -255,7 +220,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                           _resource.title,
                           style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.bold,
-                              fontSize: context.sp(24)), // FIXED
+                              fontSize: context.sp(24)),
                         ),
                         if (_resource.category != null) ...[
                           const SizedBox(height: 4),
@@ -274,7 +239,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                               style: theme.textTheme.titleLarge?.copyWith(
                                 color: colorScheme.primary,
                                 fontWeight: FontWeight.bold,
-                                fontSize: context.sp(20), // FIXED
+                                fontSize: context.sp(20),
                               ),
                             ),
                           ],
@@ -347,10 +312,10 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => _handlePdfAction(isDownload: false),
-                    icon: const Icon(Icons.visibility_rounded),
-                    label: Text('VIEW PDF',
-                        style: TextStyle(fontSize: context.sp(14))), // FIXED
+                    onPressed: _handlePdfAction,
+                    icon: const Icon(Icons.download_for_offline_rounded),
+                    label: Text('DOWNLOAD',
+                        style: TextStyle(fontSize: context.sp(14))),
                     style: ElevatedButton.styleFrom(
                       padding:
                           const EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -360,10 +325,10 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => _handlePdfAction(isDownload: true),
+                    onPressed: _handlePdfAction,
                     icon: const Icon(Icons.share_rounded),
                     label: Text('SHARE',
-                        style: TextStyle(fontSize: context.sp(14))), // FIXED
+                        style: TextStyle(fontSize: context.sp(14))),
                     style: OutlinedButton.styleFrom(
                       padding:
                           const EdgeInsets.symmetric(vertical: AppSpacing.lg),
@@ -383,14 +348,14 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 0.0), // Reduced
+      padding: const EdgeInsets.only(bottom: 0.0),
       child: Text(
         title,
         style: theme.textTheme.titleSmall?.copyWith(
           fontWeight: FontWeight.w800,
           color: colorScheme.onSurfaceVariant,
           letterSpacing: 1.2,
-          fontSize: context.sp(12), // FIXED
+          fontSize: context.sp(12),
         ),
       ),
     );
@@ -417,12 +382,12 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: context.sp(20)), // FIXED
+          Icon(icon, color: color, size: context.sp(20)),
           const SizedBox(height: 8),
           Text(
             value,
             style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold, fontSize: context.sp(20)), // FIXED
+                fontWeight: FontWeight.bold, fontSize: context.sp(20)),
           ),
           Text(
             label,

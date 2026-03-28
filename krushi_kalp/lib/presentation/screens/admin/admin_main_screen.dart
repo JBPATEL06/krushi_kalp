@@ -11,7 +11,6 @@ import 'admin_analysis_screen.dart';
 import 'admin_user_list_screen.dart';
 import 'admin_notification_screen.dart';
 import 'manage_app/manage_app_screen.dart';
-import '../login_screen.dart';
 import 'admin_chat_list_screen.dart';
 
 
@@ -329,11 +328,6 @@ class _AdminMainScreenState extends ConsumerState<AdminMainScreen> {
 
                   if (confirm == true) {
                     await ref.read(authNotifierProvider.notifier).signOut();
-                    if (!context.mounted) return;
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      (route) => false,
-                    );
                   }
                 },
               ),
@@ -400,14 +394,8 @@ class _AdminMainScreenState extends ConsumerState<AdminMainScreen> {
         ),
         IconButton(
           onPressed: () async {
-            // Sign out logic repeated or extracted
             final auth = ref.read(authNotifierProvider.notifier);
             await auth.signOut();
-            if (!context.mounted) return;
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
-            );
           },
           icon: Icon(Icons.logout_rounded, color: colorScheme.error),
         ),

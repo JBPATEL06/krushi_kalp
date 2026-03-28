@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
+import 'package:go_router/go_router.dart';
 import '../../core/env/env.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/download_service.dart';
@@ -33,8 +34,8 @@ class AuthNotifier extends _$AuthNotifier {
       _sessionSubscription?.unsubscribe();
     });
 
-    // Initialize asynchronously
-    _init();
+    // Initialize asynchronously safely after build completion
+    Future(() => _init());
 
     return const AuthState();
   }
@@ -46,7 +47,7 @@ class AuthNotifier extends _$AuthNotifier {
         state = state.copyWith(user: user);
         await _fetchUserProfile();
         await _initSessionMonitoring();
-        _startPeriodicSessionCheck();
+        Future(() => _startPeriodicSessionCheck());
       }
       state = state.copyWith(isAuthCheckComplete: true);
 
@@ -175,10 +176,7 @@ class AuthNotifier extends _$AuthNotifier {
 
     final context = navigatorKey.currentContext;
     if (context != null) {
-      navigatorKey.currentState?.pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false,
-      );
+      context.go('/login');
 
       Future.delayed(const Duration(milliseconds: 500), () {
         if (navigatorKey.currentContext != null) {
@@ -212,10 +210,19 @@ class AuthNotifier extends _$AuthNotifier {
     if (user == null) return;
     try {
       final profile = await AuthService.instance.getUserProfile(user.id);
+      
+      // FALLBACK: Use Google name if DB username is empty
+      final dbUsername = profile?['username'] as String?;
+      final googleName = user.userMetadata?['full_name'] as String? ?? 
+                         user.userMetadata?['name'] as String?;
+      final finalName = (dbUsername != null && dbUsername.trim().isNotEmpty)
+          ? dbUsername
+          : (googleName ?? 'Aspirant');
+
       if (profile != null) {
         state = state.copyWith(
           role: profile['role'] as String? ?? 'Student',
-          username: profile['username'] as String? ?? 'Aspirant',
+          username: finalName,
         );
       }
     } catch (e, stack) {
@@ -316,10 +323,17 @@ class AuthNotifier extends _$AuthNotifier {
     await prefs.setString(
         'session_id', EncryptionService.encryptData(newSessionId));
 
+    final dbUsername = profile?['username'] as String?;
+    final googleName = user.userMetadata?['full_name'] as String? ?? 
+                       user.userMetadata?['name'] as String?;
+    final finalName = (dbUsername != null && dbUsername.trim().isNotEmpty)
+        ? dbUsername
+        : (googleName ?? 'Aspirant');
+
     state = state.copyWith(
       user: user,
       role: profile?['role'] as String? ?? 'Student',
-      username: profile?['username'] as String? ?? 'Aspirant',
+      username: finalName,
       localSessionId: newSessionId,
     );
 

@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 import '../../utils/crashlytics_service.dart';
 
 class SecureFileService {
@@ -31,15 +31,17 @@ class SecureFileService {
         return file;
       }
 
-      final response = await http.get(Uri.parse(url));
+      final request = await HttpClient().getUrl(Uri.parse(url));
+      final response = await request.close();
 
       if (response.statusCode != 200) {
         throw Exception('Failed to download file: HTTP ${response.statusCode}');
       }
 
-      await file.writeAsBytes(response.bodyBytes);
+      final bytes = await consolidateHttpClientResponseBytes(response);
+      await file.writeAsBytes(bytes);
       return file;
-    } catch (e) {
+    } catch (e, stack) {
       
       rethrow;
     }

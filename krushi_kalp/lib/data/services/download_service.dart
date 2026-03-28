@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../utils/supabase_url_helper.dart';
@@ -189,6 +189,7 @@ class DownloadService {
   }
 
   /// Downloads a file in the background with progress reporting and cancellation support.
+  /// Uses direct file streaming (IOSink) to avoid memory accumulation (prevents OOM/ANRs).
   Future<void> downloadFileInBackground({
     required String testId,
     required String fileName,
@@ -225,32 +226,37 @@ class DownloadService {
     );
     _activeTasks[taskId] = task;
 
+    IOSink? sink;
     try {
       // Step 1: Sign the URL (1 year expiry automatically handled by SupabaseUrlHelper)
       final signedUrl =
           await SupabaseUrlHelper().getFreshSignedUrl(bucketName, storagePath);
 
       // Step 2: Establish HTTP connection with chunked streaming
-      final request = http.Request('GET', Uri.parse(signedUrl));
-      final streamedResponse = await request.send();
+      final request = await HttpClient().getUrl(Uri.parse(signedUrl));
+      final streamedResponse = await request.close();
 
       if (streamedResponse.statusCode != 200) {
         throw Exception('Download HTTP error: ${streamedResponse.statusCode}');
       }
 
-      final contentLength = streamedResponse.contentLength ?? -1;
-      final List<int> bytes = [];
+      final contentLength = streamedResponse.contentLength;
+      final localPath = await getLocalPath(fileName, userId: userId);
+      final localFile = File(localPath);
+      
+      sink = localFile.openWrite();
       int received = 0;
 
       // Step 3: Stream and check for cancellation on every chunk
-      await for (final chunk in streamedResponse.stream) {
+      await for (final chunk in streamedResponse) {
         if (cancelToken.isCancelled) {
           task.status = DownloadStatus.cancelled;
+          await sink.close();
           await _cleanupPartialFile(fileName, userId);
           return;
         }
 
-        bytes.addAll(chunk);
+        sink.add(chunk);
         received += chunk.length;
 
         if (contentLength > 0) {
@@ -260,15 +266,14 @@ class DownloadService {
         }
       }
 
-      // Step 4: Final verification and writing to disk
+      await sink.close();
+      sink = null;
+
+      // Step 4: Final verification
       if (cancelToken.isCancelled) {
         await _cleanupPartialFile(fileName, userId);
         return;
       }
-
-      final localPath = await getLocalPath(fileName, userId: userId);
-      final localFile = File(localPath);
-      await localFile.writeAsBytes(bytes);
 
       // Step 5: Update Manifest
       await _registerOwnership(userId, fileName);
@@ -278,8 +283,8 @@ class DownloadService {
       onProgress(1.0);
       onComplete(localPath);
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'download_service');
       task.status = DownloadStatus.error;
+      if (sink != null) await sink.close();
       await _cleanupPartialFile(fileName, userId);
       CrashlyticsService.instance.recordError(e, stack,
           reason: 'Background download failed: $fileName');
@@ -319,8 +324,8 @@ class DownloadService {
         );
         return;
       }
-      final request = http.Request('GET', Uri.parse(url));
-      final response = await http.Client().send(request);
+      final request = await HttpClient().getUrl(Uri.parse(url));
+      final response = await request.close();
       if (response.statusCode != 200) {
         yield DownloadProgress(
           bytesReceived: 0,
@@ -331,10 +336,10 @@ class DownloadService {
         );
         return;
       }
-      final contentLength = response.contentLength ?? 0;
+      final contentLength = response.contentLength == -1 ? 0 : response.contentLength;
       var receivedBytes = 0;
       final sink = file.openWrite();
-      await for (final chunk in response.stream) {
+      await for (final chunk in response) {
         sink.add(chunk);
         receivedBytes += chunk.length;
         final percentage =
@@ -379,15 +384,15 @@ class DownloadService {
         await _registerOwnership(userId, filename);
         return path;
       }
-      final request = http.Request('GET', Uri.parse(url));
-      final response = await http.Client().send(request);
+      final request = await HttpClient().getUrl(Uri.parse(url));
+      final response = await request.close();
       if (response.statusCode != 200) {
         throw Exception('Download failed with status: ${response.statusCode}');
       }
-      final contentLength = response.contentLength ?? 0;
+      final contentLength = response.contentLength == -1 ? 0 : response.contentLength;
       var receivedBytes = 0;
       final sink = file.openWrite();
-      await response.stream.listen(
+      await response.listen(
         (chunk) {
           sink.add(chunk);
           receivedBytes += chunk.length;
@@ -406,7 +411,7 @@ class DownloadService {
       ).asFuture();
       await _registerOwnership(userId, filename);
       return path;
-    } catch (e) {
+    } catch (e, stack) {
       rethrow;
     }
   }

@@ -1,52 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:responsive_framework/responsive_framework.dart';
+
+// Re-export so existing imports of this file still get the Responsive class
+// and context extensions without changing any import statements.
 export 'package:krushi_kalp/utils/responsive.dart';
 
+/// Legacy passthrough widget — the actual responsive behavior is now
+/// provided by ResponsiveBreakpoints.builder() in main.dart.
+/// This class is kept for backward-compatibility only.
 class ResponsiveWrapper extends StatelessWidget {
   final Widget child;
-  final Size designSize;
 
   const ResponsiveWrapper({
     super.key,
     required this.child,
-    this.designSize = const Size(375, 812), // Standard iPhone X/11 design size
+    // Kept for backward compatibility — ignored, layout is now handled
+    // by responsive_framework at the app level.
+    Size designSize = const Size(375, 812),
   });
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final mediaQuery = MediaQuery.of(context);
-        final isPortrait = mediaQuery.orientation == Orientation.portrait;
-
-        // Calculate scale factor based on width for consistency
-        // (Assuming width is the primary constraint for mobile layouts)
-        final double scaleFactor = isPortrait
-            ? constraints.maxWidth / designSize.width
-            : constraints.maxHeight /
-                designSize.width; // Use height as width in landscape roughly
-
-        // Cap scale factor to avoid overly large elements on tablets
-        final double effectiveScale = scaleFactor > 1.2 ? 1.2 : scaleFactor;
-
-        return MediaQuery(
-          data: mediaQuery.copyWith(
-            textScaler: TextScaler.linear(effectiveScale),
-            // We store the scale factor in a custom attribute if possible,
-            // but for simplicity, we'll just use textScaler's factor or a helper.
-          ),
-          child: child,
-        );
-      },
-    );
+    // No more TextScaler manipulation — responsive_framework handles layout.
+    return child;
   }
 
-  static bool isWide(BuildContext context) {
-    return MediaQuery.of(context).size.width > 600;
-  }
+  /// Deprecated: Use [ResponsiveBreakpoints.of(context).isTablet] instead.
+  @Deprecated('Use ResponsiveBreakpoints.of(context).isTablet')
+  static bool isWide(BuildContext context) =>
+      ResponsiveBreakpoints.of(context).isTablet;
 
-  static bool isDesktop(BuildContext context) {
-    return MediaQuery.of(context).size.width > 1200;
-  }
+  /// Deprecated: Use [ResponsiveBreakpoints.of(context).isDesktop] instead.
+  @Deprecated('Use ResponsiveBreakpoints.of(context).isDesktop')
+  static bool isDesktop(BuildContext context) =>
+      ResponsiveBreakpoints.of(context).isDesktop;
 }
-
-// Extensions moved to lib/utils/responsive.dart

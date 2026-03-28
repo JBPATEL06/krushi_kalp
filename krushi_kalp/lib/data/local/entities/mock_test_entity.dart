@@ -5,7 +5,8 @@ part 'mock_test_entity.g.dart';
 
 @collection
 class MockTestEntity {
-  Id id = Isar.autoIncrement;
+  @Index(unique: true, replace: true)
+  Id id = Isar.autoIncrement; // Will be overwritten by testId in fromMockTest
 
   late int testId;
   late String title;
@@ -30,6 +31,7 @@ class MockTestEntity {
   // Convert from Domain Model
   static MockTestEntity fromMockTest(MockTest test) {
     return MockTestEntity()
+      ..id = test.id
       ..testId = test.id
       ..title = test.title
       ..description = test.description

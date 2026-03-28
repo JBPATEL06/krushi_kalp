@@ -6,7 +6,7 @@ part of 'resource_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$resourceNotifierHash() => r'c9eb4ce8915a5b6e89f2ea3d9a6058faf977f7a4';
+String _$resourceNotifierHash() => r'e5b237585333c2020dc76af6e9b4294574a4ef43';
 
 /// See also [ResourceNotifier].
 @ProviderFor(ResourceNotifier)

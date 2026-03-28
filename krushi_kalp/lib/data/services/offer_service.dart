@@ -3,7 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/offer.dart';
 import '../../utils/network_utils.dart';
 import '../../utils/crashlytics_service.dart';
-import 'auth_service.dart';
+import 'auth_service.dart'; 
+import '../../utils/retry_helper.dart';
 
 class OfferService {
   // Singleton
@@ -24,10 +25,7 @@ class OfferService {
   // Fetch all offers (Admin)
   Future<List<Offer>> getAllOffers() async {
     try {
-      final response = await _supabase
-          .from('offers')
-          .select()
-          .order('created_at', ascending: false);
+      final response = await RetryHelper.run(() => _supabase.from('offers').select().order('created_at', ascending: false));
       final List<dynamic> data = response;
       return data.map((e) => Offer.fromJson(e)).toList();
     } catch (e, stack) {
@@ -82,13 +80,7 @@ class OfferService {
   Future<List<Offer>> getActiveGlobalOffers() async {
     try {
       final now = DateTime.now().toUtc().toIso8601String();
-      final response = await _supabase
-          .from('offers')
-          .select()
-          .eq('is_active', true)
-          .eq('target_type', 'ALL')
-          .lte('start_date', now)
-          .gte('end_date', now);
+      final response = await RetryHelper.run(() => _supabase.from('offers').select().eq('is_active', true).eq('target_type', 'ALL').lte('start_date', now).gte('end_date', now));
 
       final List<dynamic> data = response;
       return data.map((e) => Offer.fromJson(e)).toList();
@@ -215,14 +207,7 @@ class OfferService {
   Future<Offer?> verifyCoupon(String code) async {
     try {
       final now = DateTime.now().toUtc().toIso8601String();
-      final response = await _supabase
-          .from('offers')
-          .select()
-          .eq('code', code.toUpperCase())
-          .eq('is_active', true)
-          .lte('start_date', now)
-          .gte('end_date', now)
-          .maybeSingle();
+      final response = await RetryHelper.run(() => _supabase.from('offers').select().eq('code', code.toUpperCase()).eq('is_active', true).lte('start_date', now).gte('end_date', now).maybeSingle());
 
       if (response == null) return null;
       return Offer.fromJson(response);
@@ -242,7 +227,8 @@ class OfferService {
         'offer_id': offerId,
         'updated_at': DateTime.now().toUtc().toIso8601String()
       }).eq('order_id', orderId);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
       throw Exception('Failed to apply coupon');
     }
   }

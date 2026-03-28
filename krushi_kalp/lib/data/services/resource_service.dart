@@ -156,7 +156,8 @@ class ResourceService {
       } catch (notiErr, stack) {
         CrashlyticsService.instance.recordError(notiErr, stack, reason: 'Broadcast failed after creating resource: ${resource.title}');
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service');
       throw Exception('Failed to create resource: $e');
     }
   }
@@ -177,7 +178,8 @@ class ResourceService {
       }
 
       await _client.from('resources').update(payload).eq('id', id);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service');
       throw Exception('Failed to update resource: $e');
     }
   }
@@ -197,7 +199,8 @@ class ResourceService {
       }
 
       await _client.from('resources').delete().eq('id', id);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service');
       throw Exception('Failed to delete resource: $e');
     }
   }
@@ -231,7 +234,8 @@ class ResourceService {
             fileOptions: const FileOptions(upsert: true),
           );
       return path;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service');
       throw Exception('Upload failed: $e');
     }
   }
@@ -275,7 +279,8 @@ class ResourceService {
         'price_at_purchase': 0.0,
         'created_at': timestamp,
       });
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service');
       throw Exception('Failed to claim resource: $e');
     }
   }
@@ -306,7 +311,8 @@ class ResourceService {
       });
 
       return orderId;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service');
       throw Exception('Failed to create order: $e');
     }
   }

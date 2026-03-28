@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:krushi_kalp/presentation/widgets/common/responsive_wrapper.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../providers/auth_notifier.dart';
@@ -109,12 +110,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               if (user == null) return;
               final data = await AuthService.instance.getUserProfile(user.id);
               if (mounted && data != null) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => EditProfileScreen(profile: data),
-                  ),
-                );
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EditProfileScreen(profile: data),
+                ),
+              );
+              if (result == true && mounted) {
+                ref.read(authNotifierProvider.notifier).refreshProfile();
+              }
               }
             },
           ),
@@ -179,7 +183,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: avatarUrl == null ? Icon(Icons.person, size: context.sp(50)) : null,
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  Text(name, style: theme.textTheme.headlineSmall?.copyWith(fontSize: context.sp(24))),
+                  Text(
+                    data?['username'] as String? ?? name,
+                    style: theme.textTheme.headlineSmall
+                        ?.copyWith(fontSize: context.sp(24)),
+                  ),
                   Text(
                     email,
                     style: theme.textTheme.bodyLarge?.copyWith(
@@ -266,7 +274,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     context,
                     icon: Icons.info_outline,
                     title: 'About Krushi Kalp',
-                    onTap: () => Navigator.pushNamed(context, '/about'),
+                    onTap: () => context.push('/about'),
                   ),
                   _buildProfileOption(
                     context,
@@ -293,9 +301,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () async {
                         await ref.read(authNotifierProvider.notifier).signOut();
-                        if (mounted) {
-                          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-                        }
                       },
                       icon: Icon(Icons.logout, size: context.sp(20)),
                       label: Text('Logout', style: TextStyle(fontSize: context.sp(14))),

@@ -231,7 +231,7 @@ class ReviewService {
           .from('reviews')
           .delete()
           .eq('id', reviewId);
-    } catch (e) {
+    } catch (e, stack) {
       rethrow;
     }
   }

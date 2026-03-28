@@ -397,14 +397,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                 fontSize: context.sp(11), // FIXED
                               ),
                             ),
-                            Text(
-                              '?${test['price'] ?? 0}',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.bold,
-                                fontSize: context.sp(11), // FIXED
-                              ),
-                            ),
+                        Text(
+                          '₹${test['price'] ?? 0}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.bold,
+                            fontSize: context.sp(11), // FIXED
+                          ),
+                        ),
                           ],
                         ),
                       ],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
-import 'package:http/http.dart' as http;
+import 'dart:io';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../../core/theme/app_spacing.dart';
@@ -53,17 +53,23 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
       });
 
       // Download to temporary cache (will be cleared by system)
-      final response = await http.get(Uri.parse(widget.url));
+      final client = HttpClient();
+      final request = await client.getUrl(Uri.parse(widget.url));
+      final response = await request.close();
 
-      if (response.statusCode != 200) {
-        throw Exception('Failed to load PDF: ${response.statusCode}');
+      if (response.statusCode != HttpStatus.ok) {
+        throw Exception('Failed to load PDF: ');
       }
 
       // Save to temp directory (not permanent storage)
       final dir = await getTemporaryDirectory();
-      final file =
-          File('${dir.path}/temp_${DateTime.now().millisecondsSinceEpoch}.pdf');
-      await file.writeAsBytes(response.bodyBytes);
+      final file = File('/temp_.pdf');
+      
+      final List<int> bytes = [];
+      await for (final chunk in response) {
+        bytes.addAll(chunk);
+      }
+      await file.writeAsBytes(bytes);
 
       if (mounted) {
         setState(() {

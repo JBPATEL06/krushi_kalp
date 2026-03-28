@@ -5,6 +5,7 @@ part 'resource_entity.g.dart';
 
 @collection
 class ResourceEntity {
+  @Index(unique: true, replace: true)
   Id id = Isar.autoIncrement;
 
   late int resourceId;
@@ -24,6 +25,7 @@ class ResourceEntity {
   // Convert from Domain Model
   static ResourceEntity fromResource(Resource resource) {
     return ResourceEntity()
+      ..id = resource.id
       ..resourceId = resource.id
       ..title = resource.title
       ..description = resource.description

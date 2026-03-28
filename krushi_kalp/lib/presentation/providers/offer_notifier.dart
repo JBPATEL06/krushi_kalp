@@ -12,11 +12,15 @@ part 'offer_notifier.g.dart';
 class OfferNotifier extends _$OfferNotifier {
   @override
   OfferState build() {
-    fetchActiveOffers();
+    // Fetch offers after build completion safely
+    Future(() => fetchActiveOffers());
     return const OfferState();
   }
 
   Future<void> fetchActiveOffers({bool forceRefresh = false}) async {
+    // Defer to next event loop tick to avoid "setState during build"
+    await Future(() {});
+
     if (!forceRefresh && state.activeOffers.isNotEmpty) {
       return;
     }

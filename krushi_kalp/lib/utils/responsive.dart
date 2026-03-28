@@ -1,5 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:responsive_framework/responsive_framework.dart';
 
+/// Industry-standard responsive helper for Krushi Kalp.
+///
+/// Breakpoints (from GEMINI.md):
+///   Mobile  : 0   – 450
+///   Tablet  : 451 – 800
+///   Desktop : 801+
+///
+/// The context.sp/w/h extensions below maintain backward-compatible
+/// signatures so zero call-site edits are needed after migration.
 class Responsive extends StatelessWidget {
   final Widget mobile;
   final Widget? tablet;
@@ -12,55 +22,68 @@ class Responsive extends StatelessWidget {
     this.desktop,
   });
 
-  // Screen size breakpoints
-  static const double mobileWidth = 600;
-  static const double tabletWidth = 1100;
-
-  // Helper methods to check screen size
   static bool isMobile(BuildContext context) =>
-      MediaQuery.of(context).size.width < mobileWidth;
+      ResponsiveBreakpoints.of(context).isMobile;
 
   static bool isTablet(BuildContext context) =>
-      MediaQuery.of(context).size.width >= mobileWidth &&
-      MediaQuery.of(context).size.width < tabletWidth;
+      ResponsiveBreakpoints.of(context).isTablet;
 
   static bool isDesktop(BuildContext context) =>
-      MediaQuery.of(context).size.width >= tabletWidth;
+      ResponsiveBreakpoints.of(context).isDesktop;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= tabletWidth) {
-          return desktop ?? tablet ?? mobile;
-        } else if (constraints.maxWidth >= mobileWidth) {
-          return tablet ?? mobile;
-        } else {
-          return mobile;
-        }
-      },
-    );
+    if (ResponsiveBreakpoints.of(context).isDesktop) {
+      return desktop ?? tablet ?? mobile;
+    } else if (ResponsiveBreakpoints.of(context).isTablet) {
+      return tablet ?? mobile;
+    }
+    return mobile;
   }
 }
 
-// Extension for easy access to responsive sizes
+/// Responsive context extensions.
+/// These maintain 100% backward-compatible signatures — no call-site edits needed.
 extension ResponsiveContext on BuildContext {
-  double get scaleFactor {
-    final width = MediaQuery.of(this).size.width;
-    const designWidth = 375.0; // Standard design width
-    final scale = width / designWidth;
-    return scale > 1.2 ? 1.2 : scale;
+  /// Returns a responsive value based on the current breakpoint.
+  /// Example: context.sp(14) returns 14 on mobile, 15 on tablet, 16 on desktop.
+  double sp(double size) {
+    final bp = ResponsiveBreakpoints.of(this);
+    if (bp.isDesktop) return size * 1.15;
+    if (bp.isTablet) return size * 1.08;
+    return size; // Mobile: return as-is (design is mobile-first at 375px)
   }
 
-  double sp(double size) =>
-      size * scaleFactor * 0.9; // Scaled pixels with 10% reduction
-  double w(double width) => width * scaleFactor * 0.9;
-  double h(double height) => height * scaleFactor * 0.9;
+  /// Responsive width scaling. Returns the value scaled for the current breakpoint.
+  double w(double width) {
+    final bp = ResponsiveBreakpoints.of(this);
+    if (bp.isDesktop) return width * 1.15;
+    if (bp.isTablet) return width * 1.08;
+    return width;
+  }
 
-  // Percentage based height and width
-  double hp(double percent) => MediaQuery.of(this).size.height * (percent / 100);
-  double wp(double percent) => MediaQuery.of(this).size.width * (percent / 100);
+  /// Responsive height scaling. Returns the value scaled for the current breakpoint.
+  double h(double height) {
+    final bp = ResponsiveBreakpoints.of(this);
+    if (bp.isDesktop) return height * 1.12;
+    if (bp.isTablet) return height * 1.06;
+    return height;
+  }
 
-  bool get isTablet => MediaQuery.of(this).size.width > 600;
-  bool get isDesktop => MediaQuery.of(this).size.width > 1200;
+  /// Percentage-based height: hp(50) = 50% of screen height.
+  double hp(double percent) =>
+      MediaQuery.sizeOf(this).height * (percent / 100);
+
+  /// Percentage-based width: wp(50) = 50% of screen width.
+  double wp(double percent) =>
+      MediaQuery.sizeOf(this).width * (percent / 100);
+
+  /// True when on Tablet breakpoint (451–800px).
+  bool get isTablet => ResponsiveBreakpoints.of(this).isTablet;
+
+  /// True when on Desktop breakpoint (801px+).
+  bool get isDesktop => ResponsiveBreakpoints.of(this).isDesktop;
+
+  /// True when on Mobile breakpoint (0–450px).
+  bool get isMobile => ResponsiveBreakpoints.of(this).isMobile;
 }

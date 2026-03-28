@@ -11,7 +11,7 @@ class NetworkNotifier extends _$NetworkNotifier {
 
   @override
   bool build() {
-    _init();
+    Future(() => _init());
     ref.onDispose(() => _subscription?.cancel());
     return true; // Assume connected initially
   }

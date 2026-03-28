@@ -5,6 +5,7 @@ part 'offer_entity.g.dart';
 
 @collection
 class OfferEntity {
+  @Index(unique: true, replace: true)
   Id id = Isar.autoIncrement;
 
   late int offerId;
@@ -29,6 +30,7 @@ class OfferEntity {
   // Convert from Domain Model
   static OfferEntity fromOffer(Offer offer) {
     return OfferEntity()
+      ..id = offer.id
       ..offerId = offer.id
       ..code = offer.code
       ..title = offer.title

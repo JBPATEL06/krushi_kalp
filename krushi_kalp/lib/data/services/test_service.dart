@@ -34,6 +34,40 @@ class TestService {
 
   // ── MOCK TESTS READING ───────────────────────────────────────────────────
 
+  /// Fetches precise page of mock tests with optional filters.
+  Future<List<MockTest>> fetchPaginatedMockTests({
+    required int offset,
+    required int limit,
+    String? searchQuery,
+    String? category,
+    String? language,
+  }) async {
+    try {
+      var query = _supabase.from('mock_tests').select();
+
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        query = query.ilike('title', '%$searchQuery%');
+      }
+      if (category != null && category != 'All') {
+        query = query.eq('category', category);
+      }
+      if (language != null && language != 'All') {
+        query = query.eq('language', language);
+      }
+
+      final response = await query
+          .order('created_at', ascending: false)
+          .range(offset, offset + limit - 1);
+      final List<dynamic> data = response;
+      List<MockTest> tests = await compute(_parseMockTests, data);
+
+      return await _populateSignedUrls(tests);
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: fetchPaginatedMockTests');
+      return [];
+    }
+  }
+
   /// Fetches all available mock tests from the database.
   Future<List<MockTest>> fetchMockTests() async {
     try {

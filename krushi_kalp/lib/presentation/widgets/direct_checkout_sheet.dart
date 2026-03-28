@@ -15,6 +15,7 @@ import '../providers/test_notifier.dart';
 import '../providers/resource_notifier.dart';
 import '../providers/auth_notifier.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../utils/crashlytics_service.dart';
 
 
 class DirectCheckoutSheet extends ConsumerStatefulWidget {
@@ -139,7 +140,8 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
       } else {
         setState(() => _couponError = "Invalid Coupon Code");
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'direct_checkout_sheet');
       setState(() => _couponError = "Error applying coupon");
     } finally {
       setState(() => _isApplyingCoupon = false);
@@ -259,7 +261,8 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
       );
 
       _pendingOrderId = orderId;
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'direct_checkout_sheet');
       if (mounted) {
         setState(() => _isProcessing = false);
         ScaffoldMessenger.of(context)
@@ -308,7 +311,8 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
           ref.read(resourceNotifierProvider.notifier).fetchPurchasedResources(user.id);
         }
       }
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'direct_checkout_sheet');
       if (mounted) {
         setState(() => _isProcessing = false);
         ScaffoldMessenger.of(context)

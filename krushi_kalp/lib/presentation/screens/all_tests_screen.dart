@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../data/services/auth_service.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -8,9 +9,10 @@ import '../../domain/models/mock_test.dart';
 import '../widgets/active_test_card.dart';
 import '../widgets/common/network_error_state.dart';
 import 'pdf_viewer_screen.dart';
-import 'mock_test_detail_screen.dart'; // Import Detail Screen
+import 'mock_test_detail_screen.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../utils/crashlytics_service.dart';
+import '../widgets/common/debounced_search_bar.dart';
 
 class AllTestsScreen extends StatefulWidget {
   const AllTestsScreen({super.key});
@@ -20,14 +22,51 @@ class AllTestsScreen extends StatefulWidget {
 }
 
 class _AllTestsScreenState extends State<AllTestsScreen> {
-  late Future<List<MockTest>> _testsFuture;
+  static const _pageSize = 20;
+  final PagingController<int, MockTest> _pagingController =
+      PagingController(firstPageKey: 0);
+
   List<int> _completedTestIds = [];
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _testsFuture = TestService.instance.fetchMockTests();
+    _pagingController.addPageRequestListener((pageKey) {
+      _fetchPage(pageKey);
+    });
     _fetchUserResults();
+  }
+
+  Future<void> _fetchPage(int pageKey) async {
+    try {
+      final newItems = await TestService.instance.fetchPaginatedMockTests(
+        offset: pageKey,
+        limit: _pageSize,
+        searchQuery: _searchQuery,
+      );
+
+      final isLastPage = newItems.length < _pageSize;
+      if (isLastPage) {
+        _pagingController.appendLastPage(newItems);
+      } else {
+        final nextPageKey = pageKey + newItems.length;
+        _pagingController.appendPage(newItems, nextPageKey);
+      }
+    } catch (error) {
+      _pagingController.error = error;
+    }
+  }
+
+  void _onSearch(String query) {
+    _searchQuery = query;
+    _pagingController.refresh();
+  }
+
+  @override
+  void dispose() {
+    _pagingController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchUserResults() async {
@@ -111,93 +150,85 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         iconTheme: IconThemeData(color: theme.colorScheme.onSurface),
-      ),
-      body: FutureBuilder<List<MockTest>>(
-        future: _testsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return NetworkErrorState(
-              message: isNetworkError(snapshot.error)
-                  ? 'Unable to load tests. Check your connection.'
-                  : 'Error: ${snapshot.error}',
-              onRetry: () => setState(() {
-                _testsFuture = TestService.instance.fetchMockTests();
-              }),
-            );
-          }
-
-          final tests = snapshot.data;
-          if (tests == null || tests.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.assignment_outlined,
-                      size: 64,
-                      color: theme.colorScheme.onSurfaceVariant
-                          .withValues(alpha: 0.5)),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    'No tests available.',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              setState(() {
-                _testsFuture = TestService.instance.fetchMockTests();
-              });
-              await _fetchUserResults();
-            },
-            child: ListView.builder(
-              padding: EdgeInsets.only(
-                left: AppSpacing.lg,
-                right: AppSpacing.lg,
-                top: AppSpacing.lg,
-                bottom: AppSpacing.lg + MediaQuery.of(context).padding.bottom,
-              ),
-              physics: const AlwaysScrollableScrollPhysics(),
-              itemCount: tests.length,
-              itemBuilder: (context, index) {
-                final test = tests[index];
-                final isCompleted = _completedTestIds.contains(test.id);
-                return ActiveTestCard(
-                  category: test.category,
-                  title: test.title,
-                  subtitle: '${test.language} • ${test.durationMinutes} mins',
-                  status:
-                      isCompleted ? TestStatus.evaluated : TestStatus.newTest,
-                  time: '${test.durationMinutes}m',
-                  questionCount: test.totalQuestions,
-                  imageUrl: test.signedUrl,
-                  onTap: () {
-                    if (isCompleted) {
-                      _downloadAndOpenResult(test.id, test.title);
-                    } else {
-                      // Navigate to Detail Screen for purchase/start
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => MockTestDetailScreen(test: test),
-                        ),
-                      );
-                    }
-                  },
-                );
-              },
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+            child: DebouncedSearchBar(
+              hintText: 'Search mock tests...',
+              onChanged: _onSearch,
             ),
-          );
+          ),
+        ),
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          _pagingController.refresh();
+          await _fetchUserResults();
         },
+        child: PagedListView<int, MockTest>(
+          pagingController: _pagingController,
+          padding: EdgeInsets.only(
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            top: AppSpacing.md,
+            bottom: AppSpacing.lg + MediaQuery.of(context).padding.bottom,
+          ),
+          builderDelegate: PagedChildBuilderDelegate<MockTest>(
+            itemBuilder: (context, test, index) {
+              final isCompleted = _completedTestIds.contains(test.id);
+              return ActiveTestCard(
+                category: test.category,
+                title: test.title,
+                subtitle: '${test.language} • ${test.durationMinutes} mins',
+                status:
+                    isCompleted ? TestStatus.evaluated : TestStatus.newTest,
+                time: '${test.durationMinutes}m',
+                questionCount: test.totalQuestions,
+                imageUrl: test.signedUrl,
+                onTap: () {
+                  if (isCompleted) {
+                    _downloadAndOpenResult(test.id, test.title);
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MockTestDetailScreen(test: test),
+                      ),
+                    );
+                  }
+                },
+              );
+            },
+            firstPageErrorIndicatorBuilder: (context) => NetworkErrorState(
+              message: 'Failed to load tests',
+              onRetry: () => _pagingController.refresh(),
+            ),
+            noItemsFoundIndicatorBuilder: (context) => _buildEmptyState(theme),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(ThemeData theme) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.assignment_outlined,
+              size: 64,
+              color: theme.colorScheme.onSurfaceVariant
+                  .withValues(alpha: 0.5)),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            'No tests found.',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }

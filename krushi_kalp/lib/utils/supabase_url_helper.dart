@@ -42,11 +42,6 @@ class SupabaseUrlHelper {
   // --- PUBLIC API ---
 
   /// Gets a fresh signed URL for the given path.
-  ///
-  /// Logic flow:
-  /// 1. Check in-memory cache.
-  /// 2. If miss, check SharedPreferences (persistent cache).
-  /// 3. If miss, fetch from Supabase Storage and update both caches.
   Future<String> getFreshSignedUrl(
       String bucketName, String storagePath) async {
     if (storagePath.isEmpty) return '';
@@ -99,7 +94,6 @@ class SupabaseUrlHelper {
   }
 
   /// Bypasses all caches and fetches a new signed URL from Supabase.
-  /// Sets the expiry to 1 year and updates both memory and persistent caches.
   Future<String> forceRefresh({
     required String bucketName,
     required String storagePath,
@@ -107,17 +101,23 @@ class SupabaseUrlHelper {
     try {
       final supabase = Supabase.instance.client;
 
-      // Clean path
+      // Clean path: Only remove the bucket name if it's at the VERY start of the path
       String cleanPath = storagePath;
       if (storagePath.startsWith('$bucketName/')) {
-        cleanPath = storagePath.replaceAll('$bucketName/', '');
+        cleanPath = storagePath.replaceFirst('$bucketName/', '');
       }
 
       final cacheKey = '$bucketName|$cleanPath';
 
+      // 3. Fallback to Supabase API
+      // Sanitize path: remove double slashes and leading slashes which cause 404s
+      final sanitizedPath = cleanPath.replaceAll('//', '/').replaceFirst(RegExp(r'^/'), '');
+      
+      if (sanitizedPath.isEmpty) return storagePath;
+
       final signedUrl = await supabase.storage
           .from(bucketName)
-          .createSignedUrl(cleanPath, maxExpirySeconds);
+          .createSignedUrl(sanitizedPath, maxExpirySeconds);
 
       final expiry = DateTime.now().add(_cacheTtl);
 
@@ -144,17 +144,24 @@ class SupabaseUrlHelper {
       }
 
       return signedUrl;
+    } on StorageException catch (se, stack) {
+      // Specifically handle 404/Object Not Found without crashing
+      // We log to console for debugging purposes
+      print('⚠️ Supabase Storage 404: Object "$storagePath" not found in bucket "$bucketName"');
+      
+      CrashlyticsService.instance.recordError(se, stack,
+          reason:
+              'SupabaseUrlHelper: Object not found in storage: $bucketName/$storagePath');
+      return storagePath; // Return original path as fallback
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack,
           reason:
               'SupabaseUrlHelper: Signed URL creation failed for $bucketName/$storagePath');
-      // If signing fails, return the original path as fallback
       return storagePath;
     }
   }
 
   /// Clears the entire URL cache (both memory and SharedPreferences).
-  /// Typically called on logout to ensure session-specific safety.
   Future<void> clearCache() async {
     _urlCache.clear();
     try {
@@ -170,7 +177,7 @@ class SupabaseUrlHelper {
     }
   }
 
-  /// Extracts the storage path from any Supabase storage URL (signed or public).
+  /// Extracts the storage path from any Supabase storage URL.
   static String extractPathFromUrl(String url, String bucketName) {
     if (!url.startsWith('http')) return url;
     if (!url.contains('/storage/v1/object/')) return url;

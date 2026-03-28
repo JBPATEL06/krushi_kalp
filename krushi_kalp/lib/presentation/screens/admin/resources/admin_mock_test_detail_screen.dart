@@ -6,12 +6,11 @@ import 'package:krushi_kalp/data/services/test_service.dart';
 import 'package:krushi_kalp/data/services/admin_service.dart';
 import 'package:krushi_kalp/domain/models/mock_test.dart';
 import 'package:krushi_kalp/utils/supabase_url_helper.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
+import 'package:krushi_kalp/utils/network_utils.dart';
+
 import '../mock_test_edit_screen.dart';
 import '../../../../utils/crashlytics_service.dart';
+import '../../../../utils/error_utils.dart';
 
 class AdminMockTestDetailScreen extends StatefulWidget {
   final MockTest test;
@@ -84,8 +83,7 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
       } catch (e, stack) {
         CrashlyticsService.instance.recordError(e, stack, reason: 'admin_mock_test_detail_screen');
         if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text('Error: $e')));
+          ErrorUtils.showError(context, e);
         }
       }
     }
@@ -94,28 +92,29 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
   Future<void> _downloadQuestions() async {
     if (_test.filePath.isEmpty) return;
 
-    setState(() => _isLoadingStats = true);
     try {
       const bucket = 'mock_test';
       final path = SupabaseUrlHelper.extractPathFromUrl(_test.filePath, bucket);
-      final bytes =
-          await Supabase.instance.client.storage.from(bucket).download(path);
+      final signedUrl = await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
+      
+      if (signedUrl.isEmpty) throw Exception('Failed to generate secure link');
 
-      final tempDir = await getTemporaryDirectory();
-      final file =
-          File('${tempDir.path}/${_test.title.replaceAll(' ', '_')}.json');
-      await file.writeAsBytes(bytes);
-
-      await Share.shareXFiles([XFile(file.path)],
-          text: 'Mock Test Questions: ${_test.title}');
+      await NetworkUtils.downloadAndOpen(
+        url: signedUrl,
+        fileName: '${_test.title.replaceAll(' ', '_')}.json',
+        onStatus: (status) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(status), duration: const Duration(seconds: 1)),
+            );
+          }
+        },
+      );
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'admin_mock_test_detail_screen');
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Download failed: $e')));
+        ErrorUtils.showError(context, e);
       }
-    } finally {
-      if (mounted) setState(() => _isLoadingStats = false);
     }
   }
 

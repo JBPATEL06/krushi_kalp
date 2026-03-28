@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/test_notifier.dart';
 import '../../data/services/banner_service.dart';
 import '../../domain/models/home_banner.dart';
@@ -243,7 +244,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             title: const Text('About Krushi Kalp'),
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushNamed(context, '/about');
+              context.push('/about');
             },
           ),
           ListTile(

@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Import our local entities
 import '../local/entities/mock_test_entity.dart';
@@ -23,6 +24,16 @@ class LocalCachingService {
       ],
       directory: dir.path,
     );
+
+    // One-time cache clear for migration to unique IDs (Deduplication Fix)
+    final prefs = await SharedPreferences.getInstance();
+    const migrationKey = 'isar_migration_v2_unique_ids';
+    final hasMigrated = prefs.getBool(migrationKey) ?? false;
+    if (!hasMigrated) {
+      await isar.writeTxn(() => isar.clear());
+      await prefs.setBool(migrationKey, true);
+    }
+
     _isInitialized = true;
   }
 

@@ -1,6 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'pdf_viewer_screen.dart';
+import '../../utils/resource_helper.dart';
 import '../../domain/models/resource.dart';
 import '../../domain/models/mock_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +11,6 @@ import '../../core/theme/app_spacing.dart';
 import '../utils/exam_helper.dart';
 import '../widgets/common/responsive_wrapper.dart';
 import '../widgets/common/modern_card.dart';
-import '../../core/theme/app_radius.dart';
 
 class DownloadsScreen extends ConsumerStatefulWidget {
   const DownloadsScreen({super.key});
@@ -64,55 +62,64 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
     if (!mounted) return;
     setState(() => _isLoading = true);
 
-    final resourceState = ref.read(resourceNotifierProvider);
-    final testState = ref.read(testNotifierProvider);
+    try {
+      final resourceState = ref.read(resourceNotifierProvider);
+      final testState = ref.read(testNotifierProvider);
 
-    // If purchased resources haven't been loaded yet, fetch them now
-    final user = ref.read(authNotifierProvider).user;
-    if (resourceState.purchasedResources.isEmpty && user != null) {
-      await ref.read(resourceNotifierProvider.notifier).fetchPurchasedResources(user.id);
-    }
-
-    final myResources = resourceState.purchasedResources;
-    final myTests = testState.userTests;
-
-    final downloadService = DownloadService();
-
-    // Check ALL purchased resources (regardless of fileUrl)
-    final resourceChecks = myResources.map((r) async {
-      final filename = 'resource_${r.id}.pdf';
-      final exists =
-          await downloadService.isFileDownloaded(filename, userId: user?.id);
-      return MapEntry<String, bool>('res_${r.id}', exists);
-    }).toList();
-
-    final testChecks =
-        myTests.where((t) => t.filePath.isNotEmpty).map((t) async {
-      final exists = await downloadService
-          .isFileDownloaded('mock_test_${t.id}.json', userId: user?.id);
-      return MapEntry<String, bool>('test_${t.id}', exists);
-    }).toList();
-
-    final results = await Future.wait([...resourceChecks, ...testChecks]);
-    final newStatus = Map<String, bool>.fromEntries(results);
-
-    // --- Storage Calculation ---
-    if (user != null) {
-      final used = await downloadService.getTotalStorageUsed(user.id);
-
-      if (mounted) {
-        setState(() {
-          _localStatus = newStatus;
-          _totalBytesUsed = used; // Update storage in setState
-          _isLoading = false;
-        });
+      // If purchased resources haven't been loaded yet, fetch them now
+      final user = ref.read(authNotifierProvider).user;
+      if (resourceState.purchasedResources.isEmpty && user != null) {
+        await ref
+            .read(resourceNotifierProvider.notifier)
+            .fetchPurchasedResources(user.id);
       }
-    } else {
+
+      final myResources = resourceState.purchasedResources;
+      final myTests = testState.userTests;
+
+      final downloadService = DownloadService();
+
+      // Check ALL purchased resources (regardless of fileUrl)
+      final resourceChecks = myResources.map((r) async {
+        final filename = 'resource_${r.id}.pdf';
+        final exists =
+            await downloadService.isFileDownloaded(filename, userId: user?.id);
+        return MapEntry<String, bool>('res_${r.id}', exists);
+      }).toList();
+
+      final testChecks =
+          myTests.where((t) => t.filePath.isNotEmpty).map((t) async {
+        final exists = await downloadService
+            .isFileDownloaded('mock_test_${t.id}.json', userId: user?.id);
+        return MapEntry<String, bool>('test_${t.id}', exists);
+      }).toList();
+
+      final results = await Future.wait([...resourceChecks, ...testChecks]);
+      final newStatus = Map<String, bool>.fromEntries(results);
+
+      // --- Storage Calculation ---
+      if (user != null) {
+        final used = await downloadService.getTotalStorageUsed(user.id);
+
+        if (mounted) {
+          setState(() {
+            _localStatus = newStatus;
+            _totalBytesUsed = used; // Update storage in setState
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _localStatus = newStatus;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error checking downloads: $e");
+      // Optionally record to Crashlytics if needed
+    } finally {
       if (mounted) {
-        setState(() {
-          _localStatus = newStatus;
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -232,7 +239,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
     }
   }
 
-  /// Opens a resource PDF after verifying ownership and purchase status.
+  /// Opens a resource PDF using internal viewer after verifying ownership.
   Future<void> _openResourceSecurely(Resource resource) async {
     final user = ref.read(authNotifierProvider).user;
     if (user == null) return;
@@ -240,7 +247,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
     final filename = 'resource_${resource.id}.pdf';
     final ds = DownloadService();
 
-    // 1. Ownership check â€” manifest must confirm this user downloaded the file
+    // 1. Ownership check — manifest must confirm this user downloaded the file
     final owned = await ds.verifyOwnership(filename, userId: user.id);
     if (!mounted) return;
     if (!owned) {
@@ -254,31 +261,21 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
       return;
     }
 
-    // 2. Purchase check â€” current user must have this resource purchased
-    final resourceState = ref.read(resourceNotifierProvider);
-    if (!resourceState.purchasedResourceIds.contains(resource.id)) {
+    // 2. Open using internal ResourceHelper (strictly in-app)
+    try {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-                Text('Access denied: you have not purchased this resource.'),
-            backgroundColor: Colors.red,
-          ),
+        await ResourceHelper.openResource(
+          context: context,
+          resource: resource,
+          userId: user.id,
         );
       }
-      return;
-    }
-
-    // 3. Open file
-    final path = await ds.getLocalPath(filename, userId: user.id);
-    if (await File(path).exists() && mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) =>
-              PdfViewerScreen(file: File(path), title: resource.title),
-        ),
-      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open resource: $e')),
+        );
+      }
     }
   }
 
@@ -368,7 +365,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
         final matchesSearch =
             t.title.toLowerCase().contains(_searchQuery.toLowerCase());
         final matchesFilter =
-            _activeFilter == 'All Files' || _activeFilter == 'Mock Test';
+            _activeFilter == 'All Files' || _activeFilter == 'Mocks';
         if (matchesSearch && matchesFilter) displayItems.add(t);
       }
     }
@@ -806,44 +803,4 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
     );
   }
 
-  Widget _buildStatCard({
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: EdgeInsets.all(context.w(AppSpacing.md)),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: context.sp(12),
-            ),
-          ),
-          SizedBox(height: context.h(4)),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: context.sp(18),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRatingSection() {
-    // Placeholder as DownloadsScreen might not need actual rating
-    return const SizedBox.shrink();
-  }
 }

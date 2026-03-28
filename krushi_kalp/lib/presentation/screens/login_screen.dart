@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:krushi_kalp/core/theme/app_motion.dart'; // MODIFIED: Added AppMotion token import
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_notifier.dart';
@@ -60,14 +61,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         final role = next.userRole;
         if (role != 'Admin') {
           NotificationService().connectUser();
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const MainScreen()),
-          );
+          if (mounted) context.go('/');
         } else {
           NotificationService().connectAdmin();
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const AdminMainScreen()),
-          );
+          if (mounted) context.go('/admin');
         }
       }
     });

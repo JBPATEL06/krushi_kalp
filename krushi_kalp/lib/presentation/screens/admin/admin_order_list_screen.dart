@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import '../../widgets/common/debounced_search_bar.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:intl/intl.dart';
 import '../../../../data/services/admin_service.dart';
@@ -15,12 +17,49 @@ class AdminOrderListScreen extends StatefulWidget {
 }
 
 class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
-  late Stream<List<Map<String, dynamic>>> _ordersStream;
+  static const _pageSize = 20;
+  final PagingController<int, Map<String, dynamic>> _pagingController =
+      PagingController(firstPageKey: 0);
+
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _ordersStream = AdminService.streamAllOrders();
+    _pagingController.addPageRequestListener((pageKey) {
+      _fetchPage(pageKey);
+    });
+  }
+
+  Future<void> _fetchPage(int pageKey) async {
+    try {
+      final newItems = await AdminService.fetchPaginatedOrders(
+        offset: pageKey,
+        limit: _pageSize,
+        searchQuery: _searchQuery,
+      );
+
+      final isLastPage = newItems.length < _pageSize;
+      if (isLastPage) {
+        _pagingController.appendLastPage(newItems);
+      } else {
+        final nextPageKey = pageKey + newItems.length;
+        _pagingController.appendPage(newItems, nextPageKey);
+      }
+    } catch (error) {
+      _pagingController.error = error;
+    }
+  }
+
+  void _onSearch(String query) {
+    _searchQuery = query;
+    _pagingController.refresh();
+  }
+
+  @override
+  void dispose() {
+    _pagingController.dispose();
+    super.dispose();
   }
 
   // ─── Detail Dialog ──────────────────────────────────────────────────────────
@@ -386,80 +425,56 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
     final emerald = colorScheme.tertiary;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1000),
-          child: RefreshIndicator(
-            onRefresh: () async {
-              setState(() {
-                _ordersStream = AdminService.streamAllOrders();
-              });
-              await Future.delayed(const Duration(milliseconds: 600));
-            },
-            child: StreamBuilder<List<Map<String, dynamic>>>(
-              stream: _ordersStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting &&
-                    snapshot.data == null) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return NetworkErrorState(
-                    message: isNetworkError(snapshot.error)
-                        ? 'Unable to load orders. Check your connection.'
-                        : 'Something went wrong.',
-                    onRetry: () => setState(() {
-                      _ordersStream = AdminService.streamAllOrders();
-                    }),
-                  );
-                }
-
-                final orders = snapshot.data ?? [];
-
-                return Column(
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  border: Border(
+                    bottom: BorderSide(color: colorScheme.outlineVariant),
+                  ),
+                ),
+                child: Column(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        border: Border(
-                          bottom: BorderSide(color: colorScheme.outlineVariant),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          _buildSectionHeader(context, 'TRANSACTION HISTORY'),
-                          const Spacer(),
-                          Text(
-                            '${orders.length} Total',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.bold,
-                              fontSize: context.sp(10), // FIXED
-                            ),
-                          ),
-                        ],
-                      ),
+                    Row(
+                      children: [
+                        _buildSectionHeader(context, 'TRANSACTION HISTORY'),
+                        const Spacer(),
+                      ],
                     ),
-                    Expanded(
-                      child: orders.isEmpty
-                          ? _buildEmptyState(context)
-                          : ListView.builder(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: EdgeInsets.zero,
-                              itemCount: orders.length,
-                              itemBuilder: (context, index) {
-                                final order = orders[index];
-                                return _buildOrderRow(context, order, theme,
-                                    colorScheme, emerald);
-                              },
-                            ),
+                    const SizedBox(height: AppSpacing.md),
+                    DebouncedSearchBar(
+                      hintText: 'Search by Order ID or Payment ID...',
+                      onChanged: _onSearch,
                     ),
                   ],
-                );
-              },
-            ),
+                ),
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async => _pagingController.refresh(),
+                  child: PagedListView<int, Map<String, dynamic>>(
+                    pagingController: _pagingController,
+                    padding: EdgeInsets.zero,
+                    builderDelegate: PagedChildBuilderDelegate<Map<String, dynamic>>(
+                      itemBuilder: (context, order, index) {
+                        return _buildOrderRow(context, order, theme, colorScheme, emerald);
+                      },
+                      firstPageErrorIndicatorBuilder: (context) => NetworkErrorState(
+                        message: 'Failed to load orders',
+                        onRetry: () => _pagingController.refresh(),
+                      ),
+                      noItemsFoundIndicatorBuilder: (context) => _buildEmptyState(context),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -697,3 +712,5 @@ class _IdChip extends StatelessWidget {
     );
   }
 }
+
+

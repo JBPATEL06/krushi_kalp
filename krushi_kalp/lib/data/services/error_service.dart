@@ -1,4 +1,4 @@
-﻿import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../utils/network_utils.dart';
 
 class ErrorService {
@@ -57,6 +57,10 @@ class ErrorService {
     // 5. Common String Matches
     if (lowercaseError.contains('timeout')) {
       return "The server is taking a little nap. ? Please try again in a moment!";
+    }
+
+    if (lowercaseError.contains('missingpluginexception')) {
+      return "Build Update Required! 🧱 A new native plugin was recently added. Please completely HALT the app and run 'flutter run' to sync correctly.";
     }
 
     // 6. Generic Fallback

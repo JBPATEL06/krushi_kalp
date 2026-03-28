@@ -1,0 +1,266 @@
+# Responsive Diagnosis Report
+Generated: 2026-03-28 15:24:00.135889
+
+## Pattern Counts
+- `context.sp(`: **518** usages
+- `context.h(`: **156** usages
+- `context.w(`: **143** usages
+- `import.*responsive_wrapper.dart`: **29** usages
+- `import.*responsive.dart`: **26** usages
+- `LayoutBuilder`: **9** usages
+- `MediaQuery.of(context).size.width`: **8** usages
+- `ResponsiveWrapper`: **5** usages
+- `context.hp(`: **3** usages
+- `context.wp(`: **2** usages
+- `context.isTablet`: **0** usages
+- `context.isDesktop`: **0** usages
+- `Responsive.isMobile`: **0** usages
+- `Responsive.isTablet`: **0** usages
+- `Responsive.isDesktop`: **0** usages
+
+## Affected Files (58)
+- `lib/main.dart`
+  -   1x  ResponsiveWrapper  (Old ResponsiveWrapper usage)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/about_screen.dart`
+  -  10x  context.sp(  (Custom sp() font-scale extension)
+  -   3x  context.hp(  (Custom hp() height-percent extension)
+  -   1x  context.wp(  (Custom wp() width-percent extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/admin/admin_about_screen.dart`
+  -   1x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/admin/admin_home_screen.dart`
+  -  17x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  context.w(  (Custom w() width-scale extension)
+  -   5x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+  -   1x  LayoutBuilder  (LayoutBuilder usage (may be replaceable))
+- `lib/presentation/screens/admin/admin_main_screen.dart`
+  -   7x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  context.w(  (Custom w() width-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+  -   1x  LayoutBuilder  (LayoutBuilder usage (may be replaceable))
+- `lib/presentation/screens/admin/admin_notification_screen.dart`
+  -   9x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/admin/admin_offer_list_screen.dart`
+  -   7x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/admin/admin_offer_manage_screen.dart`
+  -  14x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+  -   1x  LayoutBuilder  (LayoutBuilder usage (may be replaceable))
+- `lib/presentation/screens/admin/admin_order_list_screen.dart`
+  -  14x  context.sp(  (Custom sp() font-scale extension)
+  -   2x  context.w(  (Custom w() width-scale extension)
+  -   1x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/admin/admin_profile_screen.dart`
+  -  11x  context.sp(  (Custom sp() font-scale extension)
+  -   2x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/admin/admin_user_list_screen.dart`
+  -   9x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/admin/manage_app/tabs/banner_management_tab.dart`
+  -  10x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/admin/manage_app/tabs/content_management_tab.dart`
+  -   2x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/admin/manage_app/tabs/feature_control_tab.dart`
+  -   3x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/admin/mock_test_edit_screen.dart`
+  -   7x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+  -   1x  LayoutBuilder  (LayoutBuilder usage (may be replaceable))
+- `lib/presentation/screens/admin/resources/admin_mock_test_detail_screen.dart`
+  -  13x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/admin/resources/admin_mock_test_list.dart`
+  -  16x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/admin/resources/admin_resources_dashboard.dart`
+  -   4x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+  -   1x  LayoutBuilder  (LayoutBuilder usage (may be replaceable))
+- `lib/presentation/screens/admin/resources/admin_resource_detail_screen.dart`
+  -  11x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/admin/resources/admin_resource_form.dart`
+  -  18x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/admin/resources/admin_resource_list.dart`
+  -  12x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/admin/revenue_details_screen.dart`
+  -  11x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/cart/widgets/cart_item_widget.dart`
+  -   5x  context.sp(  (Custom sp() font-scale extension)
+  -   7x  context.w(  (Custom w() width-scale extension)
+  -   3x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/cart/widgets/cart_order_summary.dart`
+  -   5x  context.sp(  (Custom sp() font-scale extension)
+  -   2x  context.w(  (Custom w() width-scale extension)
+  -   5x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/cart_screen.dart`
+  -  13x  context.sp(  (Custom sp() font-scale extension)
+  -   9x  context.w(  (Custom w() width-scale extension)
+  -   6x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/checkout_screen.dart`
+  -   8x  context.sp(  (Custom sp() font-scale extension)
+  -   2x  context.w(  (Custom w() width-scale extension)
+  -   4x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/downloads_screen.dart`
+  -  26x  context.sp(  (Custom sp() font-scale extension)
+  -  25x  context.w(  (Custom w() width-scale extension)
+  -  15x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/edit_profile_screen.dart`
+  -  24x  context.sp(  (Custom sp() font-scale extension)
+  -   2x  context.w(  (Custom w() width-scale extension)
+  -   2x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/exam_screen.dart`
+  -   3x  context.w(  (Custom w() width-scale extension)
+  -   4x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+  -   1x  MediaQuery.of(context).size.width  (Raw MediaQuery width (may need updating))
+- `lib/presentation/screens/home_screen.dart`
+  -   8x  context.sp(  (Custom sp() font-scale extension)
+  -   2x  context.w(  (Custom w() width-scale extension)
+  -   9x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+  -   1x  MediaQuery.of(context).size.width  (Raw MediaQuery width (may need updating))
+- `lib/presentation/screens/login_screen.dart`
+  -   4x  context.sp(  (Custom sp() font-scale extension)
+  -   5x  context.w(  (Custom w() width-scale extension)
+  -   5x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/maintenance_screen.dart`
+  -   6x  context.sp(  (Custom sp() font-scale extension)
+  -   2x  context.w(  (Custom w() width-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/main_screen.dart`
+  -   1x  LayoutBuilder  (LayoutBuilder usage (may be replaceable))
+- `lib/presentation/screens/mock_test_detail_screen.dart`
+  -   1x  context.sp(  (Custom sp() font-scale extension)
+  -   2x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/mock_test_upload_screen.dart`
+  -   1x  LayoutBuilder  (LayoutBuilder usage (may be replaceable))
+- `lib/presentation/screens/network_pdf_viewer_screen.dart`
+  -  12x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/profile_screen.dart`
+  -  24x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  context.w(  (Custom w() width-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/purchased_tests_screen.dart`
+  -  14x  context.sp(  (Custom sp() font-scale extension)
+  -   2x  context.w(  (Custom w() width-scale extension)
+  -   5x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/screens/score_screen.dart`
+  -  30x  context.sp(  (Custom sp() font-scale extension)
+  -  20x  context.w(  (Custom w() width-scale extension)
+  -  17x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/splash_screen.dart`
+  -  16x  context.sp(  (Custom sp() font-scale extension)
+  -   5x  context.h(  (Custom h() height-scale extension)
+  -   1x  context.wp(  (Custom wp() width-percent extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/store/widgets/store_grid.dart`
+  -   1x  context.w(  (Custom w() width-scale extension)
+  -   1x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/store/widgets/store_item_card.dart`
+  -   9x  context.sp(  (Custom sp() font-scale extension)
+  -   8x  context.w(  (Custom w() width-scale extension)
+  -  10x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/store/widgets/store_resource_grid.dart`
+  -   1x  context.w(  (Custom w() width-scale extension)
+  -   1x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/store_screen.dart`
+  -   1x  context.sp(  (Custom sp() font-scale extension)
+  -   3x  context.h(  (Custom h() height-scale extension)
+  -   2x  ResponsiveWrapper  (Old ResponsiveWrapper usage)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/test_analysis_screen.dart`
+  -  16x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  context.w(  (Custom w() width-scale extension)
+  -   8x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/test_attempt_screen.dart`
+  -  12x  context.sp(  (Custom sp() font-scale extension)
+  -   8x  context.w(  (Custom w() width-scale extension)
+  -   8x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/test_result_screen.dart`
+  -  17x  context.sp(  (Custom sp() font-scale extension)
+  -  10x  context.w(  (Custom w() width-scale extension)
+  -  19x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/screens/update_required_screen.dart`
+  -   6x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  import.*responsive.dart  (Import of responsive.dart (regex))
+- `lib/presentation/widgets/active_test_card.dart`
+  -   7x  context.sp(  (Custom sp() font-scale extension)
+  -  11x  context.w(  (Custom w() width-scale extension)
+  -   1x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/widgets/admin_performance_card.dart`
+  -   7x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/widgets/common/category_card.dart`
+  -   1x  context.sp(  (Custom sp() font-scale extension)
+  -   3x  context.w(  (Custom w() width-scale extension)
+  -   1x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/widgets/common/download_action_button.dart`
+  -   2x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  context.w(  (Custom w() width-scale extension)
+  -   3x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/widgets/common/download_item_card.dart`
+  -   3x  context.sp(  (Custom sp() font-scale extension)
+  -   3x  context.w(  (Custom w() width-scale extension)
+  -   3x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/widgets/common/responsive_wrapper.dart`
+  -   2x  ResponsiveWrapper  (Old ResponsiveWrapper usage)
+  -   2x  MediaQuery.of(context).size.width  (Raw MediaQuery width (may need updating))
+  -   1x  LayoutBuilder  (LayoutBuilder usage (may be replaceable))
+- `lib/presentation/widgets/common/universal_item_card.dart`
+  -  13x  context.sp(  (Custom sp() font-scale extension)
+  -   4x  context.w(  (Custom w() width-scale extension)
+  -   1x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/widgets/free_content/free_item_card.dart`
+  -   5x  context.sp(  (Custom sp() font-scale extension)
+  -   1x  context.w(  (Custom w() width-scale extension)
+  -   1x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/presentation/widgets/performance_card.dart`
+  -  17x  context.sp(  (Custom sp() font-scale extension)
+  -   5x  context.w(  (Custom w() width-scale extension)
+  -   2x  context.h(  (Custom h() height-scale extension)
+  -   1x  import.*responsive_wrapper.dart  (Import of responsive_wrapper.dart (regex))
+- `lib/utils/responsive.dart`
+  -   4x  MediaQuery.of(context).size.width  (Raw MediaQuery width (may need updating))
+  -   1x  LayoutBuilder  (LayoutBuilder usage (may be replaceable))

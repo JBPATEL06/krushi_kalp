@@ -55,7 +55,8 @@ class AppConfigService {
 
       try {
         return val as T;
-      } catch (e) {
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'app_config_service');
         return defaultValue;
       }
     }
@@ -85,7 +86,7 @@ class AppConfigService {
         _configCache[key] = AppConfig(
             key: key, value: newValue, description: "Updated via Admin Panel");
       }
-    } catch (e) {
+    } catch (e, stack) {
       
       rethrow;
     }

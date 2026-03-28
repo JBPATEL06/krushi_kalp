@@ -130,7 +130,11 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
       builder: (ctx) => AlertDialog(
         title: const Text('Delete User Account?'),
         content: Text(
-            'Are you sure you want to permanently delete ${widget.username}\'s account? This action cannot be undone.'),
+            'Are you sure you want to permanently delete ${widget.username}\'s account? \n\n'
+            'This will wipe all their:\n'
+            '• Purchases & Payment history\n'
+            '• Mock Test Results\n'
+            '• Login Access'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -142,7 +146,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
               backgroundColor: theme.colorScheme.error,
               foregroundColor: theme.colorScheme.onError,
             ),
-            child: const Text('Delete'),
+            child: const Text('Confirm Delete'),
           ),
         ],
       ),
@@ -151,26 +155,47 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
     if (confirm == true) {
       if (!mounted) return;
       try {
+        // 1. Show persistent loading dialog (cannot be dismissed by clicking outside)
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) =>
-              const Center(child: CircularProgressIndicator()),
+          builder: (context) => PopScope(
+            canPop: false, // Prevents "Back" button
+            child: AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                   const CircularProgressIndicator(),
+                   const SizedBox(height: AppSpacing.lg),
+                   Text('Wiping User Data...', 
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                   const SizedBox(height: AppSpacing.sm),
+                   const Text('This may take a moment. Please do not close the app.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: Colors.grey)),
+                ],
+              ),
+            ),
+          ),
         );
 
+        // 2. Trigger the server-side Hard Delete
         await AdminService.deleteUser(widget.userId);
 
         if (mounted) {
-          Navigator.pop(context); // Pop loading
+          Navigator.pop(context); // Pop persistent loading
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('User deleted successfully')),
+            const SnackBar(
+              content: Text('User account and all data deleted permanently.'),
+              backgroundColor: Colors.black,
+            ),
           );
-          Navigator.pop(context); // Go back to list
+          Navigator.pop(context); // Go back to user list
         }
       } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_user_details_screen');
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_user_details_screen_hard_delete');
         if (mounted) {
-          Navigator.pop(context); // Pop loading
+          Navigator.pop(context); // Pop persistent loading
           ErrorUtils.showError(context, e);
         }
       }

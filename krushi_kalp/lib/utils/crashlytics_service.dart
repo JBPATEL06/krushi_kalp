@@ -15,15 +15,12 @@ class CrashlyticsService {
 
   /// Initializes Crashlytics configuration.
   Future<void> init() async {
-    // In debug mode, we might want to disable collection to avoid cluttering the console.
-    // However, for testing the integration, we can leave it enabled or toggle it here.
-    if (kDebugMode) {
-      // For development: You can toggle this to true to test your integration.
-      await _crashlytics.setCrashlyticsCollectionEnabled(true);
-      
-    } else {
-      await _crashlytics.setCrashlyticsCollectionEnabled(true);
-    }
+    // Enable collection in both debug and release to capture integration issues.
+    await _crashlytics.setCrashlyticsCollectionEnabled(true);
+    
+    // Attempt to send any unsent reports from previous runs (critical for non-fatals)
+    await _crashlytics.sendUnsentReports();
+    log('Crashlytics initialized and unsent reports flushed');
   }
 
   /// Sets the user identifier for crash reports.
@@ -32,7 +29,7 @@ class CrashlyticsService {
     try {
       await _crashlytics.setUserIdentifier(userId);
       log('User attributed: $userId');
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('Crashlytics set user error: $e');
     }
   }
@@ -43,7 +40,7 @@ class CrashlyticsService {
     try {
       await _crashlytics.setUserIdentifier('');
       log('User identifier cleared');
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('Crashlytics clear user error: $e');
     }
   }
@@ -68,7 +65,7 @@ class CrashlyticsService {
         reason: reason,
         fatal: fatal,
       );
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('Crashlytics record error failure: $e');
     }
   }

@@ -36,9 +36,11 @@ dependencies:
   cupertino_icons: ^1.0.8
   envied: ^0.5.4
   flutter_riverpod: any
+  responsive_framework: ^1.5.1
   riverpod_annotation: any
   supabase_flutter: ^2.12.0
   url_launcher: ^6.3.2
+  open_filex: ^4.5.0
   google_sign_in: ^6.2.1
   file_picker: ^10.3.8
   excel: ^4.0.6
@@ -65,7 +67,6 @@ dependencies:
   firebase_messaging: ^16.1.1
   googleapis_auth: ^2.0.0
   encrypt: ^5.0.3
-  http: ^1.2.1
   connectivity_plus: ^7.0.0
   flutter_staggered_animations: ^1.1.1
   confetti: ^0.8.0
@@ -78,6 +79,9 @@ dependencies:
   isar: ^3.1.0+1
   isar_flutter_libs: ^3.1.0+1
   freezed_annotation: ^2.4.4
+  easy_debounce: ^2.0.3
+  infinite_scroll_pagination: 4.0.0
+  go_router: ^17.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

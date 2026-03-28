@@ -274,14 +274,23 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
         final path = await DownloadService()
             .downloadFile(resource.fileUrl!, filename, userId: userId);
         if (mounted) {
-          Navigator.pop(context);
-          _openPdf(File(path), resource.title);
+          Navigator.pop(context); // Close loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Download complete: ${resource.title}'),
+              action: SnackBarAction(
+                label: 'OPEN',
+                onPressed: () => _openPdf(File(path), resource.title),
+              ),
+              duration: const Duration(seconds: 5),
+            ),
+          );
         }
       } catch (e, stack) {
         CrashlyticsService.instance
-            .recordError(e, stack, reason: 'store_screen');
+            .recordError(e, stack, reason: 'store_screen: resource download failed');
         if (mounted) {
-          Navigator.pop(context);
+          Navigator.maybePop(context);
           ErrorUtils.showError(context, e);
         }
       }

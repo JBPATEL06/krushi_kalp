@@ -21,7 +21,7 @@ final testCategoriesProvider = AutoDisposeProvider<List<String>>.internal(
 );
 
 typedef TestCategoriesRef = AutoDisposeProviderRef<List<String>>;
-String _$testNotifierHash() => r'47bc49268a00b140458e6796ded82f6623a339b7';
+String _$testNotifierHash() => r'5b557a6604f9fa145a5c958c491fdddc6830e68b';
 
 /// See also [TestNotifier].
 @ProviderFor(TestNotifier)
