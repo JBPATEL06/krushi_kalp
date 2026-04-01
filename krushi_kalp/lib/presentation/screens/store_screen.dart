@@ -355,7 +355,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
     try {
       if (cartItemIds.contains(test.id)) {
         final cartItem = cartState.cartItems.firstWhere((item) => item.testId == test.id);
-        await ref.read(cartNotifierProvider.notifier).removeFromCart(itemId: cartItem.itemId!);
+        await ref.read(cartNotifierProvider.notifier).removeFromCart(itemId: cartItem.itemId);
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -411,7 +411,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
     try {
       if (cartItemIds.contains(resource.id)) {
         final cartItem = cartState.cartItems.firstWhere((item) => item.resourceId == resource.id);
-        await ref.read(cartNotifierProvider.notifier).removeFromCart(itemId: cartItem.itemId!);
+        await ref.read(cartNotifierProvider.notifier).removeFromCart(itemId: cartItem.itemId);
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

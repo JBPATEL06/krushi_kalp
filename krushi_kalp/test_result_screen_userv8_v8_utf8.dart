@@ -1,36 +1,34 @@
-import 'package:confetti/confetti.dart';
+﻿import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../utils/crashlytics_service.dart';
+import '../../data/services/auth_service.dart';
 import '../../domain/models/question.dart';
 import '../../domain/services/pdf_service.dart';
 import 'pdf_viewer_screen.dart';
 import 'test_analysis_screen.dart';
 import '../../data/services/translation_service.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_radius.dart';
-import '../../data/services/review_service.dart';
-import '../widgets/reviews/review_dialog.dart';
+import '../../core/theme/app_radius.dart'; // FIXED: Added import for radius tokens
+import 'package:connectivity_plus/connectivity_plus.dart';
+import '../../data/services/review_service.dart'; // NEW
+import '../widgets/reviews/review_dialog.dart'; // NEW
 import 'main_screen.dart';
 import '../../data/services/test_service.dart';
 import '../../utils/error_utils.dart';
-import '../widgets/common/responsive_wrapper.dart';
-import '../../data/services/performance_service.dart';
-import '../providers/auth_notifier.dart';
-import '../providers/network_notifier.dart';
+import '../widgets/common/responsive_wrapper.dart'; // FIXED: Added import for responsive scaling
+import '../../data/services/performance_service.dart'; // NEW
 
-class TestResultScreen extends ConsumerStatefulWidget {
+class TestResultScreen extends StatefulWidget {
   final int? resultId;
   final String testId;
   final String testTitle;
-  final double score; 
+  final double score; // Marks Obtained
   final int totalQuestions;
   final double totalMarks;
   final int? correctAnswers;
   final int? wrongAnswers;
   final int? skippedAnswers;
-  final dynamic questions; 
+  // Analysis Data
+  final dynamic questions; // Using dynamic for flexibility here
   final Map<int, int>? selectedAnswers;
   final String examLanguage;
   final int timeTakenSeconds;
@@ -53,10 +51,10 @@ class TestResultScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<TestResultScreen> createState() => _TestResultScreenState();
+  State<TestResultScreen> createState() => _TestResultScreenState();
 }
 
-class _TestResultScreenState extends ConsumerState<TestResultScreen>
+class _TestResultScreenState extends State<TestResultScreen>
     with SingleTickerProviderStateMixin {
   final PdfService _pdfService = PdfService();
   late ConfettiController _confettiController;
@@ -89,8 +87,8 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
   }
 
   Future<void> _checkConnectivity() async {
-    final isConnected = ref.read(networkNotifierProvider);
-    if (!isConnected) {
+    final results = await Connectivity().checkConnectivity();
+    if (results.contains(ConnectivityResult.none)) {
       setState(() => _isOffline = true);
       if (mounted) {
         _showOfflineWarning();
@@ -109,13 +107,13 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                 color: Theme.of(context).colorScheme.error),
             SizedBox(
                 width: context
-                    .w(AppSpacing.sm)), 
+                    .w(AppSpacing.sm)), // FIXED: context.w(AppSpacing.sm)
             const Text('Offline Attempt'),
           ],
         ),
         content: Text(
           'Your data will not be uploaded in database as you are offline. However, your result PDF will be locally stored on this device for your reference.\n\nYou can view it anytime in your downloads.',
-          style: TextStyle(fontSize: context.sp(14)), 
+          style: TextStyle(fontSize: context.sp(14)), // FIXED: context.sp(14)
         ),
         actions: [
           TextButton(
@@ -140,11 +138,11 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
     });
 
     try {
-      final authState = ref.read(authNotifierProvider);
-      final user = authState.user;
+      final user = AuthService.instance.currentUser;
       final userId = user?.id ?? 'guest_user';
-      final userName = authState.username ?? 'User';
+      final userName = user?.userMetadata?['full_name'] ?? 'User';
 
+      // 1. Check and Translate if needed
       List<Question>? finalQuestions = widget.questions != null
           ? (widget.questions as List).cast<Question>()
           : null;
@@ -152,18 +150,15 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
       if (finalQuestions != null) {
         try {
           if (widget.examLanguage == 'gu') {
+            // Translate if the exam was taken in Gujarati
             finalQuestions =
                 await TranslationService.translateBatch(finalQuestions);
           }
-        } catch (e, stack) {
-          await CrashlyticsService.instance.recordError(e, stack,
-              reason: 'Failed to translate questions for PDF');
-        }
+        } catch (e) {}
       }
 
+      // 2. Generate local encrypted PDF
       final file = await _pdfService.generateExamResultPdf(
-        testId: widget.testId,
-
         testTitle: widget.testTitle,
         score: widget.score,
         totalMarks: widget.totalMarks,
@@ -177,10 +172,13 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
         languageCode: widget.examLanguage,
       );
 
+      // 3. Upload to Supabase Storage
+      // Path: exam_result/<testId>.pdf (as requested)
       final path = 'exam_result/${widget.testId}.pdf';
       try {
         await TestService.instance.uploadResultPdf(path, file);
 
+        // MODIFIED — update streak after test attempt, fire and forget
         PerformanceService.instance
             .updateUserStreak(
               userId,
@@ -194,8 +192,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
             const SnackBar(content: Text('PDF Uploaded Successfully')),
           );
         }
-      } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'test_result_screen');
+      } catch (e) {
         if (mounted) {
           ErrorUtils.showError(context, e);
         }
@@ -203,6 +200,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
 
       if (!mounted) return;
 
+      // 4. Open in App
       final password = _pdfService.getSecurePassword(userId, widget.testTitle);
       Navigator.push(
         context,
@@ -214,8 +212,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
           ),
         ),
       );
-    } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'test_result_screen');
+    } catch (e) {
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
@@ -228,57 +225,17 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
     }
   }
 
-  Future<void> _discardResult() async {
-    if (widget.resultId == null) return;
-    
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Discard Result?'),
-        content: const Text('This will permanently delete this test result. This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
-            child: const Text('Discard'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      setState(() => _isDiscarding = true);
-      try {
-        await TestService.instance.deleteTestResult(widget.resultId!);
-        if (mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const MainScreen()),
-            (route) => false,
-          );
-        }
-      } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'test_result_screen');
-        if (mounted) ErrorUtils.showError(context, e);
-      } finally {
-        if (mounted) setState(() => _isDiscarding = false);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final double percentage =
         widget.totalMarks > 0 ? (widget.score / widget.totalMarks) * 100 : 0.0;
-    final bool isPassed = percentage >= 40; 
+    final bool isPassed = percentage >= 40; // Passing logic
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
+        // Optionally show message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content:
@@ -317,12 +274,16 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
             body: SingleChildScrollView(
               child: Column(
                 children: [
-                  SizedBox(height: context.h(AppSpacing.lg)),
+                  SizedBox(
+                      height: context
+                          .h(AppSpacing.lg)), // FIXED: context.h(AppSpacing.lg)
+                  // Score Card
                   Container(
-                    margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     padding: EdgeInsets.symmetric(
                         vertical: context.h(32),
-                        horizontal: AppSpacing.lg),
+                        horizontal: AppSpacing.lg), // FIXED: context.h(32)
                     width: double.infinity,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -333,10 +294,12 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                      borderRadius: BorderRadius.circular(
+                          AppRadius.xl), // FIXED: AppRadius.xl
                       boxShadow: [
                         BoxShadow(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                          color:
+                              theme.colorScheme.primary.withValues(alpha: 0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -346,16 +309,21 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                       children: [
                         Text(
                           'TOTAL SCORE',
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          style:
+                              Theme.of(context).textTheme.labelLarge?.copyWith(
                                     color: theme.colorScheme.onPrimary
                                         .withValues(alpha: 0.8),
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 1.5,
                                   ),
                         ),
-                        SizedBox(height: context.h(AppSpacing.md)),
+                        SizedBox(
+                            height: context.h(AppSpacing
+                                .md)), // FIXED: context.h(AppSpacing.md)
+                        // Icon
                         Container(
-                          padding: EdgeInsets.all(context.w(AppSpacing.md)),
+                          padding: EdgeInsets.all(context.w(AppSpacing
+                              .md)), // FIXED: context.w(AppSpacing.md)
                           decoration: BoxDecoration(
                             color: theme.colorScheme.onPrimary
                                 .withValues(alpha: 0.1),
@@ -365,11 +333,14 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                             isPassed
                                 ? Icons.emoji_events_rounded
                                 : Icons.sentiment_dissatisfied_rounded,
-                            size: context.sp(64),
+                            size: context.sp(64), // FIXED: context.sp(64)
                             color: theme.colorScheme.onPrimary,
                           ),
                         ),
-                        SizedBox(height: context.h(AppSpacing.md)),
+                        SizedBox(
+                            height: context.h(AppSpacing
+                                .md)), // FIXED: context.h(AppSpacing.md)
+                        // Percentage Animation
                         AnimatedBuilder(
                           animation: _scoreAnimation,
                           builder: (context, child) {
@@ -381,14 +352,19 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: theme.colorScheme.onPrimary,
-                                    fontSize: context.sp(56),
+                                    fontSize:
+                                        context.sp(56), // FIXED: context.sp(56)
                                   ),
                             );
                           },
                         ),
-                        SizedBox(height: context.h(AppSpacing.lg)),
+                        SizedBox(
+                            height: context.h(AppSpacing
+                                .lg)), // FIXED: context.h(AppSpacing.lg)
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal:
+                                  AppSpacing.lg), // FIXED: AppSpacing.lg
                           child: Text(
                             isPassed
                                 ? 'Test Completed Successfully\nYou have achieved the passing score for the ${widget.testTitle}.'
@@ -402,16 +378,23 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                                       .withValues(alpha: 0.95),
                                   fontWeight: FontWeight.w600,
                                   height: 1.4,
-                                  fontSize: context.sp(18),
+                                  fontSize:
+                                      context.sp(18), // FIXED: context.sp(18)
                                 ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  SizedBox(height: context.h(AppSpacing.xxl)),
+
+                  SizedBox(
+                      height: context.h(
+                          AppSpacing.xxl)), // FIXED: context.h(AppSpacing.xxl)
+
+                  // Stats Grid
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     child: Row(
                       children: [
                         Expanded(
@@ -421,7 +404,9 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                             color: theme.colorScheme.primary,
                           ),
                         ),
-                        SizedBox(width: context.w(AppSpacing.lg)),
+                        SizedBox(
+                            width: context.w(AppSpacing
+                                .lg)), // FIXED: context.w(AppSpacing.lg)
                         Expanded(
                           child: _buildStatCard(
                             label: 'WRONG',
@@ -432,20 +417,29 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                       ],
                     ),
                   ),
-                  SizedBox(height: context.h(AppSpacing.xl)),
+
+                  SizedBox(
+                      height: context
+                          .h(AppSpacing.xl)), // FIXED: context.h(AppSpacing.xl)
+
+                  // PDF Download Button
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     child: SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
-                        onPressed: _isGeneratingPdf ? null : _generateAndDownloadPdf,
+                        onPressed:
+                            _isGeneratingPdf ? null : _generateAndDownloadPdf,
                         icon: _isGeneratingPdf
                             ? SizedBox(
-                                width: context.sp(20),
-                                height: context.sp(20),
-                                child: const CircularProgressIndicator(strokeWidth: 2),
+                                width: context.sp(20), // FIXED: context.sp(20)
+                                height: context.sp(20), // FIXED: context.sp(20)
+                                child: const CircularProgressIndicator(
+                                    strokeWidth: 2),
                               )
-                            : Icon(Icons.download, color: theme.colorScheme.onSurface),
+                            : Icon(Icons.download,
+                                color: theme.colorScheme.onSurface),
                         label: Text(
                           _isGeneratingPdf
                               ? 'Generating PDF...'
@@ -453,34 +447,49 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.onSurface,
-                            fontSize: context.sp(16),
+                            fontSize: context.sp(16), // FIXED: context.sp(16)
                           ),
                         ),
                         style: OutlinedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(vertical: context.h(18)),
+                          padding: EdgeInsets.symmetric(
+                              vertical: context.h(18)), // FIXED: context.h(18)
                           side: BorderSide(
                             color: theme.colorScheme.onSurface,
                             width: 2,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.xl),
+                            borderRadius: BorderRadius.circular(
+                                AppRadius.xl), // FIXED: AppRadius.xl
                           ),
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(height: context.h(AppSpacing.lg)),
+
+                  SizedBox(
+                      height: context
+                          .h(AppSpacing.lg)), // FIXED: context.h(AppSpacing.lg)
+
+                  // Rating Button (only if online)
                   if (!_isOffline)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                       child: _buildRatingSection(),
                     ),
-                  SizedBox(height: context.h(AppSpacing.lg)),
-                  if (widget.questions != null && widget.selectedAnswers != null)
+
+                  SizedBox(
+                      height: context
+                          .h(AppSpacing.lg)), // FIXED: context.h(AppSpacing.lg)
+
+                  // Analysis Button
+                  if (widget.questions != null &&
+                      widget.selectedAnswers != null)
                     Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: AppSpacing.lg,
-                        vertical: context.h(AppSpacing.sm),
+                        vertical: context.h(
+                            AppSpacing.sm), // FIXED: context.h(AppSpacing.sm)
                       ),
                       child: SizedBox(
                         width: double.infinity,
@@ -498,13 +507,16 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                             );
                           },
                           style: OutlinedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(vertical: context.h(18)),
+                            padding: EdgeInsets.symmetric(
+                                vertical:
+                                    context.h(18)), // FIXED: context.h(18)
                             side: BorderSide(
                               color: theme.colorScheme.onSurface,
                               width: 2,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.xl),
+                              borderRadius: BorderRadius.circular(
+                                  AppRadius.xl), // FIXED: AppRadius.xl
                             ),
                           ),
                           child: Text(
@@ -512,25 +524,29 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: theme.colorScheme.onSurface,
-                              fontSize: context.sp(16),
+                              fontSize: context.sp(16), // FIXED: context.sp(16)
                             ),
                           ),
                         ),
                       ),
                     ),
+
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Discard Button (only if online and resultId exists)
                       if (!_isOffline && widget.resultId != null)
                         Padding(
                           padding: EdgeInsets.symmetric(
                             horizontal: AppSpacing.lg,
-                            vertical: context.h(AppSpacing.sm),
+                            vertical: context.h(AppSpacing
+                                .sm), // FIXED: context.h(AppSpacing.sm)
                           ),
                           child: _isDiscarding
                               ? Center(
                                   child: Padding(
-                                    padding: EdgeInsets.all(context.w(AppSpacing.md)),
+                                    padding: EdgeInsets.all(context.w(AppSpacing
+                                        .md)), // FIXED: context.w(AppSpacing.md)
                                     child: const CircularProgressIndicator(),
                                   ),
                                 )
@@ -538,42 +554,57 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                                   width: double.infinity,
                                   child: TextButton.icon(
                                     onPressed: _discardResult,
-                                    icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+                                    icon: Icon(Icons.delete_outline,
+                                        color: theme.colorScheme.error),
                                     label: Text(
                                       'Discard This Result',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        fontSize: context.sp(14),
+                                        fontSize: context
+                                            .sp(14), // FIXED: context.sp(14)
                                       ),
                                     ),
                                     style: TextButton.styleFrom(
                                       foregroundColor: theme.colorScheme.error,
-                                      padding: EdgeInsets.symmetric(vertical: context.h(16)),
-                                      backgroundColor: theme.colorScheme.error.withValues(alpha: 0.1),
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: context
+                                              .h(16)), // FIXED: context.h(16)
+                                      backgroundColor: theme.colorScheme.error
+                                          .withValues(alpha: 0.1),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                                        borderRadius: BorderRadius.circular(
+                                            AppRadius
+                                                .xl), // FIXED: AppRadius.xl
                                       ),
                                     ),
                                   ),
                                 ),
                         ),
+
+                      // Bottom Button (Back to Home)
                       Padding(
-                        padding: EdgeInsets.all(context.w(AppSpacing.xl)),
+                        padding: EdgeInsets.all(context.w(
+                            AppSpacing.xl)), // FIXED: context.w(AppSpacing.xl)
                         child: SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
                               Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute(builder: (context) => const MainScreen()),
+                                MaterialPageRoute(
+                                  builder: (context) => const MainScreen(),
+                                ),
                                 (route) => false,
                               );
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: theme.colorScheme.primary,
                               foregroundColor: theme.colorScheme.onPrimary,
-                              padding: EdgeInsets.symmetric(vertical: context.h(18)),
+                              padding: EdgeInsets.symmetric(
+                                  vertical:
+                                      context.h(18)), // FIXED: context.h(18)
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.xl),
+                                borderRadius: BorderRadius.circular(
+                                    AppRadius.xl), // FIXED: AppRadius.xl
                               ),
                               elevation: 0,
                             ),
@@ -582,13 +613,18 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: theme.colorScheme.onPrimary,
-                                fontSize: context.sp(16),
+                                fontSize:
+                                    context.sp(16), // FIXED: context.sp(16)
                               ),
                             ),
                           ),
                         ),
                       ),
-                      SizedBox(height: AppSpacing.md + MediaQuery.of(context).padding.bottom),
+                      SizedBox(
+                          height: AppSpacing.md +
+                              MediaQuery.of(context)
+                                  .padding
+                                  .bottom), // FIXED: AppSpacing.md + bottom padding
                     ],
                   ),
                 ],
@@ -599,8 +635,8 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
             confettiController: _confettiController,
             blastDirectionality: BlastDirectionality.explosive,
             shouldLoop: false,
-            numberOfParticles: 20,
-            gravity: 0.3,
+            numberOfParticles: 20, // Reduced from default (30)
+            gravity: 0.3, // Slower fall
             colors: [
               theme.colorScheme.primary,
               theme.colorScheme.secondary,
@@ -609,25 +645,32 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
               theme.colorScheme.outline,
             ],
           ),
+          // Offline Indicator
           if (_isOffline)
             Positioned(
-              top: context.h(10),
-              right: context.w(10),
+              top: context.h(10), // FIXED: context.h(10)
+              right: context.w(10), // FIXED: context.w(10)
               child: Container(
-                padding: EdgeInsets.symmetric(horizontal: context.w(12), vertical: context.h(6)),
+                padding: EdgeInsets.symmetric(
+                    horizontal: context.w(12),
+                    vertical:
+                        context.h(6)), // FIXED: context.w(12), context.h(6)
                 decoration: BoxDecoration(
                   color: theme.colorScheme.error.withValues(alpha: 0.8),
-                  borderRadius: BorderRadius.circular(AppRadius.xxl),
+                  borderRadius: BorderRadius.circular(
+                      AppRadius.xxl), // FIXED: AppRadius.xxl
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.cloud_off, color: theme.colorScheme.onPrimary, size: context.sp(14)),
-                    SizedBox(width: context.w(4)),
+                    Icon(Icons.cloud_off,
+                        color: theme.colorScheme.onPrimary,
+                        size: context.sp(14)), // FIXED: context.sp(14)
+                    SizedBox(width: context.w(4)), // FIXED: context.w(4)
                     Text(
                       'Offline',
                       style: TextStyle(
                           color: theme.colorScheme.onPrimary,
-                          fontSize: context.sp(10),
+                          fontSize: context.sp(10), // FIXED: context.sp(10)
                           fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -639,24 +682,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
     );
   }
 
-  Widget _buildStatCard({required String label, required String value, required Color color}) {
-    return Container(
-      padding: EdgeInsets.all(context.w(AppSpacing.lg)),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        children: [
-          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: context.sp(12))),
-          SizedBox(height: context.h(AppSpacing.sm)),
-          Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: context.sp(24))),
-        ],
-      ),
-    );
-  }
-
+  // --- RATING SECTION ---
   bool _hasRated = false;
   bool _isLoadingRating = true;
 
@@ -667,14 +693,19 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
   }
 
   Future<void> _checkExistingRating() async {
+    // Only check once
     if (!_isLoadingRating) return;
-    final authState = ref.read(authNotifierProvider);
-    final user = authState.user;
+
+    final user = AuthService.instance.currentUser;
     if (user == null) {
       if (mounted) setState(() => _isLoadingRating = false);
       return;
     }
+
     try {
+      // Assuming testId is numeric ID in string format. If GUID, this works too.
+      // But ReviewService expects int for ID.
+      // Let's try to parse widget.testId. If it fails, we skip rating (legacy IDs).
       int? tId = int.tryParse(widget.testId);
       if (tId != null) {
         final review = await ReviewService.getUserReview(user.id, tId, 'test');
@@ -698,54 +729,196 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
       final theme = Theme.of(context);
       return Container(
         width: double.infinity,
-        padding: EdgeInsets.all(context.w(AppSpacing.md)),
+        padding: EdgeInsets.all(
+            context.w(AppSpacing.md)), // FIXED: context.w(AppSpacing.md)
         decoration: BoxDecoration(
           color: theme.colorScheme.secondary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: theme.colorScheme.secondary.withValues(alpha: 0.2)),
+          borderRadius:
+              BorderRadius.circular(AppRadius.lg), // FIXED: AppRadius.lg
+          border: Border.all(
+              color: theme.colorScheme.secondary.withValues(alpha: 0.2)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle_outline, color: theme.colorScheme.secondary, size: context.sp(20)),
-            SizedBox(width: context.w(AppSpacing.sm)),
-            Text("Thanks for your feedback!", style: TextStyle(color: theme.colorScheme.secondary, fontWeight: FontWeight.bold, fontSize: context.sp(14))),
+            Icon(Icons.check_circle_outline,
+                color: theme.colorScheme.secondary,
+                size: context.sp(20)), // FIXED: context.sp(20)
+            SizedBox(
+                width: context
+                    .w(AppSpacing.sm)), // FIXED: context.w(AppSpacing.sm)
+            Text(
+              "Thanks for your feedback!",
+              style: TextStyle(
+                  color: theme.colorScheme.secondary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.sp(14)), // FIXED: context.sp(14)
+            ),
           ],
         ),
       );
     }
+
     final theme = Theme.of(context);
     return SizedBox(
       width: double.infinity,
       child: TextButton.icon(
         onPressed: () => _showRatingDialog(),
         icon: Icon(Icons.star_rate_rounded, color: theme.colorScheme.secondary),
-        label: Text('Rate this Test', style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
+        label: Text(
+          'Rate this Test',
+          style: TextStyle(
+            fontSize: context.sp(16), // FIXED: context.sp(16)
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
         style: TextButton.styleFrom(
-          padding: EdgeInsets.symmetric(vertical: context.h(16)),
+          padding: EdgeInsets.symmetric(
+              vertical: context.h(16)), // FIXED: context.h(16)
           backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.1),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xl)),
+          shape: RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.circular(AppRadius.xl)), // FIXED: AppRadius.xl
         ),
       ),
     );
   }
 
   void _showRatingDialog() {
-    final authState = ref.read(authNotifierProvider);
-    final user = authState.user;
+    final user = AuthService.instance.currentUser;
     if (user == null) return;
     int? tId = int.tryParse(widget.testId);
     if (tId == null) return;
-    
+
     showDialog(
       context: context,
       builder: (context) => ReviewDialog(
         title: widget.testTitle,
         onSubmit: (rating, review) async {
-          // Actual submission logic if needed, or just callback
-          setState(() => _hasRated = true);
+          try {
+            await ReviewService.submitReview(
+              userId: user.id,
+              itemId: tId,
+              itemType: 'test',
+              rating: rating,
+              reviewText: review,
+            );
+
+            if (!mounted) return;
+            setState(() => _hasRated = true);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Thank you for your review!')),
+            );
+          } catch (e) {
+            if (!mounted) return;
+            ErrorUtils.showError(context, e);
+          }
         },
       ),
     );
+  }
+
+  Widget _buildStatCard({
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding:
+          EdgeInsets.symmetric(vertical: context.h(24)), // FIXED: context.h(24)
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.05), // Very light tint
+        borderRadius:
+            BorderRadius.circular(AppRadius.xl), // FIXED: AppRadius.xl
+        border: Border.all(color: color.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircleAvatar(backgroundColor: color, radius: 4),
+              SizedBox(
+                  width: context
+                      .w(AppSpacing.sm)), // FIXED: context.w(AppSpacing.sm)
+              Flexible(
+                // FIXED: Added Flexible for Row label
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis, // FIXED: Added overflow
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: color.withValues(alpha: 0.8),
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                        fontSize: context.sp(12), // FIXED: context.sp(12)
+                      ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(
+              height:
+                  context.h(AppSpacing.md)), // FIXED: context.h(AppSpacing.md)
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: context.sp(28), // FIXED: context.sp(28)
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _discardResult() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Discard Result?"),
+        content: const Text(
+            "This will delete this attempt's record from your history. This cannot be undone."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Keep"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              "Discard",
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() => _isDiscarding = true);
+      try {
+        await TestService.instance.deleteTestResult(widget.resultId!);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Result discarded successfully.')),
+          );
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const MainScreen()),
+            (route) => false,
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isDiscarding = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to discard: $e')),
+          );
+        }
+      }
+    }
   }
 }

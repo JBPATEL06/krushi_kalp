@@ -1,26 +1,20 @@
 import 'dart:io';
-import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'dart:convert';
-import '../models/question.dart';
+import 'package:path_provider/path_provider.dart';
+import '../../domain/models/question.dart';
 import '../../utils/crashlytics_service.dart';
 
 class PdfService {
-  /// Generates a deterministic password for the PDF file based on the user ID and result ID.
-  /// This allows the app to open it later without storing the password explicitly.
-  String getSecurePassword(String userId, String testTitle) {
-    // Combine inputs and a secret salt
-    final String raw = '${userId}_${testTitle}_SECRET_SALT_2026';
-    final bytes = utf8.encode(raw);
-    final digest = sha256.convert(bytes);
-    // Take first 8 chars of hex for simplicity, or more
-    return digest.toString().substring(0, 8);
-  }
+  // Maintaining a public constructor for existing usage
+  PdfService();
+  
+  static final PdfService instance = PdfService();
 
+  /// Main method to generate a professional exam result PDF.
   Future<File> generateExamResultPdf({
+    required String testId,
     required String testTitle,
     required double score,
     required double totalMarks,
@@ -33,35 +27,22 @@ class PdfService {
     Map<int, int>? selectedAnswers,
     String languageCode = 'en',
   }) async {
-
     final pdf = pw.Document(
-      version: PdfVersion.pdf_1_5,
-      compress: true,
+      author: 'Krushi Kalp',
+      title: 'Exam Result - $testTitle',
+      subject: 'Mock Test Result Analysis',
+      keywords: 'krushi kalp, agriculture, mock test, result',
     );
 
-    // FIXME: PdfEncryption is abstract in the public 'pdf' package. 
-    // Concrete implementations like 'PdfEncryptionRc4' require the hosted 'pdf_crypto' package.
-    // For now, encryption is disabled to maintain compilation stability.
-    /*
-    pdf.document.encryption = PdfEncryptionRc4(
-      userPassword: password,
-      ownerPassword: password,
-      permissions: PdfPermissions.print,
-    );
-    */
-
-    // Apply encryption to the underlying PdfDocument
-    // Encryption enabled with secure deterministic password
-
-    // Load Font for Gujarati Support
-    final font = await _loadFont();
+    // Load Font based on language
+    final font = await _loadFont(languageCode);
 
     // Define Colors
     const PdfColor primaryBlue = PdfColor.fromInt(0xFF3399FF);
     const PdfColor darkNavy = PdfColor.fromInt(0xFF13192B);
-    const PdfColor lightGreen = PdfColor.fromInt(0xFFE8F5E9); // Green[50]
+    const PdfColor lightGreen = PdfColor.fromInt(0xFFE8F5E9);
     const PdfColor green = PdfColor.fromInt(0xFF4CAF50);
-    const PdfColor lightRed = PdfColor.fromInt(0xFFFFEBEE); // Red[50]
+    const PdfColor lightRed = PdfColor.fromInt(0xFFFFEBEE);
     const PdfColor red = PdfColor.fromInt(0xFFF44336);
     const PdfColor white = PdfColors.white;
     const PdfColor greyText = PdfColor.fromInt(0xFF616161);
@@ -84,19 +65,19 @@ class PdfService {
         'skipped': 'Skipped',
       },
       'gu': {
-        'summary': 'àªªàª°àª¿àª£àª¾àª® àª¸àª¾àª°àª¾àª‚àª¶',
-        'score': 'àª•à«àª² àª¸à«àª•à«‹àª°',
-        'pass': 'àªªàª¾àª¸',
-        'fail': 'àª¨àª¾àªªàª¾àª¸',
-        'passed_msg': 'àª¤àª®à«‡ àªªàª°à«€àª•à«àª·àª¾ àªªàª¾àª¸ àª•àª°à«€ àª›à«‡!',
-        'failed_msg': 'àª¤àª®à«‡ àª¨àª¾àªªàª¾àª¸ àª¥àª¯àª¾ àª›à«‹. àªªà«àª°àª¯àª¤à«àª¨ àªšàª¾àª²à« àª°àª¾àª–à«‹!',
-        'right': 'àª¸àª¾àªšàª¾',
-        'wrong': 'àª–à«‹àªŸàª¾',
-        'analysis': 'àªµàª¿àª—àª¤àªµàª¾àª° àªµàª¿àª¶à«àª²à«‡àª·àª£',
-        'question': 'àªªà«àª°àª¶à«àª¨',
-        'correct': 'àª¸àª¾àªšà«‹',
-        'selected': 'àªªàª¸àª‚àª¦ àª•àª°à«‡àª²',
-        'skipped': 'àª›à«‹àª¡à«€ àª¦à«€àª§à«‡àª²',
+        'summary': 'પરિણામ સારાંશ',
+        'score': 'કુલ સ્કોર',
+        'pass': 'પાસ',
+        'fail': 'નાપાસ',
+        'passed_msg': 'તમે પરીક્ષા પાસ કરી છે!',
+        'failed_msg': 'તમે નાપાસ થયા છો. પ્રયત્ન ચાલુ રાખો!',
+        'right': 'સાચા',
+        'wrong': 'ખોટા',
+        'analysis': 'વિગતવાર વિશ્લેષણ',
+        'question': 'પ્રશ્ન',
+        'correct': 'સાચો',
+        'selected': 'પસંદ કરેલ',
+        'skipped': 'છોડી દીધેલ',
       }
     };
 
@@ -108,338 +89,358 @@ class PdfService {
         margin: const pw.EdgeInsets.all(0),
         theme: pw.ThemeData.withFont(
             base: font,
-            bold: font, // Use same font for bold to ensure Gujarati renders
-            italic: font // Use same font for italic
+            bold: font, 
+            italic: font
             ),
-        build: (pw.Context context) {
-          return [
-            // --- HEADER & SCORE CARD ---
-            pw.Container(
-              padding: const pw.EdgeInsets.all(24),
-              color: white,
-              child: pw.Column(
-                children: [
-                  pw.Center(
-                    child: pw.Text(
-                      t['summary']!,
-                      style: pw.TextStyle(
-                        fontSize: 16,
-                        fontWeight: pw.FontWeight.bold,
-                        color: darkNavy,
-                      ),
-                    ),
-                  ),
-                  pw.SizedBox(height: 10),
-                  pw.Text('$userName | $testTitle',
-                      style: const pw.TextStyle(
-                          fontSize: 12, color: PdfColors.grey)),
-                  pw.SizedBox(height: 20),
-
-                  // Blue Score Card
-                  pw.Container(
-                    width: double.infinity,
-                    padding: const pw.EdgeInsets.symmetric(
-                        vertical: 32, horizontal: 24),
-                    decoration: pw.BoxDecoration(
-                      color: primaryBlue,
-                      borderRadius: pw.BorderRadius.circular(24),
-                    ),
-                    child: pw.Column(
-                      children: [
-                        pw.Text(
-                          t['score']!,
-                          style: pw.TextStyle(
-                            color: white,
-                            fontWeight: pw.FontWeight.bold,
-                            letterSpacing: 1.2,
-                            fontSize: 12,
-                          ),
-                        ),
-                        pw.SizedBox(height: 10),
-                        pw.Container(
-                          width: 60,
-                          height: 60,
-                          decoration: const pw.BoxDecoration(
-                            shape: pw.BoxShape.circle,
-                            color: PdfColors.white,
-                          ),
-                          child: pw.Center(
-                            child: pw.Text(
-                              ((score / totalMarks) * 100) >= 40
-                                  ? t['pass']!
-                                  : t['fail']!,
-                              style: pw.TextStyle(
-                                color: primaryBlue,
-                                fontWeight: pw.FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                        pw.SizedBox(height: 10),
-                        pw.Text(
-                          '${((score / totalMarks) * 100).toStringAsFixed(0)}%',
-                          style: pw.TextStyle(
-                            fontSize: 50,
-                            fontWeight: pw.FontWeight.bold,
-                            color: white,
-                          ),
-                        ),
-                        pw.SizedBox(height: 10),
-                        pw.Text(
-                          ((score / totalMarks) * 100) >= 40
-                              ? t['passed_msg']!
-                              : t['failed_msg']!,
-                          style: const pw.TextStyle(
-                            color: white,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+        header: (pw.Context context) => _buildHeader(testTitle, userName, primaryBlue, white),
+        footer: (pw.Context context) => _buildFooter(context, greyText),
+        build: (pw.Context context) => [
+          _buildSummarySection(
+            score: score,
+            totalMarks: totalMarks,
+            correct: correctAnswers,
+            wrong: wrongAnswers,
+            skipped: skippedAnswers,
+            primaryColor: primaryBlue,
+            darkNavy: darkNavy,
+            labels: t,
+          ),
+          if (questions != null) ...[
+            pw.Padding(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+              child: pw.Text(
+                t['analysis']!,
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                  color: darkNavy,
+                ),
               ),
             ),
-
-            // --- STATS GRID ---
-            pw.Padding(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 24),
-              child: pw.Row(
-                children: [
-                  pw.Expanded(
-                    child: _buildStatCardPdf(
-                      label: t['right']!,
-                      value: '$correctAnswers',
-                      color: green,
-                      bgColor: lightGreen,
-                    ),
-                  ),
-                  pw.SizedBox(width: 16),
-                  pw.Expanded(
-                    child: _buildStatCardPdf(
-                      label: t['wrong']!,
-                      value: '$wrongAnswers',
-                      color: red,
-                      bgColor: lightRed,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            pw.SizedBox(height: 30),
-            pw.Padding(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 24),
-              child: pw.Text(t['analysis']!,
-                  style: pw.TextStyle(
-                      fontSize: 18,
-                      fontWeight: pw.FontWeight.bold,
-                      color: darkNavy)),
-            ),
-            pw.SizedBox(height: 15),
-
-            // --- QUESTIONS LIST ---
-            if (questions != null && selectedAnswers != null)
-              ...List.generate(questions.length, (index) {
-                final q = questions[index];
-                final selectedOption = selectedAnswers[index];
-                // CHANGED: Use string-based comparison instead of index
-                final bool isCorrect = selectedOption != null &&
-                    q.options[selectedOption].trim().toLowerCase() ==
-                        q.correctAnswer.trim().toLowerCase(); // CHANGED
-                final isSkipped = selectedOption == null;
-
-                return pw.Container(
-                  margin:
-                      const pw.EdgeInsets.only(bottom: 16, left: 24, right: 24),
-                  padding: const pw.EdgeInsets.all(16),
-                  decoration: pw.BoxDecoration(
-                    color: white,
-                    borderRadius: pw.BorderRadius.circular(12),
-                    border: pw.Border.all(color: PdfColors.grey300),
-                  ),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      // Header: Icon + Question No
-                      pw.Row(
-                        children: [
-                          pw.Container(
-                            width: 24,
-                            height: 24,
-                            decoration: pw.BoxDecoration(
-                              color: isSkipped
-                                  ? PdfColors.grey400
-                                  : (isCorrect ? green : red),
-                              shape: pw.BoxShape.circle,
-                            ),
-                            child: pw.Center(
-                              child: pw.Text(
-                                isSkipped ? '-' : (isCorrect ? 'C' : 'W'),
-                                style: pw.TextStyle(
-                                    color: white,
-                                    fontSize: 12,
-                                    fontWeight: pw.FontWeight.bold),
-                              ),
-                            ),
-                          ),
-                          pw.SizedBox(width: 10),
-                          pw.Text(
-                            '${t['question']} ${index + 1}',
-                            style: pw.TextStyle(
-                              color: greyText,
-                              fontWeight: pw.FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                      pw.SizedBox(height: 10),
-                      pw.Text(q.text,
-                          style: pw.TextStyle(
-                              font: font, // Force use of Gujarati font
-                              fontSize: 14,
-                              fontWeight: pw.FontWeight.bold,
-                              color: darkNavy)),
-                      pw.SizedBox(height: 12),
-
-                      // Options
-                      ...List.generate(q.options.length, (optIndex) {
-                        final isSelected = selectedOption == optIndex;
-                        // CHANGED: Use string-based comparison instead of index
-                        final isRealAnswer =
-                            q.options[optIndex].trim().toLowerCase() ==
-                                q.correctAnswer.trim().toLowerCase(); // CHANGED
-
-                        PdfColor boxColor = white;
-                        PdfColor borderColor = PdfColors.grey300;
-                        PdfColor textColor = darkNavy;
-                        double width = 0.5;
-
-                        if (isRealAnswer) {
-                          borderColor = green;
-                          boxColor = lightGreen;
-                          width = 1;
-                        } else if (isSelected && !isRealAnswer) {
-                          borderColor = red;
-                          boxColor = lightRed;
-                          width = 1;
-                        }
-
-                        return pw.Container(
-                          margin: const pw.EdgeInsets.only(bottom: 6),
-                          padding: const pw.EdgeInsets.symmetric(
-                              vertical: 8, horizontal: 12),
-                          decoration: pw.BoxDecoration(
-                            color: boxColor,
-                            border:
-                                pw.Border.all(color: borderColor, width: width),
-                            borderRadius: pw.BorderRadius.circular(8),
-                          ),
-                          child: pw.Row(children: [
-                            pw.Expanded(
-                                child: pw.Text(q.options[optIndex],
-                                    style: pw.TextStyle(
-                                        color: textColor, fontSize: 10))),
-                            if (isRealAnswer)
-                              pw.Text(" (${t['correct']})",
-                                  style:
-                                      pw.TextStyle(color: green, fontSize: 8)),
-                            if (isSelected && !isRealAnswer)
-                              pw.Text(" (${t['selected']})",
-                                  style: pw.TextStyle(color: red, fontSize: 8)),
-                          ]),
-                        );
-                      }),
-                      if (isSkipped)
-                        pw.Padding(
-                            padding: const pw.EdgeInsets.only(top: 4),
-                            child: pw.Text(t['skipped']!,
-                                style: pw.TextStyle(
-                                    color: PdfColors.orange,
-                                    fontStyle: pw.FontStyle.italic,
-                                    fontSize: 10))),
-                    ],
-                  ),
-                );
-              }),
-            pw.SizedBox(height: 30),
-            pw.Center(
-                child: pw.Text("End of Report",
-                    style: const pw.TextStyle(
-                        color: PdfColors.grey, fontSize: 10))),
-          ];
-        },
+            ...questions.asMap().entries.map((entry) {
+              final index = entry.key;
+              final q = entry.value;
+              final selectedIdx = selectedAnswers?[index];
+              return _buildQuestionItem(
+                index + 1,
+                q,
+                selectedIdx,
+                lightGreen,
+                green,
+                lightRed,
+                red,
+                labels: t,
+              );
+            }),
+          ]
+        ],
       ),
     );
 
-    final output = await getTemporaryDirectory();
-    final file = File(
-        "${output.path}/result_${DateTime.now().millisecondsSinceEpoch}.pdf");
+    final dir = await getTemporaryDirectory();
+    final file = File("${dir.path}/result_${testId}.pdf");
     await file.writeAsBytes(await pdf.save());
     return file;
   }
 
-  pw.Widget _buildStatCardPdf({
-    required String label,
-    required String value,
-    required PdfColor color,
-    required PdfColor bgColor,
-  }) {
+  pw.Widget _buildHeader(String title, String user, PdfColor bg, PdfColor text) {
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(vertical: 20),
-      decoration: pw.BoxDecoration(
-        color: bgColor,
-        borderRadius: pw.BorderRadius.circular(16),
-        border: pw.Border.all(color: color, width: 0.5),
-      ),
-      child: pw.Column(
+      height: 100,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 30),
+      decoration: pw.BoxDecoration(color: bg),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Row(
+          pw.Column(
             mainAxisAlignment: pw.MainAxisAlignment.center,
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Container(
-                  width: 8,
-                  height: 8,
-                  decoration: pw.BoxDecoration(
-                      color: color, shape: pw.BoxShape.circle)),
-              pw.SizedBox(width: 8),
               pw.Text(
-                label,
+                'KRUSHI KALP',
                 style: pw.TextStyle(
-                  color: color,
+                  color: text,
+                  fontSize: 24,
                   fontWeight: pw.FontWeight.bold,
-                  fontSize: 10,
+                  letterSpacing: 2,
                 ),
+              ),
+              pw.Text(
+                title.toUpperCase(),
+                style: pw.TextStyle(color: text, fontSize: 12),
               ),
             ],
           ),
-          pw.SizedBox(height: 8),
-          pw.Text(
-            value,
-            style: pw.TextStyle(
-              fontSize: 24,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColor.fromInt(0xFF13192B),
-            ),
+          pw.Column(
+            mainAxisAlignment: pw.MainAxisAlignment.center,
+            crossAxisAlignment: pw.CrossAxisAlignment.end,
+            children: [
+              pw.Text(
+                user,
+                style: pw.TextStyle(
+                  color: text,
+                  fontSize: 14,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.Text(
+                'Date: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}',
+                style: pw.TextStyle(color: text, fontSize: 10),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  /// Loads the required font.
-  Future<pw.Font> _loadFont() async {
+  pw.Widget _buildFooter(pw.Context context, PdfColor grey) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(20),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text(
+            'Generated by Krushi Kalp App',
+            style: pw.TextStyle(color: grey, fontSize: 8),
+          ),
+          pw.Text(
+            'Page ${context.pageNumber} of ${context.pagesCount}',
+            style: pw.TextStyle(color: grey, fontSize: 8),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildSummarySection({
+    required double score,
+    required double totalMarks,
+    required int correct,
+    required int wrong,
+    required int skipped,
+    required PdfColor primaryColor,
+    required PdfColor darkNavy,
+    required Map<String, String> labels,
+  }) {
+    final percentage = (score / totalMarks) * 100;
+    final isPassed = percentage >= 40;
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(30),
+      child: pw.Column(
+        children: [
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              // Score Circle Representation
+              pw.Container(
+                width: 120,
+                height: 120,
+                decoration: pw.BoxDecoration(
+                  shape: pw.BoxShape.circle,
+                  border: pw.Border.all(color: primaryColor, width: 4),
+                ),
+                child: pw.Column(
+                  mainAxisAlignment: pw.MainAxisAlignment.center,
+                  children: [
+                    pw.Text(
+                      '${score.toInt()}',
+                      style: pw.TextStyle(
+                        fontSize: 32,
+                        fontWeight: pw.FontWeight.bold,
+                        color: darkNavy,
+                      ),
+                    ),
+                    pw.Text(
+                      '/${totalMarks.toInt()}',
+                      style: pw.TextStyle(fontSize: 14, color: primaryColor),
+                    ),
+                  ],
+                ),
+              ),
+              // Pass/Fail Badge
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Container(
+                    padding: const pw.EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: pw.BoxDecoration(
+                      color: isPassed ? PdfColors.green : PdfColors.red,
+                      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(20)),
+                    ),
+                    child: pw.Text(
+                      isPassed ? labels['pass']! : labels['fail']!,
+                      style: pw.TextStyle(
+                        color: PdfColors.white,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  pw.SizedBox(height: 10),
+                  pw.Text(
+                    isPassed ? labels['passed_msg']! : labels['failed_msg']!,
+                    style: pw.TextStyle(fontSize: 14, color: darkNavy),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 30),
+          // Stats Row
+          pw.Row(
+            children: [
+              _buildStatCard(labels['right']!, '$correct', PdfColors.green),
+              pw.SizedBox(width: 15),
+              _buildStatCard(labels['wrong']!, '$wrong', PdfColors.red),
+              pw.SizedBox(width: 15),
+              _buildStatCard(labels['skipped']!, '$skipped', PdfColors.orange),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildStatCard(String label, String value, PdfColor color) {
+    return pw.Expanded(
+      child: pw.Container(
+        padding: const pw.EdgeInsets.all(15),
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(color: color.luminance > 0.5 ? PdfColors.grey300 : color, width: 1),
+          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+        ),
+        child: pw.Column(
+          children: [
+            pw.Text(
+              value,
+              style: pw.TextStyle(
+                fontSize: 20,
+                fontWeight: pw.FontWeight.bold,
+                color: color,
+              ),
+            ),
+            pw.Text(
+              label,
+              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  pw.Widget _buildQuestionItem(
+    int number,
+    Question q,
+    int? selectedIdx,
+    PdfColor lightG,
+    PdfColor darkG,
+    PdfColor lightR,
+    PdfColor darkR, {
+    required Map<String, String> labels,
+  }) {
+    final String? selectedText = selectedIdx != null && selectedIdx < q.options.length 
+        ? q.options[selectedIdx] 
+        : null;
+        
+    final isCorrect = selectedText?.trim().toLowerCase() == q.correctAnswer.trim().toLowerCase();
+    final isSkipped = selectedIdx == null;
+
+    final cardBg = isSkipped
+        ? PdfColors.grey100
+        : (isCorrect ? lightG : lightR);
+
+    return pw.Container(
+      margin: const pw.EdgeInsets.symmetric(horizontal: 30, vertical: 8),
+      padding: const pw.EdgeInsets.all(15),
+      decoration: pw.BoxDecoration(
+        color: cardBg,
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                '$number. ',
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Expanded(
+                child: pw.Text(
+                  q.text,
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 10),
+          pw.Row(
+            children: [
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      '${labels['correct']}: ${q.correctAnswer}',
+                      style: pw.TextStyle(color: darkG, fontSize: 10),
+                    ),
+                    if (!isSkipped)
+                      pw.Text(
+                        '${labels['selected']}: ${selectedText ?? ''}',
+                        style: pw.TextStyle(
+                          color: isCorrect ? darkG : darkR,
+                          fontSize: 10,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      )
+                    else
+                      pw.Text(
+                        labels['skipped']!,
+                        style: pw.TextStyle(color: PdfColors.orange, fontSize: 10),
+                      ),
+                  ],
+                ),
+              ),
+              if (isSkipped)
+                _buildStatusIcon(PdfColors.orange)
+              else if (isCorrect)
+                _buildStatusIcon(darkG)
+              else
+                _buildStatusIcon(darkR),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildStatusIcon(PdfColor color) {
+    return pw.Container(
+      width: 12,
+      height: 12,
+      decoration: pw.BoxDecoration(
+        color: color,
+        shape: pw.BoxShape.circle,
+      ),
+    );
+  }
+
+  /// Loads the required font based on language.
+  Future<pw.Font> _loadFont(String languageCode) async {
+    // For English, use standard PDF fonts for better rendering and performance
+    if (languageCode == 'en') {
+      return pw.Font.helvetica();
+    }
+
     try {
       // 1. Try Bundled Asset (Fastest & Offline)
-      // This is now "provided by default" in pubspec.yaml
       try {
         final fontData =
             await rootBundle.load("assets/fonts/NotoSansGujarati-Regular.ttf");
         return pw.Font.ttf(fontData);
       } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'pdf_service');
         // Log if asset loading fails, will fall back to cache/download
         CrashlyticsService.instance.recordError(e, stack, reason: 'PdfService: Bundled font asset load failed');
       }
@@ -477,14 +478,19 @@ class PdfService {
       CrashlyticsService.instance.recordError(e, stack, reason: 'PdfService: All font loading strategies failed');
     }
     // Fallback
-    return pw.Font.courier();
+    return pw.Font.helvetica();
   }
 
   Future<Uint8List> condenseStream(Stream<List<int>> stream) async {
-    final List<int> bytes = [];
-    await for (final chunk in stream) {
-      bytes.addAll(chunk);
+    final List<int> allBytes = [];
+    await for (final List<int> chunk in stream) {
+      allBytes.addAll(chunk);
     }
-    return Uint8List.fromList(bytes);
+    return Uint8List.fromList(allBytes);
+  }
+
+  String getSecurePassword(String userId, String testTitle) {
+    // Deterministic password based on user and test
+    return "${userId.substring(0, 4)}@${testTitle.length}";
   }
 }

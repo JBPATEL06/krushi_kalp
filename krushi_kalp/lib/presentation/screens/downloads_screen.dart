@@ -365,8 +365,11 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
       if (_localStatus['test_${t.id}'] == true) {
         final matchesSearch =
             t.title.toLowerCase().contains(_searchQuery.toLowerCase());
-        final matchesFilter =
-            _activeFilter == 'All Files' || _activeFilter == 'Mocks';
+        final matchesFilter = _activeFilter == 'All Files' ||
+            _activeFilter == 'Mocks' ||
+            (_activeFilter == 'PYQs' &&
+                (t.category.toUpperCase().contains('PYQ') ||
+                    t.title.toUpperCase().contains('PYQ')));
         if (matchesSearch && matchesFilter) displayItems.add(t);
       }
     }

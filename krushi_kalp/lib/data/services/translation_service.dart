@@ -6,43 +6,42 @@ class TranslationService {
   static final _translator = GoogleTranslator();
 
   // Cache to prevent re-translating same questions
-  // Key: Question ID (or index if no ID), Value: Translated Question
+  // Key: LanguageCode_QuestionTextHash, Value: Translated Question
   static final Map<String, Question> _cache = {};
 
-  /// Translates a single Question to Gujarati
-  static Future<Question> translateQuestion(Question q) async {
+  /// Translates a single Question to a target language
+  static Future<Question> translateQuestion(Question q, {String to = 'gu'}) async {
     // Return from cache if available
-    // We use the question text hash or a unique ID if available as key
-    final cacheKey = q.text.hashCode.toString();
+    final cacheKey = '${to}_${q.text.hashCode}';
     if (_cache.containsKey(cacheKey)) {
       return _cache[cacheKey]!;
     }
 
     try {
       // 1. Translate Question Text
-      final textTranslation = await _translator.translate(q.text, to: 'gu');
+      final textTranslation = await _translator.translate(q.text, to: to);
 
       // 2. Translate Options (in parallel)
       final optionsFutures =
-          q.options.map((opt) => _translator.translate(opt, to: 'gu')).toList();
+          q.options.map((opt) => _translator.translate(opt, to: to)).toList();
 
       final optionsTranslations = await Future.wait(optionsFutures);
 
       // 3. Find original correct index to map to translated option
       final int originalCorrectIndex = q.options.indexWhere((opt) =>
           opt.trim().toLowerCase() ==
-          q.correctAnswer.trim().toLowerCase()); // CHANGED
+          q.correctAnswer.trim().toLowerCase());
 
       // 4. Create new Question object
       final translatedOptions =
-          optionsTranslations.map((t) => t.text).toList(); // CHANGED
+          optionsTranslations.map((t) => t.text).toList();
       final translatedQ = Question(
         id: q.id, // Keep original ID
         text: textTranslation.text,
-        options: translatedOptions, // CHANGED
+        options: translatedOptions,
         correctAnswer: originalCorrectIndex != -1
             ? translatedOptions[originalCorrectIndex]
-            : q.correctAnswer, // CHANGED
+            : q.correctAnswer,
       );
 
       // Save to cache
@@ -55,8 +54,8 @@ class TranslationService {
     }
   }
 
-  /// Translates a batch of questions (Fire and Forget or Wait)
-  static Future<List<Question>> translateBatch(List<Question> questions) async {
+  /// Translates a batch of questions
+  static Future<List<Question>> translateBatch(List<Question> questions, {String to = 'gu'}) async {
     const chunkSize = 5; // Translate 5 at a time
     final results = <Question>[];
 
@@ -64,7 +63,7 @@ class TranslationService {
       final chunk =
           questions.sublist(i, (i + chunkSize).clamp(0, questions.length));
       final translated =
-          await Future.wait(chunk.map((q) => translateQuestion(q)));
+          await Future.wait(chunk.map((q) => translateQuestion(q, to: to)));
       results.addAll(translated);
 
       // Small delay to avoid rate-limiting
