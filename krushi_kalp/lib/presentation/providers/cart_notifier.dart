@@ -85,21 +85,28 @@ class CartNotifier extends _$CartNotifier {
   }
 
   Future<void> removeFromCart({required int itemId}) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    // 1. Optimistic update (Instant UI change)
+    final originalItems = state.cartItems;
+    final newItems = state.cartItems.where((item) => item.itemId != itemId).toList();
+    
+    state = state.copyWith(
+      cartItems: newItems,
+      errorMessage: null,
+    );
+
     try {
       await CartService.instance.removeCartItem(itemId);
-      // Optimistic update
-      final newItems = state.cartItems.where((item) => item.itemId != itemId).toList();
-      state = state.copyWith(cartItems: newItems);
-
-      // Refresh to ensure sync
+      // 2. Fetch fresh state from server in background
+      // Note: We don't set isLoading=true here to avoid a flickering spinner for a simple removal
       await fetchCart(forceRefresh: true);
     } catch (e, stack) {
-      state = state.copyWith(errorMessage: e.toString());
+      // 3. Revert on failure
+      state = state.copyWith(
+        cartItems: originalItems,
+        errorMessage: 'Failed to remove item: ${e.toString()}',
+      );
       CrashlyticsService.instance.recordError(e, stack, reason: 'CartNotifier: removeFromCart');
       rethrow;
-    } finally {
-      state = state.copyWith(isLoading: false);
     }
   }
 

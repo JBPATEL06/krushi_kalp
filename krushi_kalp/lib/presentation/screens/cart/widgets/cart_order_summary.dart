@@ -74,6 +74,41 @@ class CartOrderSummary extends StatelessWidget {
               ),
             ],
           ),
+          if (discountAmount > 0) ...[
+            SizedBox(height: context.h(AppSpacing.lg)),
+            Container(
+              padding: EdgeInsets.symmetric(
+                vertical: context.h(AppSpacing.sm),
+                horizontal: context.w(AppSpacing.md),
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(context.w(AppSpacing.radiusMd)),
+                border: Border.all(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.stars_rounded,
+                    size: context.sp(16),
+                    color: const Color(0xFF10B981),
+                  ),
+                  SizedBox(width: context.w(AppSpacing.sm)),
+                  Text(
+                    'You Saved ₹${discountAmount.toStringAsFixed(0)} on this order!',
+                    style: TextStyle(
+                      color: const Color(0xFF10B981),
+                      fontSize: context.sp(13),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

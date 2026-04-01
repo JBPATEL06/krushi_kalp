@@ -18,8 +18,9 @@ class DownloadActionButton extends StatefulWidget {
   final Future<void> Function()
       onAction; // Callback after download is confirmed/opened
   final bool isFullWidth;
-  final String? userId;
-  final String? displayName; // Human-readable name (e.g., "gujcet") // CHANGED
+  final String? userId; // CHANGED (Restored)
+  final String? displayName;
+  final DateTime? updatedAt; // Server timestamp for freshness
 
   const DownloadActionButton({
     super.key,
@@ -30,9 +31,12 @@ class DownloadActionButton extends StatefulWidget {
     this.startLabel = "Open",
     required this.onAction,
     this.isFullWidth = true,
-    this.userId,
-    this.displayName, // CHANGED
+    this.userId, // CHANGED (Restored)
+    this.displayName,
+    this.updatedAt,
   });
+
+
 
   @override
   State<DownloadActionButton> createState() => _DownloadActionButtonState();
@@ -60,14 +64,25 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
       return;
     }
 
-    final exists = await DownloadService()
-        .isFileDownloaded(widget.filename, userId: currentUserId);
+    final ds = DownloadService();
+    // 1. Ensure file is fresh if we have a server timestamp
+    if (widget.updatedAt != null) {
+      await ds.ensureFreshness(
+        filename: widget.filename,
+        userId: currentUserId,
+        serverUpdatedAt: widget.updatedAt!,
+      );
+    }
+
+    final exists = await ds.isFileDownloaded(widget.filename, userId: currentUserId);
+
     if (mounted) {
       setState(() {
         _isDownloaded = exists;
         _checking = false;
       });
     }
+
   }
 
   /// Initiates the background download process.
@@ -87,6 +102,7 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
         storagePath: widget.url!,
         bucketName: widget.bucketName,
         userId: currentUserId,
+        updatedAt: widget.updatedAt,
         onProgress: (p) {
           if (mounted) setState(() => _progress = p);
           // Update notification tray

@@ -287,8 +287,8 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
           );
         }
       } catch (e, stack) {
-        CrashlyticsService.instance
-            .recordError(e, stack, reason: 'store_screen: resource download failed');
+        CrashlyticsService.instance.recordError(e, stack,
+            reason: 'store_screen: resource download failed');
         if (mounted) {
           Navigator.maybePop(context);
           ErrorUtils.showError(context, e);
@@ -347,6 +347,8 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
     }
 
     final cartState = ref.read(cartNotifierProvider);
+    if (cartState.isLoading) return; // Prevent multiple taps during sync
+
     final cartItemIds = cartState.cartItems
         .map((item) => item.testId ?? item.resourceId)
         .whereType<int>()
@@ -354,9 +356,12 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
 
     try {
       if (cartItemIds.contains(test.id)) {
-        final cartItem = cartState.cartItems.firstWhere((item) => item.testId == test.id);
-        await ref.read(cartNotifierProvider.notifier).removeFromCart(itemId: cartItem.itemId);
-        
+        final cartItem =
+            cartState.cartItems.firstWhere((item) => item.testId == test.id);
+        await ref
+            .read(cartNotifierProvider.notifier)
+            .removeFromCart(itemId: cartItem.itemId);
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -403,6 +408,8 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
     }
 
     final cartState = ref.read(cartNotifierProvider);
+    if (cartState.isLoading) return; // Prevent multiple taps during sync
+
     final cartItemIds = cartState.cartItems
         .map((item) => item.testId ?? item.resourceId)
         .whereType<int>()
@@ -410,9 +417,12 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
 
     try {
       if (cartItemIds.contains(resource.id)) {
-        final cartItem = cartState.cartItems.firstWhere((item) => item.resourceId == resource.id);
-        await ref.read(cartNotifierProvider.notifier).removeFromCart(itemId: cartItem.itemId);
-        
+        final cartItem = cartState.cartItems
+            .firstWhere((item) => item.resourceId == resource.id);
+        await ref
+            .read(cartNotifierProvider.notifier)
+            .removeFromCart(itemId: cartItem.itemId);
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -558,8 +568,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
   @override
   Widget build(BuildContext context) {
     // Listen for network changes to retry loading
-    ref.listen<bool>(
-        networkNotifierProvider.select((value) => value),
+    ref.listen<bool>(networkNotifierProvider.select((value) => value),
         (previous, next) {
       if (next && !(previous ?? true)) {
         _loadData();

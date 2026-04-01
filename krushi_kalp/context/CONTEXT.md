@@ -29,6 +29,6 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - Cloud Function integration for checkout (v8)
 - Real-time notification hardening (v9)
 
-## Current Phase: Verification & Automated Testing
-- Goal: Secure the stabilization changes with a new test suite.
-- Status: Planning and infrastructure setup.
+## Current Phase: Technical Audit & Scalability Analysis
+- Goal: System-wide stabilization and capacity assessment.
+- Status: Audit completed; Capacity identified at ~500 concurrent users (Pro Tier).

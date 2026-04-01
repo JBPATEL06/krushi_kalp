@@ -437,7 +437,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     child: SizedBox(
                       width: double.infinity,
-                      child: OutlinedButton.icon(
+                      child: ElevatedButton.icon(
                         onPressed: _isGeneratingPdf ? null : _generateAndDownloadPdf,
                         icon: _isGeneratingPdf
                             ? SizedBox(
@@ -445,25 +445,28 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                                 height: context.sp(20),
                                 child: const CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : Icon(Icons.download, color: theme.colorScheme.onSurface),
+                            : Icon(Icons.download, color: theme.colorScheme.onPrimary),
                         label: Text(
                           _isGeneratingPdf
                               ? 'Generating PDF...'
                               : 'Download & View Result PDF',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
+                            color: theme.colorScheme.onPrimary,
                             fontSize: context.sp(16),
                           ),
                         ),
-                        style: OutlinedButton.styleFrom(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primaryContainer,
+                          foregroundColor: theme.colorScheme.onPrimaryContainer,
                           padding: EdgeInsets.symmetric(vertical: context.h(18)),
-                          side: BorderSide(
-                            color: theme.colorScheme.onSurface,
-                            width: 2,
-                          ),
+                          elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(AppRadius.xl),
+                            side: BorderSide(
+                              color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                              width: 1,
+                            ),
                           ),
                         ),
                       ),
@@ -484,7 +487,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                       ),
                       child: SizedBox(
                         width: double.infinity,
-                        child: OutlinedButton(
+                        child: ElevatedButton(
                           onPressed: () {
                             Navigator.push(
                               context,
@@ -497,21 +500,24 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                               ),
                             );
                           },
-                          style: OutlinedButton.styleFrom(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.surface,
+                            foregroundColor: theme.colorScheme.primary,
                             padding: EdgeInsets.symmetric(vertical: context.h(18)),
-                            side: BorderSide(
-                              color: theme.colorScheme.onSurface,
-                              width: 2,
-                            ),
+                            elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(AppRadius.xl),
+                              side: BorderSide(
+                                color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                                width: 1,
+                              ),
                             ),
                           ),
                           child: Text(
                             'Check Answers',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurface,
+                              color: theme.colorScheme.primary,
                               fontSize: context.sp(16),
                             ),
                           ),

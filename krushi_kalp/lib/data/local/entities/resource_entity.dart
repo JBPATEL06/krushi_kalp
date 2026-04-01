@@ -21,6 +21,8 @@ class ResourceEntity {
   late double price;
   late bool isActive;
   late DateTime createdAt;
+  late DateTime updatedAt;
+
 
   // Convert from Domain Model
   static ResourceEntity fromResource(Resource resource) {
@@ -35,7 +37,9 @@ class ResourceEntity {
       ..thumbnailUrl = resource.thumbnailUrl
       ..price = resource.price
       ..isActive = resource.isActive
-      ..createdAt = resource.createdAt;
+      ..createdAt = resource.createdAt
+      ..updatedAt = resource.updatedAt;
+
   }
 
   // Convert to Domain Model
@@ -57,6 +61,8 @@ class ResourceEntity {
       price: price,
       isActive: isActive,
       createdAt: createdAt,
+      updatedAt: updatedAt,
     );
+
   }
 }

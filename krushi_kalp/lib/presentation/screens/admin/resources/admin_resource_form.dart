@@ -193,7 +193,9 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
         price: price,
         isActive: active,
         createdAt: createdAt,
+        updatedAt: DateTime.now(),
       );
+
 
       if (existingId == null) {
         await _resourceService.createResource(newItem);

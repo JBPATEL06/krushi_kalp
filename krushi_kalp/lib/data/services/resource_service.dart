@@ -123,7 +123,9 @@ class ResourceService {
         price: r.price,
         isActive: r.isActive,
         createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
       );
+
     }));
   }
 

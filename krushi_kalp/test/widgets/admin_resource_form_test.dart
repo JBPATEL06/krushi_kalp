@@ -29,7 +29,9 @@ void main() {
       price: 0,
       isActive: true,
       createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     ));
+
   });
 
   Widget createWidgetUnderTest() {
@@ -54,7 +56,9 @@ void main() {
           price: 10,
           isActive: true,
           createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         ),
+
         type: ResourceType.eBook,
         resourceService: mockResourceService,
       ),

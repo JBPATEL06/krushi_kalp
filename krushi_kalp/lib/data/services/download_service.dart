@@ -134,21 +134,21 @@ class DownloadService {
     return File('${dir.path}/_manifest.json');
   }
 
-  Future<Map<String, String>> _readManifest(String userId) async {
+  Future<Map<String, dynamic>> _readManifest(String userId) async {
     try {
       final file = await _manifestFile(userId);
       if (!await file.exists()) return {};
       final raw = await file.readAsString();
-      final decoded = json.decode(raw) as Map<String, dynamic>;
-      return decoded.map((k, v) => MapEntry(k, v as String));
+      return json.decode(raw) as Map<String, dynamic>;
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'download_service');
       return {};
     }
   }
 
+
   Future<void> _writeManifest(
-      String userId, Map<String, String> manifest) async {
+      String userId, Map<String, dynamic> manifest) async {
     try {
       final file = await _manifestFile(userId);
       await file.writeAsString(json.encode(manifest));
@@ -157,21 +157,62 @@ class DownloadService {
     }
   }
 
-  Future<void> _registerOwnership(String userId, String filename) async {
+
+  Future<void> _registerOwnership(String userId, String filename, {DateTime? updatedAt}) async {
     final manifest = await _readManifest(userId);
     final sanitized = filename.replaceAll(RegExp(r'[^\w\s\.-]'), '_');
-    manifest[sanitized] = userId;
+    manifest[sanitized] = {
+      'userId': userId,
+      'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
+    };
     await _writeManifest(userId, manifest);
   }
+
 
   Future<bool> verifyOwnership(String filename,
       {required String userId}) async {
     if (userId.isEmpty) return false;
     final sanitized = filename.replaceAll(RegExp(r'[^\w\s\.-]'), '_');
     final manifest = await _readManifest(userId);
-    final owner = manifest[sanitized];
-    return owner == userId;
+    final data = manifest[sanitized];
+    if (data is Map) return data['userId'] == userId;
+    return data == userId; // Backward compatibility
   }
+
+  /// Ensures the local file is up to date with the server's version.
+  /// If the server's updatedAt is newer than the saved updatedAt, the local file is deleted.
+  Future<void> ensureFreshness({
+    required String filename,
+    required String userId,
+    required DateTime serverUpdatedAt,
+  }) async {
+    if (userId.isEmpty) return;
+    
+    final path = await getLocalPath(filename, userId: userId);
+    final file = File(path);
+    if (!await file.exists()) return;
+
+    final sanitized = filename.replaceAll(RegExp(r'[^\w\s\.-]'), '_');
+    final manifest = await _readManifest(userId);
+    final data = manifest[sanitized];
+
+    if (data is Map && data.containsKey('updatedAt')) {
+      final localUpdatedAt = DateTime.tryParse(data['updatedAt'] as String);
+      if (localUpdatedAt != null && serverUpdatedAt.isAfter(localUpdatedAt)) {
+        // Server version is newer - delete local to force redownload
+        await file.delete();
+        manifest.remove(sanitized);
+        await _writeManifest(userId, manifest);
+        CrashlyticsService.instance.log('Deleted stale local file: $filename (Server: $serverUpdatedAt, Local: $localUpdatedAt)');
+      }
+    } else {
+      // No version info in manifest, but file exists. 
+      // We could either assume it's fresh (legacy) or delete it to be safe.
+      // Given the user's problem, we should probably delete if we can't verify.
+      // But let's be conservative: only update if we KNOW it's stale.
+    }
+  }
+
 
   // ── BACKGROUND DOWNLOAD ENGINE ─────────────────────────────────────────────
 
@@ -188,8 +229,6 @@ class DownloadService {
     }
   }
 
-  /// Downloads a file in the background with progress reporting and cancellation support.
-  /// Uses direct file streaming (IOSink) to avoid memory accumulation (prevents OOM/ANRs).
   Future<void> downloadFileInBackground({
     required String testId,
     required String fileName,
@@ -200,7 +239,11 @@ class DownloadService {
     required Function(String localPath) onComplete,
     required Function(String error) onError,
     CancelToken? externalCancelToken,
+    DateTime? updatedAt,
   }) async {
+
+
+
     final taskId = '${userId}_$testId';
     final cancelToken = externalCancelToken ?? CancelToken();
 
@@ -276,7 +319,8 @@ class DownloadService {
       }
 
       // Step 5: Update Manifest
-      await _registerOwnership(userId, fileName);
+      await _registerOwnership(userId, fileName, updatedAt: updatedAt);
+
 
       task.status = DownloadStatus.completed;
       task.progress = 1.0;

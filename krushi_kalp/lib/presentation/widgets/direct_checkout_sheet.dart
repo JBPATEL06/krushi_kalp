@@ -491,6 +491,33 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
                   ],
                 ),
 
+                if (_appliedOffer != null && (_basePrice - _finalPrice) > 0) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.stars_rounded, size: 16, color: const Color(0xFF10B981)),
+                        const SizedBox(width: 8),
+                        Text(
+                          "You Saved ₹${(_basePrice - _finalPrice).toStringAsFixed(0)} on this order!",
+                          style: TextStyle(
+                            color: const Color(0xFF10B981),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 24),
 
                 // ACTION BUTTON

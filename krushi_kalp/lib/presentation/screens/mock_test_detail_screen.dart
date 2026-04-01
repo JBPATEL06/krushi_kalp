@@ -14,9 +14,7 @@ import '../../domain/models/review.dart';
 import '../../utils/crashlytics_service.dart';
 import '../../utils/responsive.dart';
 import '../providers/test_notifier.dart';
-import '../providers/cart_notifier.dart';
 import '../providers/auth_notifier.dart';
-import '../widgets/direct_checkout_sheet.dart';
 import '../widgets/reviews/review_card.dart';
 import '../widgets/reviews/review_dialog.dart';
 import '../widgets/reviews/rate_stars.dart';
@@ -411,48 +409,7 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
       );
     }
 
-    return Container(
-      padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.lg + MediaQuery.of(context).padding.bottom),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, -2))],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              onPressed: () async {
-                final user = ref.read(authNotifierProvider).user;
-                if (user == null) return;
-
-                await ref.read(cartNotifierProvider.notifier).addToCart(
-                  testId: widget.test.id,
-                  price: price,
-                  authUserId: user.id,
-                );
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Added to Cart")));
-              },
-              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 54)),
-              child: const Text("Add to Cart"),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (_) => DirectCheckoutSheet(test: widget.test),
-                );
-              },
-              style: ElevatedButton.styleFrom(minimumSize: const Size(0, 54), backgroundColor: theme.colorScheme.primary),
-              child: const Text("Buy Now"),
-            ),
-          ),
-        ],
-      ),
-    );
+    return const SizedBox.shrink();
   }
 }
 

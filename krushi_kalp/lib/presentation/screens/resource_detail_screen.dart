@@ -195,10 +195,11 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
         (_priceData?['mrp_display'] as double?) ?? resource.price;
     final bool hasDiscount = _priceData?['has_discount'] == true;
 
-    double percentOff = 0;
-    if (hasDiscount && originalPrice > 0) {
-      percentOff = ((originalPrice - finalPrice) / originalPrice) * 100;
-    }
+    final double percentOffComputed = originalPrice > 0
+        ? (((originalPrice - finalPrice) / originalPrice) * 100).roundToDouble()
+        : 0;
+    final String? discountLabel = _priceData?['discount_label'] as String?;
+    final String discountDisplay = discountLabel ?? '${percentOffComputed.toInt()}% OFF';
 
     // Base layout colors from theme
     final bgColor = theme.scaffoldBackgroundColor;
@@ -277,7 +278,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
                                         color: textPrimary,
                                       ),
                                 ),
-                                if (hasDiscount && percentOff > 0) ...[
+                                if (hasDiscount && percentOffComputed > 0) ...[
                                   const SizedBox(width: AppSpacing.md),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
@@ -291,7 +292,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
                                               .withValues(alpha: 0.3)),
                                     ),
                                     child: Text(
-                                      '${percentOff.toInt()}% OFF',
+                                      discountDisplay,
                                       style: Theme.of(context)
                                           .textTheme
                                           .labelMedium
@@ -347,8 +348,10 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
                               isFullWidth: true,
                               userId: ref.read(authNotifierProvider).user?.id,
                               displayName: resource.title,
+                              updatedAt: resource.updatedAt, // CHANGED (Freshness)
                               onAction: () => _openResource(resource),
                             ),
+
                           ],
 
                           const SizedBox(height: AppSpacing.sm),

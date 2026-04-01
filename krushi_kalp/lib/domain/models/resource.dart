@@ -16,6 +16,8 @@ class Resource {
   final double price;
   final bool isActive;
   final DateTime createdAt;
+  final DateTime updatedAt;
+
 
   const Resource({
     required this.id,
@@ -28,7 +30,9 @@ class Resource {
     this.price = 0.0,
     required this.isActive,
     required this.createdAt,
+    required this.updatedAt,
   });
+
 
   factory Resource.fromJson(Map<String, dynamic> json) {
     return Resource(
@@ -48,7 +52,11 @@ class Resource {
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()
           : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'] as String) ?? DateTime.now()
+          : DateTime.now(),
     );
+
   }
 
   Map<String, dynamic> toJson() {
@@ -62,7 +70,9 @@ class Resource {
       'price': price,
       'is_active': isActive,
       'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
+
   }
 
   Resource copyWith({
@@ -76,7 +86,9 @@ class Resource {
     double? price,
     bool? isActive,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
+
     return Resource(
       id: id ?? this.id,
       title: title ?? this.title,
@@ -88,7 +100,9 @@ class Resource {
       price: price ?? this.price,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
+
   }
 
   static ResourceType _parseType(String typeStr) {
