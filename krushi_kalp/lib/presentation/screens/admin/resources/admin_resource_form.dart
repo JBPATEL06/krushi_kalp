@@ -3,8 +3,6 @@ import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../../data/services/resource_service.dart';
-import '../../../../data/services/background_upload_service.dart';
-import '../../../../data/services/transfer_notification_service.dart';
 import '../../../../domain/models/resource.dart';
 import '../../../utils/ui_helpers.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
@@ -15,8 +13,14 @@ import '../../../../utils/crashlytics_service.dart';
 class AdminResourceForm extends StatefulWidget {
   final ResourceType type;
   final Resource? resource;
+  final ResourceService? resourceService;
 
-  const AdminResourceForm({super.key, required this.type, this.resource});
+  const AdminResourceForm({
+    super.key,
+    required this.type,
+    this.resource,
+    this.resourceService,
+  });
 
   @override
   State<AdminResourceForm> createState() => _AdminResourceFormState();
@@ -24,7 +28,7 @@ class AdminResourceForm extends StatefulWidget {
 
 class _AdminResourceFormState extends State<AdminResourceForm> {
   final _formKey = GlobalKey<FormState>();
-  final _resourceService = ResourceService.instance;
+  late final ResourceService _resourceService;
 
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
@@ -32,7 +36,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
   late TextEditingController _priceController;
 
   bool _isActive = true;
-  bool _isLoading = false;
+  bool _isSaving = false;
 
   String? _fileName;
   Uint8List? _fileBytes;
@@ -45,6 +49,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
   @override
   void initState() {
     super.initState();
+    _resourceService = widget.resourceService ?? ResourceService.instance;
     _titleController =
         TextEditingController(text: widget.resource?.title ?? '');
     _descriptionController =
@@ -105,168 +110,115 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
     }
   }
 
-  /// Handles the "Fire and Forget" background upload logic.
-  /// Collects form data, initiates background transfers, and pops the UI immediately.
+  /// Handles the saving logic with proper awaits and loading states.
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isLoading = true);
 
     if (widget.resource == null && _fileBytes == null) {
       ErrorUtils.showError(context, 'Please attach a PDF file');
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-            'Upload started in background. You can safely leave this screen.'),
-        duration: Duration(seconds: 4),
-      ),
-    );
-
-    // Initial data for DB entry
-    final String title = _titleController.text.trim();
-    final String description = _descriptionController.text.trim();
-    final String? category = _categoryController.text.trim().isEmpty
-        ? null
-        : _categoryController.text.trim();
-    final double price = double.tryParse(_priceController.text) ?? 0.0;
-    final bool active = _isActive;
-    final int? existingId = widget.resource?.id;
-    final DateTime createdAt = widget.resource?.createdAt ?? DateTime.now();
-
-    // Pop the screen immediately to fulfill "Fire and Forget" requirement
-    if (mounted) Navigator.pop(context, true);
-
-    // Background Execution Block
-    Future(() async {
-      try {
-        String? finalFileUrl = _existingFileUrl;
-        String? finalCoverUrl = _existingCoverUrl;
-
-        final typeStr = widget.type == ResourceType.eBook
-            ? 'ebook'
-            : widget.type == ResourceType.currentAffair
-                ? 'current_affair'
-                : widget.type == ResourceType.studyMaterial
-                    ? 'study_material'
-                    : 'pyq';
-
-        // 1. Handle PDF Upload (if changed/new)
-        if (_fileBytes != null) {
-          final cleanName = _fileName!.replaceAll(' ', '_');
-          final path =
-              'Resources/$typeStr/file/${DateTime.now().millisecondsSinceEpoch}_$cleanName';
-
-          await BackgroundUploadService().uploadFile(
-            fileName: _fileName!,
-            bucketName: 'mock_test',
-            storagePath: path,
-            fileBytes: _fileBytes!,
-            fileType: 'resource_pdf',
-            onProgress: (p) => TransferNotificationService().showUploadProgress(
-              taskId: 'pdf_$path',
-              fileName: _fileName!,
-              progress: p,
-            ),
-            onComplete: (completedPath) {
-              finalFileUrl = completedPath;
-              TransferNotificationService()
-                  .showUploadSuccess(taskId: 'pdf_$path', fileName: _fileName!);
-            },
-            onError: (err) => TransferNotificationService().showUploadFailure(
-              taskId: 'pdf_$path',
-              fileName: _fileName!,
-              error: err,
-            ),
-          );
-
-          // Since we need the path to save to DB, we wait for this specific background task within our future
-          // but outside the UI thread.
-          int pollAttempts = 0;
-          while (finalFileUrl == _existingFileUrl &&
-              _fileBytes != null &&
-              pollAttempts < 60) {
-            await Future.delayed(const Duration(milliseconds: 500));
-            pollAttempts++;
-          }
-          if (pollAttempts >= 60) {
-            return;
-          }
-
-          if (widget.resource != null && _existingFileUrl != null) {
-            await _resourceService.deleteFileFromStorage(_existingFileUrl!);
-          }
-        }
-
-        // 2. Handle Cover Upload (if changed/new)
-        if (_coverBytes != null) {
-          final cleanCover = _coverName!.replaceAll(' ', '_');
-          final path =
-              'Resources/$typeStr/cover/${DateTime.now().millisecondsSinceEpoch}_$cleanCover';
-
-          await BackgroundUploadService().uploadFile(
-            fileName: _coverName!,
-            bucketName: 'mock_test',
-            storagePath: path,
-            fileBytes: _coverBytes!,
-            fileType: 'resource_cover',
-            onProgress: (p) => TransferNotificationService().showUploadProgress(
-              taskId: 'cover_$path',
-              fileName: _coverName!,
-              progress: p,
-            ),
-            onComplete: (completedPath) {
-              finalCoverUrl = completedPath;
-              TransferNotificationService().showUploadSuccess(
-                  taskId: 'cover_$path', fileName: _coverName!);
-            },
-            onError: (err) => TransferNotificationService().showUploadFailure(
-              taskId: 'cover_$path',
-              fileName: _coverName!,
-              error: err,
-            ),
-          );
-
-          int pollAttemptsCover = 0;
-          while (finalCoverUrl == _existingCoverUrl &&
-              _coverBytes != null &&
-              pollAttemptsCover < 60) {
-            await Future.delayed(const Duration(milliseconds: 500));
-            pollAttemptsCover++;
-          }
-          if (pollAttemptsCover >= 60) {
-            return;
-          }
-
-          if (widget.resource != null && _existingCoverUrl != null) {
-            await _resourceService.deleteFileFromStorage(_existingCoverUrl!);
-          }
-        }
-
-        // 3. Final Save/Update in DB
-        final newItem = Resource(
-          id: existingId ?? 0,
-          title: title,
-          description: description,
-          type: widget.type,
-          category: category,
-          fileUrl: finalFileUrl,
-          thumbnailUrl: finalCoverUrl,
-          price: price,
-          isActive: active,
-          createdAt: createdAt,
-        );
-
-        if (existingId == null) {
-          await _resourceService.createResource(newItem);
-        } else {
-          await _resourceService.updateResource(existingId, newItem.toJson());
-        }
-      } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'AdminResourceForm background task failed');
-      }
+    setState(() {
+      _isSaving = true;
     });
+
+    try {
+      final title = _titleController.text.trim();
+      final description = _descriptionController.text.trim();
+      final category = _categoryController.text.trim();
+      final price = double.tryParse(_priceController.text) ?? 0.0;
+      final active = _isActive;
+      final createdAt = widget.resource?.createdAt ?? DateTime.now();
+      final existingId = widget.resource?.id;
+
+      String finalFileUrl = _existingFileUrl ?? '';
+      String finalCoverUrl = _existingCoverUrl ?? '';
+
+      final typeStr = widget.type == ResourceType.eBook
+          ? 'ebook'
+          : widget.type == ResourceType.currentAffair
+              ? 'current_affair'
+              : widget.type == ResourceType.studyMaterial
+                  ? 'study_material'
+                  : 'pyq';
+
+      // 1. Handle PDF Upload (Sequential Await)
+      if (_fileBytes != null) {
+        final cleanName = _fileName!.replaceAll(' ', '_');
+        final path = 'Resources/$typeStr/file/${DateTime.now().millisecondsSinceEpoch}_$cleanName';
+        
+        final uploadedPath = await _resourceService.uploadFile(
+          path: path, 
+          fileBytes: _fileBytes!,
+          bucket: 'mock_test',
+        );
+        
+        if (uploadedPath != null) {
+          finalFileUrl = uploadedPath;
+          if (widget.resource != null && _existingFileUrl != null) {
+            await _resourceService.deleteFileFromStorage(_existingFileUrl!).catchError((_) => null);
+          }
+        }
+      }
+
+      // 2. Handle Cover Upload (Sequential Await)
+      if (_coverBytes != null) {
+        final cleanCover = _coverName!.replaceAll(' ', '_');
+        final path = 'Resources/$typeStr/cover/${DateTime.now().millisecondsSinceEpoch}_$cleanCover';
+        
+        final uploadedPath = await _resourceService.uploadFile(
+          path: path, 
+          fileBytes: _coverBytes!,
+          bucket: 'mock_test',
+        );
+        
+        if (uploadedPath != null) {
+          finalCoverUrl = uploadedPath;
+          if (widget.resource != null && _existingCoverUrl != null) {
+            await _resourceService.deleteFileFromStorage(_existingCoverUrl!).catchError((_) => null);
+          }
+        }
+      }
+
+      // 3. Save to Database
+      final newItem = Resource(
+        id: existingId ?? 0,
+        title: title,
+        description: description,
+        type: widget.type,
+        category: category,
+        fileUrl: finalFileUrl,
+        thumbnailUrl: finalCoverUrl,
+        price: price,
+        isActive: active,
+        createdAt: createdAt,
+      );
+
+      if (existingId == null) {
+        await _resourceService.createResource(newItem);
+      } else {
+        await _resourceService.updateResource(existingId, newItem.toJson());
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(existingId == null ? 'Resource Created' : 'Resource Updated')),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'AdminResourceForm save failed');
+      if (mounted) {
+        ErrorUtils.showError(context, e);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 
   @override
@@ -400,10 +352,16 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _save,
-                  icon: const Icon(Icons.upload_file_rounded),
-                  label: Text('POST IN BACKGROUND',
-                      style: TextStyle(fontSize: context.sp(16))), // FIXED
+                  onPressed: _isSaving ? null : _save,
+                  icon: _isSaving 
+                      ? const SizedBox(
+                          width: 20, 
+                          height: 20, 
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save_rounded),
+                  label: Text(_isSaving ? 'SAVING...' : 'SAVE RESOURCE',
+                      style: TextStyle(fontSize: context.sp(16))),
                 ),
               ),
               const SizedBox(height: AppSpacing.xxxl),

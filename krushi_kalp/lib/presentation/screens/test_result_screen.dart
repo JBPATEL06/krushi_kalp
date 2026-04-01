@@ -177,7 +177,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
         languageCode: widget.examLanguage,
       );
 
-      final path = 'exam_result/${widget.testId}.pdf';
+      final path = 'exam_result/${userId}_${widget.testId}.pdf';
       try {
         await TestService.instance.uploadResultPdf(path, file);
 

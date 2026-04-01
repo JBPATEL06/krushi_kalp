@@ -94,6 +94,7 @@ dev_dependencies:
   riverpod_generator: any
   very_good_analysis: ^10.2.0
   freezed: ^2.5.2
+  mocktail: ^1.0.4
 
 flutter_icons:
   android: true

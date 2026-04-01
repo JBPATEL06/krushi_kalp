@@ -10,14 +10,25 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 
 ## Current Stabilization Phase
 - Goal: Fix critical bugs in Admin panel, PDF generation, and UX.
-- Admin Panel: RLS policies and form submission fixes.
-- User Part: PDF generation (testId/fonts), PYQ filters, Cart logic.
+- Admin Panel: RLS policies, high-trust form submission (await-based), and storage access.
+- User Part: Unique PDF storage paths, dynamic font loading, and PYQ filters.
 
 ## Key Decisions
-- Use background uploading ('Fire and Forget') for admin forms.
-- Dynamic font loading in PdfService based on language code.
+- Use sequential synchronized execution (await-based) for admin forms (Replaced "Fire and Forget" for reliability).
+- Unique PDF storage paths using userId/timestamp for collision prevention.
+- Dynamic font loading (NotoSansGujarati) in PdfService for multi-language support.
 - RLS policy standardization for 'authenticated' role.
 
-## Known Risks
-- Guest user bypass for PDF uploads (Pending).
-- Cart navigation side-effects (Investigating).
+## Completed Phases
+- Phase 1: Authentication & Navigation (v1-v4)
+- Phase 2: Administrative Stabilization (v5-v7)
+- Phase 3: PDF Generation & Localization (v7)
+- Phase 4: UX & Cart Refinements (v7)
+
+## Pending Phases
+- Cloud Function integration for checkout (v8)
+- Real-time notification hardening (v9)
+
+## Current Phase: Verification & Automated Testing
+- Goal: Secure the stabilization changes with a new test suite.
+- Status: Planning and infrastructure setup.
