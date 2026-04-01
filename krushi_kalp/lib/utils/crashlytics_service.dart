@@ -29,7 +29,7 @@ class CrashlyticsService {
     try {
       await _crashlytics.setUserIdentifier(userId);
       log('User attributed: $userId');
-    } catch (e, stack) {
+    } catch (e) {
       debugPrint('Crashlytics set user error: $e');
     }
   }
@@ -40,7 +40,7 @@ class CrashlyticsService {
     try {
       await _crashlytics.setUserIdentifier('');
       log('User identifier cleared');
-    } catch (e, stack) {
+    } catch (e) {
       debugPrint('Crashlytics clear user error: $e');
     }
   }
@@ -65,7 +65,7 @@ class CrashlyticsService {
         reason: reason,
         fatal: fatal,
       );
-    } catch (e, stack) {
+    } catch (e) {
       debugPrint('Crashlytics record error failure: $e');
     }
   }

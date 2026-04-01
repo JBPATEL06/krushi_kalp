@@ -41,7 +41,7 @@ class SecureFileService {
       final bytes = await consolidateHttpClientResponseBytes(response);
       await file.writeAsBytes(bytes);
       return file;
-    } catch (e, stack) {
+    } catch (e) {
       
       rethrow;
     }

@@ -18,6 +18,8 @@ class TestService {
   TestService._();
   static final TestService instance = TestService._();
 
+  final _supabase = Supabase.instance.client;
+
   /// Deletes a specific test result from the database.
   Future<bool> deleteTestResult(int resultId) async {
     try {
@@ -29,8 +31,6 @@ class TestService {
       throw Exception('Failed to delete test result: $e');
     }
   }
-
-  final _supabase = Supabase.instance.client;
 
   // ── MOCK TESTS READING ───────────────────────────────────────────────────
 
@@ -544,94 +544,30 @@ class TestService {
     String paymentGateway = 'Razorpay',
   }) async {
     try {
-      final orderResponse = await _supabase
-          .from('orders')
-          .update({
-            'status': 'SUCCESS',
-            'payment_gateway_id': paymentId,
-            'total_amount': amount,
-            'offer_id': offerId,
-            'discount_amount': discountAmount,
-            'updated_at': DateTime.now().toUtc().toIso8601String(),
-          })
-          .eq('order_id', orderId)
-          .select();
+      // 1. Call the secure RPC to finalize the order and cleanup cart
+      await _supabase.rpc('complete_checkout', params: {
+        'p_order_id': orderId,
+        'p_payment_id': paymentId,
+        'p_amount': amount,
+        'p_offer_id': offerId,
+        'p_discount_amount': discountAmount,
+        'p_user_id': userId,
+      });
 
-      if (orderResponse.isNotEmpty) {
-        try {
-          await AdminNotificationService().sendToTopic(
-            topic: 'admin_updates',
-            title: '🎉 New Sale! (₹$amount)',
-            body: 'Order #$orderId has been completed.',
-            data: {
-              'type': 'sale_alert',
-              'order_id': orderId,
-              'amount': amount.toString()
-            },
-          );
-        } catch (e, stack) {
-          CrashlyticsService.instance.recordError(e, stack, reason: 'Admin sale notification failed for order: $orderId');
-        }
-      }
-
+      // 2. Trigger Admin Notification (Client-side is fine for push notifications)
       try {
-        final orderItems = await _supabase
-            .from('order_items')
-            .select('test_id, resource_id')
-            .eq('order_id', orderId);
-
-        final purchasedTestIds = (orderItems as List)
-            .where((i) => i['test_id'] != null)
-            .map((i) => i['test_id'] as int)
-            .toList();
-
-        final purchasedResourceIds = (orderItems)
-            .where((i) => i['resource_id'] != null)
-            .map((i) => i['resource_id'] as int)
-            .toList();
-
-        if (purchasedTestIds.isNotEmpty || purchasedResourceIds.isNotEmpty) {
-          final pendingOrder = await _supabase
-              .from('orders')
-              .select('order_id')
-              .eq('user_id', userId)
-              .eq('status', 'PENDING')
-              .maybeSingle();
-
-          if (pendingOrder != null) {
-            final cartOrderId = pendingOrder['order_id'];
-            if (purchasedTestIds.isNotEmpty) {
-              await _supabase
-                  .from('order_items')
-                  .delete()
-                  .eq('order_id', cartOrderId)
-                  .inFilter('test_id', purchasedTestIds);
-            }
-            if (purchasedResourceIds.isNotEmpty) {
-              await _supabase
-                  .from('order_items')
-                  .delete()
-                  .eq('order_id', cartOrderId)
-                  .inFilter('resource_id', purchasedResourceIds);
-            }
-          }
-        }
-      } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'Post-checkout cart cleanup failed for order: $orderId');
-      }
-
-      if (offerId != null) {
-        try {
-          await _supabase.from('offer_redemptions').insert({
-            'offer_id': offerId,
-            'user_id': userId,
+        await AdminNotificationService().sendToTopic(
+          topic: 'admin_updates',
+          title: '🎉 New Sale! (₹$amount)',
+          body: 'Order #$orderId has been completed.',
+          data: {
+            'type': 'sale_alert',
             'order_id': orderId,
-            'discount_amount': discountAmount,
-            'redeemed_at': DateTime.now().toUtc().toIso8601String(),
-          });
-        } catch (e, stack) {
-          CrashlyticsService.instance.recordError(e, stack, reason: 'Offer redemption record failed for order: $orderId');
-        }
+            'amount': amount.toString()
+          },
+        );
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'Admin sale notification failed for order: $orderId');
       }
     } catch (e, stack) {
       CrashlyticsService.instance

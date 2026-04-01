@@ -1,0 +1,59 @@
+﻿Analyzing krushi_kalp...                                        
+
+   info - 'AutoDisposeProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead - lib\core\router\app_router.g.dart:22:24 - deprecated_member_use
+warning - The stack trace variable 'stack' isn't used and can be removed - lib\data\services\app_config_service.dart:89:17 - unused_catch_stack
+warning - The stack trace variable 'stack' isn't used and can be removed - lib\data\services\banner_service.dart:82:17 - unused_catch_stack
+warning - The stack trace variable 'stack' isn't used and can be removed - lib\data\services\banner_service.dart:120:17 - unused_catch_stack
+warning - The stack trace variable 'stack' isn't used and can be removed - lib\data\services\chat_service.dart:225:17 - unused_catch_stack
+warning - The stack trace variable 'stack' isn't used and can be removed - lib\data\services\download_service.dart:414:17 - unused_catch_stack
+warning - Unused import: '../../utils/crashlytics_service.dart' - lib\data\services\performance_service.dart:5:8 - unused_import
+warning - The stack trace variable 'stack' isn't used and can be removed - lib\data\services\performance_service.dart:19:17 - unused_catch_stack
+warning - The stack trace variable 'stack' isn't used and can be removed - lib\data\services\performance_service.dart:42:17 - unused_catch_stack
+warning - The stack trace variable 'stack' isn't used and can be removed - lib\data\services\performance_service.dart:60:17 - unused_catch_stack
+warning - The stack trace variable 'stack' isn't used and can be removed - lib\data\services\review_service.dart:234:17 - unused_catch_stack
+warning - The stack trace variable 'stack' isn't used and can be removed - lib\data\services\secure_file_service.dart:44:17 - unused_catch_stack
+warning - Unused import: 'core/router/route_constants.dart' - lib\main.dart:9:8 - unused_import
+warning - Unused import: 'presentation/utils/navigator_key.dart' - lib\main.dart:12:8 - unused_import
+warning - Unused import: '../screens/login_screen.dart' - lib\presentation\providers\auth_notifier.dart:17:8 - unused_import
+   info - Don't use 'BuildContext's across async gaps - lib\presentation\providers\auth_notifier.dart:179:7 - use_build_context_synchronously
+   info - 'AutoDisposeProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead - lib\presentation\providers\test_notifier.g.dart:23:29 - deprecated_member_use
+warning - The value of the field '_showActiveOnly' isn't used - lib\presentation\screens\admin\admin_offer_list_screen.dart:26:8 - unused_field
+warning - The value of the field '_sortByNewest' isn't used - lib\presentation\screens\admin\admin_offer_list_screen.dart:27:14 - unused_field
+warning - The value of the field '_filterType' isn't used - lib\presentation\screens\admin\admin_offer_list_screen.dart:28:16 - unused_field
+warning - The value of the field '_searchQuery' isn't used - lib\presentation\screens\admin\admin_offer_list_screen.dart:29:16 - unused_field
+warning - The value of the local variable 'saleOffers' isn't used - lib\presentation\screens\cart_screen.dart:90:17 - unused_local_variable
+warning - The value of the local variable 'theme' isn't used - lib\presentation\screens\free_content_screen.dart:269:11 - unused_local_variable
+warning - The value of the local variable 'testState' isn't used - lib\presentation\screens\home_screen.dart:94:17 - unused_local_variable
+warning - The value of the local variable 'authState' isn't used - lib\presentation\screens\home_screen.dart:95:17 - unused_local_variable
+warning - Unused import: 'main_screen.dart' - lib\presentation\screens\login_screen.dart:13:8 - unused_import
+warning - Unused import: 'admin/admin_main_screen.dart' - lib\presentation\screens\login_screen.dart:14:8 - unused_import
+warning - Unused import: '../providers/test_state.dart' - lib\presentation\screens\my_library_screen.dart:8:8 - unused_import
+warning - Unused import: '../providers/resource_state.dart' - lib\presentation\screens\my_library_screen.dart:9:8 - unused_import
+warning - Duplicate import - lib\presentation\screens\network_pdf_viewer_screen.dart:5:8 - duplicate_import
+warning - The value of the local variable 'dir' isn't used - lib\presentation\screens\network_pdf_viewer_screen.dart:65:13 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\screens\profile_screen.dart:114:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\screens\profile_screen.dart:383:11 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\screens\profile_screen.dart:391:25 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\screens\profile_screen.dart:392:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\screens\profile_screen.dart:402:25 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\screens\profile_screen.dart:403:32 - use_build_context_synchronously
+warning - The declaration '_onNetworkChange' isn't referenced - lib\presentation\screens\score_screen.dart:43:8 - unused_element
+warning - The value of the field '_sortOption' isn't used - lib\presentation\screens\store_screen.dart:44:16 - unused_field
+warning - The declaration '_onNetworkChange' isn't referenced - lib\presentation\screens\store_screen.dart:77:8 - unused_element
+warning - The declaration '_addToCart' isn't referenced - lib\presentation\screens\store_screen.dart:130:16 - unused_element
+warning - The value of the local variable 'authState' isn't used - lib\presentation\screens\store_screen.dart:553:11 - unused_local_variable
+warning - The stack trace variable 'stack' isn't used and can be removed - lib\utils\crashlytics_service.dart:32:17 - unused_catch_stack
+warning - The stack trace variable 'stack' isn't used and can be removed - lib\utils\crashlytics_service.dart:43:17 - unused_catch_stack
+warning - The stack trace variable 'stack' isn't used and can be removed - lib\utils\crashlytics_service.dart:68:17 - unused_catch_stack
+   info - Don't invoke 'print' in production code - lib\utils\supabase_url_helper.dart:150:7 - avoid_print
+
+flutter : 46 issues found. (ran in 11.0s)
+At line:1 char:1
++ flutter analyze > analysis_output.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: 
+    (46 issues found. (ran in 11.0s):Strin  
+  g) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommand 
+   Error
+ 

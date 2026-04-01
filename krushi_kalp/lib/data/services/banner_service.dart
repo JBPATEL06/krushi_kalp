@@ -79,7 +79,7 @@ class BannerService {
       });
 
       
-    } catch (e, stack) {
+    } catch (e) {
       
       rethrow;
     }
@@ -117,7 +117,7 @@ class BannerService {
       _deleteStorageFile(oldImageUrl);
 
       
-    } catch (e, stack) {
+    } catch (e) {
       
       rethrow;
     }

@@ -5,8 +5,6 @@ import '../../core/theme/app_spacing.dart';
 import '../providers/auth_notifier.dart';
 import '../providers/test_notifier.dart';
 import '../providers/resource_notifier.dart';
-import '../providers/test_state.dart';
-import '../providers/resource_state.dart';
 import '../widgets/common/universal_item_card.dart';
 import '../utils/exam_helper.dart';
 import 'mock_test_detail_screen.dart';

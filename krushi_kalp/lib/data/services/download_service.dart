@@ -411,7 +411,7 @@ class DownloadService {
       ).asFuture();
       await _registerOwnership(userId, filename);
       return path;
-    } catch (e, stack) {
+    } catch (e) {
       rethrow;
     }
   }

@@ -10,8 +10,6 @@ import '../providers/auth_notifier.dart';
 import '../providers/auth_state.dart';
 
 import '../../utils/error_utils.dart';
-import 'main_screen.dart';
-import 'admin/admin_main_screen.dart';
 import '../../data/services/notification_service.dart';
 import '../../core/theme/app_spacing.dart';
 import '../widgets/common/primary_button.dart';

@@ -1,0 +1,39 @@
+﻿Analyzing krushi_kalp...                                        
+
+   info - 'AutoDisposeProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead - lib\core\router\app_router.g.dart:22:24 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\presentation\providers\auth_notifier.dart:178:7 - use_build_context_synchronously
+   info - 'AutoDisposeProviderRef' is deprecated and shouldn't be used. will be removed in 3.0.0. Use Ref instead - lib\presentation\providers\test_notifier.g.dart:23:29 - deprecated_member_use
+warning - The value of the field '_showActiveOnly' isn't used - lib\presentation\screens\admin\admin_offer_list_screen.dart:26:8 - unused_field
+warning - The value of the field '_sortByNewest' isn't used - lib\presentation\screens\admin\admin_offer_list_screen.dart:27:14 - unused_field
+warning - The value of the field '_filterType' isn't used - lib\presentation\screens\admin\admin_offer_list_screen.dart:28:16 - unused_field
+warning - The value of the field '_searchQuery' isn't used - lib\presentation\screens\admin\admin_offer_list_screen.dart:29:16 - unused_field
+warning - The value of the local variable 'saleOffers' isn't used - lib\presentation\screens\cart_screen.dart:90:17 - unused_local_variable
+warning - The value of the local variable 'theme' isn't used - lib\presentation\screens\free_content_screen.dart:269:11 - unused_local_variable
+warning - The value of the local variable 'testState' isn't used - lib\presentation\screens\home_screen.dart:94:17 - unused_local_variable
+warning - The value of the local variable 'authState' isn't used - lib\presentation\screens\home_screen.dart:95:17 - unused_local_variable
+warning - The value of the local variable 'dir' isn't used - lib\presentation\screens\network_pdf_viewer_screen.dart:64:13 - unused_local_variable
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\screens\profile_screen.dart:114:17 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\screens\profile_screen.dart:383:11 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\screens\profile_screen.dart:391:25 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\screens\profile_screen.dart:392:32 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\screens\profile_screen.dart:402:25 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\screens\profile_screen.dart:403:32 - use_build_context_synchronously
+warning - The declaration '_onNetworkChange' isn't referenced - lib\presentation\screens\score_screen.dart:43:8 - unused_element
+warning - The value of the field '_sortOption' isn't used - lib\presentation\screens\store_screen.dart:44:16 - unused_field
+warning - The declaration '_onNetworkChange' isn't referenced - lib\presentation\screens\store_screen.dart:77:8 - unused_element
+warning - The declaration '_addToCart' isn't referenced - lib\presentation\screens\store_screen.dart:130:16 - unused_element
+warning - The value of the local variable 'authState' isn't used - lib\presentation\screens\store_screen.dart:553:11 - unused_local_variable
+   info - Don't invoke 'print' in production code - lib\utils\supabase_url_helper.dart:150:7 - avoid_print
+
+flutter : 24 issues found. (ran in 11.1s)
+At line:1 char:1
++ flutter analyze > analysis_output_v2.txt 
+2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~
+    + CategoryInfo          : NotSpecified: 
+    (24 issues found. (ran in 11.1s):Strin  
+  g) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommand 
+   Error
+ 

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/resource.dart';
 import '../../utils/supabase_url_helper.dart';
+import 'test_service.dart';
 import 'admin_notification_service.dart';
 import '../../utils/crashlytics_service.dart';
 
@@ -263,7 +264,7 @@ class ResourceService {
           .from('orders')
           .insert({
             'user_id': userId,
-            'status': 'SUCCESS',
+            'status': 'DIRECT_CHECKOUT',
             'total_amount': 0.0,
             'payment_gateway_id': 'FREE_CLAIM',
             'created_at': timestamp,
@@ -271,7 +272,7 @@ class ResourceService {
           .select('order_id')
           .single();
 
-      final orderId = newOrder['order_id'];
+      final String orderId = newOrder['order_id'];
 
       await _client.from('order_items').insert({
         'order_id': orderId,
@@ -279,6 +280,15 @@ class ResourceService {
         'price_at_purchase': 0.0,
         'created_at': timestamp,
       });
+
+      // Finalize the order securely via RPC
+      await TestService.instance.checkout(
+        orderId: orderId,
+        paymentId: 'FREE_CLAIM',
+        amount: 0.0,
+        userId: userId,
+        paymentGateway: 'FREE_CLAIM',
+      );
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service');
       throw Exception('Failed to claim resource: $e');

@@ -29,7 +29,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
   int _totalBytesUsed = 0;
   String _searchQuery = '';
   String _activeFilter = 'All Files';
-  final List<String> _filters = ['All Files', 'Mocks', 'Ebook', 'CA', 'GK'];
+  final List<String> _filters = ['All Files', 'Mocks', 'PYQs', 'Ebook', 'CA', 'GK'];
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -349,9 +349,10 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
           if (_activeFilter == 'CA' && r.type == ResourceType.currentAffair) {
             matchesFilter = true;
           }
-          if (_activeFilter == 'GK' &&
-              (r.type == ResourceType.studyMaterial ||
-                  r.type == ResourceType.pyq)) {
+          if (_activeFilter == 'PYQs' && r.type == ResourceType.pyq) {
+            matchesFilter = true;
+          }
+          if (_activeFilter == 'GK' && r.type == ResourceType.studyMaterial) {
             matchesFilter = true;
           }
         }

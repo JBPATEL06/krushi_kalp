@@ -222,7 +222,7 @@ class ChatService {
   Future<void> deleteMessage(String messageId) async {
     try {
       await deleteMessages([messageId]);
-    } catch (e, stack) {
+    } catch (e) {
       rethrow;
     }
   }

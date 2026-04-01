@@ -354,7 +354,17 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
 
     try {
       if (cartItemIds.contains(test.id)) {
-        ref.read(navigationProvider.notifier).setIndex(3); // Cart tab
+        final cartItem = cartState.cartItems.firstWhere((item) => item.testId == test.id);
+        await ref.read(cartNotifierProvider.notifier).removeFromCart(itemId: cartItem.itemId!);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Removed ${test.title} from Cart'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
         return;
       }
 
@@ -400,7 +410,17 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
 
     try {
       if (cartItemIds.contains(resource.id)) {
-        ref.read(navigationProvider.notifier).setIndex(3); // Cart tab
+        final cartItem = cartState.cartItems.firstWhere((item) => item.resourceId == resource.id);
+        await ref.read(cartNotifierProvider.notifier).removeFromCart(itemId: cartItem.itemId!);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Removed ${resource.title} from Cart'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
         return;
       }
 

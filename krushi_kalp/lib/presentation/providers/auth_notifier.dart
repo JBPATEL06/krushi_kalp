@@ -14,7 +14,6 @@ import '../../data/services/fcm_service.dart';
 import '../../utils/crashlytics_service.dart';
 import '../../utils/network_utils.dart';
 import '../utils/navigator_key.dart';
-import '../screens/login_screen.dart';
 import 'auth_state.dart';
 
 part 'auth_notifier.g.dart';

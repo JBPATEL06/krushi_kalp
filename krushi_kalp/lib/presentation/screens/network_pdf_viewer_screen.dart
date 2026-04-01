@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'dart:io';
-import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../utils/crashlytics_service.dart';

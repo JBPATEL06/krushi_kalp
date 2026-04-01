@@ -86,7 +86,7 @@ class AppConfigService {
         _configCache[key] = AppConfig(
             key: key, value: newValue, description: "Updated via Admin Panel");
       }
-    } catch (e, stack) {
+    } catch (e) {
       
       rethrow;
     }

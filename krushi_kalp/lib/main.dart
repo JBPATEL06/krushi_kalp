@@ -6,10 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
-import 'core/router/route_constants.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'presentation/utils/navigator_key.dart';
 import 'presentation/widgets/common/network_aware_wrapper.dart';
 import 'data/services/local_caching_service.dart';
 

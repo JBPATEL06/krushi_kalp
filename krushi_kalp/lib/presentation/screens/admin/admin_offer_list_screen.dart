@@ -23,18 +23,11 @@ class _AdminOfferListScreenState extends ConsumerState<AdminOfferListScreen> {
   bool _isSelectionMode = false;
   final Set<int> _selectedIds = {};
 
-  bool _showActiveOnly = false;
-  final bool _sortByNewest = false;
-  final String _filterType = 'ALL';
-  final String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
-
   int? _updatingOfferId;
 
   @override
   void initState() {
     super.initState();
-    _showActiveOnly = widget.showOnlyActive;
     _refreshOffers();
   }
 
@@ -44,7 +37,6 @@ class _AdminOfferListScreenState extends ConsumerState<AdminOfferListScreen> {
 
   @override
   void dispose() {
-    _searchController.dispose();
     super.dispose();
   }
 
