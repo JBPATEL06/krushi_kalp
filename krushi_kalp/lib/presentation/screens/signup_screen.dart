@@ -1,38 +1,40 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:krushi_kalp/core/theme/app_motion.dart'; // MODIFIED: Added AppMotion token import
-import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import 'package:url_launcher/url_launcher.dart';
+
+import '../../core/theme/app_motion.dart';
+import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../utils/crashlytics_service.dart';
+import '../../utils/error_utils.dart';
 import '../providers/auth_notifier.dart';
 import '../providers/auth_state.dart';
-
-import '../../utils/error_utils.dart';
-import '../../data/services/notification_service.dart';
-import '../../core/theme/app_spacing.dart';
-import '../widgets/common/primary_button.dart';
 import '../widgets/common/premium_card.dart';
-import 'package:krushi_kalp/presentation/widgets/common/responsive_wrapper.dart';
-import '../../utils/crashlytics_service.dart';
+import '../widgets/common/primary_button.dart';
 
-class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+class SignUpScreen extends ConsumerStatefulWidget {
+  const SignUpScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen>
+class _SignUpScreenState extends ConsumerState<SignUpScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
   bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
   bool _agreedToTerms = false;
 
   @override
@@ -40,8 +42,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: AppMotion
-          .slow, // MODIFIED: was Duration(milliseconds: 1200) → now AppMotion.slow (500ms)
+      duration: AppMotion.slow,
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
@@ -51,7 +52,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _controller.forward();
-
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _listenToAuth();
     });
@@ -60,19 +61,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   void _listenToAuth() {
     ref.listenManual(authNotifierProvider, (AuthState? previous, AuthState next) {
       if (next.isLoggedIn && !next.isLoading) {
-        final role = next.userRole;
-        if (role != 'Admin') {
-          NotificationService().connectUser();
-          if (mounted) context.go('/');
-        } else {
-          NotificationService().connectAdmin();
-          if (mounted) context.go('/admin');
-        }
+        if (mounted) context.go('/');
       }
     });
   }
 
-  Future<void> _handleEmailLogin() async {
+  @override
+  void dispose() {
+    _controller.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) return;
     if (!_agreedToTerms) {
       ErrorUtils.showError(
@@ -81,9 +85,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     }
 
     try {
-      await ref.read(authNotifierProvider.notifier).loginWithEmail(
-            _emailController.text.trim(),
-            _passwordController.text,
+      await ref.read(authNotifierProvider.notifier).signUpWithEmail(
+            name: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
           );
     } catch (e, s) {
       CrashlyticsService().recordError(e, s);
@@ -93,28 +98,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     }
   }
 
-  Future<void> _handleGoogleLogin() async {
-    if (!_agreedToTerms) {
-      ErrorUtils.showError(
-          context, 'Please agree to the Terms and Conditions to proceed.');
-      return;
-    }
-    try {
-      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
-    } catch (e, s) {
-      CrashlyticsService().recordError(e, s);
+  Future<void> _launchTerms() async {
+    final Uri url = Uri.parse('https://krushikalp.com/terms');
+    if (!await launchUrl(url)) {
       if (mounted) {
-        ErrorUtils.showError(context, 'Failed to sign in with Google.');
+        ErrorUtils.showError(context, 'Could not launch terms and conditions');
       }
     }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
   }
 
   @override
@@ -125,46 +115,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     return Scaffold(
       body: Stack(
         children: [
-          // Background UI
+          // Background UI Decor (Consistent with Login)
           Positioned(
-            top: -context.h(100),
-            right: -context.w(100),
+            top: -100,
+            right: -100,
             child: Container(
-              width: context.w(300),
-              height: context.h(300),
+              width: 300,
+              height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: theme.colorScheme.primary.withValues(alpha: 0.1),
               ),
             ),
           ),
-          Positioned(
-            bottom: -context.h(50),
-            left: -context.w(50),
-            child: Container(
-              width: context.w(200),
-              height: context.h(200),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: theme.colorScheme.secondary.withValues(alpha: 0.1),
-              ),
-            ),
-          ),
-
+          
           Center(
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.lg + MediaQuery.of(context).padding.bottom,
-              ),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: FadeTransition(
                 opacity: _fadeAnimation,
                 child: SlideTransition(
                   position: _slideAnimation,
                   child: PremiumCard(
-                    padding: const EdgeInsets.all(AppSpacing.xxl),
+                    padding: const EdgeInsets.all(AppSpacing.xl),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -172,32 +145,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           borderRadius: BorderRadius.circular(24),
                           child: Image.asset(
                             "assets/images/applogo.png",
-                            height: context.h(130),
-                            width: context.w(130),
+                            height: 100,
+                            width: 100,
                             fit: BoxFit.cover,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         Text(
-                          'Welcome to Krushi Kalp',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                                fontSize: context.sp(28),
-                              ),
+                          'Create Account',
+                          style: theme.textTheme.headlineMedium,
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
-                          'Sign in to continue to Krushi Kalp',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                                fontSize: context.sp(14),
-                              ),
-                          textAlign: TextAlign.center,
+                          'Join Krushi Kalp today',
+                          style: theme.textTheme.bodyMedium,
                         ),
                         const SizedBox(height: AppSpacing.xl),
-                        
+
                         Form(
                           key: _formKey,
                           child: Column(
                             children: [
+                              TextFormField(
+                                controller: _nameController,
+                                decoration: InputDecoration(
+                                  labelText: 'Full Name',
+                                  prefixIcon: const Icon(Icons.person_outline),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppRadius.md),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) return 'Enter your name';
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: AppSpacing.md),
                               TextFormField(
                                 controller: _emailController,
                                 decoration: InputDecoration(
@@ -233,6 +216,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 obscureText: !_isPasswordVisible,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) return 'Enter password';
+                                  if (value.length < 6) return 'Password too short (min 6)';
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              TextFormField(
+                                controller: _confirmPasswordController,
+                                decoration: InputDecoration(
+                                  labelText: 'Confirm Password',
+                                  prefixIcon: const Icon(Icons.lock_reset),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(_isConfirmPasswordVisible 
+                                      ? Icons.visibility_off 
+                                      : Icons.visibility),
+                                    onPressed: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppRadius.md),
+                                  ),
+                                ),
+                                obscureText: !_isConfirmPasswordVisible,
+                                validator: (value) {
+                                  if (value != _passwordController.text) return 'Passwords do not match';
                                   return null;
                                 },
                               ),
@@ -240,53 +246,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           ),
                         ),
 
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {
-                               ScaffoldMessenger.of(context).showSnackBar(
-                                 const SnackBar(content: Text("Password reset functionality coming soon."))
-                               );
-                            },
-                            child: const Text('Forgot Password?'),
-                          ),
-                        ),
+                        const SizedBox(height: AppSpacing.lg),
 
-                        const SizedBox(height: AppSpacing.sm),
-
-                        // Terms Checkbox
                         Row(
                           children: [
                             Checkbox(
                               value: _agreedToTerms,
-                              onChanged: (value) {
-                                setState(() {
-                                  _agreedToTerms = value ?? false;
-                                });
-                              },
+                              onChanged: (value) => setState(() => _agreedToTerms = value ?? false),
                               activeColor: theme.colorScheme.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.xs),
-                              ),
                             ),
                             Expanded(
                               child: RichText(
                                 text: TextSpan(
                                   text: 'I agree with the ',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                        fontSize: context.sp(12),
-                                      ),
+                                  style: theme.textTheme.bodySmall,
                                   children: [
                                     TextSpan(
                                       text: 'Terms and Conditions',
                                       style: TextStyle(
                                         color: theme.colorScheme.primary,
                                         fontWeight: FontWeight.bold,
-                                        fontSize: context.sp(12),
                                         decoration: TextDecoration.underline,
                                       ),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = _launchTerms,
+                                      recognizer: TapGestureRecognizer()..onTap = _launchTerms,
                                     ),
                                   ],
                                 ),
@@ -294,48 +276,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ),
                           ],
                         ),
+
                         const SizedBox(height: AppSpacing.lg),
 
                         PrimaryButton(
-                          text: 'Login',
+                          text: 'Sign Up',
                           isLoading: isLoading,
-                          onPressed: _handleEmailLogin,
-                        ),
-
-                        const SizedBox(height: AppSpacing.xl),
-                        Row(
-                          children: [
-                            const Expanded(child: Divider()),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                              child: Text('OR', style: theme.textTheme.bodySmall),
-                            ),
-                            const Expanded(child: Divider()),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.xl),
-
-                        OutlinedButton.icon(
-                          onPressed: isLoading ? null : _handleGoogleLogin,
-                          icon: const Icon(Icons.login),
-                          label: const Text('Continue with Google'),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 56),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                          ),
+                          onPressed: _handleSignUp,
                         ),
 
                         const SizedBox(height: AppSpacing.xl),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text("Don't have an account? ", style: theme.textTheme.bodyMedium),
+                            Text("Already have an account? ", style: theme.textTheme.bodyMedium),
                             GestureDetector(
-                              onTap: () => context.push('/signup'),
+                              onTap: () => context.pop(),
                               child: Text(
-                                'Sign Up',
+                                'Log In',
                                 style: TextStyle(
                                   color: theme.colorScheme.primary,
                                   fontWeight: FontWeight.bold,
@@ -354,14 +312,5 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         ],
       ),
     );
-  }
-
-  Future<void> _launchTerms() async {
-    final Uri url = Uri.parse('https://krushikalp.com/terms');
-    if (!await launchUrl(url)) {
-      if (mounted) {
-        ErrorUtils.showError(context, 'Could not launch terms and conditions');
-      }
-    }
   }
 }

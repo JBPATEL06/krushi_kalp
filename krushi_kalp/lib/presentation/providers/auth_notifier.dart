@@ -280,31 +280,46 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
-  Future<void> signInWithEmailPassword(String email, String password) async {
+  // Professional Login: Explicitly for existing users
+  Future<void> loginWithEmail(String email, String password) async {
     state = state.copyWith(isLoading: true);
     _isExplicitLogin = true;
     try {
-      try {
-        final response =
-            await AuthService.instance.signInWithEmailPassword(email, password);
-        if (response.user != null) {
-          await _handleAuthSuccess(response.user!);
-        }
-      } on AuthException catch (e) {
-        if (e.message.contains('Invalid login credentials') ||
-            e.statusCode == '400') {
-          final signUpResponse = await AuthService.instance
-              .signUp(email: email, password: password);
-          if (signUpResponse.user != null) {
-            if (signUpResponse.session != null) {
-              await _handleAuthSuccess(signUpResponse.user!);
-            } else {
-              throw const AuthException(
-                  'Account created. Please verify your email.');
-            }
-          }
+      final response =
+          await AuthService.instance.signInWithEmailPassword(email, password);
+      if (response.user != null) {
+        await _handleAuthSuccess(response.user!);
+      }
+    } finally {
+      _isExplicitLogin = false;
+      state = state.copyWith(isLoading: false);
+    }
+  }
+
+  // Professional Signup: Explicitly for new users
+  Future<void> signUpWithEmail({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    state = state.copyWith(isLoading: true);
+    _isExplicitLogin = true;
+    try {
+      final response = await AuthService.instance.signUp(
+        email: email,
+        password: password,
+        fullName: name,
+      );
+
+      if (response.user != null) {
+        // Since email verification is DISABLED in Supabase settings (per user instructions),
+        // we might get a session immediately.
+        if (response.session != null) {
+          await _handleAuthSuccess(response.user!, name);
         } else {
-          rethrow;
+          // Fallback if verification is still on for some reason
+          throw const AuthException(
+              'Account created. Please check your email for verification.');
         }
       }
     } finally {
@@ -313,8 +328,8 @@ class AuthNotifier extends _$AuthNotifier {
     }
   }
 
-  Future<void> _handleAuthSuccess(User user) async {
-    await AuthService.instance.ensureProfileExists(user);
+  Future<void> _handleAuthSuccess(User user, [String? providedName]) async {
+    await AuthService.instance.ensureProfileExists(user, providedName);
     final profile = await AuthService.instance.getUserProfile(user.id);
 
     final newSessionId = DateTime.now().millisecondsSinceEpoch.toString();

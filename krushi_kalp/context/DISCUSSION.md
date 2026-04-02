@@ -37,6 +37,18 @@
 - **Action**: Audit `lib/presentation` for legacy navigation and migrate.
 - **Outcome**: Implementation plan created as `implementation_plan_v14.md`.
 
+## Phase 4: Email Authentication Integration (2026-04-02)
+
+### Discussion: Professional Email Auth Requirements
+- **User Request**: Implement Email Sign Up and Login, T&C checkbox, Proper Profile Creation, No Multiple Registration.
+- **Plan**:
+  - Refactor `AuthService` and `AuthNotifier`.
+  - Create `SignUpScreen`.
+  - Update `LoginScreen`.
+  - Enforce T&C compliance.
+  - Handle account linking/prevention for duplicate emails.
+- **Outcome**: Implementation plan created in conversation-specific artifact.
+
 ## Branch Gate:
-- **Branch**: `phase-1` (Active branch confirmed by user).
-- **Status**: Awaiting approval for navigation refactor.
+- **Branch**: `feature/email-auth` (Confirmed by user).
+- **Status**: COMPLETE. All tasks in Phase 1-5 finished and verified.

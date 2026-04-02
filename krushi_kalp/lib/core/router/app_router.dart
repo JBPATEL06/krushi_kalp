@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../presentation/screens/splash_screen.dart';
 import '../../presentation/screens/login_screen.dart';
+import '../../presentation/screens/signup_screen.dart';
 import '../../presentation/screens/about_screen.dart';
 import '../../presentation/screens/profile_screen.dart';
 import '../../presentation/screens/admin/admin_main_screen.dart';
@@ -34,6 +35,10 @@ GoRouter appRouter(AppRouterRef ref) {
       GoRoute(
         path: RouteConstants.login,
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.signup,
+        builder: (context, state) => const SignUpScreen(),
       ),
       GoRoute(
         path: RouteConstants.home,
@@ -96,6 +101,7 @@ GoRouter appRouter(AppRouterRef ref) {
 
       final isLoggedIn = authState.isLoggedIn;
       final isLoggingIn = state.matchedLocation == RouteConstants.login;
+      final isSigningUp = state.matchedLocation == RouteConstants.signup;
       final isSplash = state.matchedLocation == RouteConstants.splash;
 
       // New: Determine where to send a logged-in user
@@ -107,7 +113,7 @@ GoRouter appRouter(AppRouterRef ref) {
       }
 
       // 3. Protected routes logic
-      if (!isLoggedIn && !isLoggingIn) {
+      if (!isLoggedIn && !isLoggingIn && !isSigningUp) {
         return RouteConstants.login;
       }
 

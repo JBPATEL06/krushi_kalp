@@ -131,12 +131,17 @@ class AuthService {
   Future<AuthResponse> signUp({
     required String email,
     required String password,
+    required String fullName,
   }) async {
-    return await _supabase.auth.signUp(email: email, password: password);
+    return await _supabase.auth.signUp(
+      email: email,
+      password: password,
+      data: {'full_name': fullName},
+    );
   }
 
   // Helper to create profile if it doesn't exist
-  Future<void> ensureProfileExists(User user) async {
+  Future<void> ensureProfileExists(User user, [String? providedName]) async {
     try {
       final profile = await Supabase.instance.client
           .from('users')
@@ -145,11 +150,13 @@ class AuthService {
           .maybeSingle();
 
       if (profile == null) {
-        
-
-        // Extract real name from Google Auth metadata (usually 'full_name' or 'name')
+        // Extract real name from:
+        // 1. Provided name (from manual signup)
+        // 2. Google Auth metadata (usually 'full_name' or 'name')
+        // 3. Fallback to email prefix
         final metadata = user.userMetadata ?? {};
-        final String displayName = metadata['full_name'] ??
+        final String displayName = providedName ?? 
+            metadata['full_name'] ??
             metadata['name'] ??
             user.email?.split('@')[0] ??
             'User';
@@ -159,15 +166,10 @@ class AuthService {
           'email': user.email,
           'username': displayName,
           'language': 'en', // Default Language
-          // 'role': 'Student', // Omitted: Let DB default 'Student' apply to avoid Enum errors
-          // 'created_at': DateTime.now().toIso8601String(), // Let DB handle default
         });
-      } else {
-        
       }
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'Profile sync failed during sign-in');
-      // Don't block login if profile fails, but might cause issues later
     }
   }
 
