@@ -79,4 +79,4 @@
 - `**/firebase-service.json`
 - `.env`
 - `**/google-services.json`
-- `lib/core/env/env.g.dart` (Generated secrets)
+- `lib/core/env/env.g.dart` (Generated secrets) 

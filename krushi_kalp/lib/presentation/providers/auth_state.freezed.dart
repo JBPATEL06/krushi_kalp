@@ -21,7 +21,9 @@ mixin _$AuthState {
   String? get username => throw _privateConstructorUsedError;
   bool get isLoading => throw _privateConstructorUsedError;
   bool get isAuthCheckComplete => throw _privateConstructorUsedError;
+  bool get isPasswordRecovery => throw _privateConstructorUsedError;
   String? get localSessionId => throw _privateConstructorUsedError;
+  String? get errorMessage => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $AuthStateCopyWith<AuthState> get copyWith =>
@@ -39,7 +41,9 @@ abstract class $AuthStateCopyWith<$Res> {
       String? username,
       bool isLoading,
       bool isAuthCheckComplete,
-      String? localSessionId});
+      bool isPasswordRecovery,
+      String? localSessionId,
+      String? errorMessage});
 }
 
 /// @nodoc
@@ -60,7 +64,9 @@ class _$AuthStateCopyWithImpl<$Res, $Val extends AuthState>
     Object? username = freezed,
     Object? isLoading = null,
     Object? isAuthCheckComplete = null,
+    Object? isPasswordRecovery = null,
     Object? localSessionId = freezed,
+    Object? errorMessage = freezed,
   }) {
     return _then(_value.copyWith(
       user: freezed == user
@@ -83,9 +89,17 @@ class _$AuthStateCopyWithImpl<$Res, $Val extends AuthState>
           ? _value.isAuthCheckComplete
           : isAuthCheckComplete // ignore: cast_nullable_to_non_nullable
               as bool,
+      isPasswordRecovery: null == isPasswordRecovery
+          ? _value.isPasswordRecovery
+          : isPasswordRecovery // ignore: cast_nullable_to_non_nullable
+              as bool,
       localSessionId: freezed == localSessionId
           ? _value.localSessionId
           : localSessionId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      errorMessage: freezed == errorMessage
+          ? _value.errorMessage
+          : errorMessage // ignore: cast_nullable_to_non_nullable
               as String?,
     ) as $Val);
   }
@@ -105,7 +119,9 @@ abstract class _$$AuthStateImplCopyWith<$Res>
       String? username,
       bool isLoading,
       bool isAuthCheckComplete,
-      String? localSessionId});
+      bool isPasswordRecovery,
+      String? localSessionId,
+      String? errorMessage});
 }
 
 /// @nodoc
@@ -124,7 +140,9 @@ class __$$AuthStateImplCopyWithImpl<$Res>
     Object? username = freezed,
     Object? isLoading = null,
     Object? isAuthCheckComplete = null,
+    Object? isPasswordRecovery = null,
     Object? localSessionId = freezed,
+    Object? errorMessage = freezed,
   }) {
     return _then(_$AuthStateImpl(
       user: freezed == user
@@ -147,9 +165,17 @@ class __$$AuthStateImplCopyWithImpl<$Res>
           ? _value.isAuthCheckComplete
           : isAuthCheckComplete // ignore: cast_nullable_to_non_nullable
               as bool,
+      isPasswordRecovery: null == isPasswordRecovery
+          ? _value.isPasswordRecovery
+          : isPasswordRecovery // ignore: cast_nullable_to_non_nullable
+              as bool,
       localSessionId: freezed == localSessionId
           ? _value.localSessionId
           : localSessionId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      errorMessage: freezed == errorMessage
+          ? _value.errorMessage
+          : errorMessage // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
   }
@@ -164,7 +190,9 @@ class _$AuthStateImpl extends _AuthState {
       this.username,
       this.isLoading = false,
       this.isAuthCheckComplete = false,
-      this.localSessionId})
+      this.isPasswordRecovery = false,
+      this.localSessionId,
+      this.errorMessage})
       : super._();
 
   @override
@@ -180,11 +208,16 @@ class _$AuthStateImpl extends _AuthState {
   @JsonKey()
   final bool isAuthCheckComplete;
   @override
+  @JsonKey()
+  final bool isPasswordRecovery;
+  @override
   final String? localSessionId;
+  @override
+  final String? errorMessage;
 
   @override
   String toString() {
-    return 'AuthState(user: $user, role: $role, username: $username, isLoading: $isLoading, isAuthCheckComplete: $isAuthCheckComplete, localSessionId: $localSessionId)';
+    return 'AuthState(user: $user, role: $role, username: $username, isLoading: $isLoading, isAuthCheckComplete: $isAuthCheckComplete, isPasswordRecovery: $isPasswordRecovery, localSessionId: $localSessionId, errorMessage: $errorMessage)';
   }
 
   @override
@@ -200,13 +233,17 @@ class _$AuthStateImpl extends _AuthState {
                 other.isLoading == isLoading) &&
             (identical(other.isAuthCheckComplete, isAuthCheckComplete) ||
                 other.isAuthCheckComplete == isAuthCheckComplete) &&
+            (identical(other.isPasswordRecovery, isPasswordRecovery) ||
+                other.isPasswordRecovery == isPasswordRecovery) &&
             (identical(other.localSessionId, localSessionId) ||
-                other.localSessionId == localSessionId));
+                other.localSessionId == localSessionId) &&
+            (identical(other.errorMessage, errorMessage) ||
+                other.errorMessage == errorMessage));
   }
 
   @override
   int get hashCode => Object.hash(runtimeType, user, role, username, isLoading,
-      isAuthCheckComplete, localSessionId);
+      isAuthCheckComplete, isPasswordRecovery, localSessionId, errorMessage);
 
   @JsonKey(ignore: true)
   @override
@@ -222,7 +259,9 @@ abstract class _AuthState extends AuthState {
       final String? username,
       final bool isLoading,
       final bool isAuthCheckComplete,
-      final String? localSessionId}) = _$AuthStateImpl;
+      final bool isPasswordRecovery,
+      final String? localSessionId,
+      final String? errorMessage}) = _$AuthStateImpl;
   const _AuthState._() : super._();
 
   @override
@@ -236,7 +275,11 @@ abstract class _AuthState extends AuthState {
   @override
   bool get isAuthCheckComplete;
   @override
+  bool get isPasswordRecovery;
+  @override
   String? get localSessionId;
+  @override
+  String? get errorMessage;
   @override
   @JsonKey(ignore: true)
   _$$AuthStateImplCopyWith<_$AuthStateImpl> get copyWith =>

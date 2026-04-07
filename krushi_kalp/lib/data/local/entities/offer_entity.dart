@@ -8,24 +8,23 @@ class OfferEntity {
   @Index(unique: true, replace: true)
   Id id = Isar.autoIncrement;
 
-  late int offerId;
+  int? offerId;
   String? code;
-  late String title;
-  late String description;
-  late String discountType;
-  late double discountValue;
+  String? title;
+  String? description;
+  String? discountType;
+  double? discountValue;
   DateTime? startDate;
   DateTime? endDate;
-  late bool isActive;
-  late String targetType;
-  late List<String>
-      targetIds; // Isar doesn't support List<dynamic>, so we map to strings
+  bool? isActive;
+  String? targetType;
+  List<String>? targetIds; // Isar doesn't support List<dynamic>, so we map to strings
   double? minOrderValue;
   double? maxDiscount;
-  late bool isReal;
-  late bool isSale;
-  late int usageLimit;
-  late int minQuantity;
+  bool? isReal;
+  bool? isSale;
+  int? usageLimit;
+  int? minQuantity;
 
   // Convert from Domain Model
   static OfferEntity fromOffer(Offer offer) {
@@ -53,23 +52,23 @@ class OfferEntity {
   // Convert to Domain Model
   Offer toOffer() {
     return Offer(
-      id: offerId,
+      id: offerId ?? 0,
       code: code,
-      title: title,
-      description: description,
-      discountType: discountType,
-      discountValue: discountValue,
+      title: title ?? '',
+      description: description ?? '',
+      discountType: discountType ?? 'percentage',
+      discountValue: discountValue ?? 0.0,
       startDate: startDate,
       endDate: endDate,
-      isActive: isActive,
-      targetType: targetType,
-      targetIds: targetIds, // Pass back as dynamic
+      isActive: isActive ?? true,
+      targetType: targetType ?? 'all',
+      targetIds: targetIds ?? [], // Pass back as dynamic
       minOrderValue: minOrderValue,
       maxDiscount: maxDiscount,
-      isReal: isReal,
-      isSale: isSale,
-      usageLimit: usageLimit,
-      minQuantity: minQuantity,
+      isReal: isReal ?? true,
+      isSale: isSale ?? false,
+      usageLimit: usageLimit ?? 0,
+      minQuantity: minQuantity ?? 1,
     );
   }
 }

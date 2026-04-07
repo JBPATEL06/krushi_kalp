@@ -11,6 +11,7 @@ import '../../data/services/auth_service.dart';
 import '../../data/services/download_service.dart';
 import '../../data/services/encryption_service.dart';
 import '../../data/services/fcm_service.dart';
+import '../../data/services/error_service.dart';
 import '../../utils/crashlytics_service.dart';
 import '../../utils/network_utils.dart';
 import '../utils/navigator_key.dart';
@@ -56,13 +57,18 @@ class AuthNotifier extends _$AuthNotifier {
           final Session? session = data.session;
 
           if (event == AuthChangeEvent.signedIn) {
-            state = state.copyWith(user: session?.user);
+            state = state.copyWith(
+              user: session?.user,
+              isPasswordRecovery: false,
+            );
             await _fetchUserProfile();
             await _initSessionMonitoring();
           } else if (event == AuthChangeEvent.signedOut) {
             _sessionSubscription?.unsubscribe();
             _sessionSubscription = null;
-            state = const AuthState(isAuthCheckComplete: true);
+            state = const AuthState(isAuthCheckComplete: true, isPasswordRecovery: false);
+          } else if (event == AuthChangeEvent.passwordRecovery) {
+            state = state.copyWith(user: session?.user, isPasswordRecovery: true);
           } else {
             state = state.copyWith(user: session?.user);
           }
@@ -231,7 +237,7 @@ class AuthNotifier extends _$AuthNotifier {
   }
 
   Future<void> signInWithGoogle() async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, errorMessage: null);
     _isExplicitLogin = true;
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn(
@@ -282,7 +288,7 @@ class AuthNotifier extends _$AuthNotifier {
 
   // Professional Login: Explicitly for existing users
   Future<void> loginWithEmail(String email, String password) async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, errorMessage: null);
     _isExplicitLogin = true;
     try {
       final response =
@@ -290,6 +296,11 @@ class AuthNotifier extends _$AuthNotifier {
       if (response.user != null) {
         await _handleAuthSuccess(response.user!);
       }
+    } catch (e, stack) {
+      final errorMsg = ErrorService.instance.getBeautifulError(e);
+      state = state.copyWith(errorMessage: errorMsg);
+      CrashlyticsService.instance.recordError(e, stack, reason: 'AuthNotifier: loginWithEmail');
+      rethrow;
     } finally {
       _isExplicitLogin = false;
       state = state.copyWith(isLoading: false);
@@ -302,7 +313,7 @@ class AuthNotifier extends _$AuthNotifier {
     required String email,
     required String password,
   }) async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, errorMessage: null);
     _isExplicitLogin = true;
     try {
       final response = await AuthService.instance.signUp(
@@ -318,10 +329,14 @@ class AuthNotifier extends _$AuthNotifier {
           await _handleAuthSuccess(response.user!, name);
         } else {
           // Fallback if verification is still on for some reason
-          throw const AuthException(
-              'Account created. Please check your email for verification.');
+          state = state.copyWith(errorMessage: 'Check your email to confirm registration.');
         }
       }
+    } catch (e, stack) {
+      final errorMsg = ErrorService.instance.getBeautifulError(e);
+      state = state.copyWith(errorMessage: errorMsg);
+      CrashlyticsService.instance.recordError(e, stack, reason: 'AuthNotifier: signUpWithEmail');
+      rethrow;
     } finally {
       _isExplicitLogin = false;
       state = state.copyWith(isLoading: false);
@@ -408,6 +423,52 @@ class AuthNotifier extends _$AuthNotifier {
       await prefs.remove('session_id');
       await _sessionSubscription?.unsubscribe();
       _sessionSubscription = null;
+    } finally {
+      state = state.copyWith(isLoading: false);
+    }
+  }
+
+  Future<void> linkGoogle() async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      await AuthService.instance.linkGoogleAccount();
+      await _fetchUserProfile();
+    } catch (e, stack) {
+      final errorMsg = ErrorService.instance.getBeautifulError(e);
+      state = state.copyWith(errorMessage: errorMsg);
+      CrashlyticsService.instance.recordError(e, stack, reason: 'AuthNotifier: linkGoogle');
+      rethrow;
+    } finally {
+      state = state.copyWith(isLoading: false);
+    }
+  }
+
+  /// Requests a password reset email for the given email address.
+  Future<void> sendPasswordResetEmail(String email) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      await AuthService.instance.resetPasswordForEmail(email);
+    } catch (e, stack) {
+      final errorMsg = ErrorService.instance.getBeautifulError(e);
+      state = state.copyWith(errorMessage: errorMsg);
+      CrashlyticsService.instance.recordError(e, stack, reason: 'AuthNotifier: sendPasswordResetEmail');
+      rethrow;
+    } finally {
+      state = state.copyWith(isLoading: false);
+    }
+  }
+
+  /// Updates the password for the current user session (recovery flow).
+  Future<void> updatePassword(String newPassword) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      await AuthService.instance.updateUserPassword(newPassword);
+      // Optional: We can sign out or refresh if needed. Usually, we just let them continue.
+    } catch (e, stack) {
+      final errorMsg = ErrorService.instance.getBeautifulError(e);
+      state = state.copyWith(errorMessage: errorMsg);
+      CrashlyticsService.instance.recordError(e, stack, reason: 'AuthNotifier: updatePassword');
+      rethrow;
     } finally {
       state = state.copyWith(isLoading: false);
     }

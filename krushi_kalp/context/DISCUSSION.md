@@ -49,6 +49,19 @@
   - Handle account linking/prevention for duplicate emails.
 - **Outcome**: Implementation plan created in conversation-specific artifact.
 
+## Phase 5: Stabilization & Auth Error Handling (2026-04-02)
+
+### Discussion: LateInitializationError & Account Prevention
+- **Problem**: App crash when loading resources from Isar (`LateInitializationError: updatedAt`).
+- **Problem**: Multi-account prevention worked but lacked user-friendly error messages.
+- **Decisions**:
+  - Refactored all Isar entities (`ResourceEntity`, `OfferEntity`, `MockTestEntity`) to use nullable types with safe fallbacks in domain conversion.
+  - Regenerated Isar code to reflect schema safety.
+  - Enhanced `ErrorService` to map Supabase `AuthException` (User already registered/registered with provider) to helpful strings.
+  - Updated `AuthNotifier` to properly catch and propagate these errors to the UI.
+- **Outcome**: Both crashes and UX edge cases resolved.
+- **Status**: COMPLETE.
+
 ## Branch Gate:
 - **Branch**: `feature/email-auth` (Confirmed by user).
 - **Status**: COMPLETE. All tasks in Phase 1-5 finished and verified.

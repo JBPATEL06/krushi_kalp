@@ -176,7 +176,8 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
       await Share.shareXFiles([XFile(file.path)],
           text: 'Mock Test Questions: ${widget.test.title}');
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'mock_test_edit_screen');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'mock_test_edit_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
@@ -287,7 +288,8 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
         Navigator.pop(context, true);
       }
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'mock_test_edit_screen');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'mock_test_edit_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }

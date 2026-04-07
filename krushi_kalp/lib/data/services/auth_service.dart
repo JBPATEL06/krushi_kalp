@@ -127,6 +127,33 @@ class AuthService {
     return response;
   }
 
+  Future<void> linkGoogleAccount() async {
+    final webClientId = Env.googleWebClientId;
+    
+    final GoogleSignIn googleSignIn = GoogleSignIn(
+      clientId: kIsWeb ? webClientId : null,
+      serverClientId: kIsWeb ? null : webClientId,
+    );
+
+    final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+    if (googleUser == null) return;
+
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    final String? idToken = googleAuth.idToken;
+    final String? accessToken = googleAuth.accessToken;
+
+    if (idToken == null) throw 'No ID Token found';
+
+    // Link the provider by signing in with the ID token while already authenticated
+    await _supabase.auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: idToken,
+      accessToken: accessToken,
+    );
+    
+    CrashlyticsService.instance.log('User linked Google account: ${googleUser.email}');
+  }
+
   // NEW: Sign Up with Email and Password
   Future<AuthResponse> signUp({
     required String email,
@@ -316,6 +343,35 @@ class AuthService {
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'Get user DB ID failed');
       return null;
+    }
+  }
+
+  // --- PASSWORD RECOVERY ---
+
+  /// Triggers a password reset email from Supabase.
+  Future<void> resetPasswordForEmail(String email) async {
+    try {
+      // 'redirectTo' should be your app's deep link (e.g., io.supabase.krushikalp://login-callback/)
+      // Supabase uses this to redirect the user after they click the link.
+      await _supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo: kIsWeb ? null : 'io.supabase.krushikalp://reset-callback/',
+      );
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Reset password request failed');
+      rethrow;
+    }
+  }
+
+  /// Updates the password for the currently authenticated user (session).
+  Future<void> updateUserPassword(String newPassword) async {
+    try {
+      await _supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Update password failed');
+      rethrow;
     }
   }
 }

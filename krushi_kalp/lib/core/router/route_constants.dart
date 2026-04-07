@@ -3,6 +3,8 @@ class RouteConstants {
   static const String splash = '/splash';
   static const String login = '/login';
   static const String signup = '/signup';
+  static const String forgotPassword = '/forgot-password';
+  static const String resetPassword = '/reset-password';
   static const String home = '/';
   static const String about = '/about';
   static const String profile = '/profile';

@@ -128,7 +128,12 @@ int _mockTestEntityEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
-  bytesCount += 3 + object.category.length * 3;
+  {
+    final value = object.category;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   {
     final value = object.contentUrl;
     if (value != null) {
@@ -141,22 +146,42 @@ int _mockTestEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.description.length * 3;
+  {
+    final value = object.description;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   {
     final value = object.discount;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.filePath.length * 3;
-  bytesCount += 3 + object.language.length * 3;
+  {
+    final value = object.filePath;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.language;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   {
     final value = object.signedUrl;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.title.length * 3;
+  {
+    final value = object.title;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -193,25 +218,25 @@ MockTestEntity _mockTestEntityDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = MockTestEntity();
-  object.category = reader.readString(offsets[0]);
+  object.category = reader.readStringOrNull(offsets[0]);
   object.contentUrl = reader.readStringOrNull(offsets[1]);
   object.coverImagePath = reader.readStringOrNull(offsets[2]);
-  object.createdAt = reader.readDateTime(offsets[3]);
-  object.description = reader.readString(offsets[4]);
+  object.createdAt = reader.readDateTimeOrNull(offsets[3]);
+  object.description = reader.readStringOrNull(offsets[4]);
   object.discount = reader.readStringOrNull(offsets[5]);
   object.durationMinutes = reader.readLongOrNull(offsets[6]);
-  object.filePath = reader.readString(offsets[7]);
+  object.filePath = reader.readStringOrNull(offsets[7]);
   object.id = id;
-  object.language = reader.readString(offsets[8]);
+  object.language = reader.readStringOrNull(offsets[8]);
   object.mrp = reader.readDoubleOrNull(offsets[9]);
-  object.negativeMarking = reader.readBool(offsets[10]);
-  object.negativeMarksPerQ = reader.readDouble(offsets[11]);
-  object.price = reader.readDouble(offsets[12]);
+  object.negativeMarking = reader.readBoolOrNull(offsets[10]);
+  object.negativeMarksPerQ = reader.readDoubleOrNull(offsets[11]);
+  object.price = reader.readDoubleOrNull(offsets[12]);
   object.signedUrl = reader.readStringOrNull(offsets[13]);
-  object.testId = reader.readLong(offsets[14]);
-  object.title = reader.readString(offsets[15]);
-  object.totalMarks = reader.readLong(offsets[16]);
-  object.totalQuestions = reader.readLong(offsets[17]);
+  object.testId = reader.readLongOrNull(offsets[14]);
+  object.title = reader.readStringOrNull(offsets[15]);
+  object.totalMarks = reader.readLongOrNull(offsets[16]);
+  object.totalQuestions = reader.readLongOrNull(offsets[17]);
   return object;
 }
 
@@ -223,41 +248,41 @@ P _mockTestEntityDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 1:
       return (reader.readStringOrNull(offset)) as P;
     case 2:
       return (reader.readStringOrNull(offset)) as P;
     case 3:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 4:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 5:
       return (reader.readStringOrNull(offset)) as P;
     case 6:
       return (reader.readLongOrNull(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 8:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 9:
       return (reader.readDoubleOrNull(offset)) as P;
     case 10:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset)) as P;
     case 11:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 12:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 13:
       return (reader.readStringOrNull(offset)) as P;
     case 14:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 15:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 16:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 17:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -360,8 +385,26 @@ extension MockTestEntityQueryWhere
 extension MockTestEntityQueryFilter
     on QueryBuilder<MockTestEntity, MockTestEntity, QFilterCondition> {
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      categoryIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'category',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      categoryIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'category',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       categoryEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -375,7 +418,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       categoryGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -391,7 +434,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       categoryLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -407,8 +450,8 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       categoryBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -804,7 +847,25 @@ extension MockTestEntityQueryFilter
   }
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
-      createdAtEqualTo(DateTime value) {
+      createdAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'createdAt',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      createdAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'createdAt',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      createdAtEqualTo(DateTime? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'createdAt',
@@ -815,7 +876,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       createdAtGreaterThan(
-    DateTime value, {
+    DateTime? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -829,7 +890,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       createdAtLessThan(
-    DateTime value, {
+    DateTime? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -843,8 +904,8 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       createdAtBetween(
-    DateTime lower,
-    DateTime upper, {
+    DateTime? lower,
+    DateTime? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -860,8 +921,26 @@ extension MockTestEntityQueryFilter
   }
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      descriptionIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'description',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      descriptionIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'description',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       descriptionEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -875,7 +954,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       descriptionGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -891,7 +970,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       descriptionLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -907,8 +986,8 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       descriptionBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -1224,8 +1303,26 @@ extension MockTestEntityQueryFilter
   }
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      filePathIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'filePath',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      filePathIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'filePath',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       filePathEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1239,7 +1336,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       filePathGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1255,7 +1352,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       filePathLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1271,8 +1368,8 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       filePathBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -1415,8 +1512,26 @@ extension MockTestEntityQueryFilter
   }
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      languageIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'language',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      languageIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'language',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       languageEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1430,7 +1545,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       languageGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1446,7 +1561,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       languageLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1462,8 +1577,8 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       languageBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -1635,7 +1750,25 @@ extension MockTestEntityQueryFilter
   }
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
-      negativeMarkingEqualTo(bool value) {
+      negativeMarkingIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'negativeMarking',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      negativeMarkingIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'negativeMarking',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      negativeMarkingEqualTo(bool? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'negativeMarking',
@@ -1645,8 +1778,26 @@ extension MockTestEntityQueryFilter
   }
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      negativeMarksPerQIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'negativeMarksPerQ',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      negativeMarksPerQIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'negativeMarksPerQ',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       negativeMarksPerQEqualTo(
-    double value, {
+    double? value, {
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1660,7 +1811,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       negativeMarksPerQGreaterThan(
-    double value, {
+    double? value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
@@ -1676,7 +1827,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       negativeMarksPerQLessThan(
-    double value, {
+    double? value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
@@ -1692,8 +1843,8 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       negativeMarksPerQBetween(
-    double lower,
-    double upper, {
+    double? lower,
+    double? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     double epsilon = Query.epsilon,
@@ -1711,8 +1862,26 @@ extension MockTestEntityQueryFilter
   }
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      priceIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'price',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      priceIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'price',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       priceEqualTo(
-    double value, {
+    double? value, {
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1726,7 +1895,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       priceGreaterThan(
-    double value, {
+    double? value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
@@ -1742,7 +1911,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       priceLessThan(
-    double value, {
+    double? value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
@@ -1758,8 +1927,8 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       priceBetween(
-    double lower,
-    double upper, {
+    double? lower,
+    double? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     double epsilon = Query.epsilon,
@@ -1931,7 +2100,25 @@ extension MockTestEntityQueryFilter
   }
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
-      testIdEqualTo(int value) {
+      testIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'testId',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      testIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'testId',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      testIdEqualTo(int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'testId',
@@ -1942,7 +2129,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       testIdGreaterThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1956,7 +2143,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       testIdLessThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1970,8 +2157,8 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       testIdBetween(
-    int lower,
-    int upper, {
+    int? lower,
+    int? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -1987,8 +2174,26 @@ extension MockTestEntityQueryFilter
   }
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      titleIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'title',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      titleIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'title',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       titleEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -2002,7 +2207,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       titleGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -2018,7 +2223,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       titleLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -2034,8 +2239,8 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       titleBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -2123,7 +2328,25 @@ extension MockTestEntityQueryFilter
   }
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
-      totalMarksEqualTo(int value) {
+      totalMarksIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'totalMarks',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      totalMarksIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'totalMarks',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      totalMarksEqualTo(int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'totalMarks',
@@ -2134,7 +2357,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       totalMarksGreaterThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -2148,7 +2371,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       totalMarksLessThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -2162,8 +2385,8 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       totalMarksBetween(
-    int lower,
-    int upper, {
+    int? lower,
+    int? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -2179,7 +2402,25 @@ extension MockTestEntityQueryFilter
   }
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
-      totalQuestionsEqualTo(int value) {
+      totalQuestionsIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'totalQuestions',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      totalQuestionsIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'totalQuestions',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      totalQuestionsEqualTo(int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'totalQuestions',
@@ -2190,7 +2431,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       totalQuestionsGreaterThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -2204,7 +2445,7 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       totalQuestionsLessThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -2218,8 +2459,8 @@ extension MockTestEntityQueryFilter
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       totalQuestionsBetween(
-    int lower,
-    int upper, {
+    int? lower,
+    int? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -2872,7 +3113,7 @@ extension MockTestEntityQueryProperty
     });
   }
 
-  QueryBuilder<MockTestEntity, String, QQueryOperations> categoryProperty() {
+  QueryBuilder<MockTestEntity, String?, QQueryOperations> categoryProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'category');
     });
@@ -2891,13 +3132,15 @@ extension MockTestEntityQueryProperty
     });
   }
 
-  QueryBuilder<MockTestEntity, DateTime, QQueryOperations> createdAtProperty() {
+  QueryBuilder<MockTestEntity, DateTime?, QQueryOperations>
+      createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
     });
   }
 
-  QueryBuilder<MockTestEntity, String, QQueryOperations> descriptionProperty() {
+  QueryBuilder<MockTestEntity, String?, QQueryOperations>
+      descriptionProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'description');
     });
@@ -2916,13 +3159,13 @@ extension MockTestEntityQueryProperty
     });
   }
 
-  QueryBuilder<MockTestEntity, String, QQueryOperations> filePathProperty() {
+  QueryBuilder<MockTestEntity, String?, QQueryOperations> filePathProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'filePath');
     });
   }
 
-  QueryBuilder<MockTestEntity, String, QQueryOperations> languageProperty() {
+  QueryBuilder<MockTestEntity, String?, QQueryOperations> languageProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'language');
     });
@@ -2934,21 +3177,21 @@ extension MockTestEntityQueryProperty
     });
   }
 
-  QueryBuilder<MockTestEntity, bool, QQueryOperations>
+  QueryBuilder<MockTestEntity, bool?, QQueryOperations>
       negativeMarkingProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'negativeMarking');
     });
   }
 
-  QueryBuilder<MockTestEntity, double, QQueryOperations>
+  QueryBuilder<MockTestEntity, double?, QQueryOperations>
       negativeMarksPerQProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'negativeMarksPerQ');
     });
   }
 
-  QueryBuilder<MockTestEntity, double, QQueryOperations> priceProperty() {
+  QueryBuilder<MockTestEntity, double?, QQueryOperations> priceProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'price');
     });
@@ -2960,25 +3203,26 @@ extension MockTestEntityQueryProperty
     });
   }
 
-  QueryBuilder<MockTestEntity, int, QQueryOperations> testIdProperty() {
+  QueryBuilder<MockTestEntity, int?, QQueryOperations> testIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'testId');
     });
   }
 
-  QueryBuilder<MockTestEntity, String, QQueryOperations> titleProperty() {
+  QueryBuilder<MockTestEntity, String?, QQueryOperations> titleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'title');
     });
   }
 
-  QueryBuilder<MockTestEntity, int, QQueryOperations> totalMarksProperty() {
+  QueryBuilder<MockTestEntity, int?, QQueryOperations> totalMarksProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'totalMarks');
     });
   }
 
-  QueryBuilder<MockTestEntity, int, QQueryOperations> totalQuestionsProperty() {
+  QueryBuilder<MockTestEntity, int?, QQueryOperations>
+      totalQuestionsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'totalQuestions');
     });

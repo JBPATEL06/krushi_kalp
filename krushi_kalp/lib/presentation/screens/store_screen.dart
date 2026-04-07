@@ -106,9 +106,9 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
       if (!mounted) return;
       try {
         await Future.wait([
-          ref.read(testNotifierProvider.notifier).fetchTests(),
-          ref.read(resourceNotifierProvider.notifier).fetchAll(),
-          ref.read(offerNotifierProvider.notifier).fetchActiveOffers(),
+          ref.read(testNotifierProvider.notifier).fetchTests(forceRefresh: true),
+          ref.read(resourceNotifierProvider.notifier).fetchAll(forceRefresh: true),
+          ref.read(offerNotifierProvider.notifier).fetchActiveOffers(forceRefresh: true),
         ]);
         final user = ref.read(authNotifierProvider).user;
         if (user != null) {
@@ -491,11 +491,12 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
       {bool isFree = false}) {
     List<MockTest> tests = testState.allTests;
 
-    if (isFree) {
-      tests = tests.where((t) => t.price == 0).toList();
-    } else {
-      tests = tests.where((t) => t.price > 0).toList();
-    }
+    // Showing all tests (free and paid) in store for demo transparency
+    // if (isFree) {
+    //   tests = tests.where((t) => t.price == 0).toList();
+    // } else {
+    //   tests = tests.where((t) => t.price > 0).toList();
+    // }
 
     if (_searchQuery.isNotEmpty) {
       tests = tests

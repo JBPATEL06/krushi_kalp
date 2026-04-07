@@ -13,6 +13,8 @@ import '../../presentation/screens/main_screen.dart';
 import '../../presentation/screens/maintenance_screen.dart';
 import '../../presentation/screens/update_required_screen.dart';
 import '../../presentation/screens/all_tests_screen.dart';
+import '../../presentation/screens/forgot_password_screen.dart';
+import '../../presentation/screens/reset_password_screen.dart';
 import '../../presentation/utils/navigator_key.dart';
 import '../../presentation/providers/auth_notifier.dart';
 import 'route_constants.dart';
@@ -39,6 +41,14 @@ GoRouter appRouter(AppRouterRef ref) {
       GoRoute(
         path: RouteConstants.signup,
         builder: (context, state) => const SignUpScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.forgotPassword,
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: RouteConstants.resetPassword,
+        builder: (context, state) => const ResetPasswordScreen(),
       ),
       GoRoute(
         path: RouteConstants.home,
@@ -94,6 +104,11 @@ GoRouter appRouter(AppRouterRef ref) {
       ),
     ],
     redirect: (context, state) {
+      // 0. Handle password recovery first
+      if (authState.isPasswordRecovery && state.matchedLocation != RouteConstants.resetPassword) {
+        return RouteConstants.resetPassword;
+      }
+
       // 1. If auth check is not done, ALWAYS stay on Splash
       if (!authState.isAuthCheckComplete) {
         return RouteConstants.splash;
@@ -102,6 +117,8 @@ GoRouter appRouter(AppRouterRef ref) {
       final isLoggedIn = authState.isLoggedIn;
       final isLoggingIn = state.matchedLocation == RouteConstants.login;
       final isSigningUp = state.matchedLocation == RouteConstants.signup;
+      final isForgotPassword = state.matchedLocation == RouteConstants.forgotPassword;
+      final isResetPassword = state.matchedLocation == RouteConstants.resetPassword;
       final isSplash = state.matchedLocation == RouteConstants.splash;
 
       // New: Determine where to send a logged-in user
@@ -113,7 +130,8 @@ GoRouter appRouter(AppRouterRef ref) {
       }
 
       // 3. Protected routes logic
-      if (!isLoggedIn && !isLoggingIn && !isSigningUp) {
+      // Allow access to register, forgot password, and reset password screens.
+      if (!isLoggedIn && !isLoggingIn && !isSigningUp && !isForgotPassword && !isResetPassword) {
         return RouteConstants.login;
       }
 

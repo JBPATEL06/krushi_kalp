@@ -34,7 +34,6 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
   DateTime _startDate = DateTime.now();
   DateTime _endDate = DateTime.now().add(const Duration(days: 30));
   bool _isActive = true;
-  bool _isReal = true;
   bool _isSale = false;
 
   List<dynamic> _selectedTargetIds = [];
@@ -61,7 +60,6 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
       _startDate = o.startDate ?? DateTime.now();
       _endDate = o.endDate ?? DateTime.now().add(const Duration(days: 30));
       _isActive = o.isActive;
-      _isReal = o.isReal;
       _isSale = o.isSale;
       _selectedTargetIds = List.from(o.targetIds);
     }
@@ -109,7 +107,7 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
       targetIds: _selectedTargetIds,
       minOrderValue: double.tryParse(_minOrderController.text),
       maxDiscount: double.tryParse(_maxDiscountController.text),
-      isReal: _isReal,
+      isReal: true, // Always true for compliance
       isSale: _isSale,
     );
 
@@ -271,9 +269,6 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -482,23 +477,11 @@ class _AdminOfferManageScreenState extends State<AdminOfferManageScreen> {
                                   _selectedTargetIds.clear();
                                 }
                                 _codeController.clear();
-                              } else {
-                                // For Coupons, force Is Real to true
-                                _isReal = true;
                               }
                             });
                           },
                         ),
-                        SwitchListTile(
-                          title: const Text("Is Real Offer"),
-                          subtitle: const Text(
-                              "Actually reduces price. Uncheck for display-only/fake offers."),
-                          value: _isReal,
-                          activeThumbColor: colorScheme.primary,
-                          onChanged: !_isSale
-                              ? null // Disable for coupons (always real)
-                              : (v) => setState(() => _isReal = v),
-                        ),
+                        const SizedBox(height: AppSpacing.md),
                         const SizedBox(height: AppSpacing.xxl),
                         SizedBox(
                           width: double.infinity,

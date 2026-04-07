@@ -2,7 +2,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import 'package:url_launcher/url_launcher.dart';
+import '../../data/services/app_config_service.dart';
 
 import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_radius.dart';
@@ -93,14 +95,59 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
     } catch (e, s) {
       CrashlyticsService().recordError(e, s);
       if (mounted) {
-        ErrorUtils.showError(context, e.toString());
+        // If user already exists, suggest Google login
+        if (e is AuthException && e.code == 'user_already_exists') {
+          _showSwitchToGoogleDialog();
+        } else {
+          ErrorUtils.showError(context, e);
+        }
+      }
+    }
+  }
+
+  void _showSwitchToGoogleDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Account Found!'),
+        content: const Text(
+            'It looks like this email is already registered. Would you like to sign in with Google or your existing password instead?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _handleGoogleLogin();
+            },
+            child: const Text('Use Google'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    if (!_agreedToTerms) {
+      ErrorUtils.showError(
+          context, 'Please agree to the Terms and Conditions to proceed.');
+      return;
+    }
+    try {
+      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+    } catch (e, s) {
+      CrashlyticsService().recordError(e, s);
+      if (mounted) {
+        ErrorUtils.showError(context, e);
       }
     }
   }
 
   Future<void> _launchTerms() async {
-    final Uri url = Uri.parse('https://krushikalp.com/terms');
-    if (!await launchUrl(url)) {
+    final Uri url = Uri.parse(AppConfigService.termsUrl);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
         ErrorUtils.showError(context, 'Could not launch terms and conditions');
       }
@@ -283,6 +330,31 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                           text: 'Sign Up',
                           isLoading: isLoading,
                           onPressed: _handleSignUp,
+                        ),
+
+                        const SizedBox(height: AppSpacing.xl),
+                        Row(
+                          children: [
+                            const Expanded(child: Divider()),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                              child: Text('OR', style: theme.textTheme.bodySmall),
+                            ),
+                            const Expanded(child: Divider()),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.xl),
+
+                        OutlinedButton.icon(
+                          onPressed: isLoading ? null : _handleGoogleLogin,
+                          icon: const Icon(Icons.login),
+                          label: const Text('Continue with Google'),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 56),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                            ),
+                          ),
                         ),
 
                         const SizedBox(height: AppSpacing.xl),

@@ -77,7 +77,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
     final double percentage =
         widget.totalMarks > 0 ? (widget.score / widget.totalMarks) * 100 : 0.0;
 
-    _scoreAnimation = Tween<double>(begin: 0, end: percentage).animate(
+    _scoreAnimation = Tween<double>(begin: 0, end: widget.score).animate(
         CurvedAnimation(
             parent: _scoreAnimationController, curve: Curves.easeOut));
 
@@ -373,16 +373,33 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                         AnimatedBuilder(
                           animation: _scoreAnimation,
                           builder: (context, child) {
-                            return Text(
-                              '${_scoreAnimation.value.toStringAsFixed(0)}%',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .displayLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: theme.colorScheme.onPrimary,
-                                    fontSize: context.sp(56),
-                                  ),
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _scoreAnimation.value.toStringAsFixed(1),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .displayLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: theme.colorScheme.onPrimary,
+                                        fontSize: context.sp(56),
+                                      ),
+                                ),
+                                Text(
+                                  'OUT OF ${widget.totalMarks.toStringAsFixed(1)}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelLarge
+                                      ?.copyWith(
+                                        color: theme.colorScheme.onPrimary
+                                            .withValues(alpha: 0.8),
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 2,
+                                      ),
+                                ),
+                              ],
                             );
                           },
                         ),

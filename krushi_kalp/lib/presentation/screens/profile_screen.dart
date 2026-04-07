@@ -259,6 +259,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       );
                     },
                   ),
+                  
+                  // Link Google Account (Support for Option A)
+                  _buildProfileOption(
+                    context,
+                    icon: Icons.link,
+                    title: 'Link Google Account',
+                    subtitle: 'Add Google login for easier access',
+                    onTap: () async {
+                      try {
+                        await ref.read(authNotifierProvider.notifier).linkGoogle();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Google account linked successfully!')),
+                          );
+                        }
+                      } catch (e) {
+                         if (mounted) ErrorUtils.showError(context, e);
+                      }
+                    },
+                  ),
 
                   const SizedBox(height: AppSpacing.lg),
 
@@ -359,9 +379,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Account Request'),
+        title: const Text('Delete Account'),
         content: const Text(
-          "Your account will be deleted within 5 days and your data can't be recovered.\n\nDo you want to send a deletion request to support?",
+          "Your account and all associated data will be permanently deleted within 5 days of your request.\n\nA deletion form will open. Please submit it to confirm your request.",
         ),
         actions: [
           TextButton(
@@ -371,7 +391,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
-            child: const Text('Send Request'),
+            child: const Text('Request Deletion'),
           ),
         ],
       ),
@@ -379,27 +399,36 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     if (confirmed == true && mounted) {
       try {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => const Center(child: CircularProgressIndicator()),
-        );
+        // Step 1: Notify admin via chat
+        try {
+          await ChatService.instance.sendMessage(
+            'I want to delete my account. Please process my deletion request.',
+          );
+        } catch (_) {
+          // Non-critical — form is the primary channel
+        }
 
-        await ChatService.instance.sendMessage("I need to delete account. Please process my request.");
+        // Step 2: Open the official Google Form (Play Store compliant)
+        const deletionFormUrl = 'https://forms.gle/pkSXTMxaytKqwYYa6';
+        final uri = Uri.parse(deletionFormUrl);
+        if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+          throw 'Could not open the deletion form. Please contact support.';
+        }
 
         if (mounted) {
-          Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Deletion request sent to admin support.'),
+              content: const Text(
+                'Request submitted. Please complete the form that just opened. Your account will be deleted within 5 days.',
+              ),
               backgroundColor: theme.colorScheme.primary,
+              duration: const Duration(seconds: 6),
             ),
           );
         }
       } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'profile_screen');
+        CrashlyticsService.instance.recordError(e, stack, reason: 'profile_screen_delete_account');
         if (mounted) {
-          Navigator.pop(context);
           ErrorUtils.showError(context, e);
         }
       }

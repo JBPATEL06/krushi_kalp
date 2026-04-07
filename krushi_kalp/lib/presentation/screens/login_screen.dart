@@ -4,18 +4,21 @@ import 'package:krushi_kalp/core/theme/app_motion.dart'; // MODIFIED: Added AppM
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
 import 'package:url_launcher/url_launcher.dart';
+import '../../data/services/app_config_service.dart';
 import '../providers/auth_notifier.dart';
 import '../providers/auth_state.dart';
 
-import '../../utils/error_utils.dart';
 import '../../data/services/notification_service.dart';
-import '../../core/theme/app_spacing.dart';
+import 'package:krushi_kalp/core/theme/app_spacing.dart';
+import 'package:krushi_kalp/core/router/route_constants.dart';
 import '../widgets/common/primary_button.dart';
 import '../widgets/common/premium_card.dart';
 import 'package:krushi_kalp/presentation/widgets/common/responsive_wrapper.dart';
 import '../../utils/crashlytics_service.dart';
+import '../../utils/error_utils.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -88,7 +91,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     } catch (e, s) {
       CrashlyticsService().recordError(e, s);
       if (mounted) {
-        ErrorUtils.showError(context, e.toString());
+        ErrorUtils.showError(context, e);
       }
     }
   }
@@ -104,9 +107,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     } catch (e, s) {
       CrashlyticsService().recordError(e, s);
       if (mounted) {
-        ErrorUtils.showError(context, 'Failed to sign in with Google.');
+        if (e is AuthException && (e.code == 'provider_already_linked' || e.code == 'email_already_used')) {
+          _showPasswordLinkDialog();
+        } else {
+          ErrorUtils.showError(context, e);
+        }
       }
     }
+  }
+
+  void _showPasswordLinkDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Account Conflict'),
+        content: const Text(
+            'This email is already registered with a password. Please log in using your email and password first. '
+            'Once logged in, you can link your Google account in the Profile settings for future use.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -231,27 +256,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                   ),
                                 ),
                                 obscureText: !_isPasswordVisible,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) return 'Enter password';
-                                  return null;
-                                },
+                                validator: (value) => (value == null || value.isEmpty) ? 'Enter password' : null,
                               ),
+                              const SizedBox(height: AppSpacing.xs),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () => context.push(RouteConstants.forgotPassword),
+                                  child: const Text('Forgot Password?'),
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.md),
                             ],
                           ),
                         ),
-
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {
-                               ScaffoldMessenger.of(context).showSnackBar(
-                                 const SnackBar(content: Text("Password reset functionality coming soon."))
-                               );
-                            },
-                            child: const Text('Forgot Password?'),
-                          ),
-                        ),
-
                         const SizedBox(height: AppSpacing.sm),
 
                         // Terms Checkbox
@@ -357,8 +375,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Future<void> _launchTerms() async {
-    final Uri url = Uri.parse('https://krushikalp.com/terms');
-    if (!await launchUrl(url)) {
+    final Uri url = Uri.parse(AppConfigService.termsUrl);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
         ErrorUtils.showError(context, 'Could not launch terms and conditions');
       }

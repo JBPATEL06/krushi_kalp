@@ -229,7 +229,7 @@ class _ExamScreenState extends State<ExamScreen> {
     }
 
     double marksPerQ = widget.test.totalMarks /
-        (widget.test.totalQuestions > 0 ? widget.test.totalQuestions : 1);
+        (_questions.isNotEmpty ? _questions.length : 1);
 
     double totalScore = (correctCount * marksPerQ);
 

@@ -33,7 +33,8 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - Goal: Add professional Email/Password auth alongside Google Auth.
 - Status: COMPLETE; Verified profile creation, T&C gating, and duplicate prevention.
 
-## Pending Phases
-- Cloud Function integration for checkout (v8)
-- Real-time notification hardening (v9)
-- Technical Audit & Scalability Analysis (Archived v13)
+## Current Phase: Stabilization & Error Handling (2026-04-02)
+- Goal: Fix LateInitializationError and refine Auth Error Handling.
+- Entities: Fixed `ResourceEntity`, `OfferEntity`, and `MockTestEntity` by replacing `late` fields with safe nullables.
+- Auth: Improved error mapping in `ErrorService` and `AuthNotifier` to handle account conflicts gracefully.
+- Status: COMPLETE.

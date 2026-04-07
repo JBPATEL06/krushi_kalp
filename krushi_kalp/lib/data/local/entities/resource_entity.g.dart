@@ -66,6 +66,11 @@ const ResourceEntitySchema = CollectionSchema(
       id: 9,
       name: r'typeString',
       type: IsarType.string,
+    ),
+    r'updatedAt': PropertySchema(
+      id: 10,
+      name: r'updatedAt',
+      type: IsarType.dateTime,
     )
   },
   estimateSize: _resourceEntityEstimateSize,
@@ -112,8 +117,18 @@ int _resourceEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.title.length * 3;
-  bytesCount += 3 + object.typeString.length * 3;
+  {
+    final value = object.title;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.typeString;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -133,6 +148,7 @@ void _resourceEntitySerialize(
   writer.writeString(offsets[7], object.thumbnailUrl);
   writer.writeString(offsets[8], object.title);
   writer.writeString(offsets[9], object.typeString);
+  writer.writeDateTime(offsets[10], object.updatedAt);
 }
 
 ResourceEntity _resourceEntityDeserialize(
@@ -143,16 +159,17 @@ ResourceEntity _resourceEntityDeserialize(
 ) {
   final object = ResourceEntity();
   object.category = reader.readStringOrNull(offsets[0]);
-  object.createdAt = reader.readDateTime(offsets[1]);
+  object.createdAt = reader.readDateTimeOrNull(offsets[1]);
   object.description = reader.readStringOrNull(offsets[2]);
   object.fileUrl = reader.readStringOrNull(offsets[3]);
   object.id = id;
-  object.isActive = reader.readBool(offsets[4]);
-  object.price = reader.readDouble(offsets[5]);
-  object.resourceId = reader.readLong(offsets[6]);
+  object.isActive = reader.readBoolOrNull(offsets[4]);
+  object.price = reader.readDoubleOrNull(offsets[5]);
+  object.resourceId = reader.readLongOrNull(offsets[6]);
   object.thumbnailUrl = reader.readStringOrNull(offsets[7]);
-  object.title = reader.readString(offsets[8]);
-  object.typeString = reader.readString(offsets[9]);
+  object.title = reader.readStringOrNull(offsets[8]);
+  object.typeString = reader.readStringOrNull(offsets[9]);
+  object.updatedAt = reader.readDateTimeOrNull(offsets[10]);
   return object;
 }
 
@@ -166,23 +183,25 @@ P _resourceEntityDeserializeProp<P>(
     case 0:
       return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 2:
       return (reader.readStringOrNull(offset)) as P;
     case 3:
       return (reader.readStringOrNull(offset)) as P;
     case 4:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset)) as P;
     case 5:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 6:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 7:
       return (reader.readStringOrNull(offset)) as P;
     case 8:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 9:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
+    case 10:
+      return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -439,7 +458,25 @@ extension ResourceEntityQueryFilter
   }
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      createdAtEqualTo(DateTime value) {
+      createdAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'createdAt',
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      createdAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'createdAt',
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      createdAtEqualTo(DateTime? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'createdAt',
@@ -450,7 +487,7 @@ extension ResourceEntityQueryFilter
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       createdAtGreaterThan(
-    DateTime value, {
+    DateTime? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -464,7 +501,7 @@ extension ResourceEntityQueryFilter
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       createdAtLessThan(
-    DateTime value, {
+    DateTime? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -478,8 +515,8 @@ extension ResourceEntityQueryFilter
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       createdAtBetween(
-    DateTime lower,
-    DateTime upper, {
+    DateTime? lower,
+    DateTime? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -858,7 +895,25 @@ extension ResourceEntityQueryFilter
   }
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      isActiveEqualTo(bool value) {
+      isActiveIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'isActive',
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      isActiveIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'isActive',
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      isActiveEqualTo(bool? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isActive',
@@ -868,8 +923,26 @@ extension ResourceEntityQueryFilter
   }
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      priceIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'price',
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      priceIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'price',
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       priceEqualTo(
-    double value, {
+    double? value, {
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -883,7 +956,7 @@ extension ResourceEntityQueryFilter
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       priceGreaterThan(
-    double value, {
+    double? value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
@@ -899,7 +972,7 @@ extension ResourceEntityQueryFilter
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       priceLessThan(
-    double value, {
+    double? value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
@@ -915,8 +988,8 @@ extension ResourceEntityQueryFilter
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       priceBetween(
-    double lower,
-    double upper, {
+    double? lower,
+    double? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     double epsilon = Query.epsilon,
@@ -934,7 +1007,25 @@ extension ResourceEntityQueryFilter
   }
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
-      resourceIdEqualTo(int value) {
+      resourceIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'resourceId',
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      resourceIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'resourceId',
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      resourceIdEqualTo(int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'resourceId',
@@ -945,7 +1036,7 @@ extension ResourceEntityQueryFilter
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       resourceIdGreaterThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -959,7 +1050,7 @@ extension ResourceEntityQueryFilter
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       resourceIdLessThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -973,8 +1064,8 @@ extension ResourceEntityQueryFilter
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       resourceIdBetween(
-    int lower,
-    int upper, {
+    int? lower,
+    int? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -1144,8 +1235,26 @@ extension ResourceEntityQueryFilter
   }
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      titleIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'title',
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      titleIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'title',
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       titleEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1159,7 +1268,7 @@ extension ResourceEntityQueryFilter
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       titleGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1175,7 +1284,7 @@ extension ResourceEntityQueryFilter
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       titleLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1191,8 +1300,8 @@ extension ResourceEntityQueryFilter
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       titleBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -1280,8 +1389,26 @@ extension ResourceEntityQueryFilter
   }
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      typeStringIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'typeString',
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      typeStringIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'typeString',
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       typeStringEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1295,7 +1422,7 @@ extension ResourceEntityQueryFilter
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       typeStringGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1311,7 +1438,7 @@ extension ResourceEntityQueryFilter
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       typeStringLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1327,8 +1454,8 @@ extension ResourceEntityQueryFilter
 
   QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
       typeStringBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -1411,6 +1538,80 @@ extension ResourceEntityQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'typeString',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      updatedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'updatedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      updatedAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'updatedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      updatedAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      updatedAtGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      updatedAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterFilterCondition>
+      updatedAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'updatedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -1553,6 +1754,19 @@ extension ResourceEntityQuerySortBy
       sortByTypeStringDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'typeString', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterSortBy> sortByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterSortBy>
+      sortByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
 }
@@ -1702,6 +1916,19 @@ extension ResourceEntityQuerySortThenBy
       return query.addSortBy(r'typeString', Sort.desc);
     });
   }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterSortBy> thenByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QAfterSortBy>
+      thenByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
 }
 
 extension ResourceEntityQueryWhereDistinct
@@ -1773,6 +2000,13 @@ extension ResourceEntityQueryWhereDistinct
       return query.addDistinctBy(r'typeString', caseSensitive: caseSensitive);
     });
   }
+
+  QueryBuilder<ResourceEntity, ResourceEntity, QDistinct>
+      distinctByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'updatedAt');
+    });
+  }
 }
 
 extension ResourceEntityQueryProperty
@@ -1789,7 +2023,8 @@ extension ResourceEntityQueryProperty
     });
   }
 
-  QueryBuilder<ResourceEntity, DateTime, QQueryOperations> createdAtProperty() {
+  QueryBuilder<ResourceEntity, DateTime?, QQueryOperations>
+      createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
     });
@@ -1808,19 +2043,19 @@ extension ResourceEntityQueryProperty
     });
   }
 
-  QueryBuilder<ResourceEntity, bool, QQueryOperations> isActiveProperty() {
+  QueryBuilder<ResourceEntity, bool?, QQueryOperations> isActiveProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isActive');
     });
   }
 
-  QueryBuilder<ResourceEntity, double, QQueryOperations> priceProperty() {
+  QueryBuilder<ResourceEntity, double?, QQueryOperations> priceProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'price');
     });
   }
 
-  QueryBuilder<ResourceEntity, int, QQueryOperations> resourceIdProperty() {
+  QueryBuilder<ResourceEntity, int?, QQueryOperations> resourceIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'resourceId');
     });
@@ -1833,15 +2068,22 @@ extension ResourceEntityQueryProperty
     });
   }
 
-  QueryBuilder<ResourceEntity, String, QQueryOperations> titleProperty() {
+  QueryBuilder<ResourceEntity, String?, QQueryOperations> titleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'title');
     });
   }
 
-  QueryBuilder<ResourceEntity, String, QQueryOperations> typeStringProperty() {
+  QueryBuilder<ResourceEntity, String?, QQueryOperations> typeStringProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'typeString');
+    });
+  }
+
+  QueryBuilder<ResourceEntity, DateTime?, QQueryOperations>
+      updatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'updatedAt');
     });
   }
 }

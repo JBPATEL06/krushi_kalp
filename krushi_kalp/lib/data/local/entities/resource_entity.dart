@@ -8,20 +8,20 @@ class ResourceEntity {
   @Index(unique: true, replace: true)
   Id id = Isar.autoIncrement;
 
-  late int resourceId;
-  late String title;
+  int? resourceId;
+  String? title;
   String? description;
 
   // Safe Enum storing as String
-  late String typeString;
+  String? typeString;
 
   String? category;
   String? fileUrl;
   String? thumbnailUrl;
-  late double price;
-  late bool isActive;
-  late DateTime createdAt;
-  late DateTime updatedAt;
+  double? price;
+  bool? isActive;
+  DateTime? createdAt;
+  DateTime? updatedAt;
 
 
   // Convert from Domain Model
@@ -51,17 +51,17 @@ class ResourceEntity {
     );
 
     return Resource(
-      id: resourceId,
-      title: title,
+      id: resourceId ?? 0,
+      title: title ?? '',
       description: description,
       type: parsedType,
       category: category,
       fileUrl: fileUrl,
       thumbnailUrl: thumbnailUrl,
-      price: price,
-      isActive: isActive,
-      createdAt: createdAt,
-      updatedAt: updatedAt,
+      price: price ?? 0.0,
+      isActive: isActive ?? true,
+      createdAt: createdAt ?? DateTime.now(),
+      updatedAt: updatedAt ?? DateTime.now(),
     );
 
   }

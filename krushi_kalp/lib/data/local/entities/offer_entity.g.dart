@@ -129,17 +129,42 @@ int _offerEntityEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.description.length * 3;
-  bytesCount += 3 + object.discountType.length * 3;
-  bytesCount += 3 + object.targetIds.length * 3;
   {
-    for (var i = 0; i < object.targetIds.length; i++) {
-      final value = object.targetIds[i];
-      bytesCount += value.length * 3;
+    final value = object.description;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.targetType.length * 3;
-  bytesCount += 3 + object.title.length * 3;
+  {
+    final value = object.discountType;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final list = object.targetIds;
+    if (list != null) {
+      bytesCount += 3 + list.length * 3;
+      {
+        for (var i = 0; i < list.length; i++) {
+          final value = list[i];
+          bytesCount += value.length * 3;
+        }
+      }
+    }
+  }
+  {
+    final value = object.targetType;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.title;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -176,23 +201,23 @@ OfferEntity _offerEntityDeserialize(
 ) {
   final object = OfferEntity();
   object.code = reader.readStringOrNull(offsets[0]);
-  object.description = reader.readString(offsets[1]);
-  object.discountType = reader.readString(offsets[2]);
-  object.discountValue = reader.readDouble(offsets[3]);
+  object.description = reader.readStringOrNull(offsets[1]);
+  object.discountType = reader.readStringOrNull(offsets[2]);
+  object.discountValue = reader.readDoubleOrNull(offsets[3]);
   object.endDate = reader.readDateTimeOrNull(offsets[4]);
   object.id = id;
-  object.isActive = reader.readBool(offsets[5]);
-  object.isReal = reader.readBool(offsets[6]);
-  object.isSale = reader.readBool(offsets[7]);
+  object.isActive = reader.readBoolOrNull(offsets[5]);
+  object.isReal = reader.readBoolOrNull(offsets[6]);
+  object.isSale = reader.readBoolOrNull(offsets[7]);
   object.maxDiscount = reader.readDoubleOrNull(offsets[8]);
   object.minOrderValue = reader.readDoubleOrNull(offsets[9]);
-  object.minQuantity = reader.readLong(offsets[10]);
-  object.offerId = reader.readLong(offsets[11]);
+  object.minQuantity = reader.readLongOrNull(offsets[10]);
+  object.offerId = reader.readLongOrNull(offsets[11]);
   object.startDate = reader.readDateTimeOrNull(offsets[12]);
-  object.targetIds = reader.readStringList(offsets[13]) ?? [];
-  object.targetType = reader.readString(offsets[14]);
-  object.title = reader.readString(offsets[15]);
-  object.usageLimit = reader.readLong(offsets[16]);
+  object.targetIds = reader.readStringList(offsets[13]);
+  object.targetType = reader.readStringOrNull(offsets[14]);
+  object.title = reader.readStringOrNull(offsets[15]);
+  object.usageLimit = reader.readLongOrNull(offsets[16]);
   return object;
 }
 
@@ -206,37 +231,37 @@ P _offerEntityDeserializeProp<P>(
     case 0:
       return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 3:
-      return (reader.readDouble(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 4:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 5:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset)) as P;
     case 6:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset)) as P;
     case 7:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset)) as P;
     case 8:
       return (reader.readDoubleOrNull(offset)) as P;
     case 9:
       return (reader.readDoubleOrNull(offset)) as P;
     case 10:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 11:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 12:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 13:
-      return (reader.readStringList(offset) ?? []) as P;
+      return (reader.readStringList(offset)) as P;
     case 14:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 15:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 16:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -484,8 +509,26 @@ extension OfferEntityQueryFilter
   }
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      descriptionIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'description',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      descriptionIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'description',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       descriptionEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -499,7 +542,7 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       descriptionGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -515,7 +558,7 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       descriptionLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -531,8 +574,8 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       descriptionBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -620,8 +663,26 @@ extension OfferEntityQueryFilter
   }
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      discountTypeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'discountType',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      discountTypeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'discountType',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       discountTypeEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -635,7 +696,7 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       discountTypeGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -651,7 +712,7 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       discountTypeLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -667,8 +728,8 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       discountTypeBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -756,8 +817,26 @@ extension OfferEntityQueryFilter
   }
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      discountValueIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'discountValue',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      discountValueIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'discountValue',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       discountValueEqualTo(
-    double value, {
+    double? value, {
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -771,7 +850,7 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       discountValueGreaterThan(
-    double value, {
+    double? value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
@@ -787,7 +866,7 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       discountValueLessThan(
-    double value, {
+    double? value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
@@ -803,8 +882,8 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       discountValueBetween(
-    double lower,
-    double upper, {
+    double? lower,
+    double? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     double epsilon = Query.epsilon,
@@ -946,8 +1025,26 @@ extension OfferEntityQueryFilter
     });
   }
 
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      isActiveIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'isActive',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      isActiveIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'isActive',
+      ));
+    });
+  }
+
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition> isActiveEqualTo(
-      bool value) {
+      bool? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isActive',
@@ -956,8 +1053,25 @@ extension OfferEntityQueryFilter
     });
   }
 
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition> isRealIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'isReal',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      isRealIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'isReal',
+      ));
+    });
+  }
+
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition> isRealEqualTo(
-      bool value) {
+      bool? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isReal',
@@ -966,8 +1080,25 @@ extension OfferEntityQueryFilter
     });
   }
 
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition> isSaleIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'isSale',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      isSaleIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'isSale',
+      ));
+    });
+  }
+
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition> isSaleEqualTo(
-      bool value) {
+      bool? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isSale',
@@ -1145,7 +1276,25 @@ extension OfferEntityQueryFilter
   }
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
-      minQuantityEqualTo(int value) {
+      minQuantityIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'minQuantity',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      minQuantityIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'minQuantity',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      minQuantityEqualTo(int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'minQuantity',
@@ -1156,7 +1305,7 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       minQuantityGreaterThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1170,7 +1319,7 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       minQuantityLessThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1184,8 +1333,8 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       minQuantityBetween(
-    int lower,
-    int upper, {
+    int? lower,
+    int? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -1200,8 +1349,26 @@ extension OfferEntityQueryFilter
     });
   }
 
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      offerIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'offerId',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      offerIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'offerId',
+      ));
+    });
+  }
+
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition> offerIdEqualTo(
-      int value) {
+      int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'offerId',
@@ -1212,7 +1379,7 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       offerIdGreaterThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1225,7 +1392,7 @@ extension OfferEntityQueryFilter
   }
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition> offerIdLessThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1238,8 +1405,8 @@ extension OfferEntityQueryFilter
   }
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition> offerIdBetween(
-    int lower,
-    int upper, {
+    int? lower,
+    int? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -1324,6 +1491,24 @@ extension OfferEntityQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      targetIdsIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'targetIds',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      targetIdsIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'targetIds',
       ));
     });
   }
@@ -1554,8 +1739,26 @@ extension OfferEntityQueryFilter
   }
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      targetTypeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'targetType',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      targetTypeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'targetType',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       targetTypeEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1569,7 +1772,7 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       targetTypeGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1585,7 +1788,7 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       targetTypeLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1601,8 +1804,8 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       targetTypeBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -1689,8 +1892,25 @@ extension OfferEntityQueryFilter
     });
   }
 
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition> titleIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'title',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      titleIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'title',
+      ));
+    });
+  }
+
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition> titleEqualTo(
-    String value, {
+    String? value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1704,7 +1924,7 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       titleGreaterThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1719,7 +1939,7 @@ extension OfferEntityQueryFilter
   }
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition> titleLessThan(
-    String value, {
+    String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
@@ -1734,8 +1954,8 @@ extension OfferEntityQueryFilter
   }
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition> titleBetween(
-    String lower,
-    String upper, {
+    String? lower,
+    String? upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
@@ -1822,7 +2042,25 @@ extension OfferEntityQueryFilter
   }
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
-      usageLimitEqualTo(int value) {
+      usageLimitIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'usageLimit',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      usageLimitIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'usageLimit',
+      ));
+    });
+  }
+
+  QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
+      usageLimitEqualTo(int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'usageLimit',
@@ -1833,7 +2071,7 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       usageLimitGreaterThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1847,7 +2085,7 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       usageLimitLessThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1861,8 +2099,8 @@ extension OfferEntityQueryFilter
 
   QueryBuilder<OfferEntity, OfferEntity, QAfterFilterCondition>
       usageLimitBetween(
-    int lower,
-    int upper, {
+    int? lower,
+    int? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -2416,19 +2654,19 @@ extension OfferEntityQueryProperty
     });
   }
 
-  QueryBuilder<OfferEntity, String, QQueryOperations> descriptionProperty() {
+  QueryBuilder<OfferEntity, String?, QQueryOperations> descriptionProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'description');
     });
   }
 
-  QueryBuilder<OfferEntity, String, QQueryOperations> discountTypeProperty() {
+  QueryBuilder<OfferEntity, String?, QQueryOperations> discountTypeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'discountType');
     });
   }
 
-  QueryBuilder<OfferEntity, double, QQueryOperations> discountValueProperty() {
+  QueryBuilder<OfferEntity, double?, QQueryOperations> discountValueProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'discountValue');
     });
@@ -2440,19 +2678,19 @@ extension OfferEntityQueryProperty
     });
   }
 
-  QueryBuilder<OfferEntity, bool, QQueryOperations> isActiveProperty() {
+  QueryBuilder<OfferEntity, bool?, QQueryOperations> isActiveProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isActive');
     });
   }
 
-  QueryBuilder<OfferEntity, bool, QQueryOperations> isRealProperty() {
+  QueryBuilder<OfferEntity, bool?, QQueryOperations> isRealProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isReal');
     });
   }
 
-  QueryBuilder<OfferEntity, bool, QQueryOperations> isSaleProperty() {
+  QueryBuilder<OfferEntity, bool?, QQueryOperations> isSaleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isSale');
     });
@@ -2470,13 +2708,13 @@ extension OfferEntityQueryProperty
     });
   }
 
-  QueryBuilder<OfferEntity, int, QQueryOperations> minQuantityProperty() {
+  QueryBuilder<OfferEntity, int?, QQueryOperations> minQuantityProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'minQuantity');
     });
   }
 
-  QueryBuilder<OfferEntity, int, QQueryOperations> offerIdProperty() {
+  QueryBuilder<OfferEntity, int?, QQueryOperations> offerIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'offerId');
     });
@@ -2488,26 +2726,26 @@ extension OfferEntityQueryProperty
     });
   }
 
-  QueryBuilder<OfferEntity, List<String>, QQueryOperations>
+  QueryBuilder<OfferEntity, List<String>?, QQueryOperations>
       targetIdsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'targetIds');
     });
   }
 
-  QueryBuilder<OfferEntity, String, QQueryOperations> targetTypeProperty() {
+  QueryBuilder<OfferEntity, String?, QQueryOperations> targetTypeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'targetType');
     });
   }
 
-  QueryBuilder<OfferEntity, String, QQueryOperations> titleProperty() {
+  QueryBuilder<OfferEntity, String?, QQueryOperations> titleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'title');
     });
   }
 
-  QueryBuilder<OfferEntity, int, QQueryOperations> usageLimitProperty() {
+  QueryBuilder<OfferEntity, int?, QQueryOperations> usageLimitProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'usageLimit');
     });

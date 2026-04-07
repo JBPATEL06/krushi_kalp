@@ -11,7 +11,9 @@ class AuthState with _$AuthState {
     String? username,
     @Default(false) bool isLoading,
     @Default(false) bool isAuthCheckComplete,
+    @Default(false) bool isPasswordRecovery,
     String? localSessionId,
+    String? errorMessage,
   }) = _AuthState;
 
   const AuthState._();

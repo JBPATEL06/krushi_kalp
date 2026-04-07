@@ -18,18 +18,34 @@ class ErrorService {
     final String lowercaseError = errorStr.toLowerCase();
 
     // 2. Auth Errors
-    if (error is AuthException) {
+    if (error is AuthException ||
+        lowercaseError.contains('authapiexception') ||
+        lowercaseError.contains('authexception')) {
+      
+      // Specifically check for account conflicts
+      if (lowercaseError.contains('user already exists') || 
+          lowercaseError.contains('user already registered') ||
+          lowercaseError.contains('user_already_exists')) {
+        return "It looks like you've been here before! This email is already registered. Try signing in instead.";
+      }
+      
+      if (lowercaseError.contains('provider already linked') ||
+          lowercaseError.contains('already been used') ||
+          lowercaseError.contains('setup a password') ||
+          lowercaseError.contains('provider_already_linked')) {
+        return "Different account found! This email is already linked to another login method (like Google). Please sign in using that method.";
+      }
+
       if (lowercaseError.contains('invalid login credentials') ||
           lowercaseError.contains('invalid credentials')) {
-        return "Oops! The email or password doesn't seem right. ?? Please double-check and try again.";
+        return "Oops! The email or password doesn't seem right. Please double-check and try again.";
       }
+      
       if (lowercaseError.contains('email not confirmed')) {
-        return "Almost there! ?? Your email needs a quick confirmation. Please check your inbox for a verification link.";
+        return "Almost there! Your email needs a quick confirmation. Please check your inbox for a verification link.";
       }
-      if (lowercaseError.contains('user already exists')) {
-        return "It looks like you've been here before! ? This email is already registered. Try signing in instead.";
-      }
-      return error.message;
+
+      if (error is AuthException) return error.message;
     }
 
     // 3. Database Errors (Postgrest)
@@ -64,6 +80,7 @@ class ErrorService {
     }
 
     // 6. Generic Fallback
+    if (error is String) return error;
     return "Something went wrong. Please try again.";
   }
 }

@@ -129,7 +129,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
           file.name,
           title:
               file.name.replaceAll(RegExp(r'\.\w+$'), ''), // Name without ext
-          priority: 0,
+          priority: 0, // Default to 0, user can edit priority to move it up
         );
       }
 
@@ -193,57 +193,64 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
       content: StatefulBuilder(
         builder: (ctx, setDialogState) {
           final colorScheme = Theme.of(ctx).colorScheme;
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: getPremiumInputDecoration(
-                  ctx,
-                  labelText: 'Title',
-                  prefixIcon: const Icon(Icons.title_rounded),
+          return Material( // Added Material for TextField clarity
+            color: Colors.transparent,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  autofocus: true,
+                  decoration: getPremiumInputDecoration(
+                    ctx,
+                    labelText: 'Banner Title',
+                    prefixIcon: const Icon(Icons.title_rounded),
+                  ),
                 ),
-              ),
-              SizedBox(height: AppSpacing.md),
-              TextField(
-                controller: priorityController,
-                keyboardType: TextInputType.number,
-                decoration: getPremiumInputDecoration(
-                  ctx,
-                  labelText: 'Priority (higher = shown first)',
-                  prefixIcon: const Icon(Icons.low_priority_rounded),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: priorityController,
+                  keyboardType: TextInputType.number,
+                  decoration: getPremiumInputDecoration(
+                    ctx,
+                    labelText: 'Sort Priority (Higher = First)',
+                    prefixIcon: const Icon(Icons.low_priority_rounded),
+                  ),
                 ),
-              ),
-              SizedBox(height: AppSpacing.sm),
-              SwitchListTile(
-                title: const Text("Active"),
-                value: isActive,
-                activeThumbColor: colorScheme.primary,
-                onChanged: (val) => setDialogState(() => isActive = val),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ],
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  title: const Text("Show in App", style: TextStyle(fontSize: 14)),
+                  value: isActive,
+                  activeColor: colorScheme.primary,
+                  onChanged: (val) => setDialogState(() => isActive = val),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ],
+            ),
           );
         },
       ),
-      confirmText: "Save",
+      confirmText: "Save Changes",
       onConfirm: () async {
         try {
+          final int newPriority = int.tryParse(priorityController.text) ?? 0;
           await BannerService.instance.updateBannerMeta(
             banner.id,
             title: titleController.text.trim(),
-            priority: int.tryParse(priorityController.text) ?? 0,
+            priority: newPriority,
             isActive: isActive,
           );
           if (mounted) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(const SnackBar(content: Text("Banner updated")));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Banner updated successfully")),
+            );
           }
         } catch (e, stack) {
           CrashlyticsService.instance.recordError(e, stack, reason: 'banner_management_tab');
           if (mounted) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text("Error: $e")));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Failed to update banner: $e")),
+            );
           }
         }
       },

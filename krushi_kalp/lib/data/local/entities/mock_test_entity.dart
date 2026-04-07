@@ -8,25 +8,25 @@ class MockTestEntity {
   @Index(unique: true, replace: true)
   Id id = Isar.autoIncrement; // Will be overwritten by testId in fromMockTest
 
-  late int testId;
-  late String title;
-  late String description;
-  late String category;
-  late String filePath;
-  late double price;
+  int? testId;
+  String? title;
+  String? description;
+  String? category;
+  String? filePath;
+  double? price;
   int? durationMinutes;
-  late int totalQuestions;
-  late int totalMarks;
-  late bool negativeMarking;
-  late double negativeMarksPerQ;
-  late String language;
+  int? totalQuestions;
+  int? totalMarks;
+  bool? negativeMarking;
+  double? negativeMarksPerQ;
+  String? language;
 
   String? coverImagePath;
   String? signedUrl;
   String? contentUrl;
   String? discount;
   double? mrp;
-  late DateTime createdAt;
+  DateTime? createdAt;
 
   // Convert from Domain Model
   static MockTestEntity fromMockTest(MockTest test) {
@@ -55,24 +55,24 @@ class MockTestEntity {
   // Convert to Domain Model
   MockTest toMockTest() {
     return MockTest(
-      id: testId,
-      title: title,
-      description: description,
-      category: category,
-      filePath: filePath,
-      price: price,
+      id: testId ?? 0,
+      title: title ?? '',
+      description: description ?? '',
+      category: category ?? '',
+      filePath: filePath ?? '',
+      price: price ?? 0.0,
       durationMinutes: durationMinutes,
-      totalQuestions: totalQuestions,
-      totalMarks: totalMarks,
-      negativeMarking: negativeMarking,
-      negativeMarksPerQ: negativeMarksPerQ,
-      language: language,
+      totalQuestions: totalQuestions ?? 0,
+      totalMarks: totalMarks ?? 0,
+      negativeMarking: negativeMarking ?? false,
+      negativeMarksPerQ: negativeMarksPerQ ?? 0.0,
+      language: language ?? 'English',
       coverImagePath: coverImagePath,
       signedUrl: signedUrl,
       contentUrl: contentUrl,
       discount: discount,
       mrp: mrp,
-      createdAt: createdAt,
+      createdAt: createdAt ?? DateTime.now(),
     );
   }
 }
