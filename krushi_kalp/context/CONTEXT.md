@@ -38,3 +38,12 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - Entities: Fixed `ResourceEntity`, `OfferEntity`, and `MockTestEntity` by replacing `late` fields with safe nullables.
 - Auth: Improved error mapping in `ErrorService` and `AuthNotifier` to handle account conflicts gracefully.
 - Status: COMPLETE.
+
+## Current Phase: Demo Data & Store Optimization (2026-04-07)
+- Goal: Finalize high-fidelity demo environment and stabilize Store data syncing.
+- Content: Standardized 15 agriculture items (Mock Tests, E-books, PYQs, Current Affairs, Study Material).
+- Pricing: Implemented "2-Free, 1-Paid" pattern with demo branding.
+- Syncing: Enabled `forceRefresh: true` in `StoreScreen` to bypass local Isar cache for real-time accuracy.
+- Visibility: Removed price filters to ensure all demo content (including free items) is visible in the Shop.
+- Stability: Resolved "Unmodifiable list" crashes in sorting logic and fixed Android Predictive Back warnings.
+- Status: COMPLETE.

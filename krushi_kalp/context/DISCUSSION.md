@@ -62,6 +62,20 @@
 - **Outcome**: Both crashes and UX edge cases resolved.
 - **Status**: COMPLETE.
 
-## Branch Gate:
-- **Branch**: `feature/email-auth` (Confirmed by user).
-- **Status**: COMPLETE. All tasks in Phase 1-5 finished and verified.
+## Phase 6: Demo Data & Store Sync Stabilization (2026-04-07)
+
+### Discussion: Demo Visibility & Refresh Strategy
+- **Problem**: Store only showed 1/3 mock tests due to free-item filtering.
+- **Problem**: Store items didn't update immediately after Supabase changes due to local Isar caching.
+- **Decisions**:
+  - Removed "Price > 0" filter in `StoreScreen` to make all 15 demo items visible.
+  - Implemented `forceRefresh: true` for `fetchTests`, `fetchAll`, and `fetchActiveOffers` in the Store.
+  - Standardized all 15 items with "2-Free, 1-Paid" structure and demo disclaimers.
+  - Converted legacy offer codes to a single "Automatic Launch Sale" (ID 9).
+- **Stability Fixes**:
+  - **Crash Resolution**: Fixed `Unsupported operation: Cannot modify an unmodifiable list` by wrapping state-derived lists in `List.from()` before sorting.
+  - **Manifest**: Added `android:enableOnBackInvokedCallback="true"` to `AndroidManifest.xml` to fix Predictive Back system warnings.
+- **Outcome**: Demo environment is fully populated, synchronized, and stable.
+- **Branch Gate**:
+  - **Branch**: `fix/store-refresh-visibility` (Confirmed by user).
+  - **Status**: COMPLETE.
