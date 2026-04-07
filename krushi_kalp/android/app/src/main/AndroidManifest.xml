@@ -14,7 +14,8 @@
     <application
         android:label="Krushi Kalp"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true">
         
         <!-- Default Notification Channel for Firebase -->
         <meta-data

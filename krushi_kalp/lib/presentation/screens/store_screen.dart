@@ -489,7 +489,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
   Widget _buildMockTestsTab(
       TestState testState, OfferState offerState, Set<int> cartItemIds,
       {bool isFree = false}) {
-    List<MockTest> tests = testState.allTests;
+    List<MockTest> tests = List.from(testState.allTests);
 
     // Showing all tests (free and paid) in store for demo transparency
     // if (isFree) {
