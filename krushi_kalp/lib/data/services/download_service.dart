@@ -106,7 +106,8 @@ class DownloadService {
       throw ArgumentError(
           'userId is required — always pass the authenticated user ID');
     }
-    final sanitized = filename.replaceAll(RegExp(r'[^\w\s\.-]'), '_');
+    // Standardize sanitation: replace spaces and special chars with underscores
+    final sanitized = filename.replaceAll(RegExp(r'[^\w\.-]'), '_');
     final dir = await _userDir(userId);
     return '${dir.path}/$sanitized';
   }
@@ -160,7 +161,7 @@ class DownloadService {
 
   Future<void> _registerOwnership(String userId, String filename, {DateTime? updatedAt}) async {
     final manifest = await _readManifest(userId);
-    final sanitized = filename.replaceAll(RegExp(r'[^\w\s\.-]'), '_');
+    final sanitized = filename.replaceAll(RegExp(r'[^\w\.-]'), '_');
     manifest[sanitized] = {
       'userId': userId,
       'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
@@ -172,7 +173,7 @@ class DownloadService {
   Future<bool> verifyOwnership(String filename,
       {required String userId}) async {
     if (userId.isEmpty) return false;
-    final sanitized = filename.replaceAll(RegExp(r'[^\w\s\.-]'), '_');
+    final sanitized = filename.replaceAll(RegExp(r'[^\w\.-]'), '_');
     final manifest = await _readManifest(userId);
     final data = manifest[sanitized];
     if (data is Map) return data['userId'] == userId;
@@ -192,7 +193,7 @@ class DownloadService {
     final file = File(path);
     if (!await file.exists()) return;
 
-    final sanitized = filename.replaceAll(RegExp(r'[^\w\s\.-]'), '_');
+    final sanitized = filename.replaceAll(RegExp(r'[^\w\.-]'), '_');
     final manifest = await _readManifest(userId);
     final data = manifest[sanitized];
 

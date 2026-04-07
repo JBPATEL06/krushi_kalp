@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:rxdart/rxdart.dart';
 import '../../utils/supabase_url_helper.dart';
 import '../../utils/crashlytics_service.dart';
+import '../../utils/retry_helper.dart';
 
 class AdminService {
   static final _supabase = Supabase.instance.client;
@@ -41,7 +42,11 @@ class AdminService {
           _supabase.from('order_items').count(CountOption.exact).not('resource_id', 'is', null),
         ];
 
-        final results = await Future.wait(futures);
+        final results = await RetryHelper.run(
+          () async => await Future.wait(futures),
+          maxRetries: 3,
+          initialDelay: const Duration(seconds: 2),
+        );
 
         double revenue = 0.0;
         int totalPurchased = 0;
@@ -83,7 +88,10 @@ class AdminService {
         .startWith(null)
         .asyncMap((_) async {
       try {
-        final results = await _supabase.from('results').select('user_id, test_id, score_obtained').order('attempt_date', ascending: false).limit(100);
+        final results = await RetryHelper.run(
+          () async => await _supabase.from('results').select('user_id, test_id, score_obtained').order('attempt_date', ascending: false).limit(100),
+          maxRetries: 2,
+        );
         if (results.isEmpty) return [];
 
         final userIds = results.map((r) => r['user_id']).toSet().toList();
@@ -132,7 +140,10 @@ class AdminService {
         .startWith(null)
         .asyncMap((_) async {
       try {
-        final items = await _supabase.from('order_items').select('test_id').not('test_id', 'is', null).limit(200);
+        final items = await RetryHelper.run(
+          () async => await _supabase.from('order_items').select('test_id').not('test_id', 'is', null).limit(200),
+          maxRetries: 2,
+        );
         if (items.isEmpty) return [];
 
         final Map<int, int> testSalesCount = {};

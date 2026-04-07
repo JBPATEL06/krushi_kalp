@@ -7,6 +7,8 @@ import '../../../../domain/models/resource.dart';
 import '../../../utils/ui_helpers.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import '../../../../utils/supabase_url_helper.dart';
+import '../../../../data/services/background_upload_service.dart';
+import '../../../../data/services/transfer_notification_service.dart';
 import '../../../../utils/error_utils.dart';
 import '../../../../utils/crashlytics_service.dart';
 
@@ -100,6 +102,14 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
       );
 
       if (result != null) {
+        if (result.files.first.size > 1024 * 1024) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Cover image must be under 1MB')),
+            );
+          }
+          return;
+        }
         setState(() {
           _coverBytes = result.files.first.bytes;
           _coverName = result.files.first.name;
@@ -132,10 +142,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
       final createdAt = widget.resource?.createdAt ?? DateTime.now();
       final existingId = widget.resource?.id;
 
-      String finalFileUrl = _existingFileUrl ?? '';
-      String finalCoverUrl = _existingCoverUrl ?? '';
-
-      final typeStr = widget.type == ResourceType.eBook
+      final typeStrRaw = widget.type == ResourceType.eBook
           ? 'ebook'
           : widget.type == ResourceType.currentAffair
               ? 'current_affair'
@@ -143,69 +150,107 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
                   ? 'study_material'
                   : 'pyq';
 
-      // 1. Handle PDF Upload (Sequential Await)
-      if (_fileBytes != null) {
-        final cleanName = _fileName!.replaceAll(' ', '_');
-        final path = 'Resources/$typeStr/file/${DateTime.now().millisecondsSinceEpoch}_$cleanName';
-        
-        final uploadedPath = await _resourceService.uploadFile(
-          path: path, 
-          fileBytes: _fileBytes!,
-          bucket: 'mock_test',
-        );
-        
-        if (uploadedPath != null) {
-          finalFileUrl = uploadedPath;
-          if (widget.resource != null && _existingFileUrl != null) {
-            await _resourceService.deleteFileFromStorage(_existingFileUrl!).catchError((_) => null);
-          }
-        }
-      }
-
-      // 2. Handle Cover Upload (Sequential Await)
-      if (_coverBytes != null) {
-        final cleanCover = _coverName!.replaceAll(' ', '_');
-        final path = 'Resources/$typeStr/cover/${DateTime.now().millisecondsSinceEpoch}_$cleanCover';
-        
-        final uploadedPath = await _resourceService.uploadFile(
-          path: path, 
-          fileBytes: _coverBytes!,
-          bucket: 'mock_test',
-        );
-        
-        if (uploadedPath != null) {
-          finalCoverUrl = uploadedPath;
-          if (widget.resource != null && _existingCoverUrl != null) {
-            await _resourceService.deleteFileFromStorage(_existingCoverUrl!).catchError((_) => null);
-          }
-        }
-      }
-
-      // 3. Save to Database
-      final newItem = Resource(
+      // 1. Save to Database First to get ID / Confirm record
+      final metadata = Resource(
         id: existingId ?? 0,
         title: title,
         description: description,
         type: widget.type,
         category: category,
-        fileUrl: finalFileUrl,
-        thumbnailUrl: finalCoverUrl,
+        fileUrl: _existingFileUrl ?? '',
+        thumbnailUrl: _existingCoverUrl ?? '',
         price: price,
         isActive: active,
         createdAt: createdAt,
         updatedAt: DateTime.now(),
       );
 
-
+      final int resourceId;
       if (existingId == null) {
-        await _resourceService.createResource(newItem);
+        resourceId = await _resourceService.createResource(metadata);
       } else {
-        await _resourceService.updateResource(existingId, newItem.toJson());
+        await _resourceService.updateResource(existingId, metadata.toJson());
+        resourceId = existingId;
+      }
+
+      // 2. Start Background Uploads (Non-blocking)
+
+      if (_fileBytes != null) {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final cleanName = _fileName!.replaceAll(RegExp(r'[^\w\.-]'), '_');
+        final path = 'Resources/$typeStrRaw/file/${timestamp}_$cleanName';
+
+        BackgroundUploadService().uploadFile(
+          taskId: 'resource_file_$resourceId',
+          fileName: 'File: $title',
+          bucketName: 'mock_test',
+          storagePath: path,
+          fileBytes: _fileBytes!,
+          fileType: 'resource_pdf',
+          onProgress: (p) => TransferNotificationService().showUploadProgress(
+            taskId: 'resource_file_$resourceId',
+            fileName: 'Resource PDF: $title',
+            progress: p,
+          ),
+          onComplete: (completedPath) async {
+            await _resourceService.updateResource(resourceId, {'file_url': completedPath});
+            if (existingId != null && _existingFileUrl != null) {
+              await _resourceService.deleteFileFromStorage(_existingFileUrl!).catchError((_) => null);
+            }
+            TransferNotificationService().showUploadSuccess(
+              taskId: 'resource_file_$resourceId',
+              fileName: 'Resource file uploaded',
+            );
+          },
+          onError: (err) => TransferNotificationService().showUploadFailure(
+            taskId: 'resource_file_$resourceId',
+            fileName: 'Resource file upload',
+            error: err,
+          ),
+        );
+      }
+
+      if (_coverBytes != null) {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final cleanCover = _coverName!.replaceAll(RegExp(r'[^\w\.-]'), '_');
+        final path = 'Resources/$typeStrRaw/cover/${timestamp}_$cleanCover';
+
+        BackgroundUploadService().uploadFile(
+          taskId: 'resource_cover_$resourceId',
+          fileName: 'Cover: $title',
+          bucketName: 'mock_test',
+          storagePath: path,
+          fileBytes: _coverBytes!,
+          fileType: 'resource_cover',
+          onProgress: (p) => TransferNotificationService().showUploadProgress(
+            taskId: 'resource_cover_$resourceId',
+            fileName: 'Cover for Resource: $title',
+            progress: p,
+          ),
+          onComplete: (completedPath) async {
+            await _resourceService.updateResource(resourceId, {'thumbnail_url': completedPath});
+            if (existingId != null && _existingCoverUrl != null) {
+              await _resourceService.deleteFileFromStorage(_existingCoverUrl!).catchError((_) => null);
+            }
+            TransferNotificationService().showUploadSuccess(
+              taskId: 'resource_cover_$resourceId',
+              fileName: 'Resource cover uploaded',
+            );
+          },
+          onError: (err) => TransferNotificationService().showUploadFailure(
+            taskId: 'resource_cover_$resourceId',
+            fileName: 'Resource cover upload',
+            error: err,
+          ),
+        );
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(existingId == null ? 'Resource Created' : 'Resource Updated')),
+          const SnackBar(
+            content: Text('Resource saved. You can safely leave the app in the background; files will continue uploading.'),
+            duration: Duration(seconds: 4),
+          ),
         );
         Navigator.pop(context, true);
       }
@@ -302,6 +347,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
                 title: _coverName ?? extractFilename(_existingCoverUrl),
                 icon: Icons.image_outlined,
                 onPressed: _pickCover,
+                subtitle: "Max size: 1MB",
                 thumbnail: (_coverBytes != null)
                     ? Image.memory(_coverBytes!, fit: BoxFit.cover)
                     : (_existingCoverUrl != null)
@@ -394,6 +440,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
     required IconData icon,
     required VoidCallback onPressed,
     Widget? thumbnail,
+    String? subtitle,
     Color? iconColor,
   }) {
     final theme = Theme.of(context);
@@ -428,6 +475,9 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
+        subtitle: subtitle != null 
+            ? Text(subtitle, style: theme.textTheme.labelSmall)
+            : null,
         trailing: FilledButton.tonal(
           onPressed: onPressed,
           style: FilledButton.styleFrom(

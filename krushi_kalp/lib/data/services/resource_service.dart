@@ -132,7 +132,8 @@ class ResourceService {
   // --- ADMIN OPERATIONS ---
 
   /// Creates a new resource record. Sanitizes URLs to storage paths before insertion.
-  Future<void> createResource(Resource resource) async {
+  /// Returns the newly created resource ID.
+  Future<int> createResource(Resource resource) async {
     try {
       final payload = resource.toJson();
       payload.remove('id');
@@ -147,7 +148,9 @@ class ResourceService {
             payload['thumbnail_url'], 'mock_test');
       }
 
-      await _client.from('resources').insert(payload);
+      final response =
+          await _client.from('resources').insert(payload).select('id').single();
+      final int newId = response['id'];
 
       // Send broadcast notification for new content
       try {
@@ -159,6 +162,7 @@ class ResourceService {
       } catch (notiErr, stack) {
         CrashlyticsService.instance.recordError(notiErr, stack, reason: 'Broadcast failed after creating resource: ${resource.title}');
       }
+      return newId;
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service');
       throw Exception('Failed to create resource: $e');

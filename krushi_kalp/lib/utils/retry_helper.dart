@@ -16,7 +16,8 @@ class RetryHelper {
     Future<T> Function() action, {
     int maxRetries = 2,
     Duration initialDelay = const Duration(seconds: 1),
-    Duration timeout = const Duration(seconds: 15),
+    Duration? maxDelay,
+    Duration timeout = const Duration(seconds: 30),
   }) async {
     int attempt = 0;
 
@@ -24,17 +25,24 @@ class RetryHelper {
       try {
         return await action().timeout(timeout);
       } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'retry_helper_attempt_$attempt');
         attempt++;
         final isNetwork = NetworkUtils.isNetworkError(e) || e is TimeoutException;
 
         if (!isNetwork || attempt > maxRetries) {
-          // Not a network error or exhausted retries — rethrow
+          // Log final failure to Crashlytics
+          CrashlyticsService.instance.recordError(e, stack, reason: 'retry_helper_failed_after_$attempt\_attempts');
           rethrow;
         }
 
         // Exponential backoff: 1s, 2s, 4s...
-        final delay = initialDelay * (1 << (attempt - 1));
+        var delay = initialDelay * (1 << (attempt - 1));
+        if (maxDelay != null && delay > maxDelay) {
+          delay = maxDelay;
+        }
+
+        // Print to console for real-time visibility during user testing
+        // ignore: avoid_print
+        print('RetryHelper: Attempt $attempt failed. Retrying in ${delay.inSeconds}s... (Error: $e)');
         
         await Future.delayed(delay);
       }

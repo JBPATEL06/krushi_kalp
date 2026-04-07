@@ -79,3 +79,35 @@
 - **Branch Gate**:
   - **Branch**: `fix/store-refresh-visibility` (Confirmed by user).
   - **Status**: COMPLETE.
+## Phase 7: Background Transfer UX & Redirection (2026-04-07)
+
+### Discussion: Decoupling UI from File Transfers
+- **Problem**: Admin screens (Mock Test, Resources) blocked the UI until large assets finished uploading. This caused poor UX and potential timeouts on slow connections.
+- **Problem**: Users weren't notified that they could safely background the app during long downloads.
+- **Decisions**:
+  - **Decoupled Transfers**: Switched from sequential `await` of file uploads to a non-blocking `BackgroundUploadService` pattern.
+  - **Immediate Redirection**: Screens now `pop(context, true)` immediately after the database record (metadata) is confirmed, rather than waiting for binary assets.
+  - **User Feedback**: Added clear SnackBar messaging ("Safe to Background") to both Admin and User flows.
+  - **Data Integrity**: Database records are still saved synchronously *before* backgrounding to ensure valid IDs for storage paths. Background tasks update the record with final URLs upon completion.
+  - **Security**: Maintained existing Isar/Supabase RLS patterns for all background tasks.
+  - **Performance**: Enforced 1MB limit for Resource cover images; increased timeout to 180s and retries to 5 (from 3) for background transfers to fix timeout failures on slow networks.
+- **Outcome**: Admin and User experience is now fluid and "non-blocking" for all file operations, with high resiliency against transient network drops.
+- **Branch Gate**:
+  - **Branch**: `feature/background-transfer-ux-redirection` (Confirmed by user).
+  - **Status**: COMPLETE.
+
+## Phase 7.2: Extreme Resiliency & UI Stability (2026-04-08)
+
+### Discussion: Resolving Persistent Background Failures
+- **Problem**: Users reported a 70% failure rate for background uploads. Logs showed that even with 5 retries, the ~30s retry window was insufficient for mobile devices in extended dead zones.
+- **Problem**: `StoreScreen` crashed with "ref used after dispose" when users navigated away during data loading.
+- **Problem**: Admin dashboard streams generated repetitive `SocketException` logs during signal drops.
+- **Decisions**:
+  - **Extreme Backoff**: Upgraded `RetryHelper` to support `maxDelay` and custom `initialDelay`.
+  - **21-Minute Window**: Increased background upload retries to 8x with a 5s initial delay, stretching the retry window to ~21 minutes. This ensures tasks survive longer signal outages.
+  - **UI Hardening**: Added `mounted` checks to `StoreScreen._loadData` to safely handle navigation during async operations.
+  - **Log Suppression**: Wrapped `AdminService` dashboard streams in `RetryHelper` to handle transient network errors gracefully.
+- **Outcome**: Upload reliability is drastically increased, and UI stability is improved for navigating users.
+- **Branch Gate**:
+  - **Branch**: `feature/background-transfer-ux-redirection` (Existing branch).
+  - **Status**: COMPLETE.

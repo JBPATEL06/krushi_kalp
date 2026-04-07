@@ -95,6 +95,15 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
       _progress = 0.0;
     });
 
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Download started. You can safely leave the app in the background.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+
     try {
       await DownloadService().downloadFileInBackground(
         testId: widget.testId,
@@ -125,6 +134,11 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
                       '${widget.displayName ?? widget.filename} downloaded successfully.')), // CHANGED
             );
           }
+          // Update notification tray to show completion
+          TransferNotificationService().showDownloadSuccess(
+            taskId: widget.testId,
+            fileName: widget.displayName ?? widget.filename,
+          );
         },
         onError: (err) {
           if (mounted) setState(() => _isDownloading = false);

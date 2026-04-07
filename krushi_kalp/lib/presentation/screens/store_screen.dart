@@ -110,6 +110,9 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
           ref.read(resourceNotifierProvider.notifier).fetchAll(forceRefresh: true),
           ref.read(offerNotifierProvider.notifier).fetchActiveOffers(forceRefresh: true),
         ]);
+
+        if (!mounted) return;
+
         final user = ref.read(authNotifierProvider).user;
         if (user != null) {
           await ref.read(cartNotifierProvider.notifier).fetchCart();

@@ -78,6 +78,7 @@ void main() {
       when(() => mockResourceService.createResource(any()))
           .thenAnswer((_) async {
         await Future.delayed(const Duration(milliseconds: 500));
+        return 1;
       });
       when(() => mockResourceService.updateResource(any(), any()))
           .thenAnswer((_) async {

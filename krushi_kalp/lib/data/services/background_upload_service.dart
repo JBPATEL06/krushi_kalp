@@ -60,23 +60,26 @@ class BackgroundUploadService {
     required Function(double progress) onProgress,
     required Function(String path) onComplete,
     required Function(String error) onError,
+    String? taskId,
   }) async {
-    final taskId = const Uuid().v4();
+    final id = taskId ?? const Uuid().v4();
+    final sanitizedPath = _sanitizePath(storagePath);
+
     final task = UploadTask(
-      taskId: taskId,
+      taskId: id,
       fileName: fileName,
       bucketName: bucketName,
-      storagePath: storagePath,
+      storagePath: sanitizedPath,
       fileBytes: fileBytes,
       fileType: fileType,
       status: UploadTaskStatus.uploading,
     );
-    _activeTasks[taskId] = task;
+    _activeTasks[id] = task;
 
     // Start the upload process without awaiting it to return the taskId immediately.
     _executeUpload(task, onProgress, onComplete, onError);
 
-    return taskId;
+    return id;
   }
 
   /// Internal method that executes the actual Supabase upload with retries and progress simulation.
@@ -101,15 +104,23 @@ class BackgroundUploadService {
             onProgress(task.progress);
           }
 
+          final contentType = _getContentType(task.storagePath);
+
           await Supabase.instance.client.storage
               .from(task.bucketName)
               .uploadBinary(
                 task.storagePath,
                 task.fileBytes,
-                fileOptions: const FileOptions(upsert: true),
+                fileOptions: FileOptions(
+                  upsert: true,
+                  contentType: contentType,
+                ),
               );
         },
-        maxRetries: 3,
+        maxRetries: 8,
+        initialDelay: const Duration(seconds: 5),
+        maxDelay: const Duration(minutes: 2),
+        timeout: const Duration(seconds: 180),
       );
 
       // Mark task as completed
@@ -126,7 +137,7 @@ class BackgroundUploadService {
       // Log the failure to Crashlytics
       CrashlyticsService.instance.recordError(e, stack,
           reason:
-              'Background upload failed: ${task.fileName} in ${task.bucketName}');
+              'Background upload failed: ${task.fileName} in ${task.bucketName} (Path: ${task.storagePath})');
 
       onError(e.toString());
     } finally {
@@ -134,6 +145,44 @@ class BackgroundUploadService {
       // so UI or notification service can process the final state.
       await Future.delayed(const Duration(seconds: 3));
       _activeTasks.remove(task.taskId);
+    }
+  }
+
+  /// Sanitizes the storage path by ensuring the filename segment contains no illegal characters.
+  String _sanitizePath(String path) {
+    if (path.isEmpty) return path;
+
+    final segments = path.split('/');
+    final fileName = segments.last;
+
+    // Replace all non-alphanumeric (excluding . and -) with underscores.
+    // This handles spaces, non-breaking spaces, and other symbols that break URLs.
+    final sanitizedName = fileName.replaceAll(RegExp(r'[^\w\.-]'), '_');
+
+    segments[segments.length - 1] = sanitizedName;
+    return segments.join('/');
+  }
+
+  /// Returns the MIME type based on file extension.
+  String _getContentType(String path) {
+    final ext = path.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'pdf':
+        return 'application/pdf';
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'json':
+        return 'application/json';
+      case 'xlsx':
+      case 'xls':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      default:
+        return 'application/octet-stream';
     }
   }
 }

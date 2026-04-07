@@ -47,3 +47,15 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - Visibility: Removed price filters to ensure all demo content (including free items) is visible in the Shop.
 - Stability: Resolved "Unmodifiable list" crashes in sorting logic and fixed Android Predictive Back warnings.
 - Status: COMPLETE.
+## Current Phase: Background Transfer UX & Redirection (2026-04-07)
+- Goal: Stabilize file transfers (Uploads/Downloads) with non-blocking UX.
+- Implementation: Immediate redirection and "Safe to Background" feedback after metadata save.
+- Backgrounding: Refactored `MockTest` and `Resource` admin forms to offload assets to `BackgroundUploadService`.
+- User Feedack: Added initiation SnackBars to `DownloadActionButton` for transparency.
+- Optimization: Enforced 1MB limit for Resource cover images; increased background upload timeout to 180s and retries to 5x for stability.
+- Status: COMPLETE.
+## Current Phase: Resiliency & Stability Refinement (2026-04-08)
+- Goal: Fix 70% background transfer failure rate and UI disposal crashes.
+- Implementation: Increased background upload retry window to 21 minutes (8x retries, 5s initial delay).
+- Stability: Added `mounted` checks to `StoreScreen` and wrapped `AdminService` dashboard streams in `RetryHelper`.
+- Status: COMPLETE.

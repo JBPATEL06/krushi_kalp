@@ -73,7 +73,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
   Uint8List? _questionsBytes;
   Uint8List? _imageBytes;
 
-  static const int maxImageSizeBytes = 200 * 1024; // 200KB
+  static const int maxImageSizeBytes = 1024 * 1024; // 1MB
 
   Future<void> _pickCoverImage() async {
     final result = await FilePicker.platform.pickFiles(
@@ -86,7 +86,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
       if (file.size > maxImageSizeBytes) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Image must be less than 200KB')),
+            const SnackBar(content: Text('Image must be less than 1MB')),
           );
         }
         return;
@@ -171,6 +171,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
 
       // Upload Cover Image
       BackgroundUploadService().uploadFile(
+        taskId: 'image_$testId',
         fileName: 'Cover: ${_titleController.text}',
         bucketName: 'mock_test',
         storagePath: imagePath,
@@ -199,6 +200,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
 
       // Upload JSON Content
       BackgroundUploadService().uploadFile(
+        taskId: 'json_$testId',
         fileName: 'Questions: ${_titleController.text}',
         bucketName: 'mock_test',
         storagePath: jsonPath,
@@ -238,8 +240,10 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text(
-                  'Mock Test metadata saved. Uploading files in background...')),
+            content: Text(
+                'Mock Test saved. You can safely leave the app in the background; files will continue uploading.'),
+            duration: Duration(seconds: 4),
+          ),
         );
         Navigator.pop(context);
       }
@@ -504,7 +508,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
                             title: Text(
                                 _coverImage?.name ?? 'Select Cover Image',
                                 style: Theme.of(context).textTheme.bodyMedium),
-                            subtitle: const Text('Max size: 200KB'),
+                            subtitle: const Text('Max size: 1MB'),
                             trailing: IconButton(
                               icon: const Icon(Icons.upload_file),
                               onPressed: _pickCoverImage,

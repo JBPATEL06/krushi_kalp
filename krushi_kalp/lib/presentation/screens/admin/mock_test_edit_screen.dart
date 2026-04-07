@@ -54,7 +54,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
   List<String> _languages = ['English', 'Gujarati'];
   bool _isOtherCategory = false;
 
-  static const int maxImageSizeBytes = 200 * 1024; // 200KB
+  static const int maxImageSizeBytes = 1024 * 1024; // 1MB
 
   @override
   void initState() {
@@ -131,7 +131,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
       final file = result.files.first;
       if (file.size > maxImageSizeBytes) {
         if (mounted) {
-          ErrorUtils.showError(context, 'Image too large (>200KB)');
+          ErrorUtils.showError(context, 'Image too large (>1MB)');
         }
         return;
       }
@@ -215,6 +215,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
       if (_coverImage != null && _imageBytes != null) {
         final imagePath = 'mock_test_cover/${widget.test.id}.jpg';
         BackgroundUploadService().uploadFile(
+          taskId: 'image_${widget.test.id}',
           fileName: 'Cover Edit: ${_titleController.text}',
           bucketName: 'mock_test',
           storagePath: imagePath,
@@ -254,6 +255,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
         final jsonPath = 'mock_test_json_file/${widget.test.id}.json';
 
         BackgroundUploadService().uploadFile(
+          taskId: 'json_${widget.test.id}',
           fileName: 'Questions Edit: ${_titleController.text}',
           bucketName: 'mock_test',
           storagePath: jsonPath,
@@ -283,8 +285,10 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text(
-                'Test metadata updated. Files uploading in background if replaced.')));
+          content: Text(
+              'Changes saved. You can safely leave the app; files will update in the background if replaced.'),
+          duration: Duration(seconds: 4),
+        ));
         Navigator.pop(context, true);
       }
     } catch (e, stack) {
