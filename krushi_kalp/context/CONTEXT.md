@@ -59,3 +59,20 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - Implementation: Increased background upload retry window to 21 minutes (8x retries, 5s initial delay).
 - Stability: Added `mounted` checks to `StoreScreen` and wrapped `AdminService` dashboard streams in `RetryHelper`.
 - Status: COMPLETE.
+## Current Phase: Notification Visibility & Transfer Stability (2026-04-08)
+- Goal: Fix foreground notification visibility and prevent crashing during file selection.
+- Implementation: Branch `fix/upload-notification-freeze`.
+- Fixes:
+  - Channel ID dedicated to `krushi_background_service` with `Importance.high`.
+  - Explicit `setAsForegroundService` call in `onStart` for immediate visibility.
+  - Added `_isPicking` guards to `AdminResourceForm` and `MockTestEditScreen` to prevent overlapping `FilePicker` calls and the associated `NullPointerException`.
+- Status: COMPLETE.
+## Current Phase: Resumé-Safe Picking & Notification visibility (2026-04-08)
+- Goal: Resolve the MIUI-specific NullPointerException (NPE) and improve progress notification visibility.
+- Implementation: Branch `fix/upload-notification-freeze`.
+- Strategy:
+  - Implement `PickerLifecycleMixin` to reset picking states on app resume.
+  - Upgrade notification channel importance for progress tracking.
+- Status: COMPLETE.
+
+

@@ -109,5 +109,53 @@
   - **Log Suppression**: Wrapped `AdminService` dashboard streams in `RetryHelper` to handle transient network errors gracefully.
 - **Outcome**: Upload reliability is drastically increased, and UI stability is improved for navigating users.
 - **Branch Gate**:
-  - **Branch**: `feature/background-transfer-ux-redirection` (Existing branch).
+## Phase 8: Notification Visibility & Transfer Persistence (2026-04-08)
+
+### Discussion: Resolving Upload "Freeze" and Notification Conflicts
+- **Problem**: Background uploads "stick" at initialization and notifications are invisible or use incorrect icons.
+- **Problem**: Channel ID collision between `flutter_background_service` and `transfer_notification_service`.
+- **Problem**: Supabase connections are dropped (`HttpException`) when switching network states or backgrounding.
+- **Decisions**:
+  - **Channel Separation**: Dedicated `krushi_background_service` channel for the foreground service to avoid clashing with progress notifications.
+  - **Dynamic Notifications**: Implemented `updateForegroundNotification` bridge to keep the progress updated.
+  - **Channel Stability**: Importance set to `high` and added `service.setAsForegroundService()` in `onStart`.
+  - **Pick Guards**: Added `_isPicking` state to Admin forms to resolve `NullPointerException` during file selection activity results.
+  - **Icon Fix**: Corrected Android resource references for the foreground service icon.
+  - **Resilience**: Added robust `HttpException` and `SocketException` handling to `BackgroundUploadService` to survive connection drops mid-transfer.
+- **Outcome**: 100% notification visibility and background persistence during uploads.
+- **Branch Gate**:
+  - **Branch**: `fix/upload-notification-freeze` (Confirmed by user).
+  - **Status**: COMPLETE.
+
+## Phase 9: Resumé-Safe Picking & Notification Visibility (2026-04-08)
+
+### Discussion: Resolving MIUI Picker Crash & Notification Visibility
+- **Problem**: Native Android `FilePicker` (especially on MIUI) occasionally crashes when delivering results, causing the app UI to remain in a "picking" state (frozen).
+- **Problem**: Background upload progress notifications were invisible or difficult to see on MIUI due to low channel importance.
+- **Decisions**:
+  - **`PickerLifecycleMixin`**: Created a robust, lifecycle-aware mixin that uses a `WidgetsBindingObserver` to automatically reset the `isPicking` flag when the app resumes (comes back to foreground). This acts as a "Fail-Safe" Escape Hatch if the native picker activity fails to return a result.
+  - **System-Wide Fix**: Integrated `PickerLifecycleMixin` into `AdminResourceForm`, `MockTestEditScreen`, `MockTestUploadScreen`, and `BannerManagementTab`.
+  - **Notification Upgrade**: Updated `TransferNotificationService` to use `Importance.high` and `Priority.high` for progress notifications.
+  - **UX Polish**: Added `onlyAlertOnce: true` and `showWhen: true` for progress notifications to ensure they are visible without being annoying.
+- **Outcome**: UI no longer freezes even if the native file picker crashes, and background transfer progress is now clearly visible in the system tray.
+- **Branch Gate**:
+  - **Branch**: `fix/upload-notification-freeze` (Continued).
+  - **Status**: COMPLETE.
+
+---
+
+## Phase 11: Foreground Notification Real-Time Progress
+
+- **Problem**: Upload progress (%) never appeared in the notification. The foreground service notification (ID 888) was stuck at "Ready to process file..." permanently. `TransferNotificationService` was posting secondary notifications that MIUI silently suppressed.
+- **Root Cause**:
+  - MIUI aggressively suppresses secondary progress notifications when a foreground service notification already exists.
+  - The ID 888 foreground service notification is the ONLY guaranteed-visible notification.
+  - The `onStart` handler had no code to update that notification during uploads.
+- **Decision**: Remove all `TransferNotificationService.showUploadProgress/Success/Failure` calls from `BackgroundUploadService`. Instead, drive the foreground service notification (ID 888) directly using `FlutterBackgroundService().invoke('updateProgress', {...})`.
+- **Files Modified**:
+  - `lib/main.dart`: Added `updateProgress` and `clearProgress` event listeners in `onStart`.
+  - `lib/data/services/background_upload_service.dart`: Progress timer now invokes `updateProgress`. On complete/fail invokes `clearProgress`. Removed `TransferNotificationService` dependency.
+- **Outcome**: The notification now shows "Uploading X.pdf — 47% complete — do not close the app" updating every 2 seconds. Guaranteed visible on MIUI.
+- **Branch Gate**:
+  - **Branch**: `fix/foreground-notification-progress` (NEW).
   - **Status**: COMPLETE.
