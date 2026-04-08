@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:krushi_kalp/data/services/resource_service.dart';
 import 'package:krushi_kalp/data/services/admin_service.dart';
+import 'package:krushi_kalp/data/services/download_service.dart';
 import 'package:krushi_kalp/domain/models/resource.dart';
 import 'package:krushi_kalp/utils/resource_helper.dart';
 import 'admin_resource_form.dart';
@@ -25,15 +27,113 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
   late Resource _resource;
   Map<String, dynamic>? _stats;
   bool _isLoadingStats = true;
+  bool _isCached = false;
+  int _cacheSize = 0; // bytes
+  bool _isDeletingCache = false;
+
+  // Filename convention matches ResourceHelper.openResource
+  String get _cacheFilename => 'resource_${_resource.id}.pdf';
+  static const String _adminUserId = 'admin';
 
   @override
   void initState() {
     super.initState();
     _resource = widget.resource;
     _loadStats();
+    _checkCacheStatus();
   }
 
-  Future<void> _loadStats() async {
+  Future<void> _checkCacheStatus() async {
+    try {
+      final isCached = await DownloadService().isFileDownloaded(
+        _cacheFilename,
+        userId: _adminUserId,
+      );
+      int sizeBytes = 0;
+      if (isCached) {
+        final path = await DownloadService().getLocalPath(
+          _cacheFilename,
+          userId: _adminUserId,
+        );
+        final file = File(path);
+        if (await file.exists()) {
+          sizeBytes = await file.length();
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _isCached = isCached;
+          _cacheSize = sizeBytes;
+        });
+      }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack,
+          reason: 'admin_resource_detail_check_cache');
+    }
+  }
+
+  Future<void> _deleteCachedFile() async {
+    final theme = Theme.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Local Cache?'),
+        content: Text(
+          'This will delete the locally cached copy of "${_resource.title}" '
+          '(${_formatBytes(_cacheSize)}) from this device. '
+          'The file will be re-downloaded next time it is opened.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.error),
+            child: const Text('Delete Cache'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    if (!mounted) return;
+
+    setState(() => _isDeletingCache = true);
+    try {
+      await DownloadService().deleteFile(
+        _cacheFilename,
+        userId: _adminUserId,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Local cache deleted successfully.'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+      }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack,
+          reason: 'admin_resource_detail_delete_cache');
+      if (mounted) ErrorUtils.showError(context, e);
+    } finally {
+      if (mounted) {
+        setState(() => _isDeletingCache = false);
+        await _checkCacheStatus(); // Refresh
+      }
+    }
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes <= 0) return '0 B';
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
     try {
       final stats = await AdminService.getResourceItemStats(_resource.id);
       if (mounted) {
@@ -301,6 +401,93 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
               child: Text(
                 _resource.description ?? 'No description provided.',
                 style: theme.textTheme.bodyMedium,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // ── LOCAL CACHE (Admin) ───────────────────────────────────────────
+            _buildSectionHeader(context, 'LOCAL CACHE'),
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(
+                  color: _isCached
+                      ? colorScheme.error.withValues(alpha: 0.3)
+                      : colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _isCached
+                        ? Icons.storage_rounded
+                        : Icons.cloud_done_rounded,
+                    color: _isCached
+                        ? colorScheme.error
+                        : colorScheme.onSurfaceVariant,
+                    size: context.sp(22),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _isCached
+                              ? 'Cached on device'
+                              : 'Not cached locally',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: _isCached
+                                ? colorScheme.error
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        if (_isCached)
+                          Text(
+                            _formatBytes(_cacheSize),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        if (!_isCached)
+                          Text(
+                            'Opens fresh from cloud each time',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (_isCached)
+                    _isDeletingCache
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : TextButton.icon(
+                            onPressed: _deleteCachedFile,
+                            icon: Icon(
+                              Icons.delete_sweep_rounded,
+                              size: context.sp(18),
+                              color: colorScheme.error,
+                            ),
+                            label: Text(
+                              'Delete',
+                              style: TextStyle(
+                                color: colorScheme.error,
+                                fontSize: context.sp(13),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                ],
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
