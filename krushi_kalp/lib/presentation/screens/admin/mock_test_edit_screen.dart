@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
@@ -7,18 +8,17 @@ import 'package:file_picker/file_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:io';
 import '../../../utils/excel_to_json_converter.dart';
 import '../../utils/ui_helpers.dart';
 import '../../../domain/models/mock_test.dart';
 import '../../../data/services/test_service.dart';
 import '../../../data/services/background_upload_service.dart';
-import '../../../data/services/transfer_notification_service.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../utils/supabase_url_helper.dart';
 import '../../../utils/error_utils.dart';
 import '../../../utils/crashlytics_service.dart';
+import '../../utils/picker_lifecycle_mixin.dart';
 
 class MockTestEditScreen extends StatefulWidget {
   final MockTest test;
@@ -28,7 +28,7 @@ class MockTestEditScreen extends StatefulWidget {
   State<MockTestEditScreen> createState() => _MockTestEditScreenState();
 }
 
-class _MockTestEditScreenState extends State<MockTestEditScreen> {
+class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLifecycleMixin {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
@@ -123,12 +123,10 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
   }
 
   Future<void> _pickCoverImage() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      withData: true,
-    );
-    if (result != null) {
+    final result = await safePickFiles(type: FileType.image);
+    if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
       final file = result.files.first;
+      final bytes = await File(file.path!).readAsBytes();
       if (file.size > maxImageSizeBytes) {
         if (mounted) {
           ErrorUtils.showError(context, 'Image too large (>1MB)');
@@ -137,22 +135,22 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
       }
       setState(() {
         _coverImage = file;
-        _imageBytes = file.bytes;
+        _imageBytes = bytes;
       });
     }
   }
 
   Future<void> _pickQuestionsFile() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await safePickFiles(
       type: FileType.custom,
       allowedExtensions: ['xlsx', 'xls', 'json'],
-      withData: true,
     );
-    if (result != null) {
+    if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
       final file = result.files.first;
+      final bytes = await File(file.path!).readAsBytes();
       setState(() {
         _questionsFile = file;
-        _questionsBytes = file.bytes;
+        _questionsBytes = bytes;
       });
     }
   }
@@ -221,24 +219,17 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
           storagePath: imagePath,
           fileBytes: _imageBytes!,
           fileType: 'mock_test_cover',
-          onProgress: (p) => TransferNotificationService().showUploadProgress(
-            taskId: 'image_${widget.test.id}',
-            fileName: 'Cover for ${_titleController.text}',
-            progress: p,
-          ),
+          onProgress: (p) {
+            // Progress is now handled by BackgroundUploadService notification
+          },
           onComplete: (path) async {
             await supabase.from('mock_tests').update(
                 {'cover_image_path': path}).eq('test_id', widget.test.id);
-            TransferNotificationService().showUploadSuccess(
-              taskId: 'image_${widget.test.id}',
-              fileName: 'Cover replacement',
-            );
+            // Success notification is now handled by BackgroundUploadService
           },
-          onError: (err) => TransferNotificationService().showUploadFailure(
-            taskId: 'image_${widget.test.id}',
-            fileName: 'Cover replacement',
-            error: err,
-          ),
+          onError: (err) {
+            // Failure notification is now handled by BackgroundUploadService
+          },
         );
       }
 
@@ -261,25 +252,18 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> {
           storagePath: jsonPath,
           fileBytes: Uint8List.fromList(jsonBytes),
           fileType: 'mock_test_json',
-          onProgress: (p) => TransferNotificationService().showUploadProgress(
-            taskId: 'json_${widget.test.id}',
-            fileName: 'Questions for ${_titleController.text}',
-            progress: p,
-          ),
+          onProgress: (p) {
+            // Progress is now handled by BackgroundUploadService notification
+          },
           onComplete: (path) async {
             await supabase
                 .from('mock_tests')
                 .update({'file_path': path}).eq('test_id', widget.test.id);
-            TransferNotificationService().showUploadSuccess(
-              taskId: 'json_${widget.test.id}',
-              fileName: 'Questions replacement',
-            );
+            // Success notification is now handled by BackgroundUploadService
           },
-          onError: (err) => TransferNotificationService().showUploadFailure(
-            taskId: 'json_${widget.test.id}',
-            fileName: 'Questions replacement',
-            error: err,
-          ),
+          onError: (err) {
+            // Failure notification is now handled by BackgroundUploadService
+          },
         );
       }
 

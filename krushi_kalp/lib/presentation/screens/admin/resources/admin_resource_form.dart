@@ -8,9 +8,9 @@ import '../../../utils/ui_helpers.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import '../../../../utils/supabase_url_helper.dart';
 import '../../../../data/services/background_upload_service.dart';
-import '../../../../data/services/transfer_notification_service.dart';
 import '../../../../utils/error_utils.dart';
 import '../../../../utils/crashlytics_service.dart';
+import '../../../utils/picker_lifecycle_mixin.dart';
 
 class AdminResourceForm extends StatefulWidget {
   final ResourceType type;
@@ -28,7 +28,8 @@ class AdminResourceForm extends StatefulWidget {
   State<AdminResourceForm> createState() => _AdminResourceFormState();
 }
 
-class _AdminResourceFormState extends State<AdminResourceForm> {
+class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecycleMixin {
+  bool _isSaving = false;
   final _formKey = GlobalKey<FormState>();
   late final ResourceService _resourceService;
 
@@ -38,14 +39,15 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
   late TextEditingController _priceController;
 
   bool _isActive = true;
-  bool _isSaving = false;
 
   String? _fileName;
   Uint8List? _fileBytes;
+  String? _filePath;
   String? _existingFileUrl;
 
   String? _coverName;
   Uint8List? _coverBytes;
+  String? _coverPath;
   String? _existingCoverUrl;
 
   @override
@@ -76,47 +78,39 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
   }
 
   Future<void> _pickFile() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf'],
-        withData: true,
-      );
-
-      if (result != null) {
-        setState(() {
-          _fileBytes = result.files.first.bytes;
-          _fileName = result.files.first.name;
-        });
-      }
-    } catch (e, stack) {
-      await CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to pick file');
+    final result = await safePickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+    if (result != null && result.files.isNotEmpty) {
+      final platformFile = result.files.first;
+      setState(() {
+        _fileBytes = null; // always null on Android (withData: false)
+        _filePath = platformFile.path;
+        _fileName = platformFile.name;
+      });
     }
   }
 
   Future<void> _pickCover() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        withData: true,
-      );
-
-      if (result != null) {
-        if (result.files.first.size > 1024 * 1024) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Cover image must be under 1MB')),
-            );
-          }
-          return;
+    final result = await safePickFiles(
+      type: FileType.image,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      final platformFile = result.files.first;
+      if (platformFile.size > 1024 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Cover image must be under 1MB')),
+          );
         }
-        setState(() {
-          _coverBytes = result.files.first.bytes;
-          _coverName = result.files.first.name;
-        });
+        return;
       }
-    } catch (e, stack) {
-      await CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to pick cover');
+      setState(() {
+        _coverBytes = null; // always null on Android (withData: false)
+        _coverPath = platformFile.path;
+        _coverName = platformFile.name;
+      });
     }
   }
 
@@ -124,7 +118,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (widget.resource == null && _fileBytes == null) {
+    if (widget.resource == null && _filePath == null) {
       ErrorUtils.showError(context, 'Please attach a PDF file');
       return;
     }
@@ -175,7 +169,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
 
       // 2. Start Background Uploads (Non-blocking)
 
-      if (_fileBytes != null) {
+      if (_filePath != null) {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final cleanName = _fileName!.replaceAll(RegExp(r'[^\w\.-]'), '_');
         final path = 'Resources/$typeStrRaw/file/${timestamp}_$cleanName';
@@ -185,32 +179,26 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
           fileName: 'File: $title',
           bucketName: 'mock_test',
           storagePath: path,
-          fileBytes: _fileBytes!,
+          fileBytes: _fileBytes,
+          filePath: _filePath,
           fileType: 'resource_pdf',
-          onProgress: (p) => TransferNotificationService().showUploadProgress(
-            taskId: 'resource_file_$resourceId',
-            fileName: 'Resource PDF: $title',
-            progress: p,
-          ),
+          onProgress: (p) {
+            // Progress is now handled by BackgroundUploadService notification
+          },
           onComplete: (completedPath) async {
             await _resourceService.updateResource(resourceId, {'file_url': completedPath});
             if (existingId != null && _existingFileUrl != null) {
               await _resourceService.deleteFileFromStorage(_existingFileUrl!).catchError((_) => null);
             }
-            TransferNotificationService().showUploadSuccess(
-              taskId: 'resource_file_$resourceId',
-              fileName: 'Resource file uploaded',
-            );
+            // Success notification is now handled by BackgroundUploadService
           },
-          onError: (err) => TransferNotificationService().showUploadFailure(
-            taskId: 'resource_file_$resourceId',
-            fileName: 'Resource file upload',
-            error: err,
-          ),
+          onError: (err) {
+            // Failure notification is now handled by BackgroundUploadService
+          },
         );
       }
 
-      if (_coverBytes != null) {
+      if (_coverPath != null) {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final cleanCover = _coverName!.replaceAll(RegExp(r'[^\w\.-]'), '_');
         final path = 'Resources/$typeStrRaw/cover/${timestamp}_$cleanCover';
@@ -220,28 +208,22 @@ class _AdminResourceFormState extends State<AdminResourceForm> {
           fileName: 'Cover: $title',
           bucketName: 'mock_test',
           storagePath: path,
-          fileBytes: _coverBytes!,
+          fileBytes: _coverBytes,
+          filePath: _coverPath,
           fileType: 'resource_cover',
-          onProgress: (p) => TransferNotificationService().showUploadProgress(
-            taskId: 'resource_cover_$resourceId',
-            fileName: 'Cover for Resource: $title',
-            progress: p,
-          ),
+          onProgress: (p) {
+            // Progress is now handled by BackgroundUploadService notification
+          },
           onComplete: (completedPath) async {
             await _resourceService.updateResource(resourceId, {'thumbnail_url': completedPath});
             if (existingId != null && _existingCoverUrl != null) {
               await _resourceService.deleteFileFromStorage(_existingCoverUrl!).catchError((_) => null);
             }
-            TransferNotificationService().showUploadSuccess(
-              taskId: 'resource_cover_$resourceId',
-              fileName: 'Resource cover uploaded',
-            );
+            // Success notification is now handled by BackgroundUploadService
           },
-          onError: (err) => TransferNotificationService().showUploadFailure(
-            taskId: 'resource_cover_$resourceId',
-            fileName: 'Resource cover upload',
-            error: err,
-          ),
+          onError: (err) {
+            // Failure notification is now handled by BackgroundUploadService
+          },
         );
       }
 

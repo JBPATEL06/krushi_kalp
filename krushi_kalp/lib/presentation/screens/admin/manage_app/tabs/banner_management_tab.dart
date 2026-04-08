@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
@@ -10,6 +11,7 @@ import '../../../../../data/services/app_config_service.dart';
 import '../../../../utils/ui_helpers.dart';
 import '../../../../../utils/error_utils.dart';
 import '../../../../../utils/crashlytics_service.dart';
+import '../../../../utils/picker_lifecycle_mixin.dart';
 
 class BannerManagementTab extends StatefulWidget {
   const BannerManagementTab({super.key});
@@ -18,7 +20,7 @@ class BannerManagementTab extends StatefulWidget {
   State<BannerManagementTab> createState() => _BannerManagementTabState();
 }
 
-class _BannerManagementTabState extends State<BannerManagementTab> {
+class _BannerManagementTabState extends State<BannerManagementTab> with PickerLifecycleMixin {
   bool _isUploading = false;
   bool _autoScroll = false;
   int _interval = 15;
@@ -111,72 +113,65 @@ class _BannerManagementTabState extends State<BannerManagementTab> {
 
   // ─── Upload Multiple New Banners ───────────────────
   Future<void> _uploadBanners() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        allowMultiple: true, // â† Multiple files
-        withData: true,
-      );
+    final result = await safePickFiles(
+      type: FileType.image,
+      allowMultiple: true,
+    );
 
-      if (result == null || result.files.isEmpty) return;
-
+    if (result != null && result.files.isNotEmpty) {
       setState(() => _isUploading = true);
+      try {
+        for (final file in result.files) {
+          if (file.path == null) continue;
+          final bytes = await File(file.path!).readAsBytes();
+          await BannerService.instance.uploadBanner(
+            bytes,
+            file.name,
+            title: file.name.replaceAll(RegExp(r'\.\.\w+$'), ''),
+            priority: 0,
+          );
+        }
 
-      for (final file in result.files) {
-        if (file.bytes == null) continue;
-        await BannerService.instance.uploadBanner(
-          file.bytes!,
-          file.name,
-          title:
-              file.name.replaceAll(RegExp(r'\.\w+$'), ''), // Name without ext
-          priority: 0, // Default to 0, user can edit priority to move it up
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("${result.files.length} banner(s) uploaded successfully")),
+          );
+        }
+      } catch (e, stack) {
+        await CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to upload banners');
+        if (mounted) ErrorUtils.showError(context, e);
+      } finally {
+        if (mounted) setState(() => _isUploading = false);
       }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  "${result.files.length} banner(s) uploaded successfully")),
-        );
-      }
-    } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'banner_management_tab');
-      if (mounted) ErrorUtils.showError(context, e);
-    } finally {
-      if (mounted) setState(() => _isUploading = false);
     }
   }
 
   // ─── Replace Image at a Specific Banner ───────────────────
   Future<void> _replaceBannerImage(HomeBanner banner) async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        withData: true,
-      );
+    final result = await safePickFiles(type: FileType.image);
 
-      if (result == null || result.files.single.bytes == null) return;
-
+    if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
       setState(() => _isUploading = true);
-
-      await BannerService.instance.replaceBannerImage(
-        banner.id,
-        banner.imageUrl,
-        result.files.single.bytes!,
-        result.files.single.name,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Banner image replaced successfully")),
+      try {
+        final bytes = await File(result.files.single.path!).readAsBytes();
+        await BannerService.instance.replaceBannerImage(
+          banner.id,
+          banner.imageUrl,
+          bytes,
+          result.files.single.name,
         );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Banner image replaced successfully")),
+          );
+        }
+      } catch (e, stack) {
+        await CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to replace banner image');
+        if (mounted) ErrorUtils.showError(context, e);
+      } finally {
+        if (mounted) setState(() => _isUploading = false);
       }
-    } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'banner_management_tab');
-      if (mounted) ErrorUtils.showError(context, e);
-    } finally {
-      if (mounted) setState(() => _isUploading = false);
     }
   }
 
