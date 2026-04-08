@@ -1,8 +1,13 @@
+import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../../utils/crashlytics_service.dart';
 import '../../utils/retry_helper.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import '../../utils/network_utils.dart';
 
 /// Status of an upload task managed by [BackgroundUploadService].
 enum UploadTaskStatus { pending, uploading, completed, failed }
@@ -13,7 +18,8 @@ class UploadTask {
   final String fileName;
   final String bucketName;
   final String storagePath;
-  final Uint8List fileBytes;
+  final Uint8List? fileBytes;
+  final String? filePath;
   final String fileType; // 'resource_pdf', 'resource_cover', 'mock_test_excel'
   UploadTaskStatus status;
   double progress; // 0.0 to 1.0
@@ -25,11 +31,12 @@ class UploadTask {
     required this.fileName,
     required this.bucketName,
     required this.storagePath,
-    required this.fileBytes,
+    this.fileBytes,
+    this.filePath,
     required this.fileType,
     this.status = UploadTaskStatus.pending,
     this.progress = 0.0,
-  });
+  }) : assert(fileBytes != null || filePath != null, 'Either fileBytes or filePath must be provided');
 }
 
 /// A singleton service that handles file uploads to Supabase Storage in the background.
@@ -55,7 +62,8 @@ class BackgroundUploadService {
     required String fileName,
     required String bucketName,
     required String storagePath,
-    required Uint8List fileBytes,
+    Uint8List? fileBytes,
+    String? filePath,
     required String fileType,
     required Function(double progress) onProgress,
     required Function(String path) onComplete,
@@ -71,10 +79,22 @@ class BackgroundUploadService {
       bucketName: bucketName,
       storagePath: sanitizedPath,
       fileBytes: fileBytes,
+      filePath: filePath,
       fileType: fileType,
       status: UploadTaskStatus.uploading,
     );
     _activeTasks[id] = task;
+    
+    // Ensure the foreground service is running to protect this upload from OS suspension
+    try {
+      final service = FlutterBackgroundService();
+      final isRunning = await service.isRunning();
+      if (!isRunning) {
+        await service.startService();
+      }
+    } catch (e) {
+      CrashlyticsService.instance.log('Foreground service start failed: $e');
+    }
 
     // Start the upload process without awaiting it to return the taskId immediately.
     _executeUpload(task, onProgress, onComplete, onError);
@@ -89,62 +109,116 @@ class BackgroundUploadService {
     Function(String path) onComplete,
     Function(String error) onError,
   ) async {
+    // Timer to simulate progress breathing during long atomic operations
+    Timer? progressTimer;
     try {
-      // Supabase's current uploadBinary is atomic and doesn't provide native chunked progress.
-      // We simulate progress ticks to give visual feedback until the atomic operation finishes.
-      task.progress = 0.1;
-      onProgress(0.1);
+      task.progress = 0.05;
+      onProgress(0.05);
 
-      // Use RetryHelper to handle transient network issues (max 3 attempts).
+      // Start "Asymptotic Progress" timer.
+      // Moves quickly at first, then slows down as it approaches 0.99.
+      // Drives the foreground service notification (ID 888) — the ONLY
+      // notification MIUI guarantees stays visible.
+      progressTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+        if (task.status == UploadTaskStatus.uploading && task.progress < 0.95) {
+          // Asymptotic increment: 5% of remaining distance each tick
+          final remaining = 1.0 - task.progress;
+          task.progress += remaining * 0.05;
+          onProgress(task.progress);
+
+          final percent = (task.progress * 100).toInt();
+          // Drive the foreground service notification (always visible on MIUI)
+          FlutterBackgroundService().invoke('updateProgress', {
+            'title': 'Uploading ${task.fileName}',
+            'content': '$percent% complete – do not close the app',
+          });
+        }
+      });
+
+      // Use RetryHelper to handle transient network issues (max 8 attempts).
       await RetryHelper.run(
         () async {
-          // Increment simulated progress during wait/retry phases
-          if (task.progress < 0.6) {
-            task.progress += 0.2;
-            onProgress(task.progress);
-          }
-
           final contentType = _getContentType(task.storagePath);
 
-          await Supabase.instance.client.storage
-              .from(task.bucketName)
-              .uploadBinary(
-                task.storagePath,
-                task.fileBytes,
-                fileOptions: FileOptions(
-                  upsert: true,
-                  contentType: contentType,
-                ),
-              );
+          if (!kIsWeb && task.filePath != null) {
+            // Memory efficient: upload directly from disk file
+            await Supabase.instance.client.storage
+                .from(task.bucketName)
+                .upload(
+                  task.storagePath,
+                  File(task.filePath!),
+                  fileOptions: FileOptions(
+                    upsert: true,
+                    contentType: contentType,
+                  ),
+                );
+          } else if (task.fileBytes != null) {
+            // Upload from memory bytes
+            await Supabase.instance.client.storage
+                .from(task.bucketName)
+                .uploadBinary(
+                  task.storagePath,
+                  task.fileBytes!,
+                  fileOptions: FileOptions(
+                    upsert: true,
+                    contentType: contentType,
+                  ),
+                );
+          } else {
+            throw Exception('No file data or path available for upload');
+          }
         },
         maxRetries: 8,
         initialDelay: const Duration(seconds: 5),
         maxDelay: const Duration(minutes: 2),
-        timeout: const Duration(seconds: 180),
+        timeout: const Duration(seconds: 300), // 5 min timeout for large files
       );
 
       // Mark task as completed
+      progressTimer.cancel();
       task.progress = 1.0;
       task.status = UploadTaskStatus.completed;
       task.completedPath = task.storagePath;
 
       onProgress(1.0);
+      // Update foreground notification to success state
+      FlutterBackgroundService().invoke('clearProgress', {
+        'content': '✓ ${task.fileName} uploaded successfully',
+      });
       onComplete(task.storagePath);
     } catch (e, stack) {
+      progressTimer?.cancel();
       task.status = UploadTaskStatus.failed;
-      task.errorMessage = e.toString();
 
-      // Log the failure to Crashlytics
+      String userMessage = e.toString();
+      if (NetworkUtils.isNetworkError(e)) {
+        userMessage = 'Upload failed due to connection issues. Please check your internet and retry.';
+      }
+      task.errorMessage = userMessage;
+
       CrashlyticsService.instance.recordError(e, stack,
           reason:
               'Background upload failed: ${task.fileName} in ${task.bucketName} (Path: ${task.storagePath})');
 
+      // Update foreground notification to failure state
+      FlutterBackgroundService().invoke('clearProgress', {
+        'content': '✗ ${task.fileName} upload failed – check your connection',
+      });
+
       onError(e.toString());
     } finally {
+      progressTimer?.cancel();
       // Retain the task in active tasks for a short duration (3s)
       // so UI or notification service can process the final state.
       await Future.delayed(const Duration(seconds: 3));
       _activeTasks.remove(task.taskId);
+
+      // If no more active tasks, stop the foreground service to save battery
+      if (_activeTasks.isEmpty) {
+        try {
+          FlutterBackgroundService().invoke('stopService');
+        } catch (_) {}
+      }
     }
   }
 
@@ -181,6 +255,14 @@ class BackgroundUploadService {
       case 'xlsx':
       case 'xls':
         return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case 'mp4':
+        return 'video/mp4';
+      case 'mov':
+        return 'video/quicktime';
+      case 'avi':
+        return 'video/x-msvideo';
+      case 'mkv':
+        return 'video/x-matroska';
       default:
         return 'application/octet-stream';
     }
