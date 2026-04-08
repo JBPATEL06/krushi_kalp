@@ -22,18 +22,23 @@ class AdminResourceDetailScreen extends StatefulWidget {
       _AdminResourceDetailScreenState();
 }
 
-class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
+class _AdminResourceDetailScreenState
+    extends State<AdminResourceDetailScreen> {
   final ResourceService _resourceService = ResourceService.instance;
   late Resource _resource;
   Map<String, dynamic>? _stats;
   bool _isLoadingStats = true;
+
+  // ── Cache state ─────────────────────────────────────────────────────────
   bool _isCached = false;
-  int _cacheSize = 0; // bytes
+  int _cacheSize = 0;
   bool _isDeletingCache = false;
 
-  // Filename convention matches ResourceHelper.openResource
+  /// Filename convention must match ResourceHelper.openResource
   String get _cacheFilename => 'resource_${_resource.id}.pdf';
   static const String _adminUserId = 'admin';
+
+  // ── Lifecycle ────────────────────────────────────────────────────────────
 
   @override
   void initState() {
@@ -43,22 +48,38 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
     _checkCacheStatus();
   }
 
+  // ── Stats ────────────────────────────────────────────────────────────────
+
+  Future<void> _loadStats() async {
+    try {
+      final stats = await AdminService.getResourceItemStats(_resource.id);
+      if (mounted) {
+        setState(() {
+          _stats = stats;
+          _isLoadingStats = false;
+        });
+      }
+    } catch (e, stack) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'admin_resource_detail_screen');
+      if (mounted) {
+        setState(() => _isLoadingStats = false);
+      }
+    }
+  }
+
+  // ── Cache ────────────────────────────────────────────────────────────────
+
   Future<void> _checkCacheStatus() async {
     try {
-      final isCached = await DownloadService().isFileDownloaded(
-        _cacheFilename,
-        userId: _adminUserId,
-      );
+      final isCached = await DownloadService()
+          .isFileDownloaded(_cacheFilename, userId: _adminUserId);
       int sizeBytes = 0;
       if (isCached) {
-        final path = await DownloadService().getLocalPath(
-          _cacheFilename,
-          userId: _adminUserId,
-        );
+        final path = await DownloadService()
+            .getLocalPath(_cacheFilename, userId: _adminUserId);
         final file = File(path);
-        if (await file.exists()) {
-          sizeBytes = await file.length();
-        }
+        if (await file.exists()) sizeBytes = await file.length();
       }
       if (mounted) {
         setState(() {
@@ -98,15 +119,12 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
       ),
     );
 
-    if (confirmed != true) return;
-    if (!mounted) return;
+    if (confirmed != true || !mounted) return;
 
     setState(() => _isDeletingCache = true);
     try {
-      await DownloadService().deleteFile(
-        _cacheFilename,
-        userId: _adminUserId,
-      );
+      await DownloadService()
+          .deleteFile(_cacheFilename, userId: _adminUserId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -122,7 +140,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
     } finally {
       if (mounted) {
         setState(() => _isDeletingCache = false);
-        await _checkCacheStatus(); // Refresh
+        await _checkCacheStatus();
       }
     }
   }
@@ -134,21 +152,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
-    try {
-      final stats = await AdminService.getResourceItemStats(_resource.id);
-      if (mounted) {
-        setState(() {
-          _stats = stats;
-          _isLoadingStats = false;
-        });
-      }
-    } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_resource_detail_screen');
-      if (mounted) {
-        setState(() => _isLoadingStats = false);
-      }
-    }
-  }
+  // ── Delete (from database/storage) ──────────────────────────────────────
 
   Future<void> _deleteResource() async {
     final theme = Theme.of(context);
@@ -164,8 +168,8 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style:
-                TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
+            style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.error),
             child: const Text('Delete'),
           ),
         ],
@@ -179,13 +183,16 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
           Navigator.pop(context, true);
         }
       } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_resource_detail_screen');
+        CrashlyticsService.instance
+            .recordError(e, stack, reason: 'admin_resource_detail_screen');
         if (mounted) {
           ErrorUtils.showError(context, e);
         }
       }
     }
   }
+
+  // ── Edit / Open ──────────────────────────────────────────────────────────
 
   void _navigateToEdit() async {
     final result = await Navigator.push(
@@ -216,15 +223,20 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
       await ResourceHelper.openResource(
         context: context,
         resource: _resource,
-        userId: 'admin', // Placeholder or actual admin ID
+        userId: _adminUserId,
       );
+      // Refresh cache status after opening (may have triggered a download)
+      await _checkCacheStatus();
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_resource_detail_screen');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'admin_resource_detail_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
     }
   }
+
+  // ── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -254,7 +266,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Card
+            // ── Header Card ─────────────────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
@@ -303,7 +315,8 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: colorScheme.primary.withValues(alpha: 0.1),
+                            color:
+                                colorScheme.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -352,8 +365,8 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Statistics Section
-            _buildSectionHeader(context, "PERFORMANCE STATS"),
+            // ── Performance Stats ────────────────────────────────────────────
+            _buildSectionHeader(context, 'PERFORMANCE STATS'),
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
@@ -386,8 +399,8 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Description
-            _buildSectionHeader(context, "DESCRIPTION"),
+            // ── Description ──────────────────────────────────────────────────
+            _buildSectionHeader(context, 'DESCRIPTION'),
             const SizedBox(height: AppSpacing.sm),
             Container(
               width: double.infinity,
@@ -396,7 +409,8 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                 color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                    color:
+                        colorScheme.outlineVariant.withValues(alpha: 0.5)),
               ),
               child: Text(
                 _resource.description ?? 'No description provided.',
@@ -405,7 +419,7 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // ── LOCAL CACHE (Admin) ───────────────────────────────────────────
+            // ── Local Cache (Admin only) ──────────────────────────────────────
             _buildSectionHeader(context, 'LOCAL CACHE'),
             const SizedBox(height: AppSpacing.sm),
             Container(
@@ -447,20 +461,14 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                                 : colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        if (_isCached)
-                          Text(
-                            _formatBytes(_cacheSize),
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
+                        Text(
+                          _isCached
+                              ? _formatBytes(_cacheSize)
+                              : 'Opens fresh from cloud each time',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
                           ),
-                        if (!_isCached)
-                          Text(
-                            'Opens fresh from cloud each time',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -469,7 +477,8 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                         ? const SizedBox(
                             width: 24,
                             height: 24,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child:
+                                CircularProgressIndicator(strokeWidth: 2),
                           )
                         : TextButton.icon(
                             onPressed: _deleteCachedFile,
@@ -492,8 +501,8 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Actions Section
-            _buildSectionHeader(context, "ACTIONS"),
+            // ── Actions ──────────────────────────────────────────────────────
+            _buildSectionHeader(context, 'ACTIONS'),
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
@@ -504,8 +513,8 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                     label: Text('DOWNLOAD',
                         style: TextStyle(fontSize: context.sp(14))),
                     style: ElevatedButton.styleFrom(
-                      padding:
-                          const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.lg),
                     ),
                   ),
                 ),
@@ -517,8 +526,8 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
                     label: Text('SHARE',
                         style: TextStyle(fontSize: context.sp(14))),
                     style: OutlinedButton.styleFrom(
-                      padding:
-                          const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.lg),
                     ),
                   ),
                 ),
@@ -530,6 +539,8 @@ class _AdminResourceDetailScreenState extends State<AdminResourceDetailScreen> {
       ),
     );
   }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
 
   Widget _buildSectionHeader(BuildContext context, String title) {
     final theme = Theme.of(context);
