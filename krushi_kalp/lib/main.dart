@@ -27,8 +27,10 @@ Future<void> initializeService() async {
   await service.configure(
     androidConfiguration: AndroidConfiguration(
       onStart: onStart,
-      autoStart: false, // Start only when upload begins
-      isForegroundMode: true,
+      autoStart: true,         // Start at app launch; stays alive in background
+      isForegroundMode: false, // Start as background (no visible notification)
+                               // It promotes itself to foreground only when an
+                               // upload begins (via 'setAsForeground' event).
       notificationChannelId: 'krushi_background_service',
       initialNotificationTitle: 'Krushi Kalp Upload Service',
       initialNotificationContent: 'Ready to process file...',

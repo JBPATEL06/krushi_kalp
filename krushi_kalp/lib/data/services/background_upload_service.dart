@@ -85,13 +85,25 @@ class BackgroundUploadService {
     );
     _activeTasks[id] = task;
     
-    // Ensure the foreground service is running to protect this upload from OS suspension
+    // Ensure the foreground service is running and in FOREGROUND mode
+    // so the notification is visible during the upload.
     try {
       final service = FlutterBackgroundService();
       final isRunning = await service.isRunning();
       if (!isRunning) {
         await service.startService();
+        // Give the service isolate time to initialise its event listeners
+        await Future.delayed(const Duration(milliseconds: 300));
       }
+      // Always promote to foreground at upload start (handles the case where
+      // the service was previously demoted to background after a previous upload)
+      service.invoke('setAsForeground');
+      await Future.delayed(const Duration(milliseconds: 100));
+      // Show the initial "Uploading" notification immediately
+      service.invoke('updateProgress', {
+        'title': 'Uploading ${task.fileName}',
+        'content': '0% complete – do not close the app',
+      });
     } catch (e) {
       CrashlyticsService.instance.log('Foreground service start failed: $e');
     }
@@ -213,10 +225,19 @@ class BackgroundUploadService {
       await Future.delayed(const Duration(seconds: 3));
       _activeTasks.remove(task.taskId);
 
-      // If no more active tasks, stop the foreground service to save battery
+      // If no more active tasks, demote the service to background mode
+      // (invisible — no notification) instead of killing it.
+      // Killing and restarting causes MIUI to show the notification only once
+      // because each new foreground service start is treated as a brand-new
+      // notification by the OS and MIUI suppresses duplicates aggressively.
       if (_activeTasks.isEmpty) {
         try {
-          FlutterBackgroundService().invoke('stopService');
+          FlutterBackgroundService().invoke('clearProgress', {
+            'content': 'Ready to process file...',
+          });
+          // Small delay to let the notification update settle, then demote
+          await Future.delayed(const Duration(seconds: 2));
+          FlutterBackgroundService().invoke('setAsBackground');
         } catch (_) {}
       }
     }
