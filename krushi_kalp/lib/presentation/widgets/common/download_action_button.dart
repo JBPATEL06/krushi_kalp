@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../data/services/auth_service.dart';
 import '../../../data/services/download_service.dart';
-import '../../../data/services/transfer_notification_service.dart';
 import '../../widgets/common/responsive_wrapper.dart';
 import '../../../utils/crashlytics_service.dart';
 
@@ -114,12 +113,7 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
         updatedAt: widget.updatedAt,
         onProgress: (p) {
           if (mounted) setState(() => _progress = p);
-          // Update notification tray
-          TransferNotificationService().showDownloadProgress(
-            taskId: widget.testId,
-            fileName: widget.displayName ?? widget.filename, // CHANGED
-            progress: p,
-          );
+          // Progress is now handled by DownloadService notification
         },
         onComplete: (localPath) {
           if (mounted) {
@@ -131,22 +125,14 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                   content: Text(
-                      '${widget.displayName ?? widget.filename} downloaded successfully.')), // CHANGED
+                      '${widget.displayName ?? widget.filename} downloaded successfully.')),
             );
           }
-          // Update notification tray to show completion
-          TransferNotificationService().showDownloadSuccess(
-            taskId: widget.testId,
-            fileName: widget.displayName ?? widget.filename,
-          );
+          // Success notification is now handled by DownloadService
         },
         onError: (err) {
           if (mounted) setState(() => _isDownloading = false);
-          TransferNotificationService().showDownloadFailure(
-            taskId: widget.testId,
-            fileName: widget.displayName ?? widget.filename, // CHANGED
-            error: err,
-          );
+          // Failure notification is now handled by DownloadService
         },
       );
     } catch (e, stack) {

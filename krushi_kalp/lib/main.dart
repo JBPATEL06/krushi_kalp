@@ -27,13 +27,11 @@ Future<void> initializeService() async {
   await service.configure(
     androidConfiguration: AndroidConfiguration(
       onStart: onStart,
-      autoStart: true,         // Start at app launch; stays alive in background
-      isForegroundMode: false, // Start as background (no visible notification)
-                               // It promotes itself to foreground only when an
-                               // upload begins (via 'setAsForeground' event).
+      autoStart: false,         // Disable autoStart to prevent Android 14 Foreground crash!
+      isForegroundMode: false,  // Will be dynamically promoted when upload begins
       notificationChannelId: 'krushi_background_service',
-      initialNotificationTitle: 'Krushi Kalp Upload Service',
-      initialNotificationContent: 'Ready to process file...',
+      initialNotificationTitle: 'Krushi Kalp',
+      initialNotificationContent: 'Preparing file transfer...',
       foregroundServiceNotificationId: 888,
     ),
     iosConfiguration: IosConfiguration(
@@ -52,7 +50,9 @@ Future<bool> onIosBackground(ServiceInstance service) async {
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
   if (service is AndroidServiceInstance) {
-    // Explicitly set as foreground service immediately on start to show notification
+    
+    // We only boot precisely when a task starts (autoStart is false), 
+    // so we IMMEDIATELY claim foreground status upon isolate boot.
     service.setAsForegroundService();
 
     service.on('setAsForeground').listen((event) {
@@ -64,8 +64,6 @@ void onStart(ServiceInstance service) async {
     });
 
     // ── REAL-TIME PROGRESS UPDATE ──────────────────────────────────────────
-    // Receive progress events from the main isolate and update the foreground
-    // notification (ID 888). This is the only notification MIUI guarantees
     // to keep visible while the foreground service is running.
     service.on('updateProgress').listen((event) {
       if (event != null) {
@@ -81,9 +79,9 @@ void onStart(ServiceInstance service) async {
     // Reset foreground notification to idle state after upload completes/fails
     service.on('clearProgress').listen((event) {
       if (event != null) {
-        final content = event['content'] as String? ?? 'Ready to process file...';
+        final content = event['content'] as String? ?? 'Transfer complete';
         service.setForegroundNotificationInfo(
-          title: 'Krushi Kalp Upload Service',
+          title: 'Krushi Kalp',
           content: content,
         );
       }

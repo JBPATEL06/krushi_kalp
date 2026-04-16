@@ -259,17 +259,12 @@ class TestService {
   Future<List<MockTest>> _populateSignedUrls(List<MockTest> tests) async {
     return await Future.wait(
       tests.map((test) async {
-        String? contentUrl;
         String? imageUrl;
         const bucket = 'mock_test';
 
-        if (test.filePath.isNotEmpty) {
-          final path =
-              SupabaseUrlHelper.extractPathFromUrl(test.filePath, bucket);
-          // Uses SupabaseUrlHelper with new 1-year expiry logic
-          contentUrl =
-              await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
-        }
+        // NOTE: We intentionally DO NOT fetch `contentUrl` (JSON file) here
+        // to prevent the "Thundering Herd" ANR freeze on app launch. 
+        // It is fetched on-demand exactly when the user clicks 'Start Exam'.
 
         if (test.coverImagePath != null && test.coverImagePath!.isNotEmpty) {
           final path = SupabaseUrlHelper.extractPathFromUrl(
@@ -278,8 +273,8 @@ class TestService {
         }
 
         return test.copyWith(
-          contentUrl: contentUrl,
           signedUrl: imageUrl,
+          contentUrl: null, // Keep it explicitly null representing "unfetched"
         );
       }),
     );

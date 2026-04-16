@@ -7,7 +7,6 @@ import '../../domain/models/mock_test.dart';
 import '../../data/services/test_service.dart';
 import '../../data/services/auth_service.dart';
 import '../../utils/crashlytics_service.dart';
-import '../../utils/supabase_url_helper.dart';
 import '../../data/services/local_caching_service.dart';
 import '../../data/local/entities/mock_test_entity.dart';
 import 'test_state.dart';
@@ -90,7 +89,6 @@ class TestNotifier extends _$TestNotifier {
         LocalCachingService.saveMockTests(entitiesToSave);
       }
 
-      _preSignUrls(fetchedTests);
       _applyFiltering();
     } catch (e, stack) {
        CrashlyticsService.instance.recordError(e, stack, reason: 'TestNotifier: fetchTests');
@@ -125,7 +123,6 @@ class TestNotifier extends _$TestNotifier {
         purchasedTestIds: userTests.map((t) => t.id).toSet(),
       );
       _saveToPrefs();
-      _preSignUrls(userTests);
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'TestNotifier: fetchUserTests');
       state = state.copyWith(errorMessage: 'Error loading your tests: $e');
@@ -174,23 +171,6 @@ class TestNotifier extends _$TestNotifier {
     state = state.copyWith(allTests: temp);
   }
 
-  void _preSignUrls(List<MockTest> tests) {
-    if (tests.isEmpty) return;
-    Future(() async {
-      try {
-        final List<Future<String>> signFutures = tests
-            .where((t) => t.contentUrl?.isNotEmpty ?? false)
-            .map((t) => SupabaseUrlHelper().getFreshSignedUrl('mock_test', t.contentUrl!))
-            .toList();
-
-        if (signFutures.isNotEmpty) {
-          await Future.wait(signFutures);
-        }
-      } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'TestNotifier: _preSignUrls');
-      }
-    });
-  }
 }
 
 @riverpod

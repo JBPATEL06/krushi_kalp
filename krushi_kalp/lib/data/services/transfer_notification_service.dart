@@ -22,6 +22,11 @@ class TransferNotificationService {
   static const String _downloadChannelDesc =
       'Shows download progress for purchased content';
 
+  static const String _serviceChannelId = 'krushi_background_service';
+  static const String _serviceChannelName = 'Background Services';
+  static const String _serviceChannelDesc =
+      'Keeps the app running for long transfers';
+
   /// Initializes the service with an existing [FlutterLocalNotificationsPlugin] instance.
   /// This ensures we don't double-initialize the platform-specific notification system.
   void initialize(FlutterLocalNotificationsPlugin plugin) {
@@ -41,10 +46,10 @@ class TransferNotificationService {
       _uploadChannelId,
       _uploadChannelName,
       description: _uploadChannelDesc,
-      importance:
-          Importance.low, // Use Low to avoid sound on every progress tick
+      importance: Importance.high, // Increased to High for MIUI visibility
       playSound: false,
       enableVibration: false,
+      showBadge: false,
     );
 
     // 2. Download Channel
@@ -52,7 +57,18 @@ class TransferNotificationService {
       _downloadChannelId,
       _downloadChannelName,
       description: _downloadChannelDesc,
-      importance: Importance.low,
+      importance: Importance.high,
+      playSound: false,
+      enableVibration: false,
+      showBadge: false,
+    );
+
+    // 3. Service Channel (For foreground service itself)
+    const serviceChannel = AndroidNotificationChannel(
+      _serviceChannelId,
+      _serviceChannelName,
+      description: _serviceChannelDesc,
+      importance: Importance.high, // Increased to high for visibility
       playSound: false,
       enableVibration: false,
     );
@@ -63,6 +79,7 @@ class TransferNotificationService {
     if (androidPlugin != null) {
       await androidPlugin.createNotificationChannel(uploadChannel);
       await androidPlugin.createNotificationChannel(downloadChannel);
+      await androidPlugin.createNotificationChannel(serviceChannel);
     }
   }
 
@@ -87,17 +104,20 @@ class TransferNotificationService {
           _uploadChannelId,
           _uploadChannelName,
           channelDescription: _uploadChannelDesc,
-          importance: Importance.low,
-          priority: Priority.low,
+          importance: Importance.high,
+          priority: Priority.high,
           showProgress: true,
           maxProgress: 100,
           progress: percent,
           indeterminate: false,
-          ongoing: true, // User cannot swipe away while uploading
+          ongoing: true,
           autoCancel: false,
+          onlyAlertOnce: true, // Only alert (sound/vibrate) once per task
+          showWhen: true,
           playSound: false,
           enableVibration: false,
-          icon: '@drawable/ic_notification',
+          icon: 'ic_notification',
+          ticker: 'Uploading $fileName...',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: false, // Silent during progress on iOS
@@ -130,7 +150,7 @@ class TransferNotificationService {
           priority: Priority.defaultPriority,
           ongoing: false,
           autoCancel: true,
-          icon: '@drawable/ic_notification',
+          icon: 'ic_notification',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
@@ -163,7 +183,7 @@ class TransferNotificationService {
           priority: Priority.high,
           ongoing: false,
           autoCancel: true,
-          icon: '@drawable/ic_notification',
+          icon: 'ic_notification',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
@@ -195,17 +215,20 @@ class TransferNotificationService {
           _downloadChannelId,
           _downloadChannelName,
           channelDescription: _downloadChannelDesc,
-          importance: Importance.low,
-          priority: Priority.low,
+          importance: Importance.high,
+          priority: Priority.high,
           showProgress: true,
           maxProgress: 100,
           progress: percent,
           indeterminate: false,
           ongoing: true,
           autoCancel: false,
+          onlyAlertOnce: true,
+          showWhen: true,
           playSound: false,
           enableVibration: false,
-          icon: '@drawable/ic_notification',
+          icon: 'ic_notification',
+          ticker: 'Downloading $fileName...',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: false,
@@ -238,7 +261,7 @@ class TransferNotificationService {
           priority: Priority.defaultPriority,
           ongoing: false,
           autoCancel: true,
-          icon: '@drawable/ic_notification',
+          icon: 'ic_notification',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
@@ -285,7 +308,7 @@ class TransferNotificationService {
           priority: Priority.high,
           ongoing: false,
           autoCancel: true,
-          icon: '@drawable/ic_notification',
+          icon: 'ic_notification',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,

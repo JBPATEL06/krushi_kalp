@@ -80,7 +80,8 @@ class PaymentService {
     try {
       _razorpay.open(options);
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'Razorpay checkout open failed');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'Razorpay checkout open failed');
     }
   }
 

@@ -4,8 +4,10 @@ import 'dart:convert';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import '../../utils/supabase_url_helper.dart';
 import '../../utils/crashlytics_service.dart';
+import './transfer_notification_service.dart';
 
 /// A simple token used to signal cancellation of an ongoing download.
 class CancelToken {
@@ -242,8 +244,8 @@ class DownloadService {
     CancelToken? externalCancelToken,
     DateTime? updatedAt,
   }) async {
-
-
+    final transferNotif = TransferNotificationService();
+    final bgService = FlutterBackgroundService();
 
     final taskId = '${userId}_$testId';
     final cancelToken = externalCancelToken ?? CancelToken();
@@ -270,6 +272,16 @@ class DownloadService {
     );
     _activeTasks[taskId] = task;
 
+    // Promote to foreground so OS doesn't kill it during download 
+    try {
+      final isRunning = await bgService.isRunning();
+      if (!isRunning) {
+        await bgService.startService();
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
+      bgService.invoke('setAsForeground');
+    } catch (_) {}
+
     IOSink? sink;
     try {
       // Step 1: Sign the URL (1 year expiry automatically handled by SupabaseUrlHelper)
@@ -290,6 +302,7 @@ class DownloadService {
       
       sink = localFile.openWrite();
       int received = 0;
+      double lastNotifiedProgress = -0.05; // To throttle notifications
 
       // Step 3: Stream and check for cancellation on every chunk
       await for (final chunk in streamedResponse) {
@@ -307,6 +320,16 @@ class DownloadService {
           final progress = received / contentLength;
           task.progress = progress;
           onProgress(progress);
+
+          // Update notification every ~5% to reduce overhead
+          if (progress - lastNotifiedProgress >= 0.05 || progress >= 0.99) {
+            transferNotif.showDownloadProgress(
+              taskId: taskId,
+              fileName: fileName,
+              progress: progress,
+            );
+            lastNotifiedProgress = progress;
+          }
         }
       }
 
@@ -322,6 +345,7 @@ class DownloadService {
       // Step 5: Update Manifest
       await _registerOwnership(userId, fileName, updatedAt: updatedAt);
 
+      transferNotif.showDownloadSuccess(taskId: taskId, fileName: fileName);
 
       task.status = DownloadStatus.completed;
       task.progress = 1.0;
@@ -333,11 +357,19 @@ class DownloadService {
       await _cleanupPartialFile(fileName, userId);
       CrashlyticsService.instance.recordError(e, stack,
           reason: 'Background download failed: $fileName');
+      transferNotif.showDownloadFailure(
+        taskId: taskId,
+        fileName: fileName,
+        error: e.toString(),
+      );
       onError(e.toString());
     } finally {
       // Clean up task map after a short buffer
       await Future.delayed(const Duration(seconds: 2));
       _activeTasks.remove(taskId);
+      if (_activeTasks.isEmpty) {
+        bgService.invoke('setAsBackground'); // Demote if idle
+      }
     }
   }
 

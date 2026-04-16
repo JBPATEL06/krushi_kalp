@@ -6,7 +6,7 @@ import '../../data/services/download_service.dart'; // NEW
 import '../../domain/models/mock_test.dart';
 import '../screens/exam_screen.dart';
 import '../widgets/common/download_progress_dialog.dart'; // NEW
-
+import '../../utils/supabase_url_helper.dart';
 class ExamHelper {
   static Future<void> startExam(BuildContext context, MockTest test) async {
     final user = AuthService.instance.currentUser;
@@ -24,7 +24,15 @@ class ExamHelper {
 
     if (!isDownloaded) {
       // ── File not on device: download first, then ask language ──
-      if (test.contentUrl == null) {
+      
+      // We fetch the signed URL dynamically to prevent the thundering herd ANR freeze
+      String? effectiveContentUrl = test.contentUrl;
+      if ((effectiveContentUrl == null || effectiveContentUrl.isEmpty) && test.filePath.isNotEmpty) {
+        final path = SupabaseUrlHelper.extractPathFromUrl(test.filePath, 'mock_test');
+        effectiveContentUrl = await SupabaseUrlHelper().getFreshSignedUrl('mock_test', path);
+      }
+
+      if (effectiveContentUrl == null || effectiveContentUrl.isEmpty) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Error: Download URL not found.")),
@@ -40,7 +48,7 @@ class ExamHelper {
         context: context,
         barrierDismissible: false,
         builder: (ctx) => DownloadProgressDialog(
-          url: test.contentUrl!,
+          url: effectiveContentUrl!,
           filename: filename,
           displayName: test.title,
           userId: user.id,

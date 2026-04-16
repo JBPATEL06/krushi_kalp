@@ -47,12 +47,12 @@ mixin PickerLifecycleMixin<T extends StatefulWidget> on State<T> {
 
   /// MIUI-safe file picker.
   ///
-  /// Demotes the foreground service to background before opening the native
+  /// Stops the foreground service before opening the native
   /// picker activity. This prevents the MIUI `ActivityThread` NPE crash
   /// (`fail in deliverResultsIfNeeded`) that happens when a foreground
   /// service is active during Activity result delivery.
   ///
-  /// Re-promotes the service once the picker result has been received (or
+  /// Restarts the service once the picker result has been received (or
   /// the user cancels). The [isPicking] flag is managed automatically.
   Future<FilePickerResult?> safePickFiles({
     FileType type = FileType.any,
@@ -62,14 +62,18 @@ mixin PickerLifecycleMixin<T extends StatefulWidget> on State<T> {
     if (isPicking) return null;
     isPicking = true;
 
+    bool serviceWasRunning = false;
+    final service = FlutterBackgroundService();
+
     try {
-      // ── MIUI fix: demote foreground service before opening picker ────────
-      // If we don't do this, MIUI's ActivityThread crashes when it tries
-      // to call Bundle.getString() on a null bundle during result delivery.
-      FlutterBackgroundService().invoke('setAsBackground');
-      // Small delay to allow the service state to settle before the picker
-      // activity is launched on top of MainActivity.
-      await Future.delayed(const Duration(milliseconds: 150));
+      // ── MIUI fix: stop foreground service before opening picker ────────
+      serviceWasRunning = await service.isRunning();
+      if (serviceWasRunning) {
+        service.invoke('stopService');
+        // Small delay to allow the service state to settle before the picker
+        // activity is launched on top of MainActivity.
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
 
       final result = await FilePicker.platform.pickFiles(
         type: type,
@@ -83,8 +87,12 @@ mixin PickerLifecycleMixin<T extends StatefulWidget> on State<T> {
       debugPrint('[PickerLifecycleMixin] Picker error: $e');
       return null;
     } finally {
-      // Re-promote service back to foreground
-      FlutterBackgroundService().invoke('setAsForeground');
+      // Restart service
+      if (serviceWasRunning) {
+         try {
+           await service.startService();
+         } catch (_) {}
+      }
       isPicking = false;
     }
   }
@@ -100,12 +108,10 @@ class _PickerObserver extends WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Re-promote to foreground if the app resumed while picking
-      // (covers the case where the picker result delivery failed silently)
-      FlutterBackgroundService().invoke('setAsForeground');
-
       if (_state.isPicking) {
         debugPrint('[PickerLifecycleMixin] App resumed while picking. Force resetting flag.');
+        // We do NOT unconditionally startService here, because it causes ghost 
+        // Foreground notifications on every app reboot/resume!
         _state.isPicking = false;
       }
     }

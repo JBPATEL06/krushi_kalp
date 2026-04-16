@@ -101,8 +101,8 @@ class BackgroundUploadService {
       await Future.delayed(const Duration(milliseconds: 100));
       // Show the initial "Uploading" notification immediately
       service.invoke('updateProgress', {
-        'title': 'Uploading ${task.fileName}',
-        'content': '0% complete – do not close the app',
+        'title': 'Uploading File: ${task.fileName}',
+        'content': '0% complete',
       });
     } catch (e) {
       CrashlyticsService.instance.log('Foreground service start failed: $e');
@@ -141,8 +141,8 @@ class BackgroundUploadService {
           final percent = (task.progress * 100).toInt();
           // Drive the foreground service notification (always visible on MIUI)
           FlutterBackgroundService().invoke('updateProgress', {
-            'title': 'Uploading ${task.fileName}',
-            'content': '$percent% complete – do not close the app',
+            'title': 'Uploading File: ${task.fileName}',
+            'content': '$percent% complete',
           });
         }
       });
@@ -233,7 +233,7 @@ class BackgroundUploadService {
       if (_activeTasks.isEmpty) {
         try {
           FlutterBackgroundService().invoke('clearProgress', {
-            'content': 'Ready to process file...',
+            'content': 'Transfer complete',
           });
           // Small delay to let the notification update settle, then demote
           await Future.delayed(const Duration(seconds: 2));

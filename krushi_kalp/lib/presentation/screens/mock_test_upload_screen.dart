@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
-
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:krushi_kalp/utils/crashlytics_service.dart'
@@ -10,9 +10,9 @@ import '../utils/ui_helpers.dart';
 import '../../data/services/test_service.dart';
 import '../../data/services/admin_notification_service.dart';
 import '../../data/services/background_upload_service.dart';
-import '../../data/services/transfer_notification_service.dart';
 import '../../core/theme/app_spacing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/picker_lifecycle_mixin.dart';
 
 class MockTestUploadScreen extends StatefulWidget {
   const MockTestUploadScreen({super.key});
@@ -21,7 +21,7 @@ class MockTestUploadScreen extends StatefulWidget {
   State<MockTestUploadScreen> createState() => _MockTestUploadScreenState();
 }
 
-class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
+class _MockTestUploadScreenState extends State<MockTestUploadScreen> with PickerLifecycleMixin {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
@@ -72,44 +72,63 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
   PlatformFile? _questionsFile;
   Uint8List? _questionsBytes;
   Uint8List? _imageBytes;
+  String? _imagePath;
 
   static const int maxImageSizeBytes = 1024 * 1024; // 1MB
 
   Future<void> _pickCoverImage() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      withData: true,
-    );
-
-    if (result != null) {
-      final file = result.files.first;
-      if (file.size > maxImageSizeBytes) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Image must be less than 1MB')),
-          );
+    if (isPicking) return;
+    isPicking = true;
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: false,
+      );
+      if (result != null && result.files.single.path != null) {
+        final file = result.files.first;
+        final bytes = await File(file.path!).readAsBytes();
+        if (file.size > maxImageSizeBytes) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Image must be less than 1MB')),
+            );
+          }
+          return;
         }
-        return;
+        setState(() {
+          _coverImage = file;
+          _imageBytes = bytes;
+          _imagePath = file.path;
+        });
       }
-      setState(() {
-        _coverImage = file;
-        _imageBytes = file.bytes;
-      });
+    } catch (e, stack) {
+      await CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to pick cover image');
+    } finally {
+      isPicking = false;
     }
   }
 
   Future<void> _pickQuestionsFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['xlsx', 'xls', 'json'],
-      withData: true,
-    );
-    if (result != null) {
-      final file = result.files.first;
-      setState(() {
-        _questionsFile = file;
-        _questionsBytes = file.bytes;
-      });
+    if (isPicking) return;
+    isPicking = true;
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['xlsx', 'xls', 'json'],
+        withData: false,
+      );
+      if (result != null && result.files.single.path != null) {
+        final file = result.files.first;
+        final bytes = await File(file.path!).readAsBytes();
+        setState(() {
+          _questionsFile = file;
+          _questionsBytes = bytes;
+        });
+      }
+    } catch (e, stack) {
+      await CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to pick questions file');
+    } finally {
+      isPicking = false;
     }
   }
 
@@ -175,27 +194,21 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
         fileName: 'Cover: ${_titleController.text}',
         bucketName: 'mock_test',
         storagePath: imagePath,
-        fileBytes: _imageBytes!,
+        fileBytes: _imageBytes,
+        filePath: _imagePath,
         fileType: 'mock_test_cover',
-        onProgress: (p) => TransferNotificationService().showUploadProgress(
-          taskId: 'image_$testId',
-          fileName: 'Cover for ${_titleController.text}',
-          progress: p,
-        ),
+        onProgress: (p) {
+          // Progress is now handled by BackgroundUploadService notification
+        },
         onComplete: (path) async {
           await supabase
               .from('mock_tests')
               .update({'cover_image_path': path}).eq('test_id', testId);
-          TransferNotificationService().showUploadSuccess(
-            taskId: 'image_$testId',
-            fileName: 'Cover image',
-          );
+          // Success notification is now handled by BackgroundUploadService
         },
-        onError: (err) => TransferNotificationService().showUploadFailure(
-          taskId: 'image_$testId',
-          fileName: 'Cover image',
-          error: err,
-        ),
+        onError: (err) {
+          // Failure notification is now handled by BackgroundUploadService
+        },
       );
 
       // Upload JSON Content
@@ -206,25 +219,18 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> {
         storagePath: jsonPath,
         fileBytes: Uint8List.fromList(utf8.encode(jsonString)),
         fileType: 'mock_test_json',
-        onProgress: (p) => TransferNotificationService().showUploadProgress(
-          taskId: 'json_$testId',
-          fileName: 'Questions for ${_titleController.text}',
-          progress: p,
-        ),
+        onProgress: (p) {
+          // Progress is now handled by BackgroundUploadService notification
+        },
         onComplete: (path) async {
           await supabase
               .from('mock_tests')
               .update({'file_path': path}).eq('test_id', testId);
-          TransferNotificationService().showUploadSuccess(
-            taskId: 'json_$testId',
-            fileName: 'Questions file',
-          );
+          // Success notification is now handled by BackgroundUploadService
         },
-        onError: (err) => TransferNotificationService().showUploadFailure(
-          taskId: 'json_$testId',
-          fileName: 'Questions file',
-          error: err,
-        ),
+        onError: (err) {
+          // Failure notification is now handled by BackgroundUploadService
+        },
       );
 
       try {

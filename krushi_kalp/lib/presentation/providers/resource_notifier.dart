@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/resource.dart';
 import '../../data/services/resource_service.dart';
 import '../../utils/crashlytics_service.dart';
-import '../../utils/supabase_url_helper.dart';
 import '../../data/services/local_caching_service.dart';
 import '../../data/local/entities/resource_entity.dart';
 import 'resource_state.dart';
@@ -86,7 +85,6 @@ class ResourceNotifier extends _$ResourceNotifier {
         LocalCachingService.saveResources(resources.map((r) => ResourceEntity.fromResource(r)).toList());
       }
 
-      _preSignUrls(resources);
       _updateTypeState(type, resources);
 
       state = state.copyWith(errorMessage: null);
@@ -118,7 +116,6 @@ class ResourceNotifier extends _$ResourceNotifier {
         purchasedResources: resources,
         purchasedResourceIds: resources.map((r) => r.id).toSet(),
       );
-      _preSignUrls(resources);
       _saveToPrefs();
     } catch (e, stack) {
       state = state.copyWith(errorMessage: 'Failed to load purchased resources: $e');
@@ -164,23 +161,4 @@ class ResourceNotifier extends _$ResourceNotifier {
     }
   }
 
-  void _preSignUrls(List<Resource> resources) {
-    if (resources.isEmpty) return;
-    Future(() async {
-      try {
-        final List<Future<String>> signFutures = [];
-        for (final r in resources) {
-          if (r.fileUrl?.isNotEmpty ?? false) {
-            signFutures.add(SupabaseUrlHelper().getFreshSignedUrl('mock_test', r.fileUrl!));
-          }
-          if (r.thumbnailUrl?.isNotEmpty ?? false) {
-            signFutures.add(SupabaseUrlHelper().getFreshSignedUrl('mock_test', r.thumbnailUrl!));
-          }
-        }
-        if (signFutures.isNotEmpty) await Future.wait(signFutures);
-      } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'ResourceNotifier: _preSignUrls failed');
-      }
-    });
-  }
 }

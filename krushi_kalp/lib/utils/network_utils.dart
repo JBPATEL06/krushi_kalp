@@ -14,11 +14,13 @@ class NetworkUtils {
 
     if (error is SocketException ||
         error is HandshakeException ||
+        error is HttpException ||
         error is TimeoutException) {
       return true;
     }
 
     return s.contains('SocketException') ||
+        s.contains('HttpException') ||
         s.contains('Failed host lookup') ||
         s.contains('HandshakeException') ||
         s.contains('Connection timed out') ||
