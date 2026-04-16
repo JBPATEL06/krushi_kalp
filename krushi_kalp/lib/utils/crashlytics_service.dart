@@ -13,7 +13,7 @@ class CrashlyticsService {
 
   final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
 
-  /// Initializes Crashlytics configuration.
+  /// Initializes Crashlytics configuration and sets up global error catchers.
   Future<void> init() async {
     // Enable collection in both debug and release to capture integration issues.
     await _crashlytics.setCrashlyticsCollectionEnabled(true);
@@ -21,6 +21,18 @@ class CrashlyticsService {
     // Attempt to send any unsent reports from previous runs (critical for non-fatals)
     await _crashlytics.sendUnsentReports();
     log('Crashlytics initialized and unsent reports flushed');
+
+    // Automatically catch all Flutter framework errors
+    FlutterError.onError = (errorDetails) {
+      // Pass all uncaught errors to Crashlytics
+      _crashlytics.recordFlutterFatalError(errorDetails);
+    };
+
+    // Automatically catch all asynchronous errors that aren't handled by the Flutter framework
+    PlatformDispatcher.instance.onError = (error, stack) {
+      _crashlytics.recordError(error, stack, fatal: true);
+      return true; // Return true to indicate the error was handled
+    };
   }
 
   /// Sets the user identifier for crash reports.

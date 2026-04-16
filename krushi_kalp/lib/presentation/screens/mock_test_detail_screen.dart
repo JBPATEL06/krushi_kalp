@@ -35,7 +35,8 @@ class MockTestDetailScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<MockTestDetailScreen> createState() => _MockTestDetailScreenState();
+  ConsumerState<MockTestDetailScreen> createState() =>
+      _MockTestDetailScreenState();
 }
 
 class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
@@ -61,7 +62,8 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
       );
       if (mounted) setState(() => _priceData = data);
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'mock_test_detail_price');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'mock_test_detail_price');
     }
   }
 
@@ -83,7 +85,8 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
       ];
 
       if (user != null) {
-        futures.add(ReviewService.getUserReview(user.id, widget.test.id, 'test'));
+        futures
+            .add(ReviewService.getUserReview(user.id, widget.test.id, 'test'));
       }
 
       final results = await Future.wait(futures);
@@ -101,7 +104,8 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
         });
       }
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'mock_test_detail_reviews');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'mock_test_detail_reviews');
       if (mounted) setState(() => _isLoadingReviews = false);
     }
   }
@@ -117,7 +121,7 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
         onSubmit: (rating, review) async {
           final user = ref.read(authNotifierProvider).user;
           if (user == null) return;
-          
+
           await ReviewService.submitReview(
             userId: user.id,
             itemId: widget.test.id,
@@ -134,12 +138,17 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isActuallyPurchased = ref.watch(testNotifierProvider).purchasedTestIds.contains(widget.test.id);
+    final isActuallyPurchased = ref
+        .watch(testNotifierProvider)
+        .purchasedTestIds
+        .contains(widget.test.id);
 
     // Pricing from DB RPC
     final hasOffer = _priceData?['has_discount'] ?? false;
-    final displayMrp = (_priceData?['mrp_display'] as num?)?.toDouble() ?? widget.test.price;
-    final displayPrice = (_priceData?['final_price'] as num?)?.toDouble() ?? widget.test.price;
+    final displayMrp =
+        (_priceData?['mrp_display'] as num?)?.toDouble() ?? widget.test.price;
+    final displayPrice =
+        (_priceData?['final_price'] as num?)?.toDouble() ?? widget.test.price;
     final discountLabel = _priceData?['discount_label'] as String?;
 
     final imageUrl = widget.test.signedUrl ?? widget.test.coverImagePath ?? '';
@@ -154,13 +163,9 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
               background: widget.heroTag != null
                   ? Hero(
                       tag: widget.heroTag!,
-                      child: imageUrl.isNotEmpty 
-                        ? CachedNetworkImage(imageUrl: imageUrl, fit: BoxFit.cover)
-                        : Container(color: theme.colorScheme.surfaceContainerHighest),
+                      child: _buildCoverImage(imageUrl, theme),
                     )
-                  : imageUrl.isNotEmpty
-                    ? CachedNetworkImage(imageUrl: imageUrl, fit: BoxFit.cover)
-                    : Container(color: theme.colorScheme.surfaceContainerHighest),
+                  : _buildCoverImage(imageUrl, theme),
             ),
           ),
           SliverToBoxAdapter(
@@ -169,7 +174,8 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(isActuallyPurchased, hasOffer, displayMrp, displayPrice, discountLabel),
+                  _buildHeader(isActuallyPurchased, hasOffer, displayMrp,
+                      displayPrice, discountLabel),
                   const SizedBox(height: AppSpacing.lg),
                   _buildStatsRow(),
                   const SizedBox(height: AppSpacing.lg),
@@ -189,7 +195,79 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
     );
   }
 
-  Widget _buildHeader(bool isPurchased, bool hasOffer, double mrp, double price, String? discountLabel) {
+  Widget _buildCoverImage(String url, ThemeData theme) {
+    bool hasValidUrl = url.isNotEmpty && url.startsWith('http');
+
+    if (!hasValidUrl) {
+      return _buildPremiumPlaceholder(theme);
+    }
+
+    return CachedNetworkImage(
+      imageUrl: url,
+      fit: BoxFit.cover,
+      placeholder: (context, url) => Container(
+        color: theme.colorScheme.surfaceContainerHighest,
+        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      ),
+      errorWidget: (context, url, error) => _buildPremiumPlaceholder(theme),
+    );
+  }
+
+  Widget _buildPremiumPlaceholder(ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.primary.withValues(alpha: 0.8),
+            theme.colorScheme.secondary.withValues(alpha: 0.6),
+            theme.colorScheme.tertiary.withValues(alpha: 0.4),
+          ],
+        ),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Text(
+            widget.test.title.substring(0, 1).toUpperCase(),
+            style: theme.textTheme.displayLarge?.copyWith(
+              color: theme.colorScheme.onPrimary.withValues(alpha: 0.15),
+              fontWeight: FontWeight.bold,
+              fontSize: 180,
+            ),
+          ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.image_outlined,
+                size: 48,
+                color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Text(
+                  widget.test.title,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onPrimary.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(bool isPurchased, bool hasOffer, double mrp, double price,
+      String? discountLabel) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,11 +303,15 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
               if (hasOffer && discountLabel != null) ...[
                 const SizedBox(width: AppSpacing.md),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm, vertical: 4),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
+                    color: theme.colorScheme.primaryContainer
+                        .withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(AppRadius.sm),
-                    border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.3)),
+                    border: Border.all(
+                        color:
+                            theme.colorScheme.primary.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     discountLabel,
@@ -262,7 +344,8 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.check_circle, size: 16, color: theme.colorScheme.secondary),
+          Icon(Icons.check_circle,
+              size: 16, color: theme.colorScheme.secondary),
           const SizedBox(width: 4),
           Text(
             "Purchased",
@@ -277,7 +360,8 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
   }
 
   Widget _buildRatingSummary() {
-    if (!_configLoaded || !AppConfigService.areReviewsVisible) return const SizedBox.shrink();
+    if (!_configLoaded || !AppConfigService.areReviewsVisible)
+      return const SizedBox.shrink();
     return Row(
       children: [
         RateStars(
@@ -303,27 +387,43 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _StatItem(icon: Icons.access_time, label: 'Duration', value: widget.test.time),
+          _StatItem(
+              icon: Icons.access_time,
+              label: 'Duration',
+              value: widget.test.time),
           _divider(),
-          _StatItem(icon: Icons.help_outline, label: 'Questions', value: '${widget.test.totalQuestions}'),
+          _StatItem(
+              icon: Icons.help_outline,
+              label: 'Questions',
+              value: '${widget.test.totalQuestions}'),
           _divider(),
-          _StatItem(icon: Icons.star_border, label: 'Marks', value: '${widget.test.totalMarks}'),
+          _StatItem(
+              icon: Icons.star_border,
+              label: 'Marks',
+              value: '${widget.test.totalMarks}'),
         ],
       ),
     );
   }
 
-  Widget _divider() => Container(width: 1, height: 40, color: Theme.of(context).dividerColor.withValues(alpha: 0.1));
+  Widget _divider() => Container(
+      width: 1,
+      height: 40,
+      color: Theme.of(context).dividerColor.withValues(alpha: 0.1));
 
   Widget _buildDescription() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Description", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+        Text("Description",
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          widget.test.description.isEmpty 
-              ? "Practice this mock test to improve your performance." 
+          widget.test.description.isEmpty
+              ? "Practice this mock test to improve your performance."
               : widget.test.description,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
         ),
@@ -341,14 +441,23 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Test Information", style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+          Text("Test Information",
+              style: theme.textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
-          _InfoRow(icon: Icons.category_outlined, label: "Category", value: widget.test.category),
+          _InfoRow(
+              icon: Icons.category_outlined,
+              label: "Category",
+              value: widget.test.category),
           _InfoRow(
             icon: Icons.warning_amber_rounded,
             label: "Negative Marking",
-            value: widget.test.negativeMarking ? "Yes (-${widget.test.negativeMarksPerQ})" : "None",
-            valueColor: widget.test.negativeMarking ? theme.colorScheme.error : theme.colorScheme.primary,
+            value: widget.test.negativeMarking
+                ? "Yes (-${widget.test.negativeMarksPerQ})"
+                : "None",
+            valueColor: widget.test.negativeMarking
+                ? theme.colorScheme.error
+                : theme.colorScheme.primary,
           ),
         ],
       ),
@@ -356,9 +465,13 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
   }
 
   Widget _buildReviewsSection(bool isPurchased) {
-    if (!_configLoaded || !AppConfigService.areReviewsVisible) return const SizedBox.shrink();
+    if (!_configLoaded || !AppConfigService.areReviewsVisible)
+      return const SizedBox.shrink();
     final user = ref.read(authNotifierProvider).user;
-    final canReview = (isPurchased || widget.test.price == 0) && _userReview == null && user != null && AppConfigService.canWriteReviews;
+    final canReview = (isPurchased || widget.test.price == 0) &&
+        _userReview == null &&
+        user != null &&
+        AppConfigService.canWriteReviews;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,8 +479,15 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text("Reviews", style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-            if (canReview) TextButton(onPressed: _showReviewDialog, child: const Text("Write Review")),
+            Text("Reviews",
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold)),
+            if (canReview)
+              TextButton(
+                  onPressed: _showReviewDialog,
+                  child: const Text("Write Review")),
           ],
         ),
         const SizedBox(height: AppSpacing.md),
@@ -376,14 +496,18 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
         else if (_reviews.isEmpty)
           const Text("No reviews yet.")
         else
-          ..._reviews.take(3).map((r) => ReviewCard(review: r, isOwnReview: user?.id == r.userId)),
+          ..._reviews.take(3).map(
+              (r) => ReviewCard(review: r, isOwnReview: user?.id == r.userId)),
         if (_reviews.length > 3)
           Center(
             child: TextButton(
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => AllReviewsScreen(itemId: widget.test.id, itemType: 'test', itemTitle: widget.test.title),
+                  builder: (_) => AllReviewsScreen(
+                      itemId: widget.test.id,
+                      itemType: 'test',
+                      itemTitle: widget.test.title),
                 ),
               ),
               child: const Text("View All Reviews"),
@@ -399,7 +523,7 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
       return Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: ElevatedButton(
-          onPressed: () { /* Start Exam Logic */ },
+          onPressed: () {/* Start Exam Logic */},
           style: ElevatedButton.styleFrom(
             minimumSize: const Size(double.infinity, 54),
             backgroundColor: theme.colorScheme.primary,
@@ -417,7 +541,8 @@ class _StatItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _StatItem({required this.icon, required this.label, required this.value});
+  const _StatItem(
+      {required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -438,7 +563,11 @@ class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
-  const _InfoRow({required this.icon, required this.label, required this.value, this.valueColor});
+  const _InfoRow(
+      {required this.icon,
+      required this.label,
+      required this.value,
+      this.valueColor});
 
   @override
   Widget build(BuildContext context) {
@@ -446,11 +575,15 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          Icon(icon,
+              size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(width: 12),
           Text("$label:"),
           const SizedBox(width: 8),
-          Expanded(child: Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: valueColor))),
+          Expanded(
+              child: Text(value,
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: valueColor))),
         ],
       ),
     );

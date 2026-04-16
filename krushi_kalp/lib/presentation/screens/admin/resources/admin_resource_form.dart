@@ -177,6 +177,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
         BackgroundUploadService().uploadFile(
           taskId: 'resource_file_$resourceId',
           fileName: 'File: $title',
+          itemName: 'Resource PDF',
           bucketName: 'mock_test',
           storagePath: path,
           fileBytes: _fileBytes,
@@ -206,6 +207,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
         BackgroundUploadService().uploadFile(
           taskId: 'resource_cover_$resourceId',
           fileName: 'Cover: $title',
+          itemName: 'Resource Thumbnail',
           bucketName: 'mock_test',
           storagePath: path,
           fileBytes: _coverBytes,

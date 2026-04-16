@@ -118,20 +118,12 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
                           customAction: DownloadActionButton(
                             testId: item.id.toString(),
                             filename: 'mock_test_${item.id}.json',
-                            url: item.contentUrl,
+                            url: item.filePath,
                             startLabel: "Start",
                             isFullWidth: false,
                             userId: ref.read(authNotifierProvider).user?.id,
                             displayName: item.title,
                             onAction: () async {
-                              if (item.contentUrl == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text(
-                                          "Error: Content not found for '${item.title}'")),
-                                );
-                                return;
-                              }
                               await ExamHelper.startExam(context, item);
                             },
                           ),

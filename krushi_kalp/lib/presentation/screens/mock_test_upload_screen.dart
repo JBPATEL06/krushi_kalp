@@ -12,6 +12,7 @@ import '../../data/services/admin_notification_service.dart';
 import '../../data/services/background_upload_service.dart';
 import '../../core/theme/app_spacing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 import '../utils/picker_lifecycle_mixin.dart';
 
 class MockTestUploadScreen extends StatefulWidget {
@@ -175,7 +176,6 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> with Picker
         jsonString = jsonEncode(jsonList);
       }
 
-      // 1. Create the database record first (waiting for ID)
       final supabase = Supabase.instance.client;
       final response = await supabase
           .from('mock_tests')
@@ -184,53 +184,48 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> with Picker
           .single();
       final int testId = response['test_id'];
 
-      // 2. Start background uploads
+      // 2. Predict paths and update DB immediately so it's immune to background deaths.
       final imagePath = 'mock_test_cover/$testId.jpg';
       final jsonPath = 'mock_test_json_file/$testId.json';
 
+      await supabase.from('mock_tests').update({
+        'cover_image_path': imagePath,
+        'file_path': jsonPath,
+      }).eq('test_id', testId);
+
+      // Write JSON string to a local temp file so we can pass the path across isolates efficiently
+      final tempDir = await getTemporaryDirectory();
+      final jsonFile = File('${tempDir.path}/temp_json_$testId.json');
+      await jsonFile.writeAsString(jsonString);
+
+      // 3. Start background uploads
       // Upload Cover Image
       BackgroundUploadService().uploadFile(
         taskId: 'image_$testId',
         fileName: 'Cover: ${_titleController.text}',
+        itemName: 'Test Cover Image',
         bucketName: 'mock_test',
         storagePath: imagePath,
         fileBytes: _imageBytes,
         filePath: _imagePath,
         fileType: 'mock_test_cover',
-        onProgress: (p) {
-          // Progress is now handled by BackgroundUploadService notification
-        },
-        onComplete: (path) async {
-          await supabase
-              .from('mock_tests')
-              .update({'cover_image_path': path}).eq('test_id', testId);
-          // Success notification is now handled by BackgroundUploadService
-        },
-        onError: (err) {
-          // Failure notification is now handled by BackgroundUploadService
-        },
+        onProgress: (p) {},
+        onComplete: (path) {},
+        onError: (err) {},
       );
 
       // Upload JSON Content
       BackgroundUploadService().uploadFile(
         taskId: 'json_$testId',
         fileName: 'Questions: ${_titleController.text}',
+        itemName: 'Test Questions File',
         bucketName: 'mock_test',
         storagePath: jsonPath,
-        fileBytes: Uint8List.fromList(utf8.encode(jsonString)),
+        filePath: jsonFile.path,
         fileType: 'mock_test_json',
-        onProgress: (p) {
-          // Progress is now handled by BackgroundUploadService notification
-        },
-        onComplete: (path) async {
-          await supabase
-              .from('mock_tests')
-              .update({'file_path': path}).eq('test_id', testId);
-          // Success notification is now handled by BackgroundUploadService
-        },
-        onError: (err) {
-          // Failure notification is now handled by BackgroundUploadService
-        },
+        onProgress: (p) {},
+        onComplete: (path) {},
+        onError: (err) {},
       );
 
       try {

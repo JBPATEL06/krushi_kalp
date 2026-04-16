@@ -18,6 +18,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'utils/crashlytics_service.dart';
 import 'data/services/notification_service.dart';
 import 'data/services/transfer_notification_service.dart';
+import 'data/services/background_upload_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 
@@ -49,12 +50,18 @@ Future<bool> onIosBackground(ServiceInstance service) async {
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
-  if (service is AndroidServiceInstance) {
-    
-    // We only boot precisely when a task starts (autoStart is false), 
-    // so we IMMEDIATELY claim foreground status upon isolate boot.
-    service.setAsForegroundService();
+  // 1. Initialize Firebase in this isolate
+  // This is required to prevent [core/no-app] crashes when using Crashlytics in background
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    await Firebase.initializeApp();
+    await CrashlyticsService.instance.init();
+    debugPrint('Firebase Background Isolate Init Success');
+  } catch (e) {
+    debugPrint('Firebase Background Isolate Init Failed: $e');
+  }
 
+  if (service is AndroidServiceInstance) {
     service.on('setAsForeground').listen((event) {
       service.setAsForegroundService();
     });
@@ -91,57 +98,74 @@ void onStart(ServiceInstance service) async {
   service.on('stopService').listen((event) {
     service.stopSelf();
   });
+
+  // ── BACKGROUND UPLOAD LISTENER ──────────────────────────────────────────
+  service.on('startUpload').listen((event) {
+    if (event != null) {
+      BackgroundUploadService.performUploadTask(service, event);
+    }
+  });
 }
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+void main() {
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // 0. Initialize Background Service
-  await initializeService();
+    // 0. Kill any dangling ghost notifications from previous crashes
+    try {
+      final service = FlutterBackgroundService();
+      // We don't await isRunning because we want to fire the stop command 
+      // regardless if the native side thinks it's still "alive".
+      service.invoke('stopService');
+    } catch (e) {
+      debugPrint('Startup service cleanup: $e');
+    }
 
-  // 1. Initialize Firebase & Analytics
-  await Firebase.initializeApp();
-  await CrashlyticsService.instance.init();
+    // 1. Initialize Firebase & Analytics
+    await Firebase.initializeApp();
+    await CrashlyticsService.instance.init();
 
-  // 2. Setup Crashlytics error reporting
-  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-  if (!kIsWeb) {
-    PlatformDispatcher.instance.onError = (error, stack) {
-      CrashlyticsService.instance.recordError(error, stack, fatal: true);
-      return true;
+    // 2. Setup Crashlytics error reporting for the framework
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
     };
-  }
 
-  // 3. Load Environment Variables & DB
-  await LocalCachingService.init();
+    // 3. Initialize Background Service Configuration
+    await initializeService();
 
-  // 4. Initialize Supabase
-  await Supabase.initialize(
-    url: Env.supabaseUrl,
-    anonKey: Env.supabaseAnonKey,
-  );
+    // 4. Load Environment Variables & DB
+    await LocalCachingService.init();
 
-  // 5. Initialize Notification Engine
-  final notificationService = NotificationService();
-  await notificationService.initialize();
+    // 5. Initialize Supabase
+    await Supabase.initialize(
+      url: Env.supabaseUrl,
+      anonKey: Env.supabaseAnonKey,
+    );
 
-  // 6. Initialize specialized Transfer Notifications
-  final transferNotifications = TransferNotificationService();
-  transferNotifications.initialize(notificationService.plugin);
-  await transferNotifications.setupChannel();
+    // 6. Initialize Notification Engine
+    final notificationService = NotificationService();
+    await notificationService.initialize();
 
-  // 7. Request Notification Permissions (Android 13+)
-  if (!kIsWeb) {
-    await Permission.notification.isDenied.then((value) {
-      if (value) Permission.notification.request();
-    });
-  }
+    // 7. Initialize specialized Transfer Notifications
+    final transferNotifications = TransferNotificationService();
+    transferNotifications.initialize(notificationService.plugin);
+    await transferNotifications.setupChannel();
 
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+    // 8. Request Notification Permissions (Android 13+)
+    if (!kIsWeb) {
+      await Permission.notification.isDenied.then((value) {
+        if (value) Permission.notification.request();
+      });
+    }
+
+    runApp(
+      const ProviderScope(
+        child: MyApp(),
+      ),
+    );
+  }, (error, stack) {
+    CrashlyticsService.instance.recordError(error, stack, fatal: true);
+  });
 }
 
 class MyApp extends ConsumerWidget {

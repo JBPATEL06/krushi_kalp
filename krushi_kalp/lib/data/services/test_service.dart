@@ -267,9 +267,16 @@ class TestService {
         // It is fetched on-demand exactly when the user clicks 'Start Exam'.
 
         if (test.coverImagePath != null && test.coverImagePath!.isNotEmpty) {
-          final path = SupabaseUrlHelper.extractPathFromUrl(
-              test.coverImagePath!, bucket);
-          imageUrl = await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
+          try {
+            final path = SupabaseUrlHelper.extractPathFromUrl(
+                test.coverImagePath!, bucket);
+            imageUrl = await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
+          } catch (e) {
+            // If the cover image is missing (404), fail gracefully and return null.
+            // This prevents a single missing image from crashing the entire test dashboard.
+            debugPrint('Failed to load signed URL for image ${test.coverImagePath}: $e');
+            imageUrl = null;
+          }
         }
 
         return test.copyWith(
@@ -648,14 +655,18 @@ class TestService {
   /// Uploads a generated result PDF.
   Future<void> uploadResultPdf(String path, File file) async {
     try {
-      await _supabase.storage.from('mock_test').upload(
-            path,
-            file,
-            fileOptions: const FileOptions(upsert: true),
-          );
+      await RetryHelper.run(
+        () => _supabase.storage.from('mock_test').upload(
+          path,
+          file,
+          fileOptions: const FileOptions(upsert: true),
+        ),
+        maxRetries: 3,
+        timeout: const Duration(seconds: 45), // PDFs can be up to ~1MB, give it time
+      );
     } catch (e, stack) {
       CrashlyticsService.instance
-          .recordError(e, stack, reason: 'uploadResultPdf failed');
+          .recordError(e, stack, reason: 'uploadResultPdf final failure');
       throw Exception('Failed to upload result PDF: $e');
     }
   }

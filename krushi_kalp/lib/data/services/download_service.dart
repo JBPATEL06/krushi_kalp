@@ -280,6 +280,10 @@ class DownloadService {
         await Future.delayed(const Duration(milliseconds: 300));
       }
       bgService.invoke('setAsForeground');
+      bgService.invoke('updateProgress', {
+        'title': 'Starting download...',
+        'content': fileName,
+      });
     } catch (_) {}
 
     IOSink? sink;
@@ -323,11 +327,11 @@ class DownloadService {
 
           // Update notification every ~5% to reduce overhead
           if (progress - lastNotifiedProgress >= 0.05 || progress >= 0.99) {
-            transferNotif.showDownloadProgress(
-              taskId: taskId,
-              fileName: fileName,
-              progress: progress,
-            );
+            final percent = (progress * 100).toInt();
+            bgService.invoke('updateProgress', {
+              'title': 'Downloading... $percent%',
+              'content': fileName,
+            });
             lastNotifiedProgress = progress;
           }
         }
@@ -345,6 +349,11 @@ class DownloadService {
       // Step 5: Update Manifest
       await _registerOwnership(userId, fileName, updatedAt: updatedAt);
 
+      // Clear foreground progress msg, show success notif via TransferNotificationService
+      bgService.invoke('clearProgress', {
+         'title': 'Download Complete',
+         'content': fileName,
+      });
       transferNotif.showDownloadSuccess(taskId: taskId, fileName: fileName);
 
       task.status = DownloadStatus.completed;
@@ -357,6 +366,11 @@ class DownloadService {
       await _cleanupPartialFile(fileName, userId);
       CrashlyticsService.instance.recordError(e, stack,
           reason: 'Background download failed: $fileName');
+      
+      bgService.invoke('clearProgress', {
+         'title': 'Download Failed',
+         'content': fileName,
+      });
       transferNotif.showDownloadFailure(
         taskId: taskId,
         fileName: fileName,
@@ -368,7 +382,7 @@ class DownloadService {
       await Future.delayed(const Duration(seconds: 2));
       _activeTasks.remove(taskId);
       if (_activeTasks.isEmpty) {
-        bgService.invoke('setAsBackground'); // Demote if idle
+        bgService.invoke('stopService'); // Stop service entirely to clear notification
       }
     }
   }

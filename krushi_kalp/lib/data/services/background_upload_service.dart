@@ -7,7 +7,8 @@ import 'package:uuid/uuid.dart';
 import '../../utils/crashlytics_service.dart';
 import '../../utils/retry_helper.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import '../../utils/network_utils.dart';
+import '../../core/env/env.dart';
+import 'package:flutter/material.dart' show debugPrint;
 
 /// Status of an upload task managed by [BackgroundUploadService].
 enum UploadTaskStatus { pending, uploading, completed, failed }
@@ -16,27 +17,29 @@ enum UploadTaskStatus { pending, uploading, completed, failed }
 class UploadTask {
   final String taskId;
   final String fileName;
+  final String itemName;
   final String bucketName;
   final String storagePath;
-  final Uint8List? fileBytes;
   final String? filePath;
-  final String fileType; // 'resource_pdf', 'resource_cover', 'mock_test_excel'
+  final String fileType;
   UploadTaskStatus status;
-  double progress; // 0.0 to 1.0
+  double progress;
   String? errorMessage;
-  String? completedPath; // storage path returned after success
+  String? completedPath;
 
   UploadTask({
     required this.taskId,
     required this.fileName,
+    required this.itemName,
     required this.bucketName,
     required this.storagePath,
-    this.fileBytes,
     this.filePath,
     required this.fileType,
-    this.status = UploadTaskStatus.pending,
+    this.status = UploadTaskStatus.uploading,
     this.progress = 0.0,
-  }) : assert(fileBytes != null || filePath != null, 'Either fileBytes or filePath must be provided');
+    this.errorMessage,
+    this.completedPath,
+  });
 }
 
 /// A singleton service that handles file uploads to Supabase Storage in the background.
@@ -46,10 +49,76 @@ class BackgroundUploadService {
   static final BackgroundUploadService _instance =
       BackgroundUploadService._internal();
   factory BackgroundUploadService() => _instance;
-  BackgroundUploadService._internal();
+
+  BackgroundUploadService._internal() {
+    _setupIsolateListeners();
+  }
+  
+  /// Listen for events coming back from the background isolate and route them to UI callbacks.
+  void _setupIsolateListeners() {
+    if (kIsWeb) return;
+
+    final service = FlutterBackgroundService();
+    
+    service.on('uploadProgress').listen((event) {
+      if (event == null) return;
+      final taskId = event['taskId'] as String;
+      final progress = event['progress'] as double;
+      
+      final task = _activeTasks[taskId];
+      if (task != null) {
+        task.progress = progress;
+        _taskCallbacks[taskId]?['onProgress']?.call(progress);
+      }
+    });
+
+    service.on('uploadComplete').listen((event) {
+      if (event == null) return;
+      final taskId = event['taskId'] as String;
+      final path = event['path'] as String;
+      
+      final task = _activeTasks[taskId];
+      if (task != null) {
+        task.status = UploadTaskStatus.completed;
+        task.completedPath = path;
+        _taskCallbacks[taskId]?['onComplete']?.call(path);
+        _cleanupTask(taskId);
+      }
+    });
+
+    service.on('uploadError').listen((event) {
+      if (event == null) return;
+      final taskId = event['taskId'] as String;
+      final error = event['error'] as String;
+      
+      final task = _activeTasks[taskId];
+      if (task != null) {
+        task.status = UploadTaskStatus.failed;
+        task.errorMessage = error;
+        _taskCallbacks[taskId]?['onError']?.call(error);
+        _cleanupTask(taskId);
+      }
+    });
+  }
 
   /// Map of currently active upload tasks keyed by [taskId].
   final Map<String, UploadTask> _activeTasks = {};
+  
+  /// Registry of callbacks for active tasks.
+  final Map<String, Map<String, Function>> _taskCallbacks = {};
+
+  void _cleanupTask(String taskId) {
+    // Keep task in activeTasks briefly for UI to see final state
+    Future.delayed(const Duration(seconds: 5), () {
+      _activeTasks.remove(taskId);
+      _taskCallbacks.remove(taskId);
+      
+      // If no more tasks, we can demote service
+      if (_activeTasks.isEmpty) {
+        FlutterBackgroundService().invoke('setAsBackground');
+      }
+    });
+  }
 
   /// Returns an unmodifiable map of all currently active upload tasks.
   Map<String, UploadTask> get activeTasks => Map.unmodifiable(_activeTasks);
@@ -60,6 +129,7 @@ class BackgroundUploadService {
   /// for progress, completion, and error handling.
   Future<String> uploadFile({
     required String fileName,
+    required String itemName,
     required String bucketName,
     required String storagePath,
     Uint8List? fileBytes,
@@ -76,170 +146,142 @@ class BackgroundUploadService {
     final task = UploadTask(
       taskId: id,
       fileName: fileName,
+      itemName: itemName,
       bucketName: bucketName,
       storagePath: sanitizedPath,
-      fileBytes: fileBytes,
       filePath: filePath,
       fileType: fileType,
       status: UploadTaskStatus.uploading,
     );
     _activeTasks[id] = task;
+    _taskCallbacks[id] = {
+      'onProgress': onProgress,
+      'onComplete': onComplete,
+      'onError': onError,
+    };
     
-    // Ensure the foreground service is running and in FOREGROUND mode
-    // so the notification is visible during the upload.
+    // Ensure the foreground service is running
     try {
       final service = FlutterBackgroundService();
       final isRunning = await service.isRunning();
       if (!isRunning) {
         await service.startService();
-        // Give the service isolate time to initialise its event listeners
-        await Future.delayed(const Duration(milliseconds: 300));
+        await Future.delayed(const Duration(milliseconds: 500));
       }
-      // Always promote to foreground at upload start (handles the case where
-      // the service was previously demoted to background after a previous upload)
+      
       service.invoke('setAsForeground');
-      await Future.delayed(const Duration(milliseconds: 100));
-      // Show the initial "Uploading" notification immediately
-      service.invoke('updateProgress', {
-        'title': 'Uploading File: ${task.fileName}',
-        'content': '0% complete',
+      
+      // Handoff to background isolate
+      service.invoke('startUpload', {
+        'taskId': id,
+        'fileName': fileName,
+        'itemName': itemName,
+        'bucketName': bucketName,
+        'storagePath': sanitizedPath,
+        'filePath': filePath,
+        'fileType': fileType,
       });
-    } catch (e) {
-      CrashlyticsService.instance.log('Foreground service start failed: $e');
-    }
 
-    // Start the upload process without awaiting it to return the taskId immediately.
-    _executeUpload(task, onProgress, onComplete, onError);
+    } catch (e) {
+      CrashlyticsService.instance.log('Background upload start failed: $e');
+      onError(e.toString());
+    }
 
     return id;
   }
 
-  /// Internal method that executes the actual Supabase upload with retries and progress simulation.
-  Future<void> _executeUpload(
-    UploadTask task,
-    Function(double progress) onProgress,
-    Function(String path) onComplete,
-    Function(String error) onError,
-  ) async {
-    // Timer to simulate progress breathing during long atomic operations
+
+  /// (Isolate-side) Performs the actual Supabase upload within the background isolate.
+  /// This must be static or a top-level function so it can be called safely in the isolate.
+  static Future<void> performUploadTask(ServiceInstance service, Map<String, dynamic> data) async {
+    final taskId = data['taskId'] as String;
+    final fileName = data['fileName'] as String;
+    final itemName = data['itemName'] as String;
+    final bucketName = data['bucketName'] as String;
+    final storagePath = data['storagePath'] as String;
+    final filePath = data['filePath'] as String?;
+    
+    // 1. Ensure Supabase is initialized in THIS isolate
+    if (!isSupabaseInitialized()) {
+      try {
+        await Supabase.initialize(
+          url: Env.supabaseUrl,
+          anonKey: Env.supabaseAnonKey,
+        );
+      } catch (e) {
+        debugPrint('Background Isolate Supabase init failed: $e');
+      }
+    }
+
     Timer? progressTimer;
+    double progress = 0.05;
+
     try {
-      task.progress = 0.05;
-      onProgress(0.05);
-
-      // Start "Asymptotic Progress" timer.
-      // Moves quickly at first, then slows down as it approaches 0.99.
-      // Drives the foreground service notification (ID 888) — the ONLY
-      // notification MIUI guarantees stays visible.
+      // 2. Start progress simulation
       progressTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
-        if (task.status == UploadTaskStatus.uploading && task.progress < 0.95) {
-          // Asymptotic increment: 5% of remaining distance each tick
-          final remaining = 1.0 - task.progress;
-          task.progress += remaining * 0.05;
-          onProgress(task.progress);
-
-          final percent = (task.progress * 100).toInt();
-          // Drive the foreground service notification (always visible on MIUI)
-          FlutterBackgroundService().invoke('updateProgress', {
-            'title': 'Uploading File: ${task.fileName}',
+        if (progress < 0.95) {
+          final remaining = 1.0 - progress;
+          progress += remaining * 0.05;
+          final percent = (progress * 100).toInt();
+          
+          service.invoke('updateProgress', {
+            'title': 'Uploading $itemName',
             'content': '$percent% complete',
+          });
+          
+          // Send raw progress back to UI isolate if it's listening
+          service.invoke('uploadProgress', {
+            'taskId': taskId,
+            'progress': progress,
           });
         }
       });
 
-      // Use RetryHelper to handle transient network issues (max 8 attempts).
+      // 3. Perform upload with retries
       await RetryHelper.run(
         () async {
-          final contentType = _getContentType(task.storagePath);
+          final contentType = _getContentTypeStatic(storagePath);
 
-          if (!kIsWeb && task.filePath != null) {
-            // Memory efficient: upload directly from disk file
+          if (filePath != null) {
             await Supabase.instance.client.storage
-                .from(task.bucketName)
+                .from(bucketName)
                 .upload(
-                  task.storagePath,
-                  File(task.filePath!),
-                  fileOptions: FileOptions(
-                    upsert: true,
-                    contentType: contentType,
-                  ),
-                );
-          } else if (task.fileBytes != null) {
-            // Upload from memory bytes
-            await Supabase.instance.client.storage
-                .from(task.bucketName)
-                .uploadBinary(
-                  task.storagePath,
-                  task.fileBytes!,
-                  fileOptions: FileOptions(
-                    upsert: true,
-                    contentType: contentType,
-                  ),
+                  storagePath,
+                  File(filePath),
+                  fileOptions: FileOptions(upsert: true, contentType: contentType),
                 );
           } else {
-            throw Exception('No file data or path available for upload');
+             throw Exception('No file path provided in background worker');
           }
         },
         maxRetries: 8,
         initialDelay: const Duration(seconds: 5),
-        maxDelay: const Duration(minutes: 2),
-        timeout: const Duration(seconds: 300), // 5 min timeout for large files
+        timeout: const Duration(seconds: 300),
       );
 
-      // Mark task as completed
+      // 4. Cleanup and success
       progressTimer.cancel();
-      task.progress = 1.0;
-      task.status = UploadTaskStatus.completed;
-      task.completedPath = task.storagePath;
-
-      onProgress(1.0);
-      // Update foreground notification to success state
-      FlutterBackgroundService().invoke('clearProgress', {
-        'content': '✓ ${task.fileName} uploaded successfully',
+      service.invoke('clearProgress', {
+        'content': '✓ $itemName uploaded successfully',
       });
-      onComplete(task.storagePath);
+      service.invoke('uploadComplete', {
+        'taskId': taskId,
+        'path': storagePath,
+      });
+
     } catch (e, stack) {
       progressTimer?.cancel();
-      task.status = UploadTaskStatus.failed;
-
-      String userMessage = e.toString();
-      if (NetworkUtils.isNetworkError(e)) {
-        userMessage = 'Upload failed due to connection issues. Please check your internet and retry.';
-      }
-      task.errorMessage = userMessage;
-
-      CrashlyticsService.instance.recordError(e, stack,
-          reason:
-              'Background upload failed: ${task.fileName} in ${task.bucketName} (Path: ${task.storagePath})');
-
-      // Update foreground notification to failure state
-      FlutterBackgroundService().invoke('clearProgress', {
-        'content': '✗ ${task.fileName} upload failed – check your connection',
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Background isolate upload crashed: $itemName ($fileName)');
+      
+      service.invoke('clearProgress', {
+        'content': '✗ $itemName upload failed – check your connection',
       });
-
-      onError(e.toString());
+      service.invoke('uploadError', {
+        'taskId': taskId,
+        'error': e.toString(),
+      });
     } finally {
       progressTimer?.cancel();
-      // Retain the task in active tasks for a short duration (3s)
-      // so UI or notification service can process the final state.
-      await Future.delayed(const Duration(seconds: 3));
-      _activeTasks.remove(task.taskId);
-
-      // If no more active tasks, demote the service to background mode
-      // (invisible — no notification) instead of killing it.
-      // Killing and restarting causes MIUI to show the notification only once
-      // because each new foreground service start is treated as a brand-new
-      // notification by the OS and MIUI suppresses duplicates aggressively.
-      if (_activeTasks.isEmpty) {
-        try {
-          FlutterBackgroundService().invoke('clearProgress', {
-            'content': 'Transfer complete',
-          });
-          // Small delay to let the notification update settle, then demote
-          await Future.delayed(const Duration(seconds: 2));
-          FlutterBackgroundService().invoke('setAsBackground');
-        } catch (_) {}
-      }
     }
   }
 
@@ -259,7 +301,9 @@ class BackgroundUploadService {
   }
 
   /// Returns the MIME type based on file extension.
-  String _getContentType(String path) {
+
+  /// Static version for isolate usage
+  static String _getContentTypeStatic(String path) {
     final ext = path.split('.').last.toLowerCase();
     switch (ext) {
       case 'pdf':
@@ -287,5 +331,15 @@ class BackgroundUploadService {
       default:
         return 'application/octet-stream';
     }
+  }
+}
+
+/// Helper to check if Supabase is initialized in the current isolate.
+bool isSupabaseInitialized() {
+  try {
+    Supabase.instance.client;
+    return true;
+  } catch (_) {
+    return false;
   }
 }

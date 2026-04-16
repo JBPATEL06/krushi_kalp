@@ -215,6 +215,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
         BackgroundUploadService().uploadFile(
           taskId: 'image_${widget.test.id}',
           fileName: 'Cover Edit: ${_titleController.text}',
+          itemName: 'Test Cover Image',
           bucketName: 'mock_test',
           storagePath: imagePath,
           fileBytes: _imageBytes!,
@@ -248,6 +249,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
         BackgroundUploadService().uploadFile(
           taskId: 'json_${widget.test.id}',
           fileName: 'Questions Edit: ${_titleController.text}',
+          itemName: 'Test Questions File',
           bucketName: 'mock_test',
           storagePath: jsonPath,
           fileBytes: Uint8List.fromList(jsonBytes),

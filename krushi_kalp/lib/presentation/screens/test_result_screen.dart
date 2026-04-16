@@ -17,6 +17,7 @@ import '../../data/services/test_service.dart';
 import '../../utils/error_utils.dart';
 import '../widgets/common/responsive_wrapper.dart';
 import '../../data/services/performance_service.dart';
+import '../../data/services/background_upload_service.dart';
 import '../providers/auth_notifier.dart';
 import '../providers/network_notifier.dart';
 
@@ -64,6 +65,10 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
   late Animation<double> _scoreAnimation;
   bool _isGeneratingPdf = false;
   bool _isDiscarding = false;
+  
+  // PDF Upload Status
+  UploadTaskStatus _pdfStatus = UploadTaskStatus.uploading;
+  double _pdfProgress = 0.0;
   bool _isOffline = false;
 
   @override
@@ -134,7 +139,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
     super.dispose();
   }
 
-  Future<void> _generateAndDownloadPdf() async {
+  Future<void> _generateAndUploadPdf() async {
     setState(() {
       _isGeneratingPdf = true;
     });
@@ -178,28 +183,41 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
       );
 
       final path = 'exam_result/${userId}_${widget.testId}.pdf';
-      try {
-        await TestService.instance.uploadResultPdf(path, file);
-
-        PerformanceService.instance
-            .updateUserStreak(
-              userId,
-              widget.timeTakenSeconds,
-              'test_attempt',
-            )
-            .ignore();
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('PDF Uploaded Successfully')),
-          );
-        }
-      } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'test_result_screen');
-        if (mounted) {
-          ErrorUtils.showError(context, e);
-        }
-      }
+      
+      // Use BackgroundUploadService to handle isolate-based upload
+      await BackgroundUploadService().uploadFile(
+        taskId: 'pdf_${widget.testId}_${userId}', // Stable ID for retries
+        fileName: '${widget.testTitle}_Result.pdf',
+        itemName: 'Mock Test Result PDF',
+        bucketName: 'exam_result',
+        storagePath: path,
+        filePath: file.path,
+        fileType: 'test_result_pdf',
+        onProgress: (progress) {
+          if (mounted) setState(() => _pdfProgress = progress);
+        },
+        onComplete: (completedPath) {
+          if (mounted) {
+            setState(() {
+              _pdfStatus = UploadTaskStatus.completed;
+              _pdfProgress = 1.0;
+            });
+            
+            PerformanceService.instance
+                .updateUserStreak(
+                  userId,
+                  widget.timeTakenSeconds,
+                  'test_attempt',
+                )
+                .ignore();
+          }
+        },
+        onError: (error) {
+          if (mounted) {
+            setState(() => _pdfStatus = UploadTaskStatus.failed);
+          }
+        },
+      );
 
       if (!mounted) return;
 
@@ -313,6 +331,9 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                   (route) => false,
                 ),
               ),
+              actions: [
+                _buildSyncIndicator(),
+              ],
             ),
             body: SingleChildScrollView(
               child: Column(
@@ -455,7 +476,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: _isGeneratingPdf ? null : _generateAndDownloadPdf,
+                        onPressed: _isGeneratingPdf ? null : _generateAndUploadPdf,
                         icon: _isGeneratingPdf
                             ? SizedBox(
                                 width: context.sp(20),
@@ -660,6 +681,45 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
         ],
       ),
     );
+  }
+
+  Widget _buildSyncIndicator() {
+    final theme = Theme.of(context);
+    
+    switch (_pdfStatus) {
+      case UploadTaskStatus.uploading:
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: Center(
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                value: _pdfProgress > 0 ? _pdfProgress : null,
+                strokeWidth: 2,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+        );
+      case UploadTaskStatus.completed:
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+          child: Icon(
+            Icons.cloud_done_rounded,
+            color: Colors.green.shade600,
+            size: 24,
+          ),
+        );
+      case UploadTaskStatus.failed:
+        return IconButton(
+          icon: Icon(Icons.cloud_off_rounded, color: theme.colorScheme.error),
+          onPressed: _generateAndUploadPdf,
+          tooltip: 'Sync Failed - Tap to retry',
+        );
+      case UploadTaskStatus.pending:
+        return const SizedBox.shrink();
+    }
   }
 
   Widget _buildStatCard({required String label, required String value, required Color color}) {

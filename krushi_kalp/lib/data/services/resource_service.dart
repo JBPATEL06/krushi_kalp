@@ -93,9 +93,12 @@ class ResourceService {
       if (r.fileUrl != null && r.fileUrl!.isNotEmpty) {
         final path = SupabaseUrlHelper.extractPathFromUrl(r.fileUrl!, bucket);
         if (!path.startsWith('http')) {
-          // getFreshSignedUrl now defaults to 1 year expiry via SupabaseUrlHelper
-          signedFile =
-              await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
+          try {
+            signedFile =
+                await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
+          } catch (e) {
+            debugPrint('Failed to load signed URL for resource file: $e');
+          }
         } else {
           signedFile = path;
         }
@@ -105,8 +108,12 @@ class ResourceService {
         final path =
             SupabaseUrlHelper.extractPathFromUrl(r.thumbnailUrl!, bucket);
         if (!path.startsWith('http')) {
-          signedThumb =
-              await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
+          try {
+            signedThumb =
+                await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
+          } catch (e) {
+            debugPrint('Failed to load signed URL for resource thumbnail: $e');
+          }
         } else {
           signedThumb = path;
         }

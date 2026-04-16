@@ -169,14 +169,6 @@ class _StoreGridState extends ConsumerState<StoreGrid> {
               userId: ref.read(authNotifierProvider).user?.id,
               displayName: test.title, // CHANGED
               onAction: () async {
-                if (test.contentUrl == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text(
-                            "Error: Content not found for '${test.title}'")),
-                  );
-                  return;
-                }
                 await ExamHelper.startExam(context, test);
               },
             )
