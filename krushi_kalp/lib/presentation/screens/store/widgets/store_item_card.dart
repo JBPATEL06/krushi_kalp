@@ -74,9 +74,12 @@ class StoreItemCard extends StatelessWidget {
 
     // Badges definitions
     final bool hasBadge =
+        (price == 0 && !isPurchased) ||
         (discountTag != null && discountTag!.isNotEmpty && !isPurchased) ||
-            (isPurchased && !hideTags);
-    final String badgeLabel = isPurchased ? 'Purchased' : (discountTag ?? '');
+        (isPurchased && !hideTags);
+    final String badgeLabel = isPurchased
+        ? 'Purchased'
+        : (price == 0 ? 'FREE' : (discountTag ?? ''));
     final Color badgeBg =
         isPurchased ? theme.colorScheme.primary : theme.colorScheme.tertiary;
     final Color badgeFg = isPurchased

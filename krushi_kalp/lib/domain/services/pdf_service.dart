@@ -160,7 +160,6 @@ class PdfService {
     final double percentage = (score / totalMarks) * 100;
     final bool isPassed = percentage >= 35; // Standard passing mark
     final PdfColor brandBlue = PdfColor.fromInt(0xFF3399FF);
-    final PdfColor statGreen = PdfColor.fromInt(0xFF4CAF50);
     final PdfColor statRed = PdfColor.fromInt(0xFFF44336);
 
     return pw.Column(
@@ -207,27 +206,26 @@ class PdfService {
                   painter: (PdfGraphics canvas, PdfPoint size) {
                     canvas.setStrokeColor(PdfColors.white);
                     canvas.setLineWidth(4); // Increased for better visibility
-                      if (isPassed) {
-                        // Trophy-like shape
-                        canvas.drawEllipse(size.x / 2, size.y * 0.7, 10, 8);
-                        canvas.moveTo(size.x / 2, size.y * 0.4);
-                        canvas.lineTo(size.x / 2, size.y * 0.2);
-                        canvas.moveTo(size.x / 2 - 8, size.y * 0.2);
-                        canvas.lineTo(size.x / 2 + 8, size.y * 0.2);
-                      } else {
-                        // Sad face
-                        canvas.drawEllipse(size.x / 2, size.y / 2, 12, 12);
-                        canvas.moveTo(size.x / 2 - 4, size.y / 2 + 3);
-                        canvas.drawEllipse(size.x / 2 - 4, size.y / 2 + 3, 1, 1);
-                        canvas.moveTo(size.x / 2 + 4, size.y / 2 + 3);
-                        canvas.drawEllipse(size.x / 2 + 4, size.y / 2 + 3, 1, 1);
-                        canvas.moveTo(size.x / 2 - 5, size.y / 2 - 3);
-                        canvas.setLineCap(PdfLineCap.round);
-                        canvas.curveTo(size.x / 2 - 5, size.y / 2 - 3, size.x/2, size.y/2, size.x/2+5, size.y/2-3);
-                      }
-                      canvas.strokePath();
-                    },
-                  ),
+                    if (isPassed) {
+                      // Trophy-like shape
+                      canvas.drawEllipse(size.x / 2, size.y * 0.7, 10, 8);
+                      canvas.moveTo(size.x / 2, size.y * 0.4);
+                      canvas.lineTo(size.x / 2, size.y * 0.2);
+                      canvas.moveTo(size.x / 2 - 8, size.y * 0.2);
+                      canvas.lineTo(size.x / 2 + 8, size.y * 0.2);
+                    } else {
+                      // Sad face
+                      canvas.drawEllipse(size.x / 2, size.y / 2, 12, 12);
+                      canvas.moveTo(size.x / 2 - 4, size.y / 2 + 3);
+                      canvas.drawEllipse(size.x / 2 - 4, size.y / 2 + 3, 1, 1);
+                      canvas.moveTo(size.x / 2 + 4, size.y / 2 + 3);
+                      canvas.drawEllipse(size.x / 2 + 4, size.y / 2 + 3, 1, 1);
+                      canvas.moveTo(size.x / 2 - 5, size.y / 2 - 3);
+                      canvas.setLineCap(PdfLineCap.round);
+                      canvas.curveTo(size.x / 2 - 5, size.y / 2 - 3, size.x/2, size.y/2, size.x/2+5, size.y/2-3);
+                    }
+                    canvas.strokePath();
+                  },
                 ),
               ),
               pw.SizedBox(height: 16),
@@ -459,43 +457,7 @@ class PdfService {
     );
   }
 
-  pw.Widget _buildLargeStatusIcon(bool isCorrect, bool isSkipped, PdfColor darkG, PdfColor darkR) {
-    final color = isSkipped ? PdfColors.grey500 : (isCorrect ? darkG : darkR);
-    return pw.Container(
-      width: 24,
-      height: 24,
-      decoration: pw.BoxDecoration(
-        color: color,
-        shape: pw.BoxShape.circle,
-      ),
-      child: pw.Center(
-        child: pw.Container(
-          width: 14,
-          height: 14,
-          child: pw.CustomPaint(
-            painter: (PdfGraphics canvas, PdfPoint size) {
-              canvas.setStrokeColor(PdfColors.white);
-              canvas.setLineWidth(2.0);
-              if (isCorrect) {
-                canvas.moveTo(2.5, 7);
-                canvas.lineTo(5.5, 10);
-                canvas.lineTo(11.5, 3);
-              } else if (!isSkipped) {
-                canvas.moveTo(3, 3);
-                canvas.lineTo(11, 11);
-                canvas.moveTo(3, 11);
-                canvas.lineTo(11, 3);
-              } else {
-                 canvas.moveTo(3, 7);
-                 canvas.lineTo(11, 7);
-              }
-              canvas.strokePath();
-            },
-          ),
-        ),
-      ),
-    );
-  }
+
 
   pw.Widget _buildSelectionIndicator(bool isCorrect, PdfColor darkG, PdfColor darkR) {
     return pw.Container(
@@ -597,77 +559,9 @@ class PdfService {
     return Uint8List.fromList(allBytes);
   }
 
-  pw.Widget _buildStatusIcon(bool isCorrect, bool isSkipped, PdfColor darkG, PdfColor darkR) {
-    final color = isSkipped ? PdfColors.grey400 : (isCorrect ? darkG : darkR);
-    return pw.Container(
-      width: 18,
-      height: 18,
-      decoration: pw.BoxDecoration(
-        color: color,
-        shape: pw.BoxShape.circle,
-      ),
-      child: pw.Center(
-        child: pw.Container(
-          width: 10,
-          height: 10,
-          child: pw.CustomPaint(
-            painter: (PdfGraphics canvas, PdfPoint size) {
-              canvas.setStrokeColor(PdfColors.white);
-              canvas.setLineWidth(1.8);
-              if (isCorrect) {
-                canvas.moveTo(2, 5);
-                canvas.lineTo(4, 7);
-                canvas.lineTo(8, 2);
-              } else if (!isSkipped) {
-                canvas.moveTo(2, 2);
-                canvas.lineTo(8, 8);
-                canvas.moveTo(2, 8);
-                canvas.lineTo(8, 2);
-              } else {
-                 canvas.moveTo(2, 5);
-                 canvas.lineTo(8, 5);
-              }
-              canvas.strokePath();
-            },
-          ),
-        ),
-      ),
-    );
-  }
 
-  pw.Widget _buildChoiceIndicator(bool isCorrect, PdfColor darkG, PdfColor darkR) {
-    return pw.Container(
-      width: 14,
-      height: 14,
-      decoration: pw.BoxDecoration(
-        color: isCorrect ? darkG : darkR,
-        shape: pw.BoxShape.circle,
-      ),
-      child: pw.Center(
-        child: pw.Container(
-          width: 8,
-          height: 8,
-          child: pw.CustomPaint(
-            painter: (PdfGraphics canvas, PdfPoint size) {
-              canvas.setStrokeColor(PdfColors.white);
-              canvas.setLineWidth(1.5);
-              if (isCorrect) {
-                canvas.moveTo(1.5, 4);
-                canvas.lineTo(3.5, 6);
-                canvas.lineTo(6.5, 1.5);
-              } else {
-                canvas.moveTo(2, 2);
-                canvas.lineTo(6, 6);
-                canvas.moveTo(2, 6);
-                canvas.lineTo(6, 2);
-              }
-              canvas.strokePath();
-            },
-          ),
-        ),
-      ),
-    );
-  }
+
+
 
   String getSecurePassword(String userId, String testTitle) {
     // Deterministic password based on user and test
