@@ -82,7 +82,7 @@ class _ScoreScreenState extends ConsumerState<ScoreScreen> {
     }
   }
 
-  Future<void> _downloadAndOpenResult(int testId, String title) async {
+  Future<void> _downloadAndOpenResult(int resultId, String title) async {
     try {
       var status = await Permission.storage.status;
       if (!status.isGranted) {
@@ -90,14 +90,14 @@ class _ScoreScreenState extends ConsumerState<ScoreScreen> {
       }
 
       final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/exam_result_$testId.pdf');
+      final file = File('${dir.path}/exam_result_$resultId.pdf');
 
       if (await file.exists()) {
         _openPdf(file, title);
         return;
       }
 
-      final bucketPath = 'exam_result/$testId.pdf';
+      final bucketPath = 'exam_result/$resultId.pdf';
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Downloading Result...')),
@@ -442,7 +442,7 @@ class _ScoreScreenState extends ConsumerState<ScoreScreen> {
                       .w(AppSpacing.sm)), // FIXED: context.w(AppSpacing.sm)
               TextButton.icon(
                 onPressed: () =>
-                    _downloadAndOpenResult(result.testId, result.testTitle),
+                    _downloadAndOpenResult(result.resultId, result.testTitle),
                 icon: Icon(Icons.remove_red_eye,
                     size: context.sp(18),
                     color: theme.colorScheme.primary), // FIXED: context.sp(18)

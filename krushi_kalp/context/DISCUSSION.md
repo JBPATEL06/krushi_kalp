@@ -1,5 +1,18 @@
 # Krushi Kalp Discussion Log
 
+## [2026-04-17] Mock Test Navigation & UI Refinement
+- **Problem**: 
+    - "Start Mock Test" button in `MockTestDetailScreen` is unresponsive.
+    - Test language shows "gu" instead of "Gujarati".
+    - PDF result header has a distracting white circle.
+    - The "START" button design in the detail screen should match the provided screenshot.
+- **Decisions**:
+    - **Functionality**: Use `ExamHelper.startExam` for the start button logic. This handles authentication, downloads, and navigation in one go.
+    - **UI**: Display full language names ("Gujarati", "English"). Use `ElevatedButton.icon` with `Icons.play_circle_outline` and "START" text in a dark navy background to match the screenshot.
+    - **PDF**: Remove the semi-transparent circle background from the status icon in `PdfService`. Increase icon stroke width for clarity.
+- **Risks**: None identified.
+- **Branch**: `feature/mock-test-navigation-fix`
+
 ## 2026-04-01: Stabilization Phase
 - Problem: Admin resource editing not working, PDF font issues, PYQ filter missing mock tests, Cart redirection.
 - Decisions:
@@ -64,6 +77,19 @@
 
 ## Phase 6: Demo Data & Store Sync Stabilization (2026-04-07)
 
+### Discussion: PDF Optimization & Gujarati Fixes
+**Scope**: Resolve PDF layout issues, Gujarati crashes, and upload timeouts.
+**Confirmed by User**:
+- Remove auto-translation logic; respect native exam language.
+- Implement "Check Answer" style in PDF (show all options).
+- Add persistent PDF theme selection in Profile.
+- Stop background PDF upload as it's slow and prone to errors.
+**Outcome**:
+- PDF generation now uses NotoSansGujarati fallback.
+- PDF viewer loads theme from SharedPreferences.
+- Exam result PDF header and item layout updated for clarity.
+- Background upload removed from result flow.
+
 ### Discussion: Demo Visibility & Refresh Strategy
 - **Problem**: Store only showed 1/3 mock tests due to free-item filtering.
 - **Problem**: Store items didn't update immediately after Supabase changes due to local Isar caching.
@@ -117,7 +143,11 @@
 - **Problem**: Supabase connections are dropped (`HttpException`) when switching network states or backgrounding.
 - **Decisions**:
   - **Channel Separation**: Dedicated `krushi_background_service` channel for the foreground service to avoid clashing with progress notifications.
-  - **Dynamic Notifications**: Implemented `updateForegroundNotification` bridge to keep the progress updated.
+  - **Dynamic Notifications**: - User native language support for PDF (Removed translation middleware)
+- Persistent PDF theme settings (Light/Dark)
+- Gujarati font fallback stabilization in PDF
+- PDF layout optimized to "Check Answer" style
+- Removed background PDF upload to resolve latency/errors
   - **Channel Stability**: Importance set to `high` and added `service.setAsForegroundService()` in `onStart`.
   - **Pick Guards**: Added `_isPicking` state to Admin forms to resolve `NullPointerException` during file selection activity results.
   - **Icon Fix**: Corrected Android resource references for the foreground service icon.
@@ -189,3 +219,27 @@
   - AAB Build: Generated a signed Release App Bundle (app-release.aab) successfully.
 - Outcome: A code-signed, production-ready bundle is ready for deployment.
 - Status: COMPLETE.
+
+---
+
+## Phase 14: PDF UI Standardization (Copy-to-Copy Match) (2026-04-18)
+
+### Discussion: "Copy-to-Copy" Visual Fidelity & English Framing
+- **Goal**: Make the PDF result an exact mirror of the in-app "Check Analysis" screen.
+- **Problem**: Legacy PDF had unwanted white space, mixed Gujarati/English labels, and didn't match the premium app UI.
+- **Decisions**: 
+    - **Strict English**: Forced "RIGHT", "WRONG", "SKIPPED", "PASS/FAIL" labels and result messages to English for a professional report feel.
+    - **Layout Overhaul**: Reduced vertical/horizontal padding by ~40% to match the app's compact analysis cards.
+    - **Right-Aligned Icons**: Moved the Check/Cross indicators to the right side of option boxes to match the app's choice UI.
+    - **Vector Status Icons**: Replaced circle colored indicators with high-fidelity circular Check/Cross icons drawn via vector graphics ("pw.Graphics").
+- **Outcome**: PDF report is now a professional, pixel-perfect document that provides a premium extension of the app experience.
+- **Branch Gate**: 
+    - **Branch**: feature/pdf-ui-standardization
+    - **Status**: COMPLETE.
+
+### Language Selection Cleanup (2026-04-18)
+- **Problem**: The "Select Exam Language" dialog was confusing as we stopped using translation.
+- **Decision**: Removed the dialog in ExamHelper. Exams now start directly in their native language.
+- **Status**: COMPLETE.
+I n i t i a l   d i s c u s s i o n   p h a s e   f o r   P D F   t h e m e   a n d   u p l o a d   f i x   s t a r t e d .  
+ 

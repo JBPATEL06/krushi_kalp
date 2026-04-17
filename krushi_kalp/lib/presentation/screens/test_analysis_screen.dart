@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:krushi_kalp/data/services/auth_service.dart';
 import '../../domain/models/question.dart';
-import '../../data/services/translation_service.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_radius.dart'; // FIXED: Added import for radius tokens
-import '../widgets/common/responsive_wrapper.dart'; // FIXED: Added import for responsive scaling
-import '../../utils/crashlytics_service.dart';
+import '../../core/theme/app_radius.dart';
+import '../widgets/common/responsive_wrapper.dart';
 
 class TestAnalysisScreen extends StatefulWidget {
   final String testTitle;
@@ -35,7 +32,7 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
           style: theme.textTheme.titleMedium?.copyWith(
             color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
-            fontSize: context.sp(18), // FIXED: context.sp(18)
+            fontSize: context.sp(18),
           ),
         ),
         backgroundColor: theme.colorScheme.surface,
@@ -51,10 +48,7 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
           left: AppSpacing.lg,
           right: AppSpacing.lg,
           top: AppSpacing.lg,
-          bottom: AppSpacing.md +
-              MediaQuery.of(context)
-                  .padding
-                  .bottom, // FIXED: AppSpacing.md + bottom padding
+          bottom: AppSpacing.md + MediaQuery.of(context).padding.bottom,
         ),
         itemCount: widget.questions.length,
         itemBuilder: (context, index) {
@@ -67,21 +61,18 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
   }
 
   Widget _buildAnalysisCard(Question q, int index, int? selectedOption) {
-    // CHANGED: Use string-based comparison for correct answer
     final bool isCorrect = selectedOption != null &&
         q.options[selectedOption].trim().toLowerCase() ==
-            q.correctAnswer.trim().toLowerCase(); // CHANGED
+            q.correctAnswer.trim().toLowerCase();
     final isSkipped = selectedOption == null;
 
     final theme = Theme.of(context);
     return Container(
-      margin: EdgeInsets.only(
-          bottom: context.h(AppSpacing.lg)), // FIXED: context.h(AppSpacing.lg)
+      margin: EdgeInsets.only(bottom: context.h(AppSpacing.lg)),
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius:
-            BorderRadius.circular(AppRadius.lg), // FIXED: AppRadius.lg
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: [
           BoxShadow(
             color: theme.colorScheme.shadow.withValues(alpha: 0.05),
@@ -96,7 +87,7 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
           Row(
             children: [
               CircleAvatar(
-                radius: context.sp(12), // FIXED: context.sp(12)
+                radius: context.sp(12),
                 backgroundColor: isSkipped
                     ? theme.colorScheme.outline
                     : (isCorrect
@@ -106,46 +97,38 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
                   isSkipped
                       ? Icons.remove
                       : (isCorrect ? Icons.check : Icons.close),
-                  size: context.sp(16), // FIXED: context.sp(16)
+                  size: context.sp(16),
                   color: theme.colorScheme.onPrimary,
                 ),
               ),
-              SizedBox(
-                  width: context
-                      .w(AppSpacing.sm)), // FIXED: context.w(AppSpacing.sm)
+              SizedBox(width: context.w(AppSpacing.sm)),
               Expanded(
-                // FIXED: Added Expanded
                 child: Text(
                   'Question ${index + 1}',
-                  overflow: TextOverflow.ellipsis, // FIXED: Added ellipsis
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.onSurfaceVariant,
-                    fontSize: context.sp(14), // FIXED: context.sp(14)
+                    fontSize: context.sp(14),
                   ),
                 ),
               ),
             ],
           ),
-          SizedBox(
-              height:
-                  context.h(AppSpacing.md)), // FIXED: context.h(AppSpacing.md)
+          SizedBox(height: context.h(AppSpacing.md)),
           Text(
             q.text,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   height: 1.3,
-                  fontSize: context.sp(16), // FIXED: context.sp(16)
+                  fontSize: context.sp(16),
                 ),
           ),
-          SizedBox(
-              height:
-                  context.h(AppSpacing.lg)), // FIXED: context.h(AppSpacing.lg)
+          SizedBox(height: context.h(AppSpacing.lg)),
           ...List.generate(q.options.length, (optIndex) {
             final isSelected = selectedOption == optIndex;
-            // CHANGED: Identify correct option by string match
             final isRealAnswer = q.options[optIndex].trim().toLowerCase() ==
-                q.correctAnswer.trim().toLowerCase(); // CHANGED
+                q.correctAnswer.trim().toLowerCase();
 
             Color? bgColor;
             Color borderColor = theme.colorScheme.outline;
@@ -162,9 +145,7 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
             }
 
             return Container(
-              margin: EdgeInsets.only(
-                  bottom: context
-                      .h(AppSpacing.sm)), // FIXED: context.h(AppSpacing.sm)
+              margin: EdgeInsets.only(bottom: context.h(AppSpacing.sm)),
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
                 color: bgColor ?? theme.colorScheme.surface,
@@ -172,8 +153,7 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
                   color: borderColor,
                   width: (isSelected || isRealAnswer) ? 2 : 1,
                 ),
-                borderRadius:
-                    BorderRadius.circular(AppRadius.md), // FIXED: AppRadius.md
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Row(
                 children: [
@@ -187,7 +167,7 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
                             fontWeight: (isRealAnswer || isSelected)
                                 ? FontWeight.bold
                                 : FontWeight.normal,
-                            fontSize: context.sp(14), // FIXED: context.sp(14)
+                            fontSize: context.sp(14),
                           ),
                     ),
                   ),
@@ -197,7 +177,7 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
                       color: isRealAnswer
                           ? theme.colorScheme.primary
                           : theme.colorScheme.error,
-                      size: context.sp(20), // FIXED: context.sp(20)
+                      size: context.sp(20),
                     ),
                 ],
               ),
@@ -205,15 +185,13 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
           }),
           if (isSkipped)
             Padding(
-              padding: EdgeInsets.only(
-                  top: context
-                      .h(AppSpacing.sm)), // FIXED: context.h(AppSpacing.sm)
+              padding: EdgeInsets.only(top: context.h(AppSpacing.sm)),
               child: Text(
                 'You skipped this question',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.secondary,
                   fontStyle: FontStyle.italic,
-                  fontSize: context.sp(12), // FIXED: context.sp(12)
+                  fontSize: context.sp(12),
                 ),
               ),
             ),

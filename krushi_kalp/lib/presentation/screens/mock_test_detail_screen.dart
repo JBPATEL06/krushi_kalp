@@ -18,6 +18,7 @@ import '../providers/auth_notifier.dart';
 import '../widgets/reviews/review_card.dart';
 import '../widgets/reviews/review_dialog.dart';
 import '../widgets/reviews/rate_stars.dart';
+import '../utils/exam_helper.dart';
 import 'reviews/all_reviews_screen.dart';
 
 class MockTestDetailScreen extends ConsumerStatefulWidget {
@@ -446,6 +447,14 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
                   ?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppSpacing.md),
           _InfoRow(
+              icon: Icons.language_outlined,
+              label: "Language",
+              value: widget.test.language.toLowerCase() == "gu"
+                  ? "Gujarati"
+                  : widget.test.language.toLowerCase() == "en"
+                      ? "English"
+                      : widget.test.language),
+          _InfoRow(
               icon: Icons.category_outlined,
               label: "Category",
               value: widget.test.category),
@@ -522,13 +531,25 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
     if (isPurchased) {
       return Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
-        child: ElevatedButton(
-          onPressed: () {/* Start Exam Logic */},
+        child: ElevatedButton.icon(
+          onPressed: () => ExamHelper.startExam(context, widget.test),
           style: ElevatedButton.styleFrom(
             minimumSize: const Size(double.infinity, 54),
-            backgroundColor: theme.colorScheme.primary,
+            backgroundColor: const Color(0xFF1A1C3D), // Premium dark navy
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
           ),
-          child: const Text("Start Mock Test"),
+          icon: const Icon(Icons.play_circle_outline, size: 24),
+          label: Text(
+            "START",
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
+            ),
+          ),
         ),
       );
     }

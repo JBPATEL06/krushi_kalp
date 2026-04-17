@@ -7,7 +7,6 @@ import '../../domain/models/question.dart';
 import '../../domain/services/pdf_service.dart';
 import 'pdf_viewer_screen.dart';
 import 'test_analysis_screen.dart';
-import '../../data/services/translation_service.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_radius.dart';
 import '../../data/services/review_service.dart';
@@ -17,7 +16,6 @@ import '../../data/services/test_service.dart';
 import '../../utils/error_utils.dart';
 import '../widgets/common/responsive_wrapper.dart';
 import '../../data/services/performance_service.dart';
-import '../../data/services/background_upload_service.dart';
 import '../providers/auth_notifier.dart';
 import '../providers/network_notifier.dart';
 
@@ -25,13 +23,13 @@ class TestResultScreen extends ConsumerStatefulWidget {
   final int? resultId;
   final String testId;
   final String testTitle;
-  final double score; 
+  final double score;
   final int totalQuestions;
   final double totalMarks;
   final int? correctAnswers;
   final int? wrongAnswers;
   final int? skippedAnswers;
-  final dynamic questions; 
+  final dynamic questions;
   final Map<int, int>? selectedAnswers;
   final String examLanguage;
   final int timeTakenSeconds;
@@ -65,10 +63,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
   late Animation<double> _scoreAnimation;
   bool _isGeneratingPdf = false;
   bool _isDiscarding = false;
-  
-  // PDF Upload Status
-  UploadTaskStatus _pdfStatus = UploadTaskStatus.uploading;
-  double _pdfProgress = 0.0;
+
   bool _isOffline = false;
 
   @override
@@ -112,15 +107,13 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
           children: [
             Icon(Icons.wifi_off_rounded,
                 color: Theme.of(context).colorScheme.error),
-            SizedBox(
-                width: context
-                    .w(AppSpacing.sm)), 
+            SizedBox(width: context.w(AppSpacing.sm)),
             const Text('Offline Attempt'),
           ],
         ),
         content: Text(
           'Your data will not be uploaded in database as you are offline. However, your result PDF will be locally stored on this device for your reference.\n\nYou can view it anytime in your downloads.',
-          style: TextStyle(fontSize: context.sp(14)), 
+          style: TextStyle(fontSize: context.sp(14)),
         ),
         actions: [
           TextButton(
@@ -154,13 +147,10 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
           ? (widget.questions as List).cast<Question>()
           : null;
 
-      if (finalQuestions != null) {
-
-      }
+      if (finalQuestions != null) {}
 
       final file = await _pdfService.generateExamResultPdf(
         testId: widget.testId,
-
         testTitle: widget.testTitle,
         score: widget.score,
         totalMarks: widget.totalMarks,
@@ -174,42 +164,26 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
         languageCode: widget.examLanguage,
       );
 
-      final path = 'exam_result/${userId}_${widget.testId}.pdf';
-      
-      // Use BackgroundUploadService to handle isolate-based upload
-      await BackgroundUploadService().uploadFile(
-        taskId: 'pdf_${widget.testId}_${userId}', // Stable ID for retries
-        fileName: '${widget.testTitle}_Result.pdf',
-        itemName: 'Mock Test Result PDF',
-        bucketName: 'exam_result',
-        storagePath: path,
-        filePath: file.path,
-        fileType: 'test_result_pdf',
-        onProgress: (progress) {
-          if (mounted) setState(() => _pdfProgress = progress);
-        },
-        onComplete: (completedPath) {
-          if (mounted) {
-            setState(() {
-              _pdfStatus = UploadTaskStatus.completed;
-              _pdfProgress = 1.0;
-            });
-            
-            PerformanceService.instance
-                .updateUserStreak(
-                  userId,
-                  widget.timeTakenSeconds,
-                  'test_attempt',
-                )
-                .ignore();
-          }
-        },
-        onError: (error) {
-          if (mounted) {
-            setState(() => _pdfStatus = UploadTaskStatus.failed);
-          }
-        },
-      );
+      // Upload to database if online and resultId is available
+      if (!_isOffline && widget.resultId != null) {
+        try {
+          // Use standardized path for uniqueness
+          final String storagePath = 'exam_result/${widget.resultId}.pdf';
+          await TestService.instance.uploadResultPdf(storagePath, file);
+        } catch (e, stack) {
+          // Log but don't block the user from viewing the PDF locally
+          CrashlyticsService.instance.recordError(e, stack, 
+              reason: 'TestResultScreen: PDF upload failed during sync');
+        }
+      }
+
+      PerformanceService.instance
+          .updateUserStreak(
+            userId,
+            widget.timeTakenSeconds,
+            'test_attempt',
+          )
+          .ignore();
 
       if (!mounted) return;
 
@@ -225,7 +199,8 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
         ),
       );
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'test_result_screen');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'test_result_screen');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
@@ -240,12 +215,13 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
 
   Future<void> _discardResult() async {
     if (widget.resultId == null) return;
-    
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Discard Result?'),
-        content: const Text('This will permanently delete this test result. This action cannot be undone.'),
+        content: const Text(
+            'This will permanently delete this test result. This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -253,7 +229,8 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Discard'),
           ),
         ],
@@ -271,7 +248,8 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
           );
         }
       } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'test_result_screen');
+        CrashlyticsService.instance
+            .recordError(e, stack, reason: 'test_result_screen');
         if (mounted) ErrorUtils.showError(context, e);
       } finally {
         if (mounted) setState(() => _isDiscarding = false);
@@ -284,7 +262,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
     final theme = Theme.of(context);
     final double percentage =
         widget.totalMarks > 0 ? (widget.score / widget.totalMarks) * 100 : 0.0;
-    final bool isPassed = percentage >= 40; 
+    final bool isPassed = percentage >= 40;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -323,19 +301,17 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                   (route) => false,
                 ),
               ),
-              actions: [
-                _buildSyncIndicator(),
-              ],
+              actions: const [],
             ),
             body: SingleChildScrollView(
               child: Column(
                 children: [
                   SizedBox(height: context.h(AppSpacing.lg)),
                   Container(
-                    margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     padding: EdgeInsets.symmetric(
-                        vertical: context.h(32),
-                        horizontal: AppSpacing.lg),
+                        vertical: context.h(32), horizontal: AppSpacing.lg),
                     width: double.infinity,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -349,7 +325,8 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                       borderRadius: BorderRadius.circular(AppRadius.xl),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                          color:
+                              theme.colorScheme.primary.withValues(alpha: 0.3),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -359,7 +336,8 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                       children: [
                         Text(
                           'TOTAL SCORE',
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          style:
+                              Theme.of(context).textTheme.labelLarge?.copyWith(
                                     color: theme.colorScheme.onPrimary
                                         .withValues(alpha: 0.8),
                                     fontWeight: FontWeight.bold,
@@ -418,7 +396,8 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                         ),
                         SizedBox(height: context.h(AppSpacing.lg)),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.lg),
                           child: Text(
                             isPassed
                                 ? 'Test Completed Successfully\nYou have achieved the passing score for the ${widget.testTitle}.'
@@ -441,7 +420,8 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                   ),
                   SizedBox(height: context.h(AppSpacing.xxl)),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     child: Row(
                       children: [
                         Expanded(
@@ -464,18 +444,22 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                   ),
                   SizedBox(height: context.h(AppSpacing.xl)),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: _isGeneratingPdf ? null : _generateAndUploadPdf,
+                        onPressed:
+                            _isGeneratingPdf ? null : _generateAndUploadPdf,
                         icon: _isGeneratingPdf
                             ? SizedBox(
                                 width: context.sp(20),
                                 height: context.sp(20),
-                                child: const CircularProgressIndicator(strokeWidth: 2),
+                                child: const CircularProgressIndicator(
+                                    strokeWidth: 2),
                               )
-                            : Icon(Icons.download, color: theme.colorScheme.onPrimary),
+                            : Icon(Icons.download,
+                                color: theme.colorScheme.onPrimary),
                         label: Text(
                           _isGeneratingPdf
                               ? 'Generating PDF...'
@@ -489,12 +473,14 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                         style: ElevatedButton.styleFrom(
                           backgroundColor: theme.colorScheme.primaryContainer,
                           foregroundColor: theme.colorScheme.onPrimaryContainer,
-                          padding: EdgeInsets.symmetric(vertical: context.h(18)),
+                          padding:
+                              EdgeInsets.symmetric(vertical: context.h(18)),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(AppRadius.xl),
                             side: BorderSide(
-                              color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                              color: theme.colorScheme.primary
+                                  .withValues(alpha: 0.2),
                               width: 1,
                             ),
                           ),
@@ -505,11 +491,13 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                   SizedBox(height: context.h(AppSpacing.lg)),
                   if (!_isOffline)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                       child: _buildRatingSection(),
                     ),
                   SizedBox(height: context.h(AppSpacing.lg)),
-                  if (widget.questions != null && widget.selectedAnswers != null)
+                  if (widget.questions != null &&
+                      widget.selectedAnswers != null)
                     Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: AppSpacing.lg,
@@ -533,12 +521,14 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                           style: ElevatedButton.styleFrom(
                             backgroundColor: theme.colorScheme.surface,
                             foregroundColor: theme.colorScheme.primary,
-                            padding: EdgeInsets.symmetric(vertical: context.h(18)),
+                            padding:
+                                EdgeInsets.symmetric(vertical: context.h(18)),
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(AppRadius.xl),
                               side: BorderSide(
-                                color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                                color: theme.colorScheme.primary
+                                    .withValues(alpha: 0.2),
                                 width: 1,
                               ),
                             ),
@@ -566,7 +556,8 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                           child: _isDiscarding
                               ? Center(
                                   child: Padding(
-                                    padding: EdgeInsets.all(context.w(AppSpacing.md)),
+                                    padding: EdgeInsets.all(
+                                        context.w(AppSpacing.md)),
                                     child: const CircularProgressIndicator(),
                                   ),
                                 )
@@ -574,7 +565,8 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                                   width: double.infinity,
                                   child: TextButton.icon(
                                     onPressed: _discardResult,
-                                    icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+                                    icon: Icon(Icons.delete_outline,
+                                        color: theme.colorScheme.error),
                                     label: Text(
                                       'Discard This Result',
                                       style: TextStyle(
@@ -584,10 +576,13 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                                     ),
                                     style: TextButton.styleFrom(
                                       foregroundColor: theme.colorScheme.error,
-                                      padding: EdgeInsets.symmetric(vertical: context.h(16)),
-                                      backgroundColor: theme.colorScheme.error.withValues(alpha: 0.1),
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: context.h(16)),
+                                      backgroundColor: theme.colorScheme.error
+                                          .withValues(alpha: 0.1),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                                        borderRadius:
+                                            BorderRadius.circular(AppRadius.xl),
                                       ),
                                     ),
                                   ),
@@ -600,16 +595,19 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                           child: ElevatedButton(
                             onPressed: () {
                               Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute(builder: (context) => const MainScreen()),
+                                MaterialPageRoute(
+                                    builder: (context) => const MainScreen()),
                                 (route) => false,
                               );
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: theme.colorScheme.primary,
                               foregroundColor: theme.colorScheme.onPrimary,
-                              padding: EdgeInsets.symmetric(vertical: context.h(18)),
+                              padding:
+                                  EdgeInsets.symmetric(vertical: context.h(18)),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.xl),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.xl),
                               ),
                               elevation: 0,
                             ),
@@ -624,7 +622,9 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                           ),
                         ),
                       ),
-                      SizedBox(height: AppSpacing.md + MediaQuery.of(context).padding.bottom),
+                      SizedBox(
+                          height: AppSpacing.md +
+                              MediaQuery.of(context).padding.bottom),
                     ],
                   ),
                 ],
@@ -650,14 +650,17 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
               top: context.h(10),
               right: context.w(10),
               child: Container(
-                padding: EdgeInsets.symmetric(horizontal: context.w(12), vertical: context.h(6)),
+                padding: EdgeInsets.symmetric(
+                    horizontal: context.w(12), vertical: context.h(6)),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.error.withValues(alpha: 0.8),
                   borderRadius: BorderRadius.circular(AppRadius.xxl),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.cloud_off, color: theme.colorScheme.onPrimary, size: context.sp(14)),
+                    Icon(Icons.cloud_off,
+                        color: theme.colorScheme.onPrimary,
+                        size: context.sp(14)),
                     SizedBox(width: context.w(4)),
                     Text(
                       'Offline',
@@ -675,46 +678,10 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
     );
   }
 
-  Widget _buildSyncIndicator() {
-    final theme = Theme.of(context);
-    
-    switch (_pdfStatus) {
-      case UploadTaskStatus.uploading:
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          child: Center(
-            child: SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                value: _pdfProgress > 0 ? _pdfProgress : null,
-                strokeWidth: 2,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ),
-        );
-      case UploadTaskStatus.completed:
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          child: Icon(
-            Icons.cloud_done_rounded,
-            color: Colors.green.shade600,
-            size: 24,
-          ),
-        );
-      case UploadTaskStatus.failed:
-        return IconButton(
-          icon: Icon(Icons.cloud_off_rounded, color: theme.colorScheme.error),
-          onPressed: _generateAndUploadPdf,
-          tooltip: 'Sync Failed - Tap to retry',
-        );
-      case UploadTaskStatus.pending:
-        return const SizedBox.shrink();
-    }
-  }
 
-  Widget _buildStatCard({required String label, required String value, required Color color}) {
+
+  Widget _buildStatCard(
+      {required String label, required String value, required Color color}) {
     return Container(
       padding: EdgeInsets.all(context.w(AppSpacing.lg)),
       decoration: BoxDecoration(
@@ -724,9 +691,17 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
       ),
       child: Column(
         children: [
-          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: context.sp(12))),
+          Text(label,
+              style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.sp(12))),
           SizedBox(height: context.h(AppSpacing.sm)),
-          Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: context.sp(24))),
+          Text(value,
+              style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.sp(24))),
         ],
       ),
     );
@@ -777,14 +752,20 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
         decoration: BoxDecoration(
           color: theme.colorScheme.secondary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: theme.colorScheme.secondary.withValues(alpha: 0.2)),
+          border: Border.all(
+              color: theme.colorScheme.secondary.withValues(alpha: 0.2)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle_outline, color: theme.colorScheme.secondary, size: context.sp(20)),
+            Icon(Icons.check_circle_outline,
+                color: theme.colorScheme.secondary, size: context.sp(20)),
             SizedBox(width: context.w(AppSpacing.sm)),
-            Text("Thanks for your feedback!", style: TextStyle(color: theme.colorScheme.secondary, fontWeight: FontWeight.bold, fontSize: context.sp(14))),
+            Text("Thanks for your feedback!",
+                style: TextStyle(
+                    color: theme.colorScheme.secondary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: context.sp(14))),
           ],
         ),
       );
@@ -795,11 +776,16 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
       child: TextButton.icon(
         onPressed: () => _showRatingDialog(),
         icon: Icon(Icons.star_rate_rounded, color: theme.colorScheme.secondary),
-        label: Text('Rate this Test', style: TextStyle(fontSize: context.sp(16), fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface)),
+        label: Text('Rate this Test',
+            style: TextStyle(
+                fontSize: context.sp(16),
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface)),
         style: TextButton.styleFrom(
           padding: EdgeInsets.symmetric(vertical: context.h(16)),
           backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.1),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xl)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.xl)),
         ),
       ),
     );
@@ -811,7 +797,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
     if (user == null) return;
     int? tId = int.tryParse(widget.testId);
     if (tId == null) return;
-    
+
     showDialog(
       context: context,
       builder: (context) => ReviewDialog(

@@ -55,8 +55,11 @@ class ExamHelper {
           onComplete: (path) async {
             // Use outer context — dialog ctx is stale after dialog pops itself
             if (!outerContext.mounted) return;
-            final lang = await _askLanguage(outerContext, user.id);
-            if (lang == null) return; // user cancelled
+            // Bypass language selection dialog as requested
+            // final lang = await _askLanguage(outerContext, user.id);
+            // if (lang == null) return; // user cancelled
+            final lang = test.language.toLowerCase().contains('guj') ? 'gu' : 'en';
+            
             if (!outerContext.mounted) return;
             _navigateToExam(outerContext, test, lang, File(path));
           },
@@ -65,125 +68,126 @@ class ExamHelper {
       return;
     }
 
-    // ── File already on device: ask language, then start ──
+    // ── File already on device: start immediately ──
     if (!context.mounted) return;
-    final lang = await _askLanguage(context, user.id);
-    if (lang == null) return; // user cancelled
+    // Bypass language selection dialog as requested
+    // final lang = await _askLanguage(context, user.id);
+    // if (lang == null) return; // user cancelled
+    final lang = test.language.toLowerCase().contains('guj') ? 'gu' : 'en';
 
     final path = await downloadService.getLocalPath(filename, userId: user.id);
     if (!context.mounted) return;
     _navigateToExam(context, test, lang, File(path));
   }
 
-  /// Shows the language selection dialog.
-  /// Returns the chosen language code ('en' or 'gu'), or null if cancelled.
-  static Future<String?> _askLanguage(
-      BuildContext context, String userId) async {
-    // Check SharedPreferences for saved preference
-    final prefs = await SharedPreferences.getInstance();
-    final bool skipDialog = prefs.getBool('skip_exam_lang_dialog') ?? false;
-    final String? storedLang = prefs.getString('default_exam_lang');
-
-    if (skipDialog && storedLang != null && ['en', 'gu'].contains(storedLang)) {
-      return storedLang;
-    }
-
-    // Pre-fetch language from profile as default
-    String tempLanguage = 'en';
-    try {
-      final profile = await AuthService.instance.getUserProfile(userId);
-      if (profile != null && profile['language'] != null) {
-        tempLanguage = profile['language'];
-      }
-    } catch (_) {}
-
-    if (!context.mounted) return null;
-
-    bool dontAskAgain = false;
-    String? selectedLanguage;
-
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setState) {
-            return AlertDialog(
-              title: const Text("Select Exam Language"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                        color: Colors.blue[50],
-                        borderRadius: BorderRadius.circular(8)),
-                    child: const Text(
-                      "The exam content will be translated based on your selection.",
-                      style: TextStyle(fontSize: 12, color: Colors.black87),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  RadioGroup<String>(
-                    groupValue: tempLanguage,
-                    onChanged: (val) => setState(() => tempLanguage = val!),
-                    child: Column(
-                      children: [
-                        RadioListTile<String>(
-                          title: const Text("English"),
-                          value: 'en',
-                        ),
-                        RadioListTile<String>(
-                          title: const Text("Gujarati"),
-                          value: 'gu',
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(),
-                  CheckboxListTile(
-                    title: const Text("Don't ask me again"),
-                    subtitle: const Text("Updates your profile preference"),
-                    value: dontAskAgain,
-                    onChanged: (val) =>
-                        setState(() => dontAskAgain = val ?? false),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(
-                        context); // cancelled — selectedLanguage stays null
-                  },
-                  child: const Text("Cancel"),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    selectedLanguage = tempLanguage;
-                    Navigator.pop(context);
-                  },
-                  child: const Text("Start Exam"),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-
-    if (selectedLanguage != null && dontAskAgain) {
-      await prefs.setBool('skip_exam_lang_dialog', true);
-      await prefs.setString('default_exam_lang', selectedLanguage!);
-      try {
-        await AuthService.instance
-            .updateProfile(userId, {'language': selectedLanguage});
-      } catch (_) {}
-    }
-
-    return selectedLanguage;
-  }
+  /// Shows the language selection dialog. (Commented out as translation logic is removed)
+  // static Future<String?> _askLanguage(
+  //     BuildContext context, String userId) async {
+  //   // Check SharedPreferences for saved preference
+  //   final prefs = await SharedPreferences.getInstance();
+  //   final bool skipDialog = prefs.getBool('skip_exam_lang_dialog') ?? false;
+  //   final String? storedLang = prefs.getString('default_exam_lang');
+  //
+  //   if (skipDialog && storedLang != null && ['en', 'gu'].contains(storedLang)) {
+  //     return storedLang;
+  //   }
+  //
+  //   // Pre-fetch language from profile as default
+  //   String tempLanguage = 'en';
+  //   try {
+  //     final profile = await AuthService.instance.getUserProfile(userId);
+  //     if (profile != null && profile['language'] != null) {
+  //       tempLanguage = profile['language'];
+  //     }
+  //   } catch (_) {}
+  //
+  //   if (!context.mounted) return null;
+  //
+  //   bool dontAskAgain = false;
+  //   String? selectedLanguage;
+  //
+  //   await showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (ctx) {
+  //       return StatefulBuilder(
+  //         builder: (ctx, setState) {
+  //           return AlertDialog(
+  //             title: const Text("Select Exam Language"),
+  //             content: Column(
+  //               mainAxisSize: MainAxisSize.min,
+  //               children: [
+  //                 Container(
+  //                   padding: const EdgeInsets.all(8),
+  //                   decoration: BoxDecoration(
+  //                       color: Colors.blue[50],
+  //                       borderRadius: BorderRadius.circular(8)),
+  //                   child: const Text(
+  //                     "The exam content will be translated based on your selection.",
+  //                     style: TextStyle(fontSize: 12, color: Colors.black87),
+  //                     textAlign: TextAlign.center,
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 10),
+  //                 RadioGroup<String>(
+  //                   groupValue: tempLanguage,
+  //                   onChanged: (val) => setState(() => tempLanguage = val!),
+  //                   child: Column(
+  //                     children: [
+  //                       RadioListTile<String>(
+  //                         title: const Text("English"),
+  //                         value: 'en',
+  //                       ),
+  //                       RadioListTile<String>(
+  //                         title: const Text("Gujarati"),
+  //                         value: 'gu',
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //                 const Divider(),
+  //                 CheckboxListTile(
+  //                   title: const Text("Don't ask me again"),
+  //                   subtitle: const Text("Updates your profile preference"),
+  //                   value: dontAskAgain,
+  //                   onChanged: (val) =>
+  //                       setState(() => dontAskAgain = val ?? false),
+  //                 ),
+  //               ],
+  //             ),
+  //             actions: [
+  //               TextButton(
+  //                 onPressed: () {
+  //                   Navigator.pop(
+  //                       context); // cancelled — selectedLanguage stays null
+  //                 },
+  //                 child: const Text("Cancel"),
+  //               ),
+  //               ElevatedButton(
+  //                 onPressed: () {
+  //                   selectedLanguage = tempLanguage;
+  //                   Navigator.pop(context);
+  //                 },
+  //                 child: const Text("Start Exam"),
+  //               ),
+  //             ],
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  //
+  //   if (selectedLanguage != null && dontAskAgain) {
+  //     await prefs.setBool('skip_exam_lang_dialog', true);
+  //     await prefs.setString('default_exam_lang', selectedLanguage!);
+  //     try {
+  //       await AuthService.instance
+  //           .updateProfile(userId, {'language': selectedLanguage});
+  //     } catch (_) {}
+  //   }
+  //
+  //   return selectedLanguage;
+  // }
 
   static void _navigateToExam(
       BuildContext context, MockTest test, String language, File localFile) {

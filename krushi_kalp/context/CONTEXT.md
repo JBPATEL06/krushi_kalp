@@ -8,6 +8,13 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - Backend: Supabase (Auth, Storage, Database)
 - PDF: PDF package for report generation
 
+## Current Phase: Mock Test Stabilization (2026-04-17)
+- Goal: Fix navigation, naming, and PDF visual artifacts.
+- Navigation: Integrated `ExamHelper.startExam` for reliable start logic.
+- UI: Displaying full language names and unified "START" button design.
+- PDF: Cleaned up header visual artifacts (White Circle removal).
+- Status: IN_PROGRESS (Working on Branch: `feature/mock-test-navigation-fix`)
+
 ## Current Stabilization Phase
 - Goal: Fix critical bugs in Admin panel, PDF generation, and UX.
 - Admin Panel: RLS policies, high-trust form submission (await-based), and storage access.
@@ -15,9 +22,11 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 
 ## Key Decisions
 - Use sequential synchronized execution (await-based) for admin forms (Replaced "Fire and Forget" for reliability).
-- Unique PDF storage paths using userId/timestamp for collision prevention.
-- Dynamic font loading (NotoSansGujarati) in PdfService for multi-language support.
-- RLS policy standardization for 'authenticated' role.
+- Local PDF generation for results: PDFs are now generated and viewed locally to resolve backend latency and handshake errors.
+- Native Language Support: Auto-translation middleware removed; items now use the original provided language for accuracy.
+- Check Answer PDF Style: Standardized PDF results to match the in-app check-answer UI (All options shown).
+- Dynamic Font Fallback: NotoSansGujarati is used as a fallback for all PDF text to prevent crashes on non-latin characters.
+- PDF Theme Persistence: PDF theme choice (Light/Dark) is now persisted per user via SharedPreferences.
 
 ## Completed Phases
 - Phase 1: Authentication & Navigation (v1-v4)
@@ -81,9 +90,20 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - Stability: Added manual Refresh mechanism in `StoreScreen` AppBar and Retry buttons in empty states (`StoreResourceGrid`).
 - Logic: Standardized category keys in `MyResourcesScreen` and `HomeScreen` navigation mapping.
 - Status: COMPLETE.
-## Current Phase: Release Preparation (2026-04-17)
-- Goal: Increment version and generate production AAB.
-- Implementation: Branch `chore/prepare-release-1.0.1-4`.
-- Version: `1.0.1+4`.
-- Build: Generated `app-release.aab` (69MB).
+## Current Phase: PDF UI Standardization (Copy-to-Copy Match) (2026-04-17)
+- Goal: Transform PDF result output to match the app's "Check Analysis" screen.
+- Implementation: Branch `feature/pdf-ui-standardization`.
+- Changes:
+    - Forced strictly English labels for all PDF shell elements (Stats, Header, Section titles).
+    - Compacted layout by reducing padding and margins (Eliminated "unwanted space").
+    - Implemented circular status icons and right-aligned choice indicators using vector graphics.
+- Status: COMPLETE.
+
+## Current Phase: PDF UI Standardization (Copy-to-Copy Match) (2026-04-17)
+- Goal: Transform PDF result output to match the app's "Check Analysis" screen.
+- Implementation: Branch feature/pdf-ui-standardization
+- Changes:
+    - Forced strictly English labels for all PDF shell elements (Stats, Header, Section titles).
+    - Compacted layout by reducing padding and margins (Eliminated "unwanted space").
+    - Implemented circular status icons and right-aligned choice indicators using vector graphics.
 - Status: COMPLETE.
