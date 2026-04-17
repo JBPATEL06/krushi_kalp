@@ -34,8 +34,9 @@ class PdfService {
       keywords: 'krushi kalp, agriculture, mock test, result',
     );
 
-    // Load Font based on language
-    final font = await _loadFont(languageCode);
+    // Load Fonts based on language
+    final primaryFont = await _loadFont(languageCode);
+    final fallbackFont = await _loadFont('gu', forceGujarati: true);
 
     // Define Colors
     const PdfColor primaryBlue = PdfColor.fromInt(0xFF3399FF);
@@ -88,10 +89,14 @@ class PdfService {
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(0),
         theme: pw.ThemeData.withFont(
-            base: font,
-            bold: font, 
-            italic: font
-            ),
+          base: primaryFont,
+          bold: primaryFont,
+          italic: primaryFont,
+        ).copyWith(
+          defaultTextStyle: pw.TextStyle(
+            fontFallback: [primaryFont, fallbackFont],
+          ),
+        ),
         header: (pw.Context context) => _buildHeader(testTitle, userName, primaryBlue, white),
         footer: (pw.Context context) => _buildFooter(context, greyText),
         build: (pw.Context context) => [
@@ -428,9 +433,9 @@ class PdfService {
   }
 
   /// Loads the required font based on language.
-  Future<pw.Font> _loadFont(String languageCode) async {
+  Future<pw.Font> _loadFont(String languageCode, {bool forceGujarati = false}) async {
     // For English, use standard PDF fonts for better rendering and performance
-    if (languageCode == 'en') {
+    if (languageCode == 'en' && !forceGujarati) {
       return pw.Font.helvetica();
     }
 

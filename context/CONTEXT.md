@@ -20,11 +20,9 @@ Follows Clean Architecture:
 - Cleaning up mock test detail UI.
 
 ## Completed Phases
-- [x] Phase 1: Background Isolate Migration (Upload Fix)
-- [/] Phase 2: Service Stabilization & UX Polish (Firebase init, Friendly names)
-- [ ] Phase 3: Asset Recovery & Storage Cleanup (Signed URL 404 Audit)
-- [ ] Phase 4: User Dashboard Polishing
-- [ ] Phase 5: Analytics Integration
+- [x] Phase 1: Background Upload Stabilization (Isolate Refactor)
+- [/] Phase 2: User Dashboard Polishing
+- [ ] Phase 3: Analytics Integration
 - Store integration with Razorpay.
 - Authentication with Google and Email/Password.
 - Play Store Compliance Audit (Privacy Policy, Account Deletion, Encryption).

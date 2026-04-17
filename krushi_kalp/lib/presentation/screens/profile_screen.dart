@@ -20,6 +20,7 @@ import '../../data/services/app_config_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../utils/error_utils.dart';
 import '../../utils/crashlytics_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -31,13 +32,42 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Stream<Map<String, dynamic>?> _profileStream = Stream.empty();
   String? _selectedLanguage;
+  String _pdfTheme = 'light';
 
   @override
   void initState() {
     super.initState();
+    _loadPdfTheme();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _setupStream();
     });
+  }
+
+  Future<void> _loadPdfTheme() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (mounted) {
+        setState(() {
+          _pdfTheme = prefs.getString('pdf_theme') ?? 'light';
+        });
+      }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'ProfileScreen: _loadPdfTheme');
+    }
+  }
+
+  Future<void> _updatePdfTheme(String newTheme) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pdf_theme', newTheme);
+      if (mounted) {
+        setState(() {
+          _pdfTheme = newTheme;
+        });
+      }
+    } catch (e, stack) {
+       CrashlyticsService.instance.recordError(e, stack, reason: 'ProfileScreen: _updatePdfTheme');
+    }
   }
 
   void _setupStream() {
@@ -230,6 +260,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ],
                           onChanged: (val) {
                             if (val != null) _updateLanguage(val);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  // PDF Theme Toggle
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      border: Border.all(color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.picture_as_pdf, color: theme.colorScheme.primary, size: context.sp(24)),
+                            const SizedBox(width: AppSpacing.sm),
+                            Text(
+                              'PDF Default Theme',
+                              style: TextStyle(
+                                fontSize: context.sp(16),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        DropdownButton<String>(
+                          value: _pdfTheme, // 'light' or 'dark'
+                          underline: const SizedBox(),
+                          items: [
+                            DropdownMenuItem(value: 'light', child: Text('Light', style: TextStyle(fontSize: context.sp(14)))),
+                            DropdownMenuItem(value: 'dark', child: Text('Dark', style: TextStyle(fontSize: context.sp(14)))),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) _updatePdfTheme(val);
                           },
                         ),
                       ],

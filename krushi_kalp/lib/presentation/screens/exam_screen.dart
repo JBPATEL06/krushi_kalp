@@ -38,11 +38,6 @@ class _ExamScreenState extends State<ExamScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
-  // Translation State
-  bool _shouldTranslate = false;
-  final Map<int, Question> _translatedQuestions = {};
-  final Set<int> _pendingTranslations = {};
-
   // Exam State
   int _currentQuestionIndex = 0;
   final Map<int, int> _selectedAnswers = {}; // Map<QuestionIndex, OptionIndex>
@@ -74,21 +69,11 @@ class _ExamScreenState extends State<ExamScreen> {
             await TestService.instance.fetchQuestions(widget.test.filePath);
       }
 
-      // If user chose Gujarati, ALWAYS translate — regardless of what
-      // language the test metadata claims. Respect the user's explicit choice.
-      if (widget.examLanguage == 'gu') {
-        _shouldTranslate = true;
-      }
-
       if (mounted) {
         setState(() {
           _questions = questions;
           _isLoading = false;
           _startTimer();
-
-          if (_shouldTranslate) {
-            _translateBuffer(0); // Start buffering first set
-          }
         });
       }
     } catch (e, stack) {
@@ -101,34 +86,6 @@ class _ExamScreenState extends State<ExamScreen> {
       }
     }
   }
-
-  // Smart Buffering: Translates current + next 5 questions
-  Future<void> _translateBuffer(int startIndex) async {
-    if (!_shouldTranslate) return;
-
-    // Buffer range: startIndex to startIndex + 5
-    for (int i = startIndex;
-        i <= startIndex + 5 && i < _questions.length;
-        i++) {
-      if (_translatedQuestions.containsKey(i) ||
-          _pendingTranslations.contains(i)) {
-        continue;
-      }
-
-      _pendingTranslations.add(i);
-
-      // Translate in background
-      TranslationService.translateQuestion(_questions[i]).then((translatedQ) {
-        if (mounted) {
-          setState(() {
-            _translatedQuestions[i] = translatedQ;
-            _pendingTranslations.remove(i);
-          });
-        }
-      });
-    }
-  }
-
   void _startTimer() {
     if (widget.test.durationMinutes == null) return; // Unlimited time
 
@@ -200,11 +157,6 @@ class _ExamScreenState extends State<ExamScreen> {
     );
 
     _scrollToIndex(index);
-
-    // Trigger buffer for next set
-    if (_shouldTranslate) {
-      _translateBuffer(index);
-    }
   }
 
   void _submitTest({bool autoSubmit = false}) {
@@ -462,30 +414,7 @@ class _ExamScreenState extends State<ExamScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: _questions.length,
                 itemBuilder: (context, index) {
-                  // Check if translation is needed and available
-                  Question displayQuestion = _questions[index];
-                  if (_shouldTranslate) {
-                    if (_translatedQuestions.containsKey(index)) {
-                      displayQuestion = _translatedQuestions[index]!;
-                    } else {
-                      // If current question is NOT ready, force translate immediately
-                      if (!_pendingTranslations.contains(index)) {
-                        _translateBuffer(index);
-                      }
-
-                      return TranslationLoadingWidget(
-                        onTimeout: () {
-                          // User chose to skip translation for this question
-                          setState(() {
-                            _translatedQuestions[index] =
-                                _questions[index]; // Use original
-                          });
-                        },
-                      );
-                    }
-                  }
-
-                  return _buildQuestionCard(theme, displayQuestion, index);
+                  return _buildQuestionCard(theme, _questions[index], index);
                 },
               ),
             ),

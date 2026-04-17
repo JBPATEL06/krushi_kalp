@@ -24,46 +24,8 @@ class TestAnalysisScreen extends StatefulWidget {
 }
 
 class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
-  bool _shouldTranslate = false;
-  bool _isLoadingLanguage = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkUserLanguage();
-  }
-
-  Future<void> _checkUserLanguage() async {
-    final user = AuthService.instance.currentUser;
-    if (user != null) {
-      try {
-        final userData = await AuthService.instance.getUserProfile(user.id);
-
-        if (userData != null && userData['language'] == 'gu') {
-          if (mounted) {
-            setState(() {
-              _shouldTranslate = true;
-            });
-          }
-        }
-      } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'test_analysis_screen');
-        // Ignore error, default to English
-      }
-    }
-    if (mounted) {
-      setState(() {
-        _isLoadingLanguage = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (_isLoadingLanguage) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -96,21 +58,9 @@ class _TestAnalysisScreenState extends State<TestAnalysisScreen> {
         ),
         itemCount: widget.questions.length,
         itemBuilder: (context, index) {
-          final originalQuestion = widget.questions[index];
-
-          return FutureBuilder<Question>(
-            initialData: originalQuestion,
-            future: _shouldTranslate
-                ? TranslationService.translateQuestion(originalQuestion)
-                : Future.value(originalQuestion),
-            builder: (context, snapshot) {
-              // Ensure we have data (initialData guarantees this, but good to be safe)
-              final q = snapshot.data ?? originalQuestion;
-              final userSelected = widget.selectedAnswers[index];
-
-              return _buildAnalysisCard(q, index, userSelected);
-            },
-          );
+          final q = widget.questions[index];
+          final userSelected = widget.selectedAnswers[index];
+          return _buildAnalysisCard(q, index, userSelected);
         },
       ),
     );

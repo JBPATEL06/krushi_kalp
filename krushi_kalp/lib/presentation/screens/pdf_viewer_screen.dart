@@ -4,6 +4,7 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:krushi_kalp/data/services/performance_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:krushi_kalp/presentation/providers/auth_notifier.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PdfViewerScreen extends ConsumerStatefulWidget {
   final File file;
@@ -33,14 +34,27 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
   void initState() {
     super.initState();
     _openedAt = DateTime.now(); // NEW
+    _loadInitialNightMode();
+  }
+
+  Future<void> _loadInitialNightMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedTheme = prefs.getString('pdf_theme') ?? 'light';
+      if (mounted) {
+        setState(() {
+          _isNightMode = savedTheme == 'dark';
+        });
+      }
+    } catch (e) {
+      // Ignored, defaults to false
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (pages == 0) {
-      _isNightMode = Theme.of(context).brightness == Brightness.dark;
-    }
+    // Respect the Profile settings, removed system brightness override.
   }
 
   @override

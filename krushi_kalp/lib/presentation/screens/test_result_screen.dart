@@ -155,15 +155,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
           : null;
 
       if (finalQuestions != null) {
-        try {
-          if (widget.examLanguage == 'gu') {
-            finalQuestions =
-                await TranslationService.translateBatch(finalQuestions);
-          }
-        } catch (e, stack) {
-          await CrashlyticsService.instance.recordError(e, stack,
-              reason: 'Failed to translate questions for PDF');
-        }
+
       }
 
       final file = await _pdfService.generateExamResultPdf(
