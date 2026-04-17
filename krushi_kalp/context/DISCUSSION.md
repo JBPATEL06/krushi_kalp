@@ -159,3 +159,33 @@
 - **Branch Gate**:
   - **Branch**: `fix/foreground-notification-progress` (NEW).
   - **Status**: COMPLETE.
+
+## Phase 12: Store Rebranding & Data Stability (2026-04-17)
+
+### Discussion: Nomenclature Standardization & Blank Store Resolution
+- **Problem**: Inconsistent category labels ("GK & CA", "GK", "CA", "Materials") across Store, Library, and Downloads.
+- **Problem**: Users frequently encountered a "Blank Store" due to data syncing delays or cache hits when content was zero.
+- **Decisions**:
+  - **Standardized Labels**: Unified all UI labels to "Daily CA", "Study Material", and "E-Books".
+  - **Mapping Repair**: Fixed `StoreScreen` and `MyResourcesScreen` to map logic correctly to "Daily CA" and "Study Material" keys.
+  - **Manual Refresh**: Added a refresh icon to `StoreScreen` AppBar to trigger `ResourceNotifier.fetchAll(forceRefresh: true)`.
+  - **Retry Mechanism**: Added a "Refresh Content" button in the empty state of `StoreResourceGrid`.
+  - **Downloads UI**: Moved filter list inside `build` for state reactivity and modernized the search bar aesthetics.
+- **Outcome**: A premium, stable, and consistently branded experience across all content modules.
+- **Branch Gate**:
+  - **Branch**: `feature/friendly-downloads` (Confirmed by user).
+  - **Status**: COMPLETE.
+
+---
+
+## Phase 13: Release Preparation (2026-04-17)
+
+### Discussion: Finalizing Versioning & Production AAB
+- Goal: Prepare the final signed artifact for Google Play Store upload.
+- Problem: Play Store requires a unique (incremented) build number for every new upload.
+- Decisions:
+  - Version Bump: Incremented from 1.0.1+3 to **1.0.1+4**.
+  - New Branch: Created chore/prepare-release-1.0.1-4 for clean release management.
+  - AAB Build: Generated a signed Release App Bundle (app-release.aab) successfully.
+- Outcome: A code-signed, production-ready bundle is ready for deployment.
+- Status: COMPLETE.

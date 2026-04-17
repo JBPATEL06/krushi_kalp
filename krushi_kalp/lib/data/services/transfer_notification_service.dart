@@ -199,7 +199,7 @@ class TransferNotificationService {
   /// Shows or updates a download progress notification.
   Future<void> showDownloadProgress({
     required String taskId,
-    required String fileName,
+    required String itemName,
     required double progress,
   }) async {
     if (_plugin == null) return;
@@ -208,7 +208,7 @@ class TransferNotificationService {
 
     await _plugin!.show(
       id,
-      'Downloading $fileName',
+      'Downloading $itemName',
       '$percent% — Tap to open app',
       NotificationDetails(
         android: AndroidNotificationDetails(
@@ -228,7 +228,7 @@ class TransferNotificationService {
           playSound: false,
           enableVibration: false,
           icon: 'ic_notification',
-          ticker: 'Downloading $fileName...',
+          ticker: 'Downloading $itemName...',
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: false,
@@ -242,7 +242,7 @@ class TransferNotificationService {
   /// Shows a success notification for a download, replacing the progress bar.
   Future<void> showDownloadSuccess({
     required String taskId,
-    required String fileName,
+    required String itemName,
   }) async {
     if (_plugin == null) return;
     final id = _notifId(taskId);
@@ -251,7 +251,7 @@ class TransferNotificationService {
     await _plugin!.show(
       id,
       'Download Complete ✓',
-      '$fileName is ready. Tap to start exam.',
+      '$itemName is ready. Tap to start exam.',
       NotificationDetails(
         android: AndroidNotificationDetails(
           _downloadChannelId,
@@ -275,20 +275,20 @@ class TransferNotificationService {
   /// Dismisses the progress notification silently when a download is cancelled.
   Future<void> showDownloadCancelled({
     required String taskId,
-    required String fileName,
+    required String itemName,
   }) async {
     if (_plugin == null) return;
     final id = _notifId(taskId);
     await _plugin!.cancel(id);
     // Log the cancellation safely
     CrashlyticsService.instance
-        .log('Download notification cancelled for: $fileName (Task: $taskId)');
+        .log('Download notification cancelled for: $itemName (Task: $taskId)');
   }
 
   /// Shows a failure notification for a download.
   Future<void> showDownloadFailure({
     required String taskId,
-    required String fileName,
+    required String itemName,
     required String error,
   }) async {
     if (_plugin == null) return;
@@ -298,7 +298,7 @@ class TransferNotificationService {
     await _plugin!.show(
       id,
       'Download Failed ✗',
-      '$fileName failed. Tap to retry.',
+      '$itemName failed. Tap to retry.',
       NotificationDetails(
         android: AndroidNotificationDetails(
           _downloadChannelId,

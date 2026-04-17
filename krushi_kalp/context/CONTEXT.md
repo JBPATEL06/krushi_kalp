@@ -75,4 +75,15 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
   - Upgrade notification channel importance for progress tracking.
 - Status: COMPLETE.
 
-
+## Current Phase: Store Rebranding & Data Stability (2026-04-17)
+- Goal: Finalize rebranding nomenclature and resolve blank store states.
+- Rebranding: Standardized categories to "Daily CA", "Study Material", and "E-Books" across Store, Library, and Downloads.
+- Stability: Added manual Refresh mechanism in `StoreScreen` AppBar and Retry buttons in empty states (`StoreResourceGrid`).
+- Logic: Standardized category keys in `MyResourcesScreen` and `HomeScreen` navigation mapping.
+- Status: COMPLETE.
+## Current Phase: Release Preparation (2026-04-17)
+- Goal: Increment version and generate production AAB.
+- Implementation: Branch `chore/prepare-release-1.0.1-4`.
+- Version: `1.0.1+4`.
+- Build: Generated `app-release.aab` (69MB).
+- Status: COMPLETE.

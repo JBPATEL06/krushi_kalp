@@ -11,6 +11,8 @@ import '../../../widgets/common/responsive_wrapper.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/auth_notifier.dart';
+import '../../../providers/resource_notifier.dart';
+import '../../../providers/test_notifier.dart';
 
 class StoreResourceGrid extends ConsumerStatefulWidget {
   final List<Resource> resources;
@@ -96,10 +98,24 @@ class _StoreResourceGridState extends ConsumerState<StoreResourceGrid> {
   @override
   Widget build(BuildContext context) {
     if (widget.resources.isEmpty) {
-      return const SliverToBoxAdapter(
+      return SliverToBoxAdapter(
         child: Padding(
-          padding: EdgeInsets.all(AppSpacing.xl),
-          child: Center(child: Text("No items found in this category.")),
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text("No items found in this category."),
+              const SizedBox(height: AppSpacing.md),
+              ElevatedButton.icon(
+                onPressed: () {
+                  ref.read(resourceNotifierProvider.notifier).fetchAll(forceRefresh: true);
+                  ref.read(testNotifierProvider.notifier).fetchTests(forceRefresh: true);
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text("Refresh Content"),
+              ),
+            ],
+          ),
         ),
       );
     }

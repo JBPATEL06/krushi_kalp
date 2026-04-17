@@ -64,11 +64,11 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
     List<Resource> allResources;
     if (widget.category == 'E-Books') {
       allResources = state.ebooks;
-    } else if (widget.category == 'Study Materials') {
+    } else if (widget.category == 'Study Material') {
       allResources = state.studyMaterials;
     } else if (widget.category == 'PYQs') {
       allResources = state.pyqs;
-    } else if (widget.category == 'Current Affairs') {
+    } else if (widget.category == 'Daily CA') {
       allResources = state.currentAffairs;
     } else {
       allResources = [];

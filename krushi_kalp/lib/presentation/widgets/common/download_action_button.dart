@@ -107,6 +107,7 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
       await DownloadService().downloadFileInBackground(
         testId: widget.testId,
         fileName: widget.filename,
+        itemName: widget.displayName ?? widget.filename,
         storagePath: widget.url!,
         bucketName: widget.bucketName,
         userId: currentUserId,
@@ -199,20 +200,24 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
                   child: CircularProgressIndicator(
                       strokeWidth: 2, color: Colors.white))
               : Icon(icon, color: Colors.white, size: context.sp(20)),
-          label: Text(
-            label.toUpperCase(),
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              fontSize: context.sp(14),
-              letterSpacing: 1.1,
+          label: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label.toUpperCase(),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: context.sp(14),
+                letterSpacing: 1.1,
+              ),
             ),
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: colorScheme.primary,
             disabledBackgroundColor: colorScheme.primary.withValues(alpha: 0.6),
             padding: EdgeInsets.symmetric(
-                vertical: context.h(12), horizontal: context.w(24)),
+                vertical: context.h(12),
+                horizontal: widget.isFullWidth ? context.w(24) : context.w(12)),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             elevation: 2,

@@ -456,7 +456,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 : dynamicAspectRatio,
         children: [
           CategoryCard(
-            title: 'Daily Current Affair',
+            title: 'Daily CA',
             icon: Icons.newspaper,
             color: theme.colorScheme.primary,
             onTap: () {
@@ -469,14 +469,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => const MyResourcesScreen(
-                      title: 'My Current Affairs',
-                      category: 'Current Affairs',
+                      title: 'My Daily CA',
+                      category: 'Daily CA',
                     ),
                   ),
                 );
               } else {
                 ref.read(navigationProvider.notifier)
-                    .setStoreCategory('Current Affairs');
+                    .setStoreCategory('Daily CA');
                 ref.read(navigationProvider.notifier).setIndex(2); // Store
               }
             },
@@ -535,14 +535,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => const MyResourcesScreen(
-                      title: 'My Study Materials',
-                      category: 'Study Materials',
+                      title: 'My Study Material',
+                      category: 'Study Material',
                     ),
                   ),
                 );
               } else {
                 ref.read(navigationProvider.notifier)
-                    .setStoreCategory('Study Materials');
+                    .setStoreCategory('Study Material');
                 ref.read(navigationProvider.notifier).setIndex(2); // Store
               }
             },

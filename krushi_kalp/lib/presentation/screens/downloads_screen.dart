@@ -29,7 +29,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
   int _totalBytesUsed = 0;
   String _searchQuery = '';
   String _activeFilter = 'All Files';
-  final List<String> _filters = ['All Files', 'Mocks', 'PYQs', 'Ebook', 'CA', 'GK'];
+
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -325,7 +325,14 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final List<String> filters = [
+      'All Files',
+      'Mocks',
+      'PYQs',
+      'E-Books',
+      'Daily CA',
+      'Study Material'
+    ];
     // Watch state for changes
     final resourceState = ref.watch(resourceNotifierProvider);
     final testState = ref.watch(testNotifierProvider);
@@ -333,6 +340,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
     final myTests = testState.userTests;
     final myResources = resourceState.purchasedResources;
 
+    final theme = Theme.of(context);
     final displayItems = <dynamic>[];
 
     for (var r in myResources) {
@@ -343,16 +351,18 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
         // Detailed Filtering Logic
         bool matchesFilter = _activeFilter == 'All Files';
         if (!matchesFilter) {
-          if (_activeFilter == 'Ebook' && r.type == ResourceType.eBook) {
+          if (_activeFilter == 'E-Books' && r.type == ResourceType.eBook) {
             matchesFilter = true;
           }
-          if (_activeFilter == 'CA' && r.type == ResourceType.currentAffair) {
+          if (_activeFilter == 'Daily CA' &&
+              r.type == ResourceType.currentAffair) {
             matchesFilter = true;
           }
           if (_activeFilter == 'PYQs' && r.type == ResourceType.pyq) {
             matchesFilter = true;
           }
-          if (_activeFilter == 'GK' && r.type == ResourceType.studyMaterial) {
+          if (_activeFilter == 'Study Material' &&
+              r.type == ResourceType.studyMaterial) {
             matchesFilter = true;
           }
         }
@@ -424,27 +434,39 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
                   children: [
                     SizedBox(height: context.h(AppSpacing.md)),
 
-                    Container(
-                      height: context.h(45),
-                      padding: EdgeInsets.symmetric(
-                          horizontal: context.w(AppSpacing.sm)),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (val) => setState(() => _searchQuery = val),
-                        style: TextStyle(fontSize: context.sp(14)),
-                        decoration: InputDecoration(
-                          hintText: 'Search...',
-                          hintStyle: TextStyle(
+                    // Modern Search Bar
+                    ModernCard(
+                      margin: EdgeInsets.zero,
+                      padding: EdgeInsets.zero,
+                      backgroundColor: theme.colorScheme.surface,
+                      child: Container(
+                        height: context.h(50),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: context.w(AppSpacing.md)),
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (val) =>
+                              setState(() => _searchQuery = val),
+                          textAlignVertical: TextAlignVertical.center,
+                          style: TextStyle(
+                            fontSize: context.sp(15),
+                            color: theme.colorScheme.onSurface,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Search your downloads...',
+                            hintStyle: TextStyle(
                               color: theme.colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.6),
-                              fontSize: context.sp(14)),
-                          prefixIcon: Icon(Icons.search_rounded,
-                              color: theme.colorScheme.onSurfaceVariant,
-                              size: context.sp(22)),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding:
-                              EdgeInsets.symmetric(vertical: context.h(12)),
+                                  .withValues(alpha: 0.5),
+                              fontSize: context.sp(14),
+                            ),
+                            prefixIcon: Icon(
+                              Icons.search_rounded,
+                              color: theme.colorScheme.primary,
+                              size: context.sp(22),
+                            ),
+                            border: InputBorder.none,
+                            isDense: true,
+                          ),
                         ),
                       ),
                     ),
@@ -460,7 +482,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: _filters.map((filter) {
+                        children: filters.map((filter) {
                           final isSelected = _activeFilter == filter;
                           return Padding(
                             padding: EdgeInsets.only(

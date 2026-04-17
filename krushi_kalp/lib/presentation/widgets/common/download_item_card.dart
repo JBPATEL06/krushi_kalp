@@ -108,9 +108,9 @@ class DownloadItemCard extends StatelessWidget {
                       ],
                     ),
 
-                    // Action button — constrained so it never overflows
+                    // Action button — properly sized to match DownloadActionButton minimum height
                     SizedBox(
-                      height: context.h(44),
+                      height: context.h(48),
                       width: double.infinity,
                       child: customAction,
                     ),

@@ -34,6 +34,7 @@ class DownloadTask {
   final String taskId;
   final String testId;
   final String fileName;
+  final String itemName;
   final String userId;
   final String storagePath;
   final String bucketName;
@@ -45,6 +46,7 @@ class DownloadTask {
     required this.taskId,
     required this.testId,
     required this.fileName,
+    required this.itemName,
     required this.userId,
     required this.storagePath,
     required this.bucketName,
@@ -235,6 +237,7 @@ class DownloadService {
   Future<void> downloadFileInBackground({
     required String testId,
     required String fileName,
+    required String itemName,
     required String storagePath,
     required String bucketName,
     required String userId,
@@ -264,6 +267,7 @@ class DownloadService {
       taskId: taskId,
       testId: testId,
       fileName: fileName,
+      itemName: itemName,
       userId: userId,
       storagePath: storagePath,
       bucketName: bucketName,
@@ -282,7 +286,7 @@ class DownloadService {
       bgService.invoke('setAsForeground');
       bgService.invoke('updateProgress', {
         'title': 'Starting download...',
-        'content': fileName,
+        'content': itemName,
       });
     } catch (_) {}
 
@@ -330,7 +334,7 @@ class DownloadService {
             final percent = (progress * 100).toInt();
             bgService.invoke('updateProgress', {
               'title': 'Downloading... $percent%',
-              'content': fileName,
+              'content': itemName,
             });
             lastNotifiedProgress = progress;
           }
@@ -352,9 +356,9 @@ class DownloadService {
       // Clear foreground progress msg, show success notif via TransferNotificationService
       bgService.invoke('clearProgress', {
          'title': 'Download Complete',
-         'content': fileName,
+         'content': itemName,
       });
-      transferNotif.showDownloadSuccess(taskId: taskId, fileName: fileName);
+      transferNotif.showDownloadSuccess(taskId: taskId, itemName: itemName);
 
       task.status = DownloadStatus.completed;
       task.progress = 1.0;
@@ -369,11 +373,11 @@ class DownloadService {
       
       bgService.invoke('clearProgress', {
          'title': 'Download Failed',
-         'content': fileName,
+         'content': itemName,
       });
       transferNotif.showDownloadFailure(
         taskId: taskId,
-        fileName: fileName,
+        itemName: itemName,
         error: e.toString(),
       );
       onError(e.toString());

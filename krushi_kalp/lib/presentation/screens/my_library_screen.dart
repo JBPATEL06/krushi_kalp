@@ -31,9 +31,9 @@ class _MyLibraryScreenState extends ConsumerState<MyLibraryScreen> {
     'All',
     'Tests',
     'E-Books',
-    'Materials',
+    'Study Material',
     'PYQs',
-    'GK & CA'
+    'Daily CA'
   ];
 
   @override
@@ -215,7 +215,7 @@ class _MyLibraryScreenState extends ConsumerState<MyLibraryScreen> {
       case 'E-Books':
         items = resources.where((r) => r.type == ResourceType.eBook).toList();
         break;
-      case 'Materials':
+      case 'Study Material':
         items = resources
             .where((r) => r.type == ResourceType.studyMaterial)
             .toList();
@@ -223,7 +223,7 @@ class _MyLibraryScreenState extends ConsumerState<MyLibraryScreen> {
       case 'PYQs':
         items = resources.where((r) => r.type == ResourceType.pyq).toList();
         break;
-      case 'GK & CA':
+      case 'Daily CA':
         items = resources
             .where((r) => r.type == ResourceType.currentAffair)
             .toList();

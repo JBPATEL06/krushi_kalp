@@ -47,8 +47,8 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
   final Map<String, String> _categoryMap = {
     'Mock Tests': 'Mocks',
     'E-Books': 'E-Books',
-    'Study Materials': 'Materials',
-    'Current Affairs': 'GK & CA',
+    'Study Material': 'Study Material',
+    'Daily CA': 'Daily CA',
     'PYQs': 'PYQs',
   };
 
@@ -532,11 +532,11 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
     List<Resource> resources;
     if (category == 'E-Books') {
       resources = resourceState.ebooks;
-    } else if (category == 'Study Materials') {
+    } else if (category == 'Study Material') {
       resources = resourceState.studyMaterials;
     } else if (category == 'PYQs') {
       resources = resourceState.pyqs;
-    } else if (category == 'Current Affairs') {
+    } else if (category == 'Daily CA') {
       resources = resourceState.currentAffairs;
     } else {
       resources = [];
@@ -612,6 +612,11 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
           ),
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.refresh, color: theme.colorScheme.primary),
+            onPressed: _refreshAll,
+            tooltip: 'Refresh Store',
+          ),
           IconButton(
             icon: Icon(Icons.search, color: theme.colorScheme.primary),
             onPressed: () {
@@ -730,7 +735,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
                             const SliverToBoxAdapter(
                                 child: SizedBox(height: AppSpacing.sm)),
                             _buildResourcesTab(
-                                resourceState, cartItemIds, 'Study Materials'),
+                                resourceState, cartItemIds, 'Study Material'),
                             SliverToBoxAdapter(
                                 child: SizedBox(
                                     height: AppSpacing.xl +
@@ -745,7 +750,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
                             const SliverToBoxAdapter(
                                 child: SizedBox(height: AppSpacing.sm)),
                             _buildResourcesTab(
-                                resourceState, cartItemIds, 'Current Affairs'),
+                                resourceState, cartItemIds, 'Daily CA'),
                             SliverToBoxAdapter(
                                 child: SizedBox(
                                     height: AppSpacing.xl +
