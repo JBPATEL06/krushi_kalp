@@ -241,5 +241,16 @@
 - **Problem**: The "Select Exam Language" dialog was confusing as we stopped using translation.
 - **Decision**: Removed the dialog in ExamHelper. Exams now start directly in their native language.
 - **Status**: COMPLETE.
-I n i t i a l   d i s c u s s i o n   p h a s e   f o r   P D F   t h e m e   a n d   u p l o a d   f i x   s t a r t e d .  
- 
+
+## Phase 15: PDF UX & Profile Connectivity Stabilization (2026-04-18)
+- **Problem**:
+    - "Generate PDF" in `TestResultScreen` lacks a blocking progress state, leading to incomplete uploads.
+    - `ProfileScreen` shows intermittent network errors even on 5G.
+    - Missing PDF downloads in `ScoreHistory` show raw/confusing errors.
+- **Decisions**:
+    - **Blocking UI**: Implement a `showDialog` (non-dismissible) in `_generateAndUploadPdf` to explicitly manage the "Generating" and "Uploading" states.
+    - **Future Transition**: Convert `ProfileScreen` from `StreamBuilder` to `FutureBuilder` to eliminate live stream overhead and intermittent reconnection errors.
+    - **User Feedback**: Update `ScoreScreen` to show a friendly "Please generate PDF" message if the file is missing in Supabase storage.
+- **Risks**: None identified.
+- **Branch**: `fix/profile-future-pdf-ux`
+- **Status**: COMPLETE

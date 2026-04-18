@@ -13,9 +13,11 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - Navigation: Integrated `ExamHelper.startExam` for reliable start logic.
 - UI: Displaying full language names and unified "START" button design.
 - PDF: Cleaned up header visual artifacts (White Circle removal).
-- Status: COMPLETE (Branch: `feature/mock-test-navigation-fix`)
+- Status: COMPLETE (Branch: `chore/prepare-release-1.0.1-5`)
+- Version: 1.0.1+5
 - Refinements: Fixed "50% OFF" badge showing on free items; now showing "FREE".
 - PDF: Fixed syntax error in `PdfService` and removed white circle artifacts.
+- Build: Successful production AAB (app-release.aab) generated and pushed.
 
 ## Current Stabilization Phase
 - Goal: Fix critical bugs in Admin panel, PDF generation, and UX.

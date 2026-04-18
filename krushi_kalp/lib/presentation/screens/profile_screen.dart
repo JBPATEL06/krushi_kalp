@@ -30,7 +30,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  Stream<Map<String, dynamic>?> _profileStream = Stream.empty();
+  Future<Map<String, dynamic>?>? _profileFuture;
   String? _selectedLanguage;
   String _pdfTheme = 'light';
 
@@ -39,7 +39,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     super.initState();
     _loadPdfTheme();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _setupStream();
+      _loadProfile();
     });
   }
 
@@ -70,11 +70,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  void _setupStream() {
+  Future<void> _loadProfile() async {
     final user = ref.read(authNotifierProvider).user;
     if (user != null) {
       setState(() {
-        _profileStream = AuthService.instance.streamUserProfile(user.id);
+        _profileFuture = AuthService.instance.getUserProfile(user.id);
       });
     }
   }
@@ -165,8 +165,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<Map<String, dynamic>?>(
-        stream: _profileStream,
+      body: FutureBuilder<Map<String, dynamic>?>(
+        future: _profileFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -174,8 +174,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
           if (snapshot.hasError) {
             return NetworkErrorState(
-              message: 'Something went wrong.',
-              onRetry: _setupStream,
+              message: 'Unable to load profile.',
+              onRetry: _loadProfile,
             );
           }
 
@@ -192,10 +192,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           final language = _selectedLanguage ?? data?['language'] as String? ?? 'en';
 
           return RefreshIndicator(
-            onRefresh: () async {
-              _setupStream();
-              await Future.delayed(const Duration(milliseconds: 500));
-            },
+            onRefresh: _loadProfile,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: EdgeInsets.fromLTRB(

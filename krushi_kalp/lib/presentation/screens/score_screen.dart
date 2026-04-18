@@ -110,9 +110,22 @@ class _ScoreScreenState extends ConsumerState<ScoreScreen> {
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'score_screen');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error downloading result: $e')),
-        );
+        final errorStr = e.toString().toLowerCase();
+        if (errorStr.contains('object not found') || 
+            errorStr.contains('not found') || 
+            errorStr.contains('404')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Report not found. Please generate the PDF from the test result screen first.'),
+              backgroundColor: Colors.blueAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error downloading result: $e')),
+          );
+        }
       }
     }
   }

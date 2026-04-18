@@ -133,11 +133,44 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
   }
 
   Future<void> _generateAndUploadPdf() async {
-    setState(() {
-      _isGeneratingPdf = true;
-    });
+    final statusNotifier = ValueNotifier<String>('Preparing report...');
+    
+    // Show non-dismissible loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => PopScope(
+        canPop: false,
+        child: ValueListenableBuilder<String>(
+          valueListenable: statusNotifier,
+          builder: (context, status, _) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            content: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    status,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
 
     try {
+      statusNotifier.value = 'Generating PDF report...';
       final authState = ref.read(authNotifierProvider);
       final user = authState.user;
       final userId = user?.id ?? 'guest_user';
@@ -166,14 +199,24 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
 
       // Upload to database if online and resultId is available
       if (!_isOffline && widget.resultId != null) {
+        statusNotifier.value = 'Saving to safe-storage...';
         try {
           // Use standardized path for uniqueness
           final String storagePath = 'exam_result/${widget.resultId}.pdf';
           await TestService.instance.uploadResultPdf(storagePath, file);
         } catch (e, stack) {
-          // Log but don't block the user from viewing the PDF locally
+          // Log and alert user that database sync failed
           CrashlyticsService.instance.recordError(e, stack, 
               reason: 'TestResultScreen: PDF upload failed during sync');
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Warning: Failed to upload PDF to database. It will only be available locally.'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
         }
       }
 
@@ -199,17 +242,20 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
         ),
       );
     } catch (e, stack) {
-      CrashlyticsService.instance
-          .recordError(e, stack, reason: 'test_result_screen');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'PDF Generation Error');
       if (mounted) {
-        ErrorUtils.showError(context, e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to generate PDF: $e')),
+        );
       }
     } finally {
       if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Dismiss dialog
         setState(() {
           _isGeneratingPdf = false;
         });
       }
+      statusNotifier.dispose();
     }
   }
 
