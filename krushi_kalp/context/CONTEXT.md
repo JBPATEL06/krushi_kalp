@@ -10,16 +10,16 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 
 ## Current Phase: Exam Screen Resilience & Error UX (2026-04-21)
 - Goal: Resolve Mock Test crashes due to malformed data and improve error navigation.
-- Implementation: Branch `fix/exam-screen-data-resilience`
-- Strategy:
-    - Resilient JSON parsing in `Question.fromJson` (safe `int.tryParse`).
-    - Precise error messaging in `ExamScreen` (distinguishing data vs network).
+- Current Phase: Stabilizing Mock Test Reports and PDF Generation
+- Completed: Resilient JSON Parsing (Question Model), ExamScreen Error UX, PDF Infinite Scroll Height Fix
+- Pending: Final Production Verification in `ExamScreen` (distinguishing data vs network).
     - Enhanced navigation with "Go Back" button in the error state.
 - Status: IN_PROGRESS.
 
 ## Key Decisions
 - Use sequential synchronized execution (await-based) for admin forms (Replaced "Fire and Forget" for reliability).
 - Local PDF generation for results: PDFs are now generated and viewed locally to resolve backend latency and handshake errors.
+- Single-Page PDF Fix: Increased the PDF page budget to accommodate long-form reports instead of implementing complex pagination, ensuring layout integrity.
 - Native Language Support: Auto-translation middleware removed; items now use the original provided language for accuracy.
 - Check Answer PDF Style: Standardized PDF results to match the in-app check-answer UI (All options shown).
 - Dynamic Font Fallback: NotoSansGujarati is used as a fallback for all PDF text to prevent crashes on non-latin characters.

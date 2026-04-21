@@ -307,7 +307,7 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
                       .withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: test.signedUrl != null
+                child: test.signedUrl != null && test.signedUrl!.startsWith('http')
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(

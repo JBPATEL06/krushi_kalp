@@ -179,7 +179,7 @@ class _AdminResourceListState extends State<AdminResourceList> {
                   color: colorScheme.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: item.thumbnailUrl != null
+                child: item.thumbnailUrl != null && item.thumbnailUrl!.startsWith('http')
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(

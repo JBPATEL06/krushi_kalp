@@ -85,10 +85,10 @@ class PdfService {
     // Header info
     final userSummary = '$userName | SCORE: ${score.toInt()}/${totalMarks.toInt()} | RIGHT: $correctAnswers | WRONG: $wrongAnswers | SKIPPED: $skippedAnswers';
 
-    // Calculate dynamic height for single long page
-    // Base: Header(80) + Padding(40)
-    // Question: ~220 per question (safe margin for options)
-    final double dynamicHeight = 120 + (questions?.length ?? 0) * 250;
+    // Calculate dynamic height for single long page (Infinite Scroll Height)
+    // Base Header & Summary (~600) + Questions (Avg 450 each for Gujarati multi-line)
+    // Adding 500pt footer buffer to ensure no truncation at the very bottom.
+    final double dynamicHeight = 600 + ((questions?.length ?? 0) * 450) + 500;
 
     pdf.addPage(
       pw.Page(

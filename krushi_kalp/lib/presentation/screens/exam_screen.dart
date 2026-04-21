@@ -7,7 +7,6 @@ import '../../domain/models/mock_test.dart';
 import '../../domain/models/question.dart';
 import '../../data/services/test_service.dart';
 import '../../data/services/auth_service.dart';
-import '../../data/services/translation_service.dart';
 import '../widgets/common/network_error_state.dart';
 import '../widgets/common/responsive_wrapper.dart'; // FIXED: Added import for responsive utilities
 import 'test_result_screen.dart';

@@ -97,7 +97,9 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
       final path = SupabaseUrlHelper.extractPathFromUrl(_test.filePath, bucket);
       final signedUrl = await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
       
-      if (signedUrl.isEmpty) throw Exception('Failed to generate secure link');
+      if (signedUrl.isEmpty || !signedUrl.startsWith('http')) {
+        throw Exception('File does not exist in Cloud Storage. You may need to re-upload it.');
+      }
 
       await NetworkUtils.downloadAndOpen(
         url: signedUrl,
@@ -185,7 +187,7 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
                           .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
-                    child: _test.signedUrl != null
+                    child: _test.signedUrl != null && _test.signedUrl!.startsWith('http')
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(AppRadius.md),
                             child: Image.network(

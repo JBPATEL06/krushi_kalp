@@ -51,8 +51,8 @@ class SupabaseUrlHelper {
 
     // Clean path (remove bucket name prefix if present)
     String cleanPath = storagePath;
-    if (storagePath.startsWith('$bucketName/')) {
-      cleanPath = storagePath.replaceAll('$bucketName/', '');
+    if (cleanPath.startsWith('$bucketName/')) {
+      cleanPath = cleanPath.substring(bucketName.length + 1);
     }
 
     final cacheKey = '$bucketName|$cleanPath';
@@ -101,10 +101,10 @@ class SupabaseUrlHelper {
     try {
       final supabase = Supabase.instance.client;
 
-      // Clean path: Only remove the bucket name if it's at the VERY start of the path
+      // Clean path (remove bucket name prefix if present)
       String cleanPath = storagePath;
-      if (storagePath.startsWith('$bucketName/')) {
-        cleanPath = storagePath.replaceFirst('$bucketName/', '');
+      if (cleanPath.startsWith('$bucketName/')) {
+        cleanPath = cleanPath.substring(bucketName.length + 1);
       }
 
       final cacheKey = '$bucketName|$cleanPath';
@@ -149,15 +149,12 @@ class SupabaseUrlHelper {
       // We log to console for debugging purposes
       print('⚠️ Supabase Storage 404: Object "$storagePath" not found in bucket "$bucketName"');
       
-      CrashlyticsService.instance.recordError(se, stack,
-          reason:
-              'SupabaseUrlHelper: Object not found in storage: $bucketName/$storagePath');
-      return storagePath; // Return original path as fallback
+      return storagePath; // Return path to signal missing object to UI without crashing
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack,
           reason:
               'SupabaseUrlHelper: Signed URL creation failed for $bucketName/$storagePath');
-      return storagePath;
+      return storagePath; // Return path on other errors too
     }
   }
 

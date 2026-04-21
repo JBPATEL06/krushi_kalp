@@ -165,13 +165,30 @@ class BackgroundUploadService {
     final id = taskId ?? const Uuid().v4();
     final sanitizedPath = _sanitizePath(storagePath);
 
+    String? finalFilePath = filePath;
+
+    // If we have bytes but no file path, write to a temp file first.
+    // Standard isolate message passing has limits, and Supabase storage
+    // works better with physical files in the background worker.
+    if (fileBytes != null && finalFilePath == null) {
+      try {
+        final tempDir = await _getTempDir();
+        final tempFile = File('${tempDir.path}/upload_$id');
+        await tempFile.writeAsBytes(fileBytes);
+        finalFilePath = tempFile.path;
+      } catch (e) {
+        onError('Failed to create temporary file for upload: $e');
+        return id;
+      }
+    }
+
     final task = UploadTask(
       taskId: id,
       fileName: fileName,
       itemName: itemName,
       bucketName: bucketName,
       storagePath: sanitizedPath,
-      filePath: filePath,
+      filePath: finalFilePath,
       fileType: fileType,
       status: UploadTaskStatus.uploading,
     );
@@ -200,7 +217,7 @@ class BackgroundUploadService {
         'itemName': itemName,
         'bucketName': bucketName,
         'storagePath': sanitizedPath,
-        'filePath': filePath,
+        'filePath': finalFilePath,
         'fileType': fileType,
       });
 
@@ -210,6 +227,13 @@ class BackgroundUploadService {
     }
 
     return id;
+  }
+
+  Future<Directory> _getTempDir() async {
+    // We use path_provider indirectly if possible, but since this is a service
+    // we might need to import it.
+    // For now, let's assume we can use standard temp dir or pass it in.
+    return Directory.systemTemp;
   }
 
 

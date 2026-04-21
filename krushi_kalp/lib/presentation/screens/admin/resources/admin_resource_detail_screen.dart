@@ -292,7 +292,7 @@ class _AdminResourceDetailScreenState
                           .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
-                    child: _resource.thumbnailUrl != null
+                    child: _resource.thumbnailUrl != null && _resource.thumbnailUrl!.startsWith('http')
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(AppRadius.md),
                             child: Image.network(

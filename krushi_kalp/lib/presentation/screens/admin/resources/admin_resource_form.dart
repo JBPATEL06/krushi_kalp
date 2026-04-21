@@ -342,7 +342,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
                             ),
                             builder: (context, snapshot) {
                               if (snapshot.hasData &&
-                                  snapshot.data!.isNotEmpty) {
+                                  snapshot.data!.startsWith('http')) {
                                 return Image.network(
                                   snapshot.data!,
                                   fit: BoxFit.cover,

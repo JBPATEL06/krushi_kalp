@@ -275,5 +275,16 @@
     - **Custom Error UI**: Modify `ExamScreen` to detect non-network errors and display a custom message: *"We are facing an issue with this mock test, we will fix it. Please try another test."*
     - **Navigation Escape**: Added a "Go Back" button to the error state in `ExamScreen` for immediate exit.
 - **Risks**: None; purely defensive UI/Model hardening.
-- **Branch**: `fix/exam-screen-data-resilience`
-- **Status**: IN_PROGRESS.
+- **Confirmed**: `fix/exam-screen-data-resilience`
+- **Updated**: Added logic for Single-Page Infinite Height PDF Fix.
+
+### [Discussion] Phase 4: PDF Truncation Rectification (2026-04-21)
+- **Problem**: PDF results (e.g. 20 Qs) were hitting the page bottom at the 13th question because the height budget (250 pts) was insufficient for Gujarati text and the large header.
+- **Decision**: Reject `pw.MultiPage` for internal app consistency. Instead, increase the single-page `dynamicHeight` budget significantly.
+- **Budget Changes**: 
+    - Header base: 600 pts
+    - Per Question: 450 pts (Safe margin for multi-line Gujarati + 4 options)
+    - Footer Buffer: 500 pts
+- **Risk noted**: PDFs with 500+ questions will produce extremely tall files (3000+ inches). This exceeds the standard 200-inch limit of many PDF viewers, but was requested by the user for the internal app viewer which previously handled it.
+- **Result**: Successfully updated `pdf_service.dart`.
+- **Status**: Completed.

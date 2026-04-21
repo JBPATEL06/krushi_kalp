@@ -174,10 +174,18 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
       await Share.shareXFiles([XFile(file.path)],
           text: 'Mock Test Questions: ${widget.test.title}');
     } catch (e, stack) {
-      CrashlyticsService.instance
-          .recordError(e, stack, reason: 'mock_test_edit_screen');
-      if (mounted) {
-        ErrorUtils.showError(context, e);
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('not found') || errorStr.contains('404')) {
+        if (mounted) {
+          ErrorUtils.showError(context,
+              'The questions file is missing from Cloud Storage. Please upload a new file.');
+        }
+      } else {
+        CrashlyticsService.instance
+            .recordError(e, stack, reason: 'mock_test_edit_screen');
+        if (mounted) {
+          ErrorUtils.showError(context, e);
+        }
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -240,6 +248,9 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
           jsonString = utf8.decode(_questionsBytes!);
         } else {
           final jsonList = ExcelToJsonConverter.convert(_questionsBytes!);
+          if (jsonList.isEmpty) {
+            throw Exception('Selected Excel file is malformed or contains no valid questions. Please check the file format.');
+          }
           jsonString = jsonEncode(jsonList);
         }
 
