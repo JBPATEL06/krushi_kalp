@@ -106,18 +106,13 @@ class Resource {
   }
 
   static ResourceType _parseType(String typeStr) {
-    switch (typeStr) {
-      case 'current_affair':
-        return ResourceType.currentAffair;
-      case 'study_material':
-        return ResourceType.studyMaterial;
-      case 'ebook':
-        return ResourceType.eBook;
-      case 'pyq':
-        return ResourceType.pyq;
-      default:
-        return ResourceType.studyMaterial;
-    }
+    final normalized = typeStr.toLowerCase().trim().replaceAll('-', '').replaceAll('_', '').replaceAll(' ', '');
+    if (normalized == 'currentaffair') return ResourceType.currentAffair;
+    if (normalized == 'studymaterial') return ResourceType.studyMaterial;
+    if (normalized == 'ebook') return ResourceType.eBook;
+    if (normalized == 'pyq') return ResourceType.pyq;
+    
+    return ResourceType.studyMaterial;
   }
 
   static String _typeToString(ResourceType type) {

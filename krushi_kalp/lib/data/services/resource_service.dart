@@ -55,7 +55,7 @@ class ResourceService {
         .from('orders')
         .select('order_id')
         .eq('user_id', userId)
-        .inFilter('status', ['SUCCESS', 'COMPLETED']);
+        .filter('status', 'in', '("SUCCESS", "COMPLETED", "DIRECT_CHECKOUT")');
 
     if (response.isEmpty) return [];
 
