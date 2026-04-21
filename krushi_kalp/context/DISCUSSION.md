@@ -316,3 +316,15 @@
 - **Risks**: None; regression tested against known stable build.
 - **Branch**: `feat/restore-v101-pdf` (NEW)
 - **Status**: COMPLETE.
+
+## Phase 18: Multi-Page PDF Stabilization (2026-04-21)
+- **Problem**: 
+    - The "Infinite Vertical Page" layout (restored in Phase 17) proved unstable for long tests.
+    - Reports with 105 questions were consistently truncated around query 74 on many Android PDF viewers due to system canvas height limits.
+- **Decisions**:
+    - **Adopt Multi-Page**: Migrated `PdfService` to use `pw.MultiPage` with `PdfPageFormat.a4`. This is the only way to support tests of arbitrary length (105+ mcqs).
+    - **Pagination UI**: Added "Page X of Y" in the footer for professional navigation.
+    - **Layout Fixes**: Implemented `mainAxisSize: min` on detail cards to eliminate the large whitespace gaps seen in standard multi-page layouts.
+- **Risks**: None; standard A4 pagination is the most high-trust approach for PDF generation.
+- **Branch**: `feat/multi-page-pdf`
+- **Status**: COMPLETE.

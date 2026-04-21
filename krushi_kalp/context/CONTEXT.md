@@ -8,13 +8,19 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - Backend: Supabase (Auth, Storage, Database)
 - PDF: PDF package for report generation
 
-## Phase 17: Layout Reversion to Infinite Vertical Page (2026-04-21)
-- **Goal**: Revert the PDF generation logic from Multi-Page/Card-based back to the single-page vertical layout ("infinite page").
-- **Completed**:
-    - Restoration of `pdf_service.dart` from commit `b944bc0` (v1.0.1+6).
-    - Resolved 3 compilation errors in `TestResultScreen.dart` by aligning parameter signatures.
-    - Achieved 100% clean static analysis (Resolved 12 lint warnings).
-    - Verified `dynamicHeight` logic for immersive vertical scrolling.
+## Phase 17: Layout Reversion (Attempted) (2026-04-21)
+- **Goal**: Attempted to revert to "Infinite Vertical Page" layout.
+- **Outcome**: Reversion successful but revealed critical platform limits (truncated at 74 questions on most mobile viewers).
+- **Status**: SUPERSEDED by Phase 18.
+
+## Phase 18: Multi-Page PDF Stabilization (2026-04-21)
+- **Goal**: Final stabilization of PDF generation for long-form tests (105+ questions).
+- **Actions**:
+    - Replaced `pw.Page` with `pw.MultiPage` using standard A4 format.
+    - Added "Page X of Y" numbering for professional navigation.
+    - Implemented `mainAxisSize: min` on cards to eliminate massive blank spaces.
+    - Removed `dynamicHeight` calculation to bypass platform canvas limits.
+- **Result**: Guaranteed visibility of 100% of questions regardless of test length.
 - **Status**: FINISHED.
 
 ## Key Decisions
