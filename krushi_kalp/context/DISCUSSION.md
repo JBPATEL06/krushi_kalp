@@ -264,3 +264,16 @@
 - **Risks**: None identified.
 - **Branch**: `fix/profile-future-pdf-ux`
 - **Status**: COMPLETE
+
+## Phase 16: Exam Screen Resilience & Error UX (2026-04-21)
+- **Problem**: 
+    - Application crashes when parsing Mock Test questions if the `id` or `No.` field is missing (`Null is not a subtype of int`).
+    - Error screen is misleading (shows "No Internet" for data errors).
+    - No "Back" button on the error screen, forcing users to restart the app or use system back.
+- **Decisions**:
+    - **Safe Parsing**: Implement `int.tryParse` in `Question.fromJson` to handle missing/malformed IDs without crashing.
+    - **Custom Error UI**: Modify `ExamScreen` to detect non-network errors and display a custom message: *"We are facing an issue with this mock test, we will fix it. Please try another test."*
+    - **Navigation Escape**: Added a "Go Back" button to the error state in `ExamScreen` for immediate exit.
+- **Risks**: None; purely defensive UI/Model hardening.
+- **Branch**: `fix/exam-screen-data-resilience`
+- **Status**: IN_PROGRESS.

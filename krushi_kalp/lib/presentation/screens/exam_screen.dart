@@ -78,14 +78,21 @@ class _ExamScreenState extends State<ExamScreen> {
       }
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'exam_screen');
+
+      // Identify data errors (parsing/logic) vs network errors
+      final bool isDataError = e.toString().toLowerCase().contains('exception') || 
+                              e.toString().toLowerCase().contains('type') ||
+                              e.toString().toLowerCase().contains('null');
+
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = e.toString();
+          _errorMessage = isDataError 
+              ? 'DATA_ERROR: $e' 
+              : e.toString();
         });
       }
     }
-  }
   void _startTimer() {
     if (widget.test.durationMinutes == null) return; // Unlimited time
 
@@ -301,13 +308,47 @@ class _ExamScreenState extends State<ExamScreen> {
     final theme = Theme.of(context);
 
     if (_errorMessage != null) {
+      final bool isDataError = _errorMessage!.startsWith('DATA_ERROR:');
+      final String displayMessage = isDataError 
+          ? "We are facing an issue with this mock test, we will fix it. Please try another test."
+          : (isNetworkError(_errorMessage) 
+              ? 'Unable to load questions. Please check your connection.' 
+              : 'Error: $_errorMessage');
+
       return Scaffold(
-        appBar: AppBar(title: const Text('Error')),
-        body: NetworkErrorState(
-          message: isNetworkError(_errorMessage)
-              ? 'Unable to load questions. Please check your connection.'
-              : 'Error: $_errorMessage',
-          onRetry: _loadQuestions,
+        appBar: AppBar(
+          title: Text(isDataError ? 'Test Issue' : 'Error'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: NetworkErrorState(
+                message: displayMessage,
+                onRetry: isDataError ? null : _loadQuestions,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.home_outlined),
+                  label: const Text('Go Back'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }

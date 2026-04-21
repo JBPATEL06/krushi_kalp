@@ -15,7 +15,15 @@ class Question {
     // Handle both old format and new tableConvert format
     // New format keys: "No.", "Question", "Option A", "Option B", ... "Correct Answer"
 
-    final int id = (json['No.'] ?? json['id']) as int; // CHANGED
+    // Robust ID parsing
+    int? parsedId;
+    final dynamic rawId = json['No.'] ?? json['id'];
+    if (rawId is int) {
+      parsedId = rawId;
+    } else if (rawId != null) {
+      parsedId = int.tryParse(rawId.toString());
+    }
+    final int id = parsedId ?? 0;
     final String text =
         (json['Question'] ?? json['text'] ?? '') as String; // CHANGED
 
