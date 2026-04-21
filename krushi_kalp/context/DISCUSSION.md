@@ -303,20 +303,17 @@
 - **Branch**: fix/exam-screen-data-resilience
 - **Status**: COMPLETE.
 
-## Phase 16: PDF UI "No Margin" Design & Height Stabilization (2026-04-21)
+---
 
-### Discussion: "No Margin" Immersive Look & Connected Cards
+## Phase 17: PDF Layout Reversion (2026-04-21)
 - **Problem**: 
-    - Content cut off on standard (20 MCQ) tests due to insufficient height budget.
-    - Large whitespace gaps in Multi-Page mode where cards were pushed to the next page.
-    - User requested a "No Margin" look similar to a "Connected" design.
+    - The recent "Adaptive Multi-Page" and "Connected Card" refactoring (Phase 16) introduced layout complexities that the user explicitly wanted to avoid.
+    - The user prefers the specific "Infinite Page" scrolling experience where the entire report is one continuous vertical image/document.
 - **Decisions**:
-    - **Page Layout**: Set `margin: 0` for both `pw.Page` and `pw.MultiPage`. This creates an edge-to-edge "Immersive" look.
-    - **Connected Cards**: 
-        - Removed horizontal padding (30pt -> 0pt) from children.
-        - Reduced vertical gaps between question cards to `1pt` (ultra-thin line) to make them look "connected".
-        - Added `20pt` internal horizontal padding to content inside cards to protect text from edge-bleeding while allowing the card background to touch the paper edge.
-    - **Height Stabilization**: Increased `dynamicHeight` per-question budget to `450 pts` to ensure full visibility of questions and the footer in single-page mode.
-- **Outcome**: A premium, "connected" PDF design that is both visually stunning and technically stable for any number of questions.
-- **Branch**: `feature/pdf-no-margin-fixed-height`
-- **Status**: COMPLETE.
+    - **Revert to `daf7342`**: Identified this commit as the last stable version with the `dynamicHeight` logic.
+    - **Full Reversion**: Discarded the 80-question stability threshold (Multi-Page fallback) to return to the requested 100% single-page behavior.
+    - **Verification**: Ensured that the reverted logic correctly handles current model structures and maintains font support.
+- **Outcome**: PDF service restored to the user-preferred logic. Layout is once again a single, dynamically-sized vertical page.
+- **Branch Gate**:
+    - **Branch**: `feature/revert-infinite-pdf` (NEW)
+    - **Status**: COMPLETE.

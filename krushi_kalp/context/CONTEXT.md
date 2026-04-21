@@ -8,25 +8,18 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - Backend: Supabase (Auth, Storage, Database)
 - PDF: PDF package for report generation
 
-## Current Phase: Exam Screen Resilience & PDF Stability (2026-04-21)
-- Goal: Resolve Mock Test crashes due to malformed data and fix fatal PDF generation memory errors.
-- Completed: 
-    - Resilient JSON Parsing (Question Model).
-    - ExamScreen Data Error Handling & "Go Back" Navigation.
-    - **Adaptive Hybrid PDF Logic**: (<=80 Qs: Single-Page vertical scroll | >80 Qs: Automatic Multi-Page for stability).
-    - Optimized Question Height (320 pts) to prevent truncation in single-page mode.
-- Status: FINISHED.
-
-## Phase 16: PDF UI "No Margin" Design & Height Stabilization (2026-04-21)
-- Goal: Implement edge-to-edge "connected" card design and fix question truncation in long-form reports.
-- Completed:
-    - Set PDF page margins to `0` for an immersive experience.
-    - Implemented "Connected Card" look: zero horizontal margins and ultra-thin `1pt` vertical gaps between question cards.
-    - Resolved "19/20 Questions" bug: Increased dynamic height calculation from `320` to `450` pts per question + larger safety buffers.
-    - Refined Multi-Page headers for minimal space usage.
-- Status: FINISHED.
+## Phase 17: Layout Reversion to Infinite Vertical Page (2026-04-21)
+- **Goal**: Revert the PDF generation logic from Multi-Page/Card-based back to the single-page vertical layout ("infinite page").
+- **Completed**:
+    - Restoration of `pdf_service.dart` from commit `daf7342`.
+    - Verification of `dynamicHeight` logic for immersive scrolling.
+    - Preserved Gujarati font fallback and Crashlytics integration.
+- **Status**: FINISHED.
 
 ## Key Decisions
+- **Layout Choice**: User rejected the Multi-Page adaptive strategy in favor of the original "Single Page Infinite Height" logic for consistency with the app's internal viewer.
+- **Design Baseline**: Reverted to the "Premium Header" and integrated card layout from Phase 1/14.
+- **Threshold Removal**: Removed the 80-question threshold; all tests now use the single-page vertical scroll regardless of size.
 - Use sequential synchronized execution (await-based) for admin forms (Replaced "Fire and Forget" for reliability).
 - Local PDF generation for results: PDFs are now generated and viewed locally to resolve backend latency and handshake errors.
 - Single-Page PDF Fix: Increased the PDF page budget to accommodate long-form reports instead of implementing complex pagination, ensuring layout integrity.
