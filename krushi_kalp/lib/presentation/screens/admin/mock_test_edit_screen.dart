@@ -208,7 +208,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
       };
 
       // Perform local DB update first
-      await TestService.instance.updateMockTest(widget.test.id, updates);
+      await TestService.instance.updateMockTest(widget.test.id, updateData);
 
       if (_coverImage != null && _imageBytes != null) {
         final imagePath = 'mock_test_cover/${widget.test.id}.jpg';
