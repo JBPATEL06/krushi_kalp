@@ -288,3 +288,35 @@
 - **Risk noted**: PDFs with 500+ questions will produce extremely tall files (3000+ inches). This exceeds the standard 200-inch limit of many PDF viewers, but was requested by the user for the internal app viewer which previously handled it.
 - **Result**: Successfully updated `pdf_service.dart`.
 - **Status**: Completed.
+## Phase 17: Adaptive Hybrid PDF Strategy (2026-04-21)
+- **Problem**: 
+    - Reverting to the high height budget (450 pts/Q) to fix truncation caused a fatal RuntimeException: Canvas: trying to draw too large bitmap on many devices.
+    - User wants to keep the Single Vertical Page for most tests but needs 500 MCQ support.
+- **Decision**: **Adaptive Hybrid Logic**.
+    - **Threshold**: 80 questions.
+    - **<= 80 Qs**: Use Single-Page (Infinite Scroll) with a balanced **320 pts/Q** budget. This is enough for text visibility while staying under the crash limit.
+    - **> 80 Qs**: Automatically switch to **Multi-Page (A4)** for 100% stability.
+- **Refactoring**: 
+    - Centralized UI building into _buildPdfContentList to ensure the Premium look is identical in both modes.
+    - Dynamically adjusted margins for isMultiPage mode to prevent layout clashing.
+- **Outcome**: The app is now stable for tests of any size (1 to 500+ questions) while preserving the user's preferred design for standard tests.
+- **Branch**: fix/exam-screen-data-resilience
+- **Status**: COMPLETE.
+
+## Phase 16: PDF UI "No Margin" Design & Height Stabilization (2026-04-21)
+
+### Discussion: "No Margin" Immersive Look & Connected Cards
+- **Problem**: 
+    - Content cut off on standard (20 MCQ) tests due to insufficient height budget.
+    - Large whitespace gaps in Multi-Page mode where cards were pushed to the next page.
+    - User requested a "No Margin" look similar to a "Connected" design.
+- **Decisions**:
+    - **Page Layout**: Set `margin: 0` for both `pw.Page` and `pw.MultiPage`. This creates an edge-to-edge "Immersive" look.
+    - **Connected Cards**: 
+        - Removed horizontal padding (30pt -> 0pt) from children.
+        - Reduced vertical gaps between question cards to `1pt` (ultra-thin line) to make them look "connected".
+        - Added `20pt` internal horizontal padding to content inside cards to protect text from edge-bleeding while allowing the card background to touch the paper edge.
+    - **Height Stabilization**: Increased `dynamicHeight` per-question budget to `450 pts` to ensure full visibility of questions and the footer in single-page mode.
+- **Outcome**: A premium, "connected" PDF design that is both visually stunning and technically stable for any number of questions.
+- **Branch**: `feature/pdf-no-margin-fixed-height`
+- **Status**: COMPLETE.

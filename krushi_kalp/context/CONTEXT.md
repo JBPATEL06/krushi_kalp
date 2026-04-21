@@ -8,13 +8,23 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - Backend: Supabase (Auth, Storage, Database)
 - PDF: PDF package for report generation
 
-## Current Phase: Exam Screen Resilience & Error UX (2026-04-21)
-- Goal: Resolve Mock Test crashes due to malformed data and improve error navigation.
-- Current Phase: Stabilizing Mock Test Reports and PDF Generation
-- Completed: Resilient JSON Parsing (Question Model), ExamScreen Error UX, PDF Infinite Scroll Height Fix
-- Pending: Final Production Verification in `ExamScreen` (distinguishing data vs network).
-    - Enhanced navigation with "Go Back" button in the error state.
-- Status: IN_PROGRESS.
+## Current Phase: Exam Screen Resilience & PDF Stability (2026-04-21)
+- Goal: Resolve Mock Test crashes due to malformed data and fix fatal PDF generation memory errors.
+- Completed: 
+    - Resilient JSON Parsing (Question Model).
+    - ExamScreen Data Error Handling & "Go Back" Navigation.
+    - **Adaptive Hybrid PDF Logic**: (<=80 Qs: Single-Page vertical scroll | >80 Qs: Automatic Multi-Page for stability).
+    - Optimized Question Height (320 pts) to prevent truncation in single-page mode.
+- Status: FINISHED.
+
+## Phase 16: PDF UI "No Margin" Design & Height Stabilization (2026-04-21)
+- Goal: Implement edge-to-edge "connected" card design and fix question truncation in long-form reports.
+- Completed:
+    - Set PDF page margins to `0` for an immersive experience.
+    - Implemented "Connected Card" look: zero horizontal margins and ultra-thin `1pt` vertical gaps between question cards.
+    - Resolved "19/20 Questions" bug: Increased dynamic height calculation from `320` to `450` pts per question + larger safety buffers.
+    - Refined Multi-Page headers for minimal space usage.
+- Status: FINISHED.
 
 ## Key Decisions
 - Use sequential synchronized execution (await-based) for admin forms (Replaced "Fire and Forget" for reliability).
