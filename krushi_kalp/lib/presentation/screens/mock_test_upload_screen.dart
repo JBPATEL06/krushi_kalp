@@ -173,6 +173,9 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> with Picker
         jsonString = utf8.decode(_questionsBytes!);
       } else {
         final jsonList = ExcelToJsonConverter.convert(_questionsBytes!);
+        if (jsonList.isEmpty) {
+          throw 'Excel file contains no valid questions. Please check the Excel format.';
+        }
         jsonString = jsonEncode(jsonList);
       }
 
