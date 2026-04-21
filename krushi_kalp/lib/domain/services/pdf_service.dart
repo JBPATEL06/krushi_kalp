@@ -45,7 +45,7 @@ class PdfService {
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(0),
+        margin: const pw.EdgeInsets.symmetric(horizontal: 40, vertical: 40),
         theme: pw.ThemeData.withFont(
           base: primaryFont,
           bold: primaryFont,
@@ -67,7 +67,7 @@ class PdfService {
           _buildPremiumHeader(testTitle, score, totalMarks, correctAnswers, wrongAnswers, skippedAnswers),
           if (questions != null) ...[
             pw.Padding(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+              padding: const pw.EdgeInsets.symmetric(vertical: 20),
               child: pw.Text(
                 'Detailed Analysis',
                 style: pw.TextStyle(
@@ -124,8 +124,7 @@ class PdfService {
         // Top Brand Bar
         pw.Container(
           width: double.infinity,
-          padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 30),
-          color: PdfColors.grey100,
+          padding: const pw.EdgeInsets.symmetric(vertical: 10),
           child: pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
@@ -134,109 +133,104 @@ class PdfService {
             ],
           ),
         ),
-        // Total Score Card (Matches TestResultScreen)
+        // Compact Total Score Card (Horizontal layout to save space)
         pw.Container(
           width: double.infinity,
-          margin: const pw.EdgeInsets.all(30),
-          padding: const pw.EdgeInsets.all(32),
+          margin: const pw.EdgeInsets.symmetric(horizontal: 0, vertical: 15),
+          padding: const pw.EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           decoration: pw.BoxDecoration(
             color: brandBlue,
-            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(20)),
+            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(16)),
           ),
-          child: pw.Column(
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text(
-                'TOTAL SCORE',
-                style: pw.TextStyle(
-                  color: PdfColors.white,
-                  fontWeight: pw.FontWeight.bold,
-                  letterSpacing: 1.5,
-                  fontSize: 12,
-                ),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'TOTAL SCORE',
+                    style: pw.TextStyle(
+                      color: PdfColors.white,
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: 10,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  pw.SizedBox(height: 4),
+                  pw.Row(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text(
+                        '${percentage.toStringAsFixed(1)}%',
+                        style: pw.TextStyle(
+                          fontSize: 32,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.white,
+                        ),
+                      ),
+                      pw.SizedBox(width: 8),
+                      pw.Text(
+                        'OUT OF ${totalMarks.toInt()}',
+                        style: pw.TextStyle(
+                          color: PdfColors.white.withAlpha(200),
+                          fontSize: 8,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              pw.SizedBox(height: 16),
-              // Icon (Directly on blue background for clarity)
               pw.Container(
-                width: 40,
-                height: 40,
-                child: pw.CustomPaint(
-                  painter: (PdfGraphics canvas, PdfPoint size) {
-                    canvas.setStrokeColor(PdfColors.white);
-                    canvas.setLineWidth(4); // Increased for better visibility
-                    if (isPassed) {
-                      // Trophy-like shape
-                      canvas.drawEllipse(size.x / 2, size.y * 0.7, 10, 8);
-                      canvas.moveTo(size.x / 2, size.y * 0.4);
-                      canvas.lineTo(size.x / 2, size.y * 0.2);
-                      canvas.moveTo(size.x / 2 - 8, size.y * 0.2);
-                      canvas.lineTo(size.x / 2 + 8, size.y * 0.2);
-                    } else {
-                      // Sad face
-                      canvas.drawEllipse(size.x / 2, size.y / 2, 12, 12);
-                      canvas.moveTo(size.x / 2 - 4, size.y / 2 + 3);
-                      canvas.drawEllipse(size.x / 2 - 4, size.y / 2 + 3, 1, 1);
-                      canvas.moveTo(size.x / 2 + 4, size.y / 2 + 3);
-                      canvas.drawEllipse(size.x / 2 + 4, size.y / 2 + 3, 1, 1);
-                      canvas.moveTo(size.x / 2 - 5, size.y / 2 - 3);
-                      canvas.setLineCap(PdfLineCap.round);
-                      canvas.curveTo(size.x / 2 - 5, size.y / 2 - 3, size.x/2, size.y/2, size.x/2+5, size.y/2-3);
-                    }
-                    canvas.strokePath();
-                  },
+                padding: const pw.EdgeInsets.all(10),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.white.withAlpha(40),
+                  shape: pw.BoxShape.circle,
                 ),
-              ),
-              pw.SizedBox(height: 16),
-              pw.Text(
-                '${percentage.toStringAsFixed(1)}%',
-                style: pw.TextStyle(
-                  fontSize: 48,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.white,
-                ),
-              ),
-              pw.Text(
-                'OUT OF ${totalMarks.toInt()}',
-                style: pw.TextStyle(
-                  color: PdfColors.white,
-                  fontWeight: pw.FontWeight.bold,
-                  letterSpacing: 2,
-                  fontSize: 10,
-                ),
-              ),
-              pw.SizedBox(height: 20),
-              pw.Text(
-                isPassed
-                    ? 'Test Completed Successfully\nYou have achieved the passing score for the $title.'
-                    : 'Test Not Cleared\nYou did not achieve the required passing score for the $title.',
-                textAlign: pw.TextAlign.center,
-                style: pw.TextStyle(
-                  color: PdfColors.white,
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 14,
-                  lineSpacing: 1.4,
+                child: pw.Container(
+                  width: 24,
+                  height: 24,
+                  child: pw.CustomPaint(
+                    painter: (PdfGraphics canvas, PdfPoint size) {
+                      canvas.setStrokeColor(PdfColors.white);
+                      canvas.setLineWidth(2.5);
+                      if (isPassed) {
+                        canvas.drawEllipse(size.x / 2, size.y * 0.7, 6, 5);
+                        canvas.moveTo(size.x / 2, size.y * 0.4);
+                        canvas.lineTo(size.x / 2, size.y * 0.2);
+                        canvas.moveTo(size.x / 2 - 5, size.y * 0.2);
+                        canvas.lineTo(size.x / 2 + 5, size.y * 0.2);
+                      } else {
+                        canvas.drawEllipse(size.x / 2, size.y / 2, 7, 7);
+                        canvas.moveTo(size.x / 2 - 3, size.y / 2 + 2);
+                        canvas.drawEllipse(size.x / 2 - 3, size.y / 2 + 2, 0.5, 0.5);
+                        canvas.moveTo(size.x / 2 + 3, size.y / 2 + 2);
+                        canvas.drawEllipse(size.x / 2 + 3, size.y / 2 + 2, 0.5, 0.5);
+                      }
+                      canvas.strokePath();
+                    },
+                  ),
                 ),
               ),
             ],
           ),
         ),
-        // Stat Cards Row
-        pw.Padding(
-          padding: const pw.EdgeInsets.symmetric(horizontal: 30),
-          child: pw.Row(
-            children: [
-              pw.Expanded(
-                child: _buildStatCard('RIGHT', '$correct', brandBlue),
-              ),
-              pw.SizedBox(width: 20),
-              pw.Expanded(
-                child: _buildStatCard('WRONG', '$wrong', statRed),
-              ),
-              pw.SizedBox(width: 20),
-              pw.Expanded(
-                child: _buildStatCard('SKIPPED', '$skipped', PdfColors.grey700),
-              ),
-            ],
-          ),
+        // Stat Cards Row (Reduced spacing/padding)
+        pw.Row(
+          children: [
+            pw.Expanded(
+              child: _buildStatCard('RIGHT', '$correct', brandBlue),
+            ),
+            pw.SizedBox(width: 12),
+            pw.Expanded(
+              child: _buildStatCard('WRONG', '$wrong', statRed),
+            ),
+            pw.SizedBox(width: 12),
+            pw.Expanded(
+              child: _buildStatCard('SKIPPED', '$skipped', PdfColors.grey700),
+            ),
+          ],
         ),
       ],
     );
@@ -244,10 +238,10 @@ class PdfService {
 
   pw.Widget _buildStatCard(String label, String value, PdfColor color) {
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(vertical: 20),
+      padding: const pw.EdgeInsets.symmetric(vertical: 12),
       decoration: pw.BoxDecoration(
         color: PdfColors.white,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(15)),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
         border: pw.Border.all(color: PdfColors.grey200),
       ),
       child: pw.Column(
@@ -256,17 +250,17 @@ class PdfService {
           pw.Text(
             label,
             style: pw.TextStyle(
-              fontSize: 10,
+              fontSize: 8,
               fontWeight: pw.FontWeight.bold,
               color: PdfColors.grey600,
-              letterSpacing: 1.2,
+              letterSpacing: 1.0,
             ),
           ),
-          pw.SizedBox(height: 5),
+          pw.SizedBox(height: 2),
           pw.Text(
             value,
             style: pw.TextStyle(
-              fontSize: 24,
+              fontSize: 18,
               fontWeight: pw.FontWeight.bold,
               color: color,
             ),
@@ -290,12 +284,12 @@ class PdfService {
     final isSkipped = selectedIdx == null;
 
     return pw.Container(
-      margin: const pw.EdgeInsets.symmetric(horizontal: 30, vertical: 8),
-      padding: const pw.EdgeInsets.all(20),
+      margin: const pw.EdgeInsets.symmetric(horizontal: 0, vertical: 6),
+      padding: const pw.EdgeInsets.all(15),
       decoration: pw.BoxDecoration(
         color: PdfColors.white,
         border: pw.Border.all(color: PdfColors.grey200, width: 0.8),
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(16)),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -367,12 +361,12 @@ class PdfService {
             }
 
             return pw.Container(
-              margin: const pw.EdgeInsets.only(bottom: 10),
-              padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              margin: const pw.EdgeInsets.only(bottom: 6),
+              padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: pw.BoxDecoration(
                 color: bgColor,
-                border: pw.Border.all(color: borderColor, width: 1.2),
-                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+                border: pw.Border.all(color: borderColor, width: 1.0),
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
               ),
               child: pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
