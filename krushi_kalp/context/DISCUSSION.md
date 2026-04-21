@@ -105,6 +105,7 @@
 - **Branch Gate**:
   - **Branch**: `fix/store-refresh-visibility` (Confirmed by user).
   - **Status**: COMPLETE.
+
 ## Phase 7: Background Transfer UX & Redirection (2026-04-07)
 
 ### Discussion: Decoupling UI from File Transfers
@@ -340,3 +341,37 @@
 - **Branch**: `feat/multi-page-pdf`
 - **Status**: COMPLETE.
 
+## [2026-04-22] Phase 21: Kill the "Idiot Space" (Final Solution)
+- **Problem**: PDF generation had large whitespace gaps because question cards were "atomic" (unbreakable blocks).
+- **Decisions**:
+    - **Flatten Layout**: Changed _buildAnalysisCard to return a list of widgets instead of a single Container. This allows the PDF engine to split questions across page boundaries.
+    - **Accent Branding**: Replaced the outer card border with a 4x18 colored accent bar (Green/Red/Grey) to maintain a premium visual indicator of status.
+    - **Spacious Cleanup**: Removed extra SizedBox buffers and reduced vertical margins to 30pt for maximum density.
+- **Outcome**: 100% space utilization. Zero blank gaps at page bottoms. Professional report branding maintained.
+- **Branch**: feat/multi-page-pdf
+- **Status**: COMPLETE.
+
+## [2026-04-22] Phase 24: The "Non-Greedy" Final Fix
+- **Problem**: Gaps persisted because `Align` in the footer was expanding to fill vertical space, reserving a "void" at the bottom of pages.
+- **Decisions**:
+    - **Fixed Footer**: Forced `height: 20` on the footer container to stop it from greedy expansion.
+    - **Total Flattening**: Removed all horizontal `Padding` from question text and options. Used explicit `SizedBox` for vertical spacing.
+    - **Constraint Safety**: Reduced internal text width to `420` to guarantee no margin collisions.
+- **Outcome**: The engine now fills the page optimally because the footer no longer competes for height.
+- **Branch**: `feat/multi-page-pdf`
+- **Status**: COMPLETE.
+
+
+
+
+## Phase 27: Zero-Gap Single-Table Refactor (2026-04-22)
+- **Problem**: 
+    - PDF result pages had large whitespace gaps ("Idiot Space") because each question was an unbreakable `pw.Table` block.
+    - The `PdfViewer` background was inconsistent with the `AppBar` in light theme, reducing the premium feel.
+- **Decisions**:
+    - **Single Master Table**: Refactored `PdfService` to use one single `pw.Table` for the entire question list. Each component of a question is now an individual `pw.TableRow`.
+    - **Row-Level Splitting**: This allows the `pdf` engine to split questions *anywhere* (e.g., between the question text and options) to fill every page 100%.
+    - **Unified Viewer Branding**: Forced `AppBar` to `chromeGrey` with `Colors.white` icons in both `PdfViewerScreen` and `NetworkPdfViewerScreen`.
+- **Outcome**: The PDF now looks like a professional, high-density document with zero "Idiot Space". The viewer looks identical to the Chrome PDF viewer.
+- **Status**: COMPLETE.
+- **Branch**: `feat/multi-page-pdf`

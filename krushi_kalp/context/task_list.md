@@ -18,6 +18,14 @@
 - [ ] Map out all deep links and transfer routing logic to `GoRouter`.
 - [ ] Replace `flutter_dotenv` with `envied` to obfuscate API keys.
 
+## Phase 25: PDF Pagination & Layout Refactor
+- [x] Pivot back to Open-Source `pdf` package with Table-based architecture.
+- [x] Refactor `_buildAnalysisCard` into `_buildAnalysisTable`.
+- [x] Implement `pw.Table` for granular row-splitting across PDF pages.
+- [x] Enforce `NotoSansGujarati` font for 100% of text blocks to fix height calculations.
+- [x] Remove atomic `pw.Container` wrappers from options.
+- [x] Finalize Professional PDF formatting and Page Numbering.
+
 ---
 **Testing Protocol:** 
 *After every single completed checkbox, the app MUST be built and manually verified to ensure no existing functionality was broken.*

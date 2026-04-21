@@ -77,15 +77,20 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final Color chromeGrey = const Color(0xFF323639);
+    
     return Scaffold(
+      backgroundColor: chromeGrey,
       appBar: AppBar(
-        title: Text(widget.title),
-        elevation: 1,
+        title: Text(widget.title, style: const TextStyle(color: Colors.white, fontSize: 16)),
+        elevation: 0,
+        backgroundColor: chromeGrey,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: Icon(
               _isNightMode ? Icons.dark_mode : Icons.light_mode,
-              color: _isNightMode ? Colors.amber : theme.colorScheme.primary,
+              color: _isNightMode ? Colors.amber : Colors.white,
             ),
             tooltip: 'Toggle Night Mode',
             onPressed: () {
@@ -98,45 +103,64 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
       ),
       body: Stack(
         children: <Widget>[
-          PDFView(
-            key: ValueKey(_isNightMode),
-            filePath: widget.file.path,
-            enableSwipe: true,
-            swipeHorizontal: false,
-            autoSpacing: true,
-            pageFling: false,
-            pageSnap: false,
-            defaultPage: currentPage!,
-            fitPolicy: FitPolicy.WIDTH,
-            preventLinkNavigation: false,
-            password: widget.password, // Pass the password here
-            nightMode: _isNightMode,
-            onRender: (p) {
-              setState(() {
-                pages = p;
-                isReady = true;
-              });
-            },
-            onError: (error) {
-              setState(() {
-                errorMessage = error.toString();
-              });
-            },
-            onPageError: (page, error) {
-              setState(() {
-                errorMessage = '$page: ${error.toString()}';
-              });
-            },
-            onViewCreated: (PDFViewController pdfViewController) {
-              // controller.complete(pdfViewController);
-            },
-            onLinkHandler: (String? uri) {},
-            onPageChanged: (int? page, int? total) {
-              setState(() {
-                currentPage = page;
-              });
-            },
+          Container(
+            color: chromeGrey,
+            child: PDFView(
+              key: ValueKey('${_isNightMode}_$isReady'),
+              filePath: widget.file.path,
+              enableSwipe: true,
+              swipeHorizontal: false,
+              autoSpacing: true, // Keep spacing but background makes it distinct
+              pageFling: true,
+              pageSnap: false, // Fluid scrolling like Chrome
+              defaultPage: currentPage!,
+              fitPolicy: FitPolicy.WIDTH,
+              preventLinkNavigation: false,
+              password: widget.password,
+              nightMode: _isNightMode,
+              onRender: (p) {
+                setState(() {
+                  pages = p;
+                  isReady = true;
+                });
+              },
+              onError: (error) {
+                setState(() {
+                  errorMessage = error.toString();
+                });
+              },
+              onPageError: (page, error) {
+                setState(() {
+                  errorMessage = '$page: ${error.toString()}';
+                });
+              },
+              onViewCreated: (PDFViewController pdfViewController) {
+                // controller.complete(pdfViewController);
+              },
+              onLinkHandler: (String? uri) {},
+              onPageChanged: (int? page, int? total) {
+                setState(() {
+                  currentPage = page;
+                });
+              },
+            ),
           ),
+          if (currentPage != null && pages != null && isReady)
+             Positioned(
+              bottom: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Page ${currentPage! + 1} of $pages',
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+            ),
           errorMessage.isEmpty
               ? !isReady
                   ? const Center(
@@ -144,7 +168,7 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
                     )
                   : Container()
               : Center(
-                  child: Text(errorMessage),
+                  child: Text(errorMessage, style: const TextStyle(color: Colors.white)),
                 )
         ],
       ),

@@ -28,6 +28,7 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
   int _totalPages = 0;
   int _currentPage = 0;
   bool _isNightMode = false;
+  bool _isReady = false;
 
   @override
   void didChangeDependencies() {
@@ -57,12 +58,12 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
       final response = await request.close();
 
       if (response.statusCode != HttpStatus.ok) {
-        throw Exception('Failed to load PDF: ');
+        throw Exception('Failed to load PDF');
       }
 
       // Save to temp directory (not permanent storage)
       final dir = await getTemporaryDirectory();
-      final file = File('/temp_.pdf');
+      final file = File('${dir.path}/temp_${DateTime.now().millisecondsSinceEpoch}.pdf');
       
       final List<int> bytes = [];
       await for (final chunk in response) {
@@ -99,39 +100,35 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final Color chromeGrey = const Color(0xFF323639);
+
     return Scaffold(
-      backgroundColor: Colors
-          .black, // Dark background for PDF viewer is usually preferred regardless of theme
+      backgroundColor: chromeGrey,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               widget.title,
-              style: TextStyle(fontSize: context.sp(16)), // FIXED
+              style: TextStyle(fontSize: context.sp(16), color: Colors.white),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            if (_totalPages > 0)
-              Text(
-                'Page $_currentPage of $_totalPages',
-                style: TextStyle(
-                    fontSize: context.sp(12),
-                    color: theme.colorScheme.onSurfaceVariant), // FIXED
-              ),
           ],
         ),
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: chromeGrey,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
-          icon: Icon(Icons.close, size: context.sp(24)), // FIXED
+          icon: Icon(Icons.close, size: context.sp(24), color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
             icon: Icon(
               _isNightMode ? Icons.dark_mode : Icons.light_mode,
-              color: _isNightMode ? Colors.amber : theme.colorScheme.primary,
-              size: context.sp(20), // FIXED
+              color: _isNightMode ? Colors.amber : Colors.white,
+              size: context.sp(20),
             ),
             tooltip: 'Toggle Night Mode',
             onPressed: () {
@@ -146,20 +143,20 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md, vertical: AppSpacing.xs),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
             ),
             child: Row(
               children: [
                 Icon(Icons.cloud_outlined,
-                    size: context.sp(16),
-                    color: theme.colorScheme.primary), // FIXED
+                    size: context.sp(14),
+                    color: Colors.white70),
                 const SizedBox(width: 4),
                 Text(
                   'Online',
                   style: TextStyle(
-                    color: theme.colorScheme.primary,
-                    fontSize: context.sp(12), // FIXED
+                    color: Colors.white70,
+                    fontSize: context.sp(11),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -168,69 +165,27 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
           ),
         ],
       ),
-      body: _buildBody(),
+      body: _buildBody(chromeGrey),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(Color backgroundColor) {
     final theme = Theme.of(context);
     if (_isLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: theme.colorScheme.primary),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Loading PDF...',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontSize: context.sp(16), // FIXED
-                  ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_errorMessage != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
+      return Container(
+        color: backgroundColor,
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline,
-                  size: context.sp(64),
-                  color: theme.colorScheme.error), // FIXED
+              CircularProgressIndicator(color: theme.colorScheme.primary),
               const SizedBox(height: AppSpacing.lg),
               Text(
-                'Failed to load PDF',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: theme.colorScheme.error,
-                      fontWeight: FontWeight.bold,
-                      fontSize: context.sp(20), // FIXED
+                'Loading PDF...',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.white70,
+                      fontSize: context.sp(16),
                     ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                _errorMessage!,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: context.sp(14), // FIXED
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              ElevatedButton.icon(
-                onPressed: _loadPdf,
-                icon: Icon(Icons.refresh, size: context.sp(18)), // FIXED
-                label: Text('Retry',
-                    style: TextStyle(fontSize: context.sp(14))), // FIXED
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                ),
               ),
             ],
           ),
@@ -238,48 +193,121 @@ class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
       );
     }
 
-    if (_localPath == null) {
-      return const Center(child: Text('No PDF loaded'));
+    if (_errorMessage != null) {
+      return Container(
+        color: backgroundColor,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline,
+                    size: context.sp(64),
+                    color: theme.colorScheme.error),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  'Failed to load PDF',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: theme.colorScheme.error,
+                        fontWeight: FontWeight.bold,
+                        fontSize: context.sp(20),
+                      ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  _errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.white70,
+                        fontSize: context.sp(14),
+                      ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                ElevatedButton.icon(
+                  onPressed: _loadPdf,
+                  icon: Icon(Icons.refresh, size: context.sp(18)),
+                  label: Text('Retry',
+                      style: TextStyle(fontSize: context.sp(14))),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
-    return PDFView(
-      key: ValueKey(_isNightMode),
-      filePath: _localPath!,
-      enableSwipe: true,
-      swipeHorizontal: false,
-      autoSpacing: true,
-      pageFling: true,
-      pageSnap: true,
-      defaultPage: 0,
-      fitPolicy: FitPolicy.WIDTH,
-      preventLinkNavigation: false,
-      nightMode: _isNightMode,
-      onRender: (pages) {
-        if (mounted) {
-          setState(() {
-            _totalPages = pages ?? 0;
-            _currentPage = 1;
-          });
-        }
-      },
-      onError: (error) {
-        if (mounted) {
-          setState(() {
-            _errorMessage = error.toString();
-          });
-        }
-      },
-      onPageError: (page, error) {},
-      onViewCreated: (PDFViewController controller) {
-        // Controller can be used for additional controls if needed
-      },
-      onPageChanged: (int? page, int? total) {
-        if (mounted && page != null) {
-          setState(() {
-            _currentPage = page + 1;
-          });
-        }
-      },
+    if (_localPath == null) {
+      return Container(
+        color: backgroundColor,
+        child: const Center(child: Text('No PDF loaded', style: TextStyle(color: Colors.white))),
+      );
+    }
+
+    return Stack(
+      children: [
+        Container(
+          color: backgroundColor,
+          child: PDFView(
+            key: ValueKey('${_isNightMode}_$_isReady'),
+            filePath: _localPath!,
+            enableSwipe: true,
+            swipeHorizontal: false,
+            autoSpacing: true,
+            pageFling: true,
+            pageSnap: false,
+            defaultPage: 0,
+            fitPolicy: FitPolicy.WIDTH,
+            preventLinkNavigation: false,
+            nightMode: _isNightMode,
+            onRender: (pages) {
+              if (mounted) {
+                setState(() {
+                  _totalPages = pages ?? 0;
+                  _currentPage = 1;
+                  _isReady = true;
+                });
+              }
+            },
+            onError: (error) {
+              if (mounted) {
+                setState(() {
+                  _errorMessage = error.toString();
+                });
+              }
+            },
+            onPageError: (page, error) {},
+            onViewCreated: (PDFViewController controller) {},
+            onPageChanged: (int? page, int? total) {
+              if (mounted && page != null) {
+                setState(() {
+                  _currentPage = page + 1;
+                });
+              }
+            },
+          ),
+        ),
+        if (_totalPages > 0 && _isReady)
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Page $_currentPage of $_totalPages',
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

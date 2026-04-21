@@ -23,10 +23,24 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - **Result**: Guaranteed visibility of 100% of questions regardless of test length.
 - **Status**: FINISHED.
 
-## Key Decisions
-- **Layout Choice**: User rejected the Multi-Page adaptive strategy in favor of the original "Single Page Infinite Height" logic for consistency with the app's internal viewer.
-- **Design Baseline**: Reverted to the "Premium Header" and integrated card layout from Phase 1/14.
-- **Threshold Removal**: Removed the 80-question threshold; all tests now use the single-page vertical scroll regardless of size.
+## Phase 19: Layout Optimization (2026-04-21)
+- **Goal**: Maximize content density on A4 pages.
+- **Actions**: Redesigned header to horizontal, reduced card margins, switched to compact stat cards.
+- **Status**: FINISHED.
+
+## Phase 20: Extreme Compaction & Font Fixes (2026-04-22)
+- **Goal**: Resolve "Atomic Pagination" white gaps and Helvetica console warnings.
+- **Actions**: Explicit font passing to all sub-components, reduced font sizes, removed redundant header padding.
+- **Status**: COMPLETE.
+
+## [2026-04-21] Phase 25: Open-Source Table Refactor
+- **Goal**: Eliminate "Idiot Space" (large whitespace gaps) by using a non-greedy table architecture.
+- **Actions**:
+    - Scrapped `Syncfusion` pivot; stuck to open-source `pdf` package for lower cost and easier maintenance.
+    - Switched from atomic "Flat Widget List" to `pw.Table` rows for granular page splitting.
+    - Forced `NotoSansGujarati` font for all text blocks to eliminate fallback height calculation errors.
+- **Outcome**: PDF engine can now split questions across page boundaries between header, text, and options.
+- **Status**: COMPLETE.
 - Use sequential synchronized execution (await-based) for admin forms (Replaced "Fire and Forget" for reliability).
 - Local PDF generation for results: PDFs are now generated and viewed locally to resolve backend latency and handshake errors.
 - Single-Page PDF Fix: Increased the PDF page budget to accommodate long-form reports instead of implementing complex pagination, ensuring layout integrity.
@@ -34,6 +48,25 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - Check Answer PDF Style: Standardized PDF results to match the in-app check-answer UI (All options shown).
 - Dynamic Font Fallback: NotoSansGujarati is used as a fallback for all PDF text to prevent crashes on non-latin characters.
 - PDF Theme Persistence: PDF theme choice (Light/Dark) is now persisted per user via SharedPreferences.
+
+## Phase 26: PDF Viewer Aesthetic Refinement (2026-04-22)
+- **Goal**: Resolve "Idiot Space" perception by matching Chrome's professional PDF layout.
+- **Actions**:
+    - Forced a dark professional grey background (`#323639`) for the viewer to provide contrast against white pages.
+    - Optimized `PDFView` for fluid scrolling (`pageFling: true`, `pageSnap: false`).
+    - Added floating page indicators for easier navigation.
+    - Simplified AppBar UI to keep the focus on the document.
+- **Outcome**: The viewer now clearly demarcates page boundaries, eliminating the visual confusion caused by white-on-white page gaps.
+- **Status**: COMPLETE.
+
+## Phase 27: Zero-Gap Single-Table Refactor (2026-04-22)
+- **Goal**: 100% space utilization and architectural fix for multi-page gaps.
+- **Actions**:
+    - Refactored `PdfService` to use a **Single Master Table** for all questions.
+    - Converted question blocks into continuous `TableRow` sequences.
+    - Forced dark `AppBar` with white text/icons in `PdfViewerScreen` and `NetworkPdfViewerScreen` for premium branding.
+- **Outcome**: The PDF engine now splits content line-by-line across pages, ensuring no whitespace gaps even if a question spans multiple pages.
+- **Status**: COMPLETE.
 
 ## Completed Phases
 - Phase 1: Authentication & Navigation (v1-v4)
