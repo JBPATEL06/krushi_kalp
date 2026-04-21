@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:pdfrx/pdfrx.dart';
 import 'package:krushi_kalp/data/services/performance_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:krushi_kalp/presentation/providers/auth_notifier.dart';
@@ -23,18 +23,24 @@ class PdfViewerScreen extends ConsumerStatefulWidget {
 }
 
 class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
-  int? pages = 0;
-  int? currentPage = 0;
-  bool isReady = false;
-  String errorMessage = '';
+  final GlobalKey _viewerKey = GlobalKey();
+  final PdfViewerController _controller = PdfViewerController();
+  final TextEditingController _searchController = TextEditingController();
+  late final PdfTextSearcher _searcher;
+  
+  bool _isSearching = false;
+  int _currentPage = 1;
+  int _totalPages = 0;
   bool _isNightMode = false;
-  DateTime? _openedAt; // NEW — tracks when PDF was opened
+  DateTime? _openedAt;
 
   @override
   void initState() {
     super.initState();
-    _openedAt = DateTime.now(); // NEW
+    _openedAt = DateTime.now();
+    _searcher = PdfTextSearcher(_controller);
     _loadInitialNightMode();
+    _searcher.addListener(() => setState(() {}));
   }
 
   Future<void> _loadInitialNightMode() async {
@@ -46,20 +52,11 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
           _isNightMode = savedTheme == 'dark';
         });
       }
-    } catch (e) {
-      // Ignored, defaults to false
-    }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Respect the Profile settings, removed system brightness override.
+    } catch (_) {}
   }
 
   @override
   void dispose() {
-    // NEW — calculate read duration and update streak if >= 5 minutes
     if (_openedAt != null) {
       final durationSeconds = DateTime.now().difference(_openedAt!).inSeconds;
       if (durationSeconds >= 300) {
@@ -71,107 +68,166 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
         }
       }
     }
+    _searchController.dispose();
+    _searcher.dispose();
     super.dispose();
+  }
+
+  void _showJumpToPageDialog() {
+    final TextEditingController pageController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF323639),
+        title: const Text('Go to Page', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: pageController,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'Enter page number',
+            hintStyle: TextStyle(color: Colors.white70),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              final page = int.tryParse(pageController.text);
+              if (page != null && page > 0 && page <= _totalPages) {
+                _controller.goToPage(pageNumber: page);
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Go', style: TextStyle(color: Colors.blue)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final Color chromeGrey = const Color(0xFF323639);
-    
+
+    final viewer = PdfViewer.file(
+      widget.file.path,
+      key: _viewerKey,
+      controller: _controller,
+      params: PdfViewerParams(
+        backgroundColor: _isNightMode ? Colors.black : chromeGrey,
+        enableTextSelection: true,
+        pagePaintCallbacks: [
+          _searcher.pageTextMatchPaintCallback,
+        ],
+        onViewerReady: (document, controller) {
+          if (mounted) {
+            setState(() => _totalPages = document.pages.length);
+          }
+        },
+        onPageChanged: (pageNumber) {
+          if (pageNumber != null && mounted) {
+            setState(() => _currentPage = pageNumber);
+          }
+        },
+      ),
+    );
+
     return Scaffold(
       backgroundColor: chromeGrey,
       appBar: AppBar(
-        title: Text(widget.title, style: const TextStyle(color: Colors.white, fontSize: 16)),
-        elevation: 0,
         backgroundColor: chromeGrey,
+        elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: 'Search text...',
+                  hintStyle: TextStyle(color: Colors.white70),
+                  border: InputBorder.none,
+                ),
+                onChanged: (text) => _searcher.startTextSearch(text),
+              )
+            : Text(widget.title, style: const TextStyle(color: Colors.white, fontSize: 16)),
         actions: [
-          IconButton(
-            icon: Icon(
-              _isNightMode ? Icons.dark_mode : Icons.light_mode,
-              color: _isNightMode ? Colors.amber : Colors.white,
+          if (_isSearching) ...[
+            IconButton(
+              icon: const Icon(Icons.arrow_upward),
+              onPressed: _searcher.hasMatches ? _searcher.goToPrevMatch : null,
             ),
-            tooltip: 'Toggle Night Mode',
-            onPressed: () {
-              setState(() {
-                _isNightMode = !_isNightMode;
-              });
-            },
-          ),
-        ],
-      ),
-      body: Stack(
-        children: <Widget>[
-          Container(
-            color: chromeGrey,
-            child: PDFView(
-              key: ValueKey('${_isNightMode}_$isReady'),
-              filePath: widget.file.path,
-              enableSwipe: true,
-              swipeHorizontal: false,
-              autoSpacing: true, // Keep spacing but background makes it distinct
-              pageFling: true,
-              pageSnap: false, // Fluid scrolling like Chrome
-              defaultPage: currentPage!,
-              fitPolicy: FitPolicy.WIDTH,
-              preventLinkNavigation: false,
-              password: widget.password,
-              nightMode: _isNightMode,
-              onRender: (p) {
+            IconButton(
+              icon: const Icon(Icons.arrow_downward),
+              onPressed: _searcher.hasMatches ? _searcher.goToNextMatch : null,
+            ),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () {
                 setState(() {
-                  pages = p;
-                  isReady = true;
-                });
-              },
-              onError: (error) {
-                setState(() {
-                  errorMessage = error.toString();
-                });
-              },
-              onPageError: (page, error) {
-                setState(() {
-                  errorMessage = '$page: ${error.toString()}';
-                });
-              },
-              onViewCreated: (PDFViewController pdfViewController) {
-                // controller.complete(pdfViewController);
-              },
-              onLinkHandler: (String? uri) {},
-              onPageChanged: (int? page, int? total) {
-                setState(() {
-                  currentPage = page;
+                  _isSearching = false;
+                  _searchController.clear();
+                  _searcher.resetTextSearch();
                 });
               },
             ),
-          ),
-          if (currentPage != null && pages != null && isReady)
-             Positioned(
-              bottom: 16,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'Page ${currentPage! + 1} of $pages',
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
+          ] else ...[
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () => setState(() => _isSearching = true),
+            ),
+            IconButton(
+              icon: const Icon(Icons.pin_end),
+              tooltip: 'Go to Page',
+              onPressed: _showJumpToPageDialog,
+            ),
+            IconButton(
+              icon: Icon(
+                _isNightMode ? Icons.dark_mode : Icons.light_mode,
+                color: _isNightMode ? Colors.amber : Colors.white,
               ),
+              onPressed: () => setState(() => _isNightMode = !_isNightMode),
             ),
-          errorMessage.isEmpty
-              ? !isReady
-                  ? const Center(
-                      child: CircularProgressIndicator(),
-                    )
-                  : Container()
-              : Center(
-                  child: Text(errorMessage, style: const TextStyle(color: Colors.white)),
-                )
+          ],
         ],
       ),
+      body: _isNightMode
+          ? ColorFiltered(
+              colorFilter: const ColorFilter.matrix(<double>[
+                -1, 0, 0, 0, 255, // Invert Red
+                0, -1, 0, 0, 255, // Invert Green
+                0, 0, -1, 0, 255, // Invert Blue
+                0, 0, 0, 1, 0, // Alpha
+              ]),
+              child: viewer,
+            )
+          : viewer,
+      bottomNavigationBar: _totalPages > 0
+          ? Container(
+              color: chromeGrey,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                   Text(
+                    'Page $_currentPage of $_totalPages',
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  if (_searcher.hasMatches)
+                     Text(
+                      'Result ${(_searcher.currentIndex ?? -1) + 1} of ${_searcher.matches.length}',
+                      style: const TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                ],
+              ),
+            )
+          : null,
     );
   }
 }

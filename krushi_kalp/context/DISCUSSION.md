@@ -375,3 +375,32 @@
 - **Outcome**: The PDF now looks like a professional, high-density document with zero "Idiot Space". The viewer looks identical to the Chrome PDF viewer.
 - **Status**: COMPLETE.
 - **Branch**: `feat/multi-page-pdf`
+
+## Phase 29: PDFrx Pro Migration & Feature Expansion (2026-04-22)
+- **Goal**: Superior performance and desktop-grade features (Search, Jump).
+- **Problem**:
+    - The previous viewer (`flutter_pdfview`) was basic and lacked interactive features requested by the user (Search, Jump).
+    - User reported persistent "Idiot Space" which was partially a perception issue due to the basic viewer's rendering/background.
+- **Decisions**:
+    - **PDFrx Migration**: Switched to `pdfrx` for its high-performance, native-quality rendering.
+    - **Interactive Search**: Added a real-time text search bar with match counting and navigation.
+    - **Page Jump**: Added a direct navigation dialog to jump to specific pages.
+    - **Total Flattening 2.0**: Refactored `PdfService` once more to a "Total Flattening" approach (independent widgets) to complement the new viewer's rendering engine.
+    - **Native Streaming**: Removed temporary file caching logic in favor of `pdfrx` native URI streaming.
+- **Outcome**: The viewer now feels like a premium document reader. "Idiot space" is eliminated via 100% efficient generation and a high-contrast professional rendering background.
+- **Status**: COMPLETE.
+- **Branch**: `feat/multi-page-pdf`
+
+## Phase 30: PDFrx Stabilization & PDF Layout Fix (2026-04-22)
+
+### Discussion: Resolving Viewer Compilation & Generation Crash
+- **Problem**: 
+    - `PdfViewerScreen` and `NetworkPdfViewerScreen` had compilation errors due to private state access (`GlobalKey<PdfViewerState>`) and redundant null checks on the controller.
+    - PDF generation crashed with `Exception: Widget won't fit... height (Infinity)` when rendering exam results with accent bars.
+- **Decisions**:
+    - **Viewer Fix**: Refactored `GlobalKey<PdfViewerState>` to a generic `GlobalKey` for state preservation. Removed deprecated null checks on `PdfViewerController.value`.
+    - **Generation Fix**: Replaced the "Greedy" `pw.Row(crossAxisAlignment: stretch)` with a `pw.Table` in `PdfService.buildFlatRow`. This achieves the "IntrinsicHeight" effect needed for the accent bar without triggering the infinite height layout error in the `pdf` package.
+    - **Code Quality**: Removed unused imports and standardized if-else blocks with curly braces.
+- **Outcome**: The viewer is now stable and compiles without warnings. PDF generation is fully functional for all test result types.
+- **Branch**: `feat/multi-page-pdf` (Current)
+- **Status**: COMPLETE.

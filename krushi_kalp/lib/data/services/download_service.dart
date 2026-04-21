@@ -296,8 +296,17 @@ class DownloadService {
       final signedUrl =
           await SupabaseUrlHelper().getFreshSignedUrl(bucketName, storagePath);
 
+      if (signedUrl.isEmpty) {
+        throw Exception('Resource not found on server (404). Please contact support.');
+      }
+
       // Step 2: Establish HTTP connection with chunked streaming
-      final request = await HttpClient().getUrl(Uri.parse(signedUrl));
+      final uri = Uri.tryParse(signedUrl);
+      if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+        throw Exception('Invalid download URL generated. Please refresh and try again.');
+      }
+
+      final request = await HttpClient().getUrl(uri);
       final streamedResponse = await request.close();
 
       if (streamedResponse.statusCode != 200) {
@@ -419,7 +428,19 @@ class DownloadService {
         );
         return;
       }
-      final request = await HttpClient().getUrl(Uri.parse(url));
+      final uri = Uri.tryParse(url);
+      if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+         yield DownloadProgress(
+          bytesReceived: 0,
+          totalBytes: 0,
+          percentage: 0.0,
+          status: DownloadStatus.error,
+          errorMessage: 'Invalid resource source',
+        );
+        return;
+      }
+
+      final request = await HttpClient().getUrl(uri);
       final response = await request.close();
       if (response.statusCode != 200) {
         yield DownloadProgress(
@@ -427,7 +448,7 @@ class DownloadService {
           totalBytes: 0,
           percentage: 0.0,
           status: DownloadStatus.error,
-          errorMessage: 'HTTP ${response.statusCode}',
+          errorMessage: response.statusCode == 404 ? 'Resource not found' : 'HTTP ${response.statusCode}',
         );
         return;
       }

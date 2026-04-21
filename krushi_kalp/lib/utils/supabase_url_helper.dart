@@ -146,15 +146,16 @@ class SupabaseUrlHelper {
       return signedUrl;
     } on StorageException catch (se, stack) {
       // Specifically handle 404/Object Not Found without crashing
-      // We log to console for debugging purposes
       print('⚠️ Supabase Storage 404: Object "$storagePath" not found in bucket "$bucketName"');
       
-      return storagePath; // Return path to signal missing object to UI without crashing
+      // We don't record 404s as errors in Crashlytics as they are often expected content gaps,
+      // but we return empty string to prevent HttpClient from crashing on an invalid URI.
+      return ''; 
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack,
           reason:
               'SupabaseUrlHelper: Signed URL creation failed for $bucketName/$storagePath');
-      return storagePath; // Return path on other errors too
+      return ''; 
     }
   }
 

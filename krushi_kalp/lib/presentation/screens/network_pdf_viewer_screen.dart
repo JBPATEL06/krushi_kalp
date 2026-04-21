@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:krushi_kalp/utils/responsive.dart';
-import 'package:flutter_pdfview/flutter_pdfview.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
+import 'package:pdfrx/pdfrx.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../utils/crashlytics_service.dart';
 
-/// PDF Viewer that streams from network URL (temporary cache, not saved permanently)
 class NetworkPdfViewerScreen extends StatefulWidget {
   final String url;
   final String title;
@@ -22,292 +18,222 @@ class NetworkPdfViewerScreen extends StatefulWidget {
 }
 
 class _NetworkPdfViewerScreenState extends State<NetworkPdfViewerScreen> {
-  String? _localPath;
-  bool _isLoading = true;
-  String? _errorMessage;
+  final GlobalKey _viewerKey = GlobalKey();
+  final PdfViewerController _controller = PdfViewerController();
+  final TextEditingController _searchController = TextEditingController();
+  late final PdfTextSearcher _searcher;
+
+  bool _isSearching = false;
+  int _currentPage = 1;
   int _totalPages = 0;
-  int _currentPage = 0;
   bool _isNightMode = false;
-  bool _isReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _searcher = PdfTextSearcher(_controller);
+    _searcher.addListener(() => setState(() {}));
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Initialize night mode based on theme if not manually set
     if (_totalPages == 0) {
       _isNightMode = Theme.of(context).brightness == Brightness.dark;
     }
   }
 
   @override
-  void initState() {
-    super.initState();
-    _loadPdf();
-  }
-
-  Future<void> _loadPdf() async {
-    try {
-      setState(() {
-        _isLoading = true;
-        _errorMessage = null;
-      });
-
-      // Download to temporary cache (will be cleared by system)
-      final client = HttpClient();
-      final request = await client.getUrl(Uri.parse(widget.url));
-      final response = await request.close();
-
-      if (response.statusCode != HttpStatus.ok) {
-        throw Exception('Failed to load PDF');
-      }
-
-      // Save to temp directory (not permanent storage)
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/temp_${DateTime.now().millisecondsSinceEpoch}.pdf');
-      
-      final List<int> bytes = [];
-      await for (final chunk in response) {
-        bytes.addAll(chunk);
-      }
-      await file.writeAsBytes(bytes);
-
-      if (mounted) {
-        setState(() {
-          _localPath = file.path;
-          _isLoading = false;
-        });
-      }
-    } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'network_pdf_viewer_screen');
-      if (mounted) {
-        setState(() {
-          _errorMessage = e.toString();
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  @override
   void dispose() {
-    // Clean up temp file when done
-    if (_localPath != null) {
-      File(_localPath!).delete().catchError((_) => File(''));
-    }
+    _searchController.dispose();
+    _searcher.dispose();
     super.dispose();
+  }
+
+  void _showJumpToPageDialog() {
+    final TextEditingController pageController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF323639),
+        title: const Text('Go to Page', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: pageController,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'Enter page number',
+            hintStyle: TextStyle(color: Colors.white70),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              final page = int.tryParse(pageController.text);
+              if (page != null && page > 0 && page <= _totalPages) {
+                _controller.goToPage(pageNumber: page);
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Go', style: TextStyle(color: Colors.blue)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final Color chromeGrey = const Color(0xFF323639);
 
-    return Scaffold(
-      backgroundColor: chromeGrey,
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.title,
-              style: TextStyle(fontSize: context.sp(16), color: Colors.white),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-        backgroundColor: chromeGrey,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        leading: IconButton(
-          icon: Icon(Icons.close, size: context.sp(24), color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _isNightMode ? Icons.dark_mode : Icons.light_mode,
-              color: _isNightMode ? Colors.amber : Colors.white,
-              size: context.sp(20),
-            ),
-            tooltip: 'Toggle Night Mode',
-            onPressed: () {
-              setState(() {
-                _isNightMode = !_isNightMode;
-              });
-            },
-          ),
-          Container(
-            margin: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.cloud_outlined,
-                    size: context.sp(14),
-                    color: Colors.white70),
-                const SizedBox(width: 4),
-                Text(
-                  'Online',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: context.sp(11),
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
+    final viewer = PdfViewer.uri(
+      Uri.parse(widget.url),
+      key: _viewerKey,
+      controller: _controller,
+      params: PdfViewerParams(
+        backgroundColor: _isNightMode ? Colors.black : chromeGrey,
+        enableTextSelection: true,
+        pagePaintCallbacks: [
+          _searcher.pageTextMatchPaintCallback,
         ],
-      ),
-      body: _buildBody(chromeGrey),
-    );
-  }
-
-  Widget _buildBody(Color backgroundColor) {
-    final theme = Theme.of(context);
-    if (_isLoading) {
-      return Container(
-        color: backgroundColor,
-        child: Center(
+        onViewerReady: (document, controller) {
+          if (mounted) {
+            setState(() => _totalPages = document.pages.length);
+          }
+        },
+        onPageChanged: (pageNumber) {
+          if (pageNumber != null && mounted) {
+            setState(() => _currentPage = pageNumber);
+          }
+        },
+        loadingBannerBuilder: (context, bytesDownloaded, totalBytes) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(color: theme.colorScheme.primary),
-              const SizedBox(height: AppSpacing.lg),
+              const CircularProgressIndicator(color: Colors.blue),
+              const SizedBox(height: 16),
               Text(
-                'Loading PDF...',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.white70,
-                      fontSize: context.sp(16),
-                    ),
+                totalBytes != null 
+                  ? 'Loading: ${(bytesDownloaded / totalBytes * 100).toStringAsFixed(0)}%' 
+                  : 'Streaming PDF...',
+                style: const TextStyle(color: Colors.white70),
               ),
             ],
           ),
         ),
-      );
-    }
+      ),
+    );
 
-    if (_errorMessage != null) {
-      return Container(
-        color: backgroundColor,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline,
-                    size: context.sp(64),
-                    color: theme.colorScheme.error),
-                const SizedBox(height: AppSpacing.lg),
-                Text(
-                  'Failed to load PDF',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: theme.colorScheme.error,
-                        fontWeight: FontWeight.bold,
-                        fontSize: context.sp(20),
-                      ),
+    return Scaffold(
+      backgroundColor: chromeGrey,
+      appBar: AppBar(
+        backgroundColor: chromeGrey,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+        leading: _isSearching 
+          ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => setState(() => _isSearching = false))
+          : IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: 'Search text...',
+                  hintStyle: TextStyle(color: Colors.white70),
+                  border: InputBorder.none,
                 ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  _errorMessage!,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white70,
-                        fontSize: context.sp(14),
-                      ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                ElevatedButton.icon(
-                  onPressed: _loadPdf,
-                  icon: Icon(Icons.refresh, size: context.sp(18)),
-                  label: Text('Retry',
-                      style: TextStyle(fontSize: context.sp(14))),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: theme.colorScheme.onPrimary,
+                onChanged: (text) => _searcher.startTextSearch(text),
+              )
+            : Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: TextStyle(fontSize: context.sp(16), color: Colors.white),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (_localPath == null) {
-      return Container(
-        color: backgroundColor,
-        child: const Center(child: Text('No PDF loaded', style: TextStyle(color: Colors.white))),
-      );
-    }
-
-    return Stack(
-      children: [
-        Container(
-          color: backgroundColor,
-          child: PDFView(
-            key: ValueKey('${_isNightMode}_$_isReady'),
-            filePath: _localPath!,
-            enableSwipe: true,
-            swipeHorizontal: false,
-            autoSpacing: true,
-            pageFling: true,
-            pageSnap: false,
-            defaultPage: 0,
-            fitPolicy: FitPolicy.WIDTH,
-            preventLinkNavigation: false,
-            nightMode: _isNightMode,
-            onRender: (pages) {
-              if (mounted) {
-                setState(() {
-                  _totalPages = pages ?? 0;
-                  _currentPage = 1;
-                  _isReady = true;
-                });
-              }
-            },
-            onError: (error) {
-              if (mounted) {
-                setState(() {
-                  _errorMessage = error.toString();
-                });
-              }
-            },
-            onPageError: (page, error) {},
-            onViewCreated: (PDFViewController controller) {},
-            onPageChanged: (int? page, int? total) {
-              if (mounted && page != null) {
-                setState(() {
-                  _currentPage = page + 1;
-                });
-              }
-            },
-          ),
-        ),
-        if (_totalPages > 0 && _isReady)
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(20),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text('Online', style: TextStyle(color: Colors.greenAccent, fontSize: context.sp(10))),
+                  ),
+                ],
               ),
-              child: Text(
-                'Page $_currentPage of $_totalPages',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
+        actions: [
+          if (_isSearching) ...[
+            IconButton(
+              icon: const Icon(Icons.arrow_upward),
+              onPressed: _searcher.hasMatches ? _searcher.goToPrevMatch : null,
             ),
-          ),
-      ],
+            IconButton(
+              icon: const Icon(Icons.arrow_downward),
+              onPressed: _searcher.hasMatches ? _searcher.goToNextMatch : null,
+            ),
+          ] else ...[
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () => setState(() => _isSearching = true),
+            ),
+            IconButton(
+              icon: const Icon(Icons.pin_end),
+              tooltip: 'Go to Page',
+              onPressed: _showJumpToPageDialog,
+            ),
+            IconButton(
+              icon: Icon(
+                _isNightMode ? Icons.dark_mode : Icons.light_mode,
+                color: _isNightMode ? Colors.amber : Colors.white,
+                size: context.sp(20),
+              ),
+              onPressed: () => setState(() => _isNightMode = !_isNightMode),
+            ),
+          ],
+        ],
+      ),
+      body: _isNightMode
+          ? ColorFiltered(
+              colorFilter: const ColorFilter.matrix(<double>[
+                -1, 0, 0, 0, 255, // Invert Red
+                0, -1, 0, 0, 255, // Invert Green
+                0, 0, -1, 0, 255, // Invert Blue
+                0, 0, 0, 1, 0, // Alpha
+              ]),
+              child: viewer,
+            )
+          : viewer,
+      bottomNavigationBar: _totalPages > 0
+          ? Container(
+              color: chromeGrey,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Page $_currentPage of $_totalPages',
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  if (_searcher.hasMatches)
+                     Text(
+                      'Result ${(_searcher.currentIndex ?? -1) + 1} of ${_searcher.matches.length}',
+                      style: const TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                ],
+              ),
+            )
+          : null,
     );
   }
 }

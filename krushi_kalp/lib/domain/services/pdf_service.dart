@@ -4,7 +4,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import '../../domain/models/question.dart';
-import '../../utils/crashlytics_service.dart';
+
 
 class PdfService {
   // Maintaining a public constructor for existing usage
@@ -70,30 +70,17 @@ class PdfService {
       );
       buildList.add(pw.SizedBox(height: 8));
 
-      // 3. Question Table (One master table for all questions to allow cross-page splitting)
-      final List<pw.TableRow> allRows = [];
+      // 3. Question Widgets (Exploded list for zero-gap pagination)
       for (var i = 0; i < questions.length; i++) {
         final q = questions[i];
         final selectedIdx = selectedAnswers?[i];
-        allRows.addAll(_buildAnalysisTableRows(
+        buildList.addAll(_buildAnalysisWidgetList(
           i + 1,
           q,
           selectedIdx,
           primaryFont,
           fallbackFont,
         ));
-      }
-
-      if (allRows.isNotEmpty) {
-        buildList.add(
-          pw.Table(
-            columnWidths: {
-              0: const pw.FixedColumnWidth(4), // Accent bar
-              1: const pw.FlexColumnWidth(),   // Content
-            },
-            children: allRows,
-          ),
-        );
       }
     }
 
@@ -295,7 +282,7 @@ class PdfService {
     );
   }
 
-  List<pw.TableRow> _buildAnalysisTableRows(
+  List<pw.Widget> _buildAnalysisWidgetList(
     int number,
     Question q,
     int? selectedIdx,
@@ -313,108 +300,112 @@ class PdfService {
       statusColor = isCorrect ? correctGreen : errorRed;
     }
 
-    final List<pw.TableRow> rows = [];
+    final List<pw.Widget> widgets = [];
 
-    // 1. Question Header Row
-    rows.add(pw.TableRow(
-      children: [
-        pw.Container(color: statusColor, height: 20),
-        pw.Container(
-          padding: const pw.EdgeInsets.only(left: 8, top: 4),
-          child: pw.Row(
-            children: [
-              pw.Text('Question #$number',
-                  style: pw.TextStyle(
-                      fontWeight: pw.FontWeight.bold,
-                      fontSize: 10,
-                      font: primaryFont,
-                      fontFallback: [fallbackFont])),
-              pw.SizedBox(width: 10),
-              pw.Text('Difficulty: Standard',
-                  style: pw.TextStyle(
-                      color: PdfColors.grey500,
-                      fontSize: 8,
-                      font: primaryFont,
-                      fontFallback: [fallbackFont])),
-            ],
-          ),
-        ),
-      ],
-    ));
-
-    // 2. Question Text Row
-    rows.add(pw.TableRow(
-      children: [
-        pw.Container(color: statusColor.withAlpha(0.1)),
-        pw.Container(
-          padding: const pw.EdgeInsets.all(10),
-          child: pw.Text(
-            q.text,
-            style: pw.TextStyle(
-              fontSize: 11,
-              fontWeight: pw.FontWeight.bold,
-              font: primaryFont,
-              fontFallback: [fallbackFont],
+    // Helper to build a "Fake" table row as an independent widget
+    pw.Widget buildFlatRow({
+      required pw.Widget child,
+      PdfColor? bgColor,
+      double? height,
+      bool hasBottomBorder = false,
+      PdfColor? accentColor,
+    }) {
+      return pw.Container(
+        decoration: pw.BoxDecoration(
+          color: bgColor ?? PdfColors.white,
+          border: pw.Border(
+            left: pw.BorderSide(
+              color: accentColor ?? statusColor.withAlpha(0.1),
+              width: 4,
             ),
+            bottom: hasBottomBorder
+                ? const pw.BorderSide(color: PdfColors.grey200, width: 0.5)
+                : pw.BorderSide.none,
           ),
         ),
-      ],
+        padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        child: child,
+      );
+    }
+
+    // 1. Question Header
+    widgets.add(buildFlatRow(
+      accentColor: statusColor,
+      child: pw.Row(
+        children: [
+          pw.Text('Question #$number',
+              style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 10,
+                  font: primaryFont,
+                  fontFallback: [fallbackFont])),
+          pw.SizedBox(width: 10),
+          pw.Text('Difficulty: Standard',
+              style: pw.TextStyle(
+                  color: PdfColors.grey500,
+                  fontSize: 8,
+                  font: primaryFont,
+                  fontFallback: [fallbackFont])),
+        ],
+      ),
     ));
 
-    // 3. Options Rows
+    // 2. Question Text
+    widgets.add(buildFlatRow(
+      child: pw.Text(
+        q.text,
+        style: pw.TextStyle(
+          fontSize: 11,
+          fontWeight: pw.FontWeight.bold,
+          font: primaryFont,
+          fontFallback: [fallbackFont],
+        ),
+      ),
+    ));
+
+    // 3. Options
     for (var optIndex = 0; optIndex < q.options.length; optIndex++) {
       final isSelected = selectedIdx == optIndex;
       final isRealAnswer = q.options[optIndex].trim().toLowerCase() ==
           q.correctAnswer.trim().toLowerCase();
 
       PdfColor rowColor = PdfColors.white;
-      if (isRealAnswer) rowColor = PdfColor.fromInt(0xFFE8F5E9);
-      else if (isSelected && !isRealAnswer) rowColor = PdfColor.fromInt(0xFFFFEBEE);
+      if (isRealAnswer) {
+        rowColor = PdfColor.fromInt(0xFFE8F5E9);
+      } else if (isSelected && !isRealAnswer) {
+        rowColor = PdfColor.fromInt(0xFFFFEBEE);
+      }
 
-      rows.add(pw.TableRow(
-        decoration: pw.BoxDecoration(color: rowColor),
-        children: [
-          pw.Container(color: statusColor.withAlpha(0.1)),
-          pw.Container(
-            padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.SizedBox(
-                  width: 420,
-                  child: pw.Text(
-                    q.options[optIndex],
-                    style: pw.TextStyle(
-                      fontSize: 10,
-                      fontWeight: (isSelected || isRealAnswer) ? pw.FontWeight.bold : pw.FontWeight.normal,
-                      font: primaryFont,
-                      fontFallback: [fallbackFont],
-                    ),
-                  ),
+      widgets.add(buildFlatRow(
+        bgColor: rowColor,
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Expanded(
+              child: pw.Text(
+                q.options[optIndex],
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  fontWeight: (isSelected || isRealAnswer) ? pw.FontWeight.bold : pw.FontWeight.normal,
+                  font: primaryFont,
+                  fontFallback: [fallbackFont],
                 ),
-                if (isRealAnswer || (isSelected && !isRealAnswer))
-                  _buildSelectionIndicator(isRealAnswer, correctGreen, errorRed),
-              ],
+              ),
             ),
-          ),
-        ],
+            if (isRealAnswer || (isSelected && !isRealAnswer))
+              _buildSelectionIndicator(isRealAnswer, correctGreen, errorRed),
+          ],
+        ),
       ));
     }
 
-    // 4. Spacer/Divider Row
-    rows.add(pw.TableRow(
-      children: [
-        pw.Container(height: 8),
-        pw.Container(
-          height: 8,
-          decoration: const pw.BoxDecoration(
-            border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey200, width: 0.5)),
-          ),
-        ),
-      ],
+    // 4. Spacer/Divider
+    widgets.add(buildFlatRow(
+      hasBottomBorder: true,
+      child: pw.SizedBox(height: 4),
     ));
 
-    return rows;
+    return widgets;
   }
 
   pw.Widget _buildSelectionIndicator(bool isCorrect, PdfColor darkG, PdfColor darkR) {

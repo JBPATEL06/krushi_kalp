@@ -132,8 +132,15 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
           // Success notification is now handled by DownloadService
         },
         onError: (err) {
-          if (mounted) setState(() => _isDownloading = false);
-          // Failure notification is now handled by DownloadService
+          if (mounted) {
+            setState(() => _isDownloading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(err.contains('404') ? 'Resource not found on server.' : 'Download failed: $err'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
         },
       );
     } catch (e, stack) {

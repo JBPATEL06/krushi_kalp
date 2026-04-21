@@ -59,13 +59,24 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - **Outcome**: The viewer now clearly demarcates page boundaries, eliminating the visual confusion caused by white-on-white page gaps.
 - **Status**: COMPLETE.
 
-## Phase 27: Zero-Gap Single-Table Refactor (2026-04-22)
-- **Goal**: 100% space utilization and architectural fix for multi-page gaps.
+## Phase 29: PDFrx Pro Migration & Feature Expansion (2026-04-22)
+- **Goal**: Superior performance and desktop-grade features (Search, Jump).
 - **Actions**:
-    - Refactored `PdfService` to use a **Single Master Table** for all questions.
-    - Converted question blocks into continuous `TableRow` sequences.
-    - Forced dark `AppBar` with white text/icons in `PdfViewerScreen` and `NetworkPdfViewerScreen` for premium branding.
-- **Outcome**: The PDF engine now splits content line-by-line across pages, ensuring no whitespace gaps even if a question spans multiple pages.
+    - Replaced `flutter_pdfview` with **PDFrx**.
+    - Implemented **Interactive Search** with AppBar integration and Next/Prev matches.
+    - Added **Go to Page** functionality for long document navigation.
+    - Optimized "Total Flattening" generation to ensure the new viewer has absolutely zero pagination gaps.
+    - Simplified network loading with native streaming URI support.
+- **Outcome**: Premium, high-performance viewing experience with advanced document navigation tools.
+- **Status**: COMPLETE.
+
+## Phase 30: PDFrx Stabilization & Layout Crash Fix (2026-04-22)
+- **Goal**: Final stabilization of PDFrx viewer and resolution of infinite height PDF generation crashes.
+- **Actions**: 
+    - Fixed compilation errors in `PdfViewerScreen` and `NetworkPdfViewerScreen`.
+    - Refactored `PdfService.buildFlatRow` to use `pw.Table` for safe layout constraints.
+    - Cleaned up unused imports and standardized code style.
+- **Outcome**: 100% stable PDF generation and viewing workflow.
 - **Status**: COMPLETE.
 
 ## Completed Phases
