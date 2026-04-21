@@ -111,3 +111,13 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
     - Compacted layout by reducing padding and margins (Eliminated "unwanted space").
     - Implemented circular status icons and right-aligned choice indicators using vector graphics.
 - Status: COMPLETE.
+
+## Current Phase: Admin Stabilization & Library Fixes (2026-04-21)
+- Goal: Fix null pointer risks in Admin forms and resolve missing E-Books in User Library.
+- Implementation: Branch fix/android-14-foreground-service-and-docs
+- Changes:
+    - Robust numeric parsing (int.tryParse) with safe fallbacks in Admin Mock Test forms.
+    - Expanded ResourceService to include DIRECT_CHECKOUT status for library visibility.
+    - Normalized Resource.fromJson mapping to handle case-insensitive type strings.
+    - Implemented a 30-second idle watchdog in BackgroundUploadService to proactively stop foreground services and prevent Android 14 timeout crashes.
+- Status: COMPLETE.

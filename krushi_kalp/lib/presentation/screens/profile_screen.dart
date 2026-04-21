@@ -128,6 +128,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final name = meta['full_name'] as String? ?? meta['name'] as String? ?? 'User';
     final email = user?.email ?? 'No Email';
     final avatarUrl = meta['avatar_url'] as String? ?? meta['picture'] as String?;
+    
+    // Check if Google is already linked
+    final providers = user?.appMetadata?['providers'] as List? ?? [];
+    final isGoogleLinked = providers.contains('google');
 
     return Scaffold(
       appBar: AppBar(
@@ -326,25 +330,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     },
                   ),
                   
-                  // Link Google Account (Support for Option A)
-                  _buildProfileOption(
-                    context,
-                    icon: Icons.link,
-                    title: 'Link Google Account',
-                    subtitle: 'Add Google login for easier access',
-                    onTap: () async {
-                      try {
-                        await ref.read(authNotifierProvider.notifier).linkGoogle();
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Google account linked successfully!')),
-                          );
+                  // Link Google Account
+                  if (!isGoogleLinked)
+                    _buildProfileOption(
+                      context,
+                      icon: Icons.link,
+                      title: 'Link Google Account',
+                      subtitle: 'Add Google login for easier access',
+                      onTap: () async {
+                        try {
+                          await ref.read(authNotifierProvider.notifier).linkGoogle();
+                          // Refresh the local profile and state to reflect the link
+                          await _loadProfile();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Google account linked successfully!')),
+                            );
+                          }
+                        } catch (e) {
+                           if (mounted) ErrorUtils.showError(context, e);
                         }
-                      } catch (e) {
-                         if (mounted) ErrorUtils.showError(context, e);
-                      }
-                    },
-                  ),
+                      },
+                    ),
 
                   const SizedBox(height: AppSpacing.lg),
 

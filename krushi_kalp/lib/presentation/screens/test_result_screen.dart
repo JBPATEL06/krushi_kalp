@@ -62,6 +62,8 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
   late AnimationController _scoreAnimationController;
   late Animation<double> _scoreAnimation;
   bool _isGeneratingPdf = false;
+  bool _isPdfSaved = false;
+  bool _isCancelled = false;
   bool _isDiscarding = false;
 
   bool _isOffline = false;
@@ -133,54 +135,22 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
   }
 
   Future<void> _generateAndUploadPdf() async {
-    final statusNotifier = ValueNotifier<String>('Preparing report...');
-    
-    // Show non-dismissible loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => PopScope(
-        canPop: false,
-        child: ValueListenableBuilder<String>(
-          valueListenable: statusNotifier,
-          builder: (context, status, _) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
-            content: Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    status,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+    setState(() {
+      _isGeneratingPdf = true;
+      _isCancelled = false;
+    });
 
     try {
-      statusNotifier.value = 'Generating PDF report...';
       final authState = ref.read(authNotifierProvider);
       final user = authState.user;
       final userId = user?.id ?? 'guest_user';
       final userName = authState.username ?? 'User';
 
+      if (_isCancelled) return;
+
       List<Question>? finalQuestions = widget.questions != null
           ? (widget.questions as List).cast<Question>()
           : null;
-
-      if (finalQuestions != null) {}
 
       final file = await _pdfService.generateExamResultPdf(
         testId: widget.testId,
@@ -197,28 +167,36 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
         languageCode: widget.examLanguage,
       );
 
+      if (_isCancelled) return;
+
       // Upload to database if online and resultId is available
       if (!_isOffline && widget.resultId != null) {
-        statusNotifier.value = 'Saving to safe-storage...';
         try {
           // Use standardized path for uniqueness
           final String storagePath = 'exam_result/${widget.resultId}.pdf';
           await TestService.instance.uploadResultPdf(storagePath, file);
+          _isPdfSaved = true;
         } catch (e, stack) {
           // Log and alert user that database sync failed
-          CrashlyticsService.instance.recordError(e, stack, 
+          CrashlyticsService.instance.recordError(e, stack,
               reason: 'TestResultScreen: PDF upload failed during sync');
-          
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Warning: Failed to upload PDF to database. It will only be available locally.'),
+                content: Text(
+                    'Warning: Failed to upload PDF to database. It will only be available locally.'),
                 backgroundColor: Colors.orange,
               ),
             );
           }
         }
+      } else {
+        // Even if offline, we consider it "processed" locally
+        _isPdfSaved = true;
       }
+
+      if (_isCancelled) return;
 
       PerformanceService.instance
           .updateUserStreak(
@@ -242,21 +220,47 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
         ),
       );
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'PDF Generation Error');
-      if (mounted) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'PDF Generation Error');
+      if (mounted && !_isCancelled) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to generate PDF: $e')),
         );
       }
     } finally {
       if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // Dismiss dialog
         setState(() {
           _isGeneratingPdf = false;
         });
       }
-      statusNotifier.dispose();
     }
+  }
+
+  Future<bool> _onWillPop() async {
+    if (_isPdfSaved) return true;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Result Not Saved'),
+        content: const Text(
+            'Your result PDF has not been generated or saved yet. Are you sure you want to leave without saving?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Stay & Save'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+
+    return confirmed ?? false;
   }
 
   Future<void> _discardResult() async {
@@ -311,15 +315,15 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
     final bool isPassed = percentage >= 40;
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-                Text('Please use "Back to Home" or "Close" to exit results.'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        final shouldPop = await _onWillPop();
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const MainScreen()),
+            (route) => false,
+          );
+        }
       },
       child: Stack(
         alignment: Alignment.topCenter,
@@ -340,12 +344,17 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
               elevation: 0,
               leading: IconButton(
                 icon: Icon(Icons.close, color: theme.colorScheme.onSurface),
-                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (context) => const MainScreen(),
-                  ),
-                  (route) => false,
-                ),
+                onPressed: () async {
+                  final shouldPop = await _onWillPop();
+                  if (shouldPop && context.mounted) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (context) => const MainScreen(),
+                      ),
+                      (route) => false,
+                    );
+                  }
+                },
               ),
               actions: const [],
             ),
@@ -492,46 +501,93 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                   Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed:
-                            _isGeneratingPdf ? null : _generateAndUploadPdf,
-                        icon: _isGeneratingPdf
-                            ? SizedBox(
-                                width: context.sp(20),
-                                height: context.sp(20),
-                                child: const CircularProgressIndicator(
-                                    strokeWidth: 2),
-                              )
-                            : Icon(Icons.download,
-                                color: theme.colorScheme.onPrimary),
-                        label: Text(
-                          _isGeneratingPdf
-                              ? 'Generating PDF...'
-                              : 'Download & View Result PDF',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onPrimary,
-                            fontSize: context.sp(16),
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          height: context.h(60),
+                          child: Stack(
+                            children: [
+                              ElevatedButton(
+                                onPressed: _isGeneratingPdf
+                                    ? null
+                                    : _generateAndUploadPdf,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: theme.colorScheme.primary,
+                                  foregroundColor: theme.colorScheme.onPrimary,
+                                  padding: EdgeInsets.zero,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        AppRadius.xl),
+                                    side: BorderSide(
+                                      color: theme.colorScheme.primary
+                                          .withValues(alpha: 0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                ),
+                                child: Container(
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  alignment: Alignment.center,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      if (!_isGeneratingPdf)
+                                        Icon(Icons.download,
+                                            color: theme.colorScheme.onPrimary),
+                                      if (!_isGeneratingPdf)
+                                        SizedBox(width: context.w(8)),
+                                      Text(
+                                        _isGeneratingPdf
+                                            ? 'Preparing PDF...'
+                                            : 'Download & View Result PDF',
+                                        style: theme.textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: theme.colorScheme.onPrimary,
+                                          fontSize: context.sp(16),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              if (_isGeneratingPdf)
+                                Positioned.fill(
+                                  child: IgnorePointer(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(
+                                          AppRadius.xl),
+                                      child: LinearProgressIndicator(
+                                        backgroundColor: Colors.transparent,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          theme.colorScheme.onPrimary.withValues(alpha: 0.2),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.colorScheme.primaryContainer,
-                          foregroundColor: theme.colorScheme.onPrimaryContainer,
-                          padding:
-                              EdgeInsets.symmetric(vertical: context.h(18)),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.xl),
-                            side: BorderSide(
-                              color: theme.colorScheme.primary
-                                  .withValues(alpha: 0.2),
-                              width: 1,
+                        if (_isGeneratingPdf) ...[
+                          SizedBox(height: context.h(AppSpacing.sm)),
+                          TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _isCancelled = true;
+                                _isGeneratingPdf = false;
+                              });
+                            },
+                            icon: const Icon(Icons.cancel_outlined, size: 18),
+                            label: const Text('Cancel Generation'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: theme.colorScheme.error,
                             ),
                           ),
-                        ),
-                      ),
+                        ],
+                      ],
                     ),
                   ),
                   SizedBox(height: context.h(AppSpacing.lg)),

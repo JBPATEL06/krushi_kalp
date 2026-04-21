@@ -107,17 +107,38 @@ class BackgroundUploadService {
   /// Registry of callbacks for active tasks.
   final Map<String, Map<String, Function>> _taskCallbacks = {};
 
+  Timer? _idleTimer;
+
   void _cleanupTask(String taskId) {
     // Keep task in activeTasks briefly for UI to see final state
     Future.delayed(const Duration(seconds: 5), () {
       _activeTasks.remove(taskId);
       _taskCallbacks.remove(taskId);
       
-      // If no more tasks, we can demote service
+      // If no more tasks, start idle watchdog
       if (_activeTasks.isEmpty) {
-        FlutterBackgroundService().invoke('setAsBackground');
+        _startIdleWatchdog();
       }
     });
+  }
+
+  void _startIdleWatchdog() {
+    _idleTimer?.cancel();
+    // 30 second idle window before complete shutdown to prevent 
+    // ForegroundServiceDidNotStopInTimeException on Android 14
+    _idleTimer = Timer(const Duration(seconds: 30), () {
+      if (_activeTasks.isEmpty) {
+        debugPrint('BackgroundUploadService: Idle timeout reached. Stopping service.');
+        FlutterBackgroundService().invoke('setAsBackground');
+        // Proactively stop the service entirely if idle
+        FlutterBackgroundService().invoke('stopService');
+      }
+    });
+  }
+
+  void _cancelIdleWatchdog() {
+    _idleTimer?.cancel();
+    _idleTimer = null;
   }
 
   /// Returns an unmodifiable map of all currently active upload tasks.
@@ -140,6 +161,7 @@ class BackgroundUploadService {
     required Function(String error) onError,
     String? taskId,
   }) async {
+    _cancelIdleWatchdog();
     final id = taskId ?? const Uuid().v4();
     final sanitizedPath = _sanitizePath(storagePath);
 

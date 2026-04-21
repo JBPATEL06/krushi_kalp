@@ -220,6 +220,16 @@
 - Outcome: A code-signed, production-ready bundle is ready for deployment.
 - Status: COMPLETE.
 
+## Current Phase: Admin Stabilization & Library Fixes (2026-04-21)
+- Goal: Fix null pointer risks in Admin forms and resolve missing E-Books in User Library.
+- Admin Panel: Robust numeric parsing (`int.tryParse`) with safe fallbacks for Mock Test forms.
+- Library: Expanded `ResourceService.fetchPurchasedResources` to include `DIRECT_CHECKOUT` status for free/claimed items.
+- Logic: Normalized `Resource.fromJson` type mapping to be case-insensitive (e.g., 'ebook' vs 'E-Book').
+- Crash Fix: Implemented logic to stop foreground service when idle to prevent `ForegroundServiceDidNotStopInTimeException` on Android 14.
+- Status: COMPLETE (Branch: `fix/android-14-foreground-service-and-docs`)
+- Next: Final walkthrough and user acceptance.
+
+
 ---
 
 ## Phase 14: PDF UI Standardization (Copy-to-Copy Match) (2026-04-18)
