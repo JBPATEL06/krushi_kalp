@@ -173,7 +173,7 @@ class PdfService {
                       pw.Text(
                         'OUT OF ${totalMarks.toInt()}',
                         style: pw.TextStyle(
-                          color: PdfColors.white.withAlpha(200),
+                          color: PdfColors.white.withAlpha(0.8),
                           fontSize: 8,
                           fontWeight: pw.FontWeight.bold,
                         ),
@@ -185,7 +185,7 @@ class PdfService {
               pw.Container(
                 padding: const pw.EdgeInsets.all(10),
                 decoration: pw.BoxDecoration(
-                  color: PdfColors.white.withAlpha(40),
+                  color: PdfColors.white.withAlpha(0.15),
                   shape: pw.BoxShape.circle,
                 ),
                 child: pw.Container(

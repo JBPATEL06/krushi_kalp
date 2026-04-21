@@ -328,3 +328,15 @@
 - **Risks**: None; standard A4 pagination is the most high-trust approach for PDF generation.
 - **Branch**: `feat/multi-page-pdf`
 - **Status**: COMPLETE.
+
+## Phase 19: PDF Layout Optimization (2026-04-21)
+- **Problem**: 
+    - Phase 18's A4 pagination left large whitespace gaps (orphans) because cards were too tall to split efficiently.
+- **Decisions**:
+    - Redesign "Premium Header" to a compact horizontal Row.
+    - Tighten card paddings (20 -> 12) and option spacing to fit 3-4 questions per page.
+    - **Hotfix**: Fixed `PdfColor.withAlpha` assertion error (Changed integer alpha values to doubles 0.0 - 1.0).
+- **Risks**: None.
+- **Branch**: `feat/multi-page-pdf`
+- **Status**: COMPLETE.
+
