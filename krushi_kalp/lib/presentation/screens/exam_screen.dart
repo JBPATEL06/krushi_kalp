@@ -93,6 +93,8 @@ class _ExamScreenState extends State<ExamScreen> {
         });
       }
     }
+  }
+
   void _startTimer() {
     if (widget.test.durationMinutes == null) return; // Unlimited time
 
