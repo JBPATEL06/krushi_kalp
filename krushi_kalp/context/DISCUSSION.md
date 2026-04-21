@@ -305,15 +305,14 @@
 
 ---
 
-## Phase 17: PDF Layout Reversion (2026-04-21)
+## Phase 17: Layout Reversion to Infinite Vertical Page (2026-04-21)
 - **Problem**: 
-    - The recent "Adaptive Multi-Page" and "Connected Card" refactoring (Phase 16) introduced layout complexities that the user explicitly wanted to avoid.
-    - The user prefers the specific "Infinite Page" scrolling experience where the entire report is one continuous vertical image/document.
+    - Recent adaptive logic introduced unwanted complexity and disrupted the user's preferred "Infinite Vertical Page" scrolling experience.
+    - API mismatches in the latest version caused compilation errors in `TestResultScreen`.
 - **Decisions**:
-    - **Revert to `daf7342`**: Identified this commit as the last stable version with the `dynamicHeight` logic.
-    - **Full Reversion**: Discarded the 80-question stability threshold (Multi-Page fallback) to return to the requested 100% single-page behavior.
-    - **Verification**: Ensured that the reverted logic correctly handles current model structures and maintains font support.
-- **Outcome**: PDF service restored to the user-preferred logic. Layout is once again a single, dynamically-sized vertical page.
-- **Branch Gate**:
-    - **Branch**: `feature/revert-infinite-pdf` (NEW)
-    - **Status**: COMPLETE.
+    - **Revert to v1.0.1+6**: Explicitly restored `pdf_service.dart` from commit `b944bc0`.
+    - **API Recovery**: Re-synced parameter signatures (`userId`, `selectedAnswers`) to fix the UI errors.
+    - **Surgical Cleanup**: Removed unused color tokens and variables from the old codebase to achieve a clean static analysis.
+- **Risks**: None; regression tested against known stable build.
+- **Branch**: `feat/restore-v101-pdf` (NEW)
+- **Status**: COMPLETE.
