@@ -191,14 +191,14 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
     final supabase = Supabase.instance.client;
 
     try {
-      final Map<String, dynamic> updates = {
+      final updateData = {
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
         'category': _isOtherCategory
             ? _customCategoryController.text.trim()
             : _selectedCategory,
         'price': double.tryParse(_priceController.text) ?? 0.0,
-        'duration_minutes': int.tryParse(_durationController.text),
+        'duration_minutes': int.tryParse(_durationController.text) ?? 60,
         'total_questions': int.tryParse(_totalQuestionsController.text) ?? 0,
         'total_marks': int.tryParse(_totalMarksController.text) ?? 0,
         'negative_marking': _isNegativeMarking,
