@@ -250,6 +250,7 @@ class PdfService {
         border: pw.Border.all(color: PdfColors.grey200),
       ),
       child: pw.Column(
+        mainAxisSize: pw.MainAxisSize.min,
         children: [
           pw.Text(
             label,
@@ -297,6 +298,7 @@ class PdfService {
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
+        mainAxisSize: pw.MainAxisSize.min,
         children: [
           // Card Header: Grey circle + "Question N"
           pw.Row(
