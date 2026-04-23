@@ -619,7 +619,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        'Price Paid: ₹${item['price_paid'] ?? 0}',
+                                        'Price Paid: ₹${(item['price_paid'] ?? 0) is num ? (item['price_paid'] % 1 == 0 ? item['price_paid'].toInt() : item['price_paid'].toStringAsFixed(2)) : (item['price_paid'] ?? 0)}',
                                         style: theme.textTheme.labelMedium?.copyWith(
                                           color: const Color(0xFF10B981),
                                           fontWeight: FontWeight.bold,
@@ -633,7 +633,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                                             borderRadius: BorderRadius.circular(4),
                                           ),
                                           child: Text(
-                                            'Offer: ${payment['offer_code'] ?? 'Discount'} (-₹${payment['discount_amount']})',
+                                            'Offer: ${payment['offer_code'] ?? 'Discount'} (-₹${(payment['discount_amount'] ?? 0) is num ? (payment['discount_amount'] % 1 == 0 ? payment['discount_amount'].toInt() : payment['discount_amount'].toStringAsFixed(2)) : (payment['discount_amount'] ?? 0)})',
                                             style: theme.textTheme.labelSmall?.copyWith(
                                               color: Colors.red[700],
                                               fontWeight: FontWeight.w600,
@@ -722,7 +722,10 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                         final result = results[index];
                         final testName =
                             result['mock_tests']?['title'] ?? 'Unknown Test';
-                        final score = result['score_obtained'];
+                        final rawScore = result['score_obtained'] ?? 0;
+                        final score = rawScore is num 
+                            ? (rawScore % 1 == 0 ? rawScore.toInt().toString() : rawScore.toStringAsFixed(2))
+                            : rawScore.toString();
                         final total = result['mock_tests']?['total_marks'] ?? 0;
                         final date = DateTime.parse(result['attempt_date']);
 

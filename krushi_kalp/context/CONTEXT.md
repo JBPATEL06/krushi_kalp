@@ -10,6 +10,7 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - [x] Phase 7.7: Dashboard Simplification (Remove Search, Ordering)
 - [x] Phase 7.8: Activity Summary & Full Activity View (Pagination & Search)
 - [x] Phase 8.1: Fix RenderFlex Overflow in User Details
+- [x] Phase 8.2: Fix Numeric Formatting & Layout Squeezing
 - [ ] Phase 9: Final Quality Audit & Cleanup
 - Pending Phases: Production Deployment, App Store Submission
 
