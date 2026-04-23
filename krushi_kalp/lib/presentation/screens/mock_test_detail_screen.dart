@@ -20,8 +20,6 @@ import '../widgets/reviews/review_dialog.dart';
 import '../widgets/reviews/rate_stars.dart';
 import '../utils/exam_helper.dart';
 import 'reviews/all_reviews_screen.dart';
-import 'admin/admin_user_list_screen.dart' as admin_user_list;
-import 'admin/admin_grant_access_screen.dart' as admin_grant;
 
 
 class MockTestDetailScreen extends ConsumerStatefulWidget {
@@ -156,48 +154,13 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
     final discountLabel = _priceData?['discount_label'] as String?;
 
     final imageUrl = widget.test.signedUrl ?? widget.test.coverImagePath ?? '';
-
-    final user = ref.watch(authNotifierProvider).user;
-    final isAdmin = user?.role == 'admin';
-
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: context.h(300),
             pinned: true,
-            actions: [
-              if (isAdmin)
-                IconButton(
-                  icon: const Icon(Icons.card_giftcard),
-                  tooltip: 'Gift Access',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => admin_user_list.AdminUserListScreen(
-                          onUserSelected: (userId, username) {
-                            // First pop the user list screen
-                            Navigator.pop(context);
-                            // Then navigate to grant access screen with pre-filled item
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => admin_grant.AdminGrantAccessScreen(
-                                  userId: userId,
-                                  username: username,
-                                  initialItemType: 'test',
-                                  initialItemId: widget.test.id,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                ),
-            ],
+            actions: [],
             flexibleSpace: FlexibleSpaceBar(
               background: widget.heroTag != null
                   ? Hero(

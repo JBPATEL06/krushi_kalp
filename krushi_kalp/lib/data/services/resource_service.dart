@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/resource.dart';
 import '../../utils/supabase_url_helper.dart';
-import 'test_service.dart';
 import 'cart_service.dart';
 import 'admin_notification_service.dart';
 import '../../utils/crashlytics_service.dart';

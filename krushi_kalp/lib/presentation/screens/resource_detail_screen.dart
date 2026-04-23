@@ -21,8 +21,6 @@ import 'reviews/all_reviews_screen.dart';
 import '../widgets/common/download_action_button.dart';
 import '../../utils/resource_helper.dart';
 import '../../utils/crashlytics_service.dart';
-import 'admin/admin_user_list_screen.dart' as admin_user_list;
-import 'admin/admin_grant_access_screen.dart' as admin_grant;
 
 class ResourceDetailScreen extends ConsumerStatefulWidget {
   final Resource resource;
@@ -217,37 +215,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
         elevation: 0,
         centerTitle: false,
         foregroundColor: textPrimary,
-        actions: [
-          if (ref.watch(authNotifierProvider).user?.role == 'admin')
-            IconButton(
-              icon: const Icon(Icons.card_giftcard),
-              tooltip: 'Gift Access',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => admin_user_list.AdminUserListScreen(
-                      onUserSelected: (userId, username) {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => admin_grant.AdminGrantAccessScreen(
-                              userId: userId,
-                              username: username,
-                              initialItemType: 'resource',
-                              initialItemId: resource.id,
-                              initialResourceCategory: resource.typeString, // 'ebook', 'pyq', etc.
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                );
-              },
-            ),
-        ],
+        actions: [],
       ),
       body: RefreshIndicator(
         onRefresh: () async => await _loadReviews(),

@@ -153,18 +153,17 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => admin_user_list.AdminUserListScreen(
-                    isPickerMode: true,
-                    onUsersSelected: (users) {
-                      Navigator.pushReplacement(
+                    onUserSelected: (userId, username) {
+                      Navigator.pop(context); // Pop user list
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => admin_grant.AdminGrantAccessScreen(
-                            initialSelectedUsers: users,
-                            initialItemContext: admin_grant.AccessItemContext(
-                              id: _test.id,
-                              title: _test.title,
-                              type: 'mock_test',
-                            ),
+                            userId: userId,
+                            username: username,
+                            initialItemType: 'test',
+                            initialItemId: _test.id,
+                            initialResourceCategory: 'mock_test',
                           ),
                         ),
                       );
