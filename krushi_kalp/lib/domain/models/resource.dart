@@ -127,4 +127,6 @@ class Resource {
         return 'pyq';
     }
   }
+
+  String get typeString => _typeToString(type);
 }

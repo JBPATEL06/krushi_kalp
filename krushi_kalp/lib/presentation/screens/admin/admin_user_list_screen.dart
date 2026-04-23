@@ -9,7 +9,13 @@ import 'package:krushi_kalp/core/theme/app_radius.dart';
 import '../../widgets/common/debounced_search_bar.dart';
 
 class AdminUserListScreen extends StatefulWidget {
-  const AdminUserListScreen({super.key});
+  final void Function(String userId, String username)? onUserSelected;
+
+  const AdminUserListScreen({
+    super.key,
+    this.onUserSelected,
+  });
+
 
   @override
   State<AdminUserListScreen> createState() => _AdminUserListScreenState();
@@ -91,7 +97,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSectionHeader(context, "USER DIRECTORY"),
+                    _buildSectionHeader(context, widget.onUserSelected != null ? "SELECT USER FOR GIFT" : "USER DIRECTORY"),
                     const SizedBox(height: AppSpacing.md),
                     _buildSearchBar(context, theme),
                     const SizedBox(height: AppSpacing.md),
@@ -234,15 +240,19 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
       ),
       child: InkWell(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AdminUserDetailsScreen(
-                userId: user['id'],
-                username: username,
+          if (widget.onUserSelected != null) {
+            widget.onUserSelected!(user['id'], username);
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AdminUserDetailsScreen(
+                  userId: user['id'],
+                  username: username,
+                ),
               ),
-            ),
-          );
+            );
+          }
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(

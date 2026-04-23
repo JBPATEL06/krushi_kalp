@@ -1,28 +1,35 @@
-# Krushi Kalp Context
+# 🚀 Krushi Kalp Context
 
-## Project Overview
-- **Name**: Krushi Kalp
-- **Goal**: Agriculture Education & Resource Platform
-- **Tech Stack**: Flutter, Supabase, Riverpod, Isar
+## 🎯 Project Overview
+- **Project Name:** Krushi Kalp
+- **Goal:** Comprehensive agricultural education platform (Mock Tests, eBooks, PYQs, GK).
+- **Tech Stack:** Flutter, Riverpod, Supabase, Isar, Infinite Scroll Pagination.
 
-## Current Status
-- **Active Branch**: `feature/payment-access-schema`
-- **Active Phase**: Phase 10: Final Audit
-- **Completed Phases**:
-  - Phase 7.7: Dashboard Simplification (Remove Search, Ordering) ✅
-  - Phase 7.8: Activity Summary & Full Activity View (Pagination & Search) ✅
-  - Phase 8: UI Refinement (Overflows, Decimal Formatting) ✅
-  - Phase 9: Manual Access Granting (Fixed ID collisions, Resource filtering, added Search, updated UI) ✅
-- **Pending Phases**: 
-  - Production Deployment
-  - App Store Submission
+## 🏗 Architecture
+- **Clean Architecture:** Presentation, Domain, Data layers.
+- **State Management:** Riverpod.
+- **Local DB:** Isar (caching and offline support).
+- **Backend:** Supabase (Auth, DB, Storage).
 
-## Key Decisions
-- **Manual Access**: Uses `access_type = 'manual_granted'` in the `access` table.
-- **Filtering**: Manual grant screen hides items already owned by the user.
-- **Batching**: AdminService uses `upsert` for efficient batch access granting.
-- **Decimals**: Standardized to 2 decimal places for price/scores.
+## 🛠 Active Phase
+- **Phase 10: Final Audit & Admin Polish**
+  - Refining Admin Grant Access functionality.
+  - Consistent UI/UX across Admin tools.
 
-## Known Risks / Constraints
-- **Supabase Quota**: High volume of manual grants should be batched (implemented).
-- **Concurrency**: `upsert` handles potential race conditions on manual grants.
+## ✅ Completed Phases
+- Phase 1-6: Core features (Auth, Store, Tests, PDF).
+- Phase 7: New Payment & Access schema migration.
+- Phase 8: Offline support and Isar integration.
+- Phase 9: Admin Dashboard expansion.
+
+## 📋 Pending Phases
+- Production Release & Play Store submission.
+
+## 🔑 Key Decisions
+- **Access Tracking:** Using `access` table with `item_snapshot` for historical integrity.
+- **Manual Granting:** Admins can grant items with `manual_granted` access type.
+- **Store Performance:** 15s throttled refresh to save Supabase resources.
+
+## 🚨 Known Risks
+- RenderFlex overflows in long lists (mitigated but need monitoring).
+- Payment gateway deep-linking configuration.

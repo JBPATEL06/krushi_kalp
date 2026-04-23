@@ -11,6 +11,8 @@ import 'package:krushi_kalp/utils/resource_helper.dart';
 import 'admin_resource_form.dart';
 import '../../../../utils/error_utils.dart';
 import '../../../../utils/crashlytics_service.dart';
+import '../admin_grant_access_screen.dart' as admin_grant;
+import '../admin_user_list_screen.dart' as admin_user_list;
 
 class AdminResourceDetailScreen extends StatefulWidget {
   final Resource resource;
@@ -249,6 +251,34 @@ class _AdminResourceDetailScreenState
         title: Text('Resource Details',
             style: TextStyle(fontSize: context.sp(20))),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.card_giftcard),
+            tooltip: 'Gift Access',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => admin_user_list.AdminUserListScreen(
+                    onUserSelected: (userId, username) {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => admin_grant.AdminGrantAccessScreen(
+                            userId: userId,
+                            username: username,
+                            initialItemType: 'resource',
+                            initialItemId: _resource.id,
+                            initialResourceCategory: _resource.typeString,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.edit_rounded),
             onPressed: _navigateToEdit,

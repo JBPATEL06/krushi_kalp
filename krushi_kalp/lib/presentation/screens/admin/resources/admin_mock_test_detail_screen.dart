@@ -11,6 +11,8 @@ import 'package:krushi_kalp/utils/network_utils.dart';
 import '../mock_test_edit_screen.dart';
 import '../../../../utils/crashlytics_service.dart';
 import '../../../../utils/error_utils.dart';
+import '../admin_grant_access_screen.dart' as admin_grant;
+import '../admin_user_list_screen.dart' as admin_user_list;
 
 class AdminMockTestDetailScreen extends StatefulWidget {
   final MockTest test;
@@ -144,6 +146,35 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
         title: Text('Mock Test Details',
             style: TextStyle(fontSize: context.sp(20))), // FIXED
         actions: [
+          IconButton(
+            icon: const Icon(Icons.card_giftcard),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => admin_user_list.AdminUserListScreen(
+                    isPickerMode: true,
+                    onUsersSelected: (users) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => admin_grant.AdminGrantAccessScreen(
+                            initialSelectedUsers: users,
+                            initialItemContext: admin_grant.AccessItemContext(
+                              id: _test.id,
+                              title: _test.title,
+                              type: 'mock_test',
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Gift Access',
+          ),
           IconButton(
             icon: const Icon(Icons.edit_rounded),
             onPressed: _navigateToEdit,

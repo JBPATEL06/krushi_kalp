@@ -7,11 +7,17 @@ import '../../../../utils/error_utils.dart';
 class AdminGrantAccessScreen extends ConsumerStatefulWidget {
   final String userId;
   final String username;
+  final String? initialItemType;
+  final int? initialItemId;
+  final String? initialResourceCategory;
 
   const AdminGrantAccessScreen({
     super.key,
     required this.userId,
     required this.username,
+    this.initialItemType,
+    this.initialItemId,
+    this.initialResourceCategory,
   });
 
   @override
@@ -37,6 +43,25 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    
+    // Handle initial selection
+    if (widget.initialItemType != null && widget.initialItemId != null) {
+      final key = "${widget.initialItemType}_${widget.initialItemId}";
+      _selectedItems.add(key);
+      
+      // Set initial tab
+      if (widget.initialItemType == 'test') {
+        _tabController.index = 0;
+      } else if (widget.initialItemType == 'resource' && widget.initialResourceCategory != null) {
+        switch (widget.initialResourceCategory) {
+          case 'ebook': _tabController.index = 1; break;
+          case 'pyq': _tabController.index = 2; break;
+          case 'current_affair': _tabController.index = 3; break;
+          case 'study_material': _tabController.index = 4; break;
+        }
+      }
+    }
+    
     _loadData();
   }
 
@@ -165,10 +190,10 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
           ? TextField(
               controller: _searchController,
               autofocus: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
+              style: theme.textTheme.titleMedium?.copyWith(color: Colors.white),
+              decoration: InputDecoration(
                 hintText: 'Search tests or resources...',
-                hintStyle: TextStyle(color: Colors.white70),
+                hintStyle: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70),
                 border: InputBorder.none,
               ),
               onChanged: (val) {
@@ -226,14 +251,21 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
   }
 
   Widget _buildCategoryList(List<Map<String, dynamic>> items, String typePrefix, String emptyMsg) {
-    if (items.isEmpty) {
+    final filteredItems = _searchQuery.isEmpty 
+        ? items 
+        : items.where((item) {
+            final title = (item['title'] ?? '').toString().toLowerCase();
+            return title.contains(_searchQuery.toLowerCase());
+          }).toList();
+
+    if (filteredItems.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey.shade400),
             const SizedBox(height: 16),
-            Text(emptyMsg, style: const TextStyle(color: Colors.grey)),
+            Text(_searchQuery.isNotEmpty ? 'No matches found' : emptyMsg, style: const TextStyle(color: Colors.grey)),
           ],
         ),
       );
@@ -244,10 +276,10 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
         Expanded(
           child: ListView.separated(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-            itemCount: items.length,
+            itemCount: filteredItems.length,
             separatorBuilder: (_, __) => const Divider(height: 1, indent: 70),
             itemBuilder: (context, index) {
-              final item = items[index];
+              final item = filteredItems[index];
               final id = typePrefix == 'test' ? item['test_id'] : item['id'];
               final key = "${typePrefix}_$id";
               final isSelected = _selectedItems.contains(key);
