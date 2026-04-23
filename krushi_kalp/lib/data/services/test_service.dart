@@ -431,32 +431,32 @@ class TestService {
         });
   }
 
-  /// Handles free test claims.
+  /// Handles free test claims via secure RPC.
   Future<void> claimFreeTest({
     required int testId,
     required String authUserId,
   }) async {
     try {
+      // 1. Double check ownership locally first for UX speed
       final isOwned = await CartService.instance.checkOwnership(
         userId: authUserId,
         testId: testId,
       );
       if (isOwned) return;
 
-      final test = await fetchMockTestById(testId);
-      if (test == null) throw Exception("Test not found");
-
-      await _supabase.from('access').insert({
-        'user_id': authUserId,
-        'item_id': testId,
-        'item_type': 'test',
-        'item_snapshot': test.toJson(),
-        'granted_at': DateTime.now().toUtc().toIso8601String(),
+      // 2. Call secure RPC to grant access (it handles price/active validation)
+      final response = await _supabase.rpc('process_item_claim', params: {
+        'p_item_id': testId,
+        'p_item_type': 'test',
       });
+
+      if (response == null || response['success'] != true) {
+        throw Exception(response?['message'] ?? 'Claim failed');
+      }
     } catch (e, stack) {
       CrashlyticsService.instance
           .recordError(e, stack, reason: 'claimFreeTest failed');
-      throw Exception('Failed to claim test: $e');
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }
 

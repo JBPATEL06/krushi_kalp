@@ -117,13 +117,13 @@ class CartService {
 
       var query = _supabase
           .from('access')
-          .select('access_id')
+          .select('id')
           .eq('user_id', userId);
 
       if (testId != null) {
         query = query.eq('item_id', testId).eq('item_type', 'test');
       } else {
-        query = query.eq('item_id', resourceId as Object).eq('item_type', 'resource');
+        query = query.eq('item_id', resourceId!).eq('item_type', 'resource');
       }
 
       final response = await query.limit(1).maybeSingle();

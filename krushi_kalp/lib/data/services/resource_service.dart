@@ -249,12 +249,13 @@ class ResourceService {
 
   // --- SHOP FLOW ---
 
-  /// Handles free resource claims by creating a $0 order.
+  /// Handles free resource claims via secure RPC.
   Future<void> claimResource({
     required int resourceId,
     required String userId,
   }) async {
     try {
+      // 1. Double check ownership locally first for UX speed
       final isOwned = await CartService.instance.checkOwnership(
         userId: userId,
         resourceId: resourceId,
@@ -262,19 +263,18 @@ class ResourceService {
 
       if (isOwned) return;
 
-      final resource = await getResourceById(resourceId);
-      if (resource == null) throw Exception("Resource not found");
-
-      await _client.from('access').insert({
-        'user_id': userId,
-        'item_id': resourceId,
-        'item_type': 'resource',
-        'item_snapshot': resource.toJson(),
-        'granted_at': DateTime.now().toUtc().toIso8601String(),
+      // 2. Call secure RPC to grant access (it handles price/active validation)
+      final response = await _client.rpc('process_item_claim', params: {
+        'p_item_id': resourceId,
+        'p_item_type': 'resource',
       });
+
+      if (response == null || response['success'] != true) {
+        throw Exception(response?['message'] ?? 'Claim failed');
+      }
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service: claimResource');
-      throw Exception('Failed to claim resource: $e');
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }
 

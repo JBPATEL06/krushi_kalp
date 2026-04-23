@@ -30,6 +30,7 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
   bool _isLoading = true;
   bool _isProcessing = false;
   String? _errorMessage;
+  DateTime? _lastSyncTime;
 
   @override
   void initState() {
@@ -107,33 +108,88 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
     }
   }
 
-  Future<void> _fetchData() async {
+  Future<void> _fetchData({bool forceRefresh = true, bool bypassThrottle = false}) async {
+    if (_isProcessing) return;
+
+    // Smart Refresh Logic: Throttling Supabase hits to 15s
+    bool shouldHitSupabase = forceRefresh;
+    if (forceRefresh && !bypassThrottle && _lastSyncTime != null) {
+      final diff = DateTime.now().difference(_lastSyncTime!);
+      if (diff < const Duration(seconds: 15)) {
+        shouldHitSupabase = false;
+        if (mounted && forceRefresh) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Refreshing from local cache...'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      }
+    }
+
     setState(() {
-      _isLoading = true;
+      _isLoading = _lastSyncTime == null; // Only show full loader if first load
+      _isProcessing = true;
       _errorMessage = null;
     });
 
     try {
       final user = ref.read(authNotifierProvider).user;
+      
+      // Use silent catches for each future to prevent one timeout from killing the whole UI
       await Future.wait([
-        ref.read(testNotifierProvider.notifier).fetchTests(forceRefresh: true),
-        ref.read(resourceNotifierProvider.notifier).fetchAll(forceRefresh: true),
-        if (user != null) ref.read(testNotifierProvider.notifier).fetchUserTests(user.id),
-        if (user != null) ref.read(resourceNotifierProvider.notifier).fetchPurchasedResources(user.id),
+        ref.read(testNotifierProvider.notifier).fetchTests(forceRefresh: shouldHitSupabase).catchError((e) {
+          CrashlyticsService.instance.log('FreeContent: fetchTests failed: $e');
+          return null;
+        }),
+        ref.read(resourceNotifierProvider.notifier).fetchAll(forceRefresh: shouldHitSupabase).catchError((e) {
+          CrashlyticsService.instance.log('FreeContent: fetchAll resources failed: $e');
+          return null;
+        }),
+        if (user != null) 
+          ref.read(testNotifierProvider.notifier).fetchUserTests(user.id).catchError((e) => null),
+        if (user != null) 
+          ref.read(resourceNotifierProvider.notifier).fetchPurchasedResources(user.id).catchError((e) => null),
       ]);
 
-      if (mounted) {
-        setState(() => _isLoading = false);
+      if (shouldHitSupabase) {
+        _lastSyncTime = DateTime.now();
       }
-    } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'free_content_screen');
+
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'Failed to load content. Please try again.';
+          _isProcessing = false;
+        });
+      }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'free_content_screen_fetch');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isProcessing = false;
+          // Only show error if we have no data at all
+          final testState = ref.read(testNotifierProvider);
+          final resourceState = ref.read(resourceNotifierProvider);
+          if (testState.allTests.isEmpty && resourceState.ebooks.isEmpty) {
+            _errorMessage = 'Failed to load content. Please check your connection.';
+          }
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isProcessing = false;
         });
       }
     }
+  }
+
+  Future<void> _refreshAll() async {
+    // Manual refresh always bypasses throttle
+    await _fetchData(forceRefresh: true, bypassThrottle: true);
   }
 
   List<dynamic> _getFilteredItems(
@@ -198,6 +254,14 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         foregroundColor: theme.colorScheme.onSurface,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh, color: theme.colorScheme.primary),
+            onPressed: _refreshAll,
+            tooltip: 'Refresh Content',
+          ),
+          const SizedBox(width: AppSpacing.md),
+        ],
       ),
       body: Column(
         children: [
@@ -266,9 +330,11 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
   }
 
   Widget _buildContent(TestState testState, ResourceState resourceState) {
-    final theme = Theme.of(context);
+    final items = _getFilteredItems(testState, resourceState);
+    
     if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_errorMessage != null) {
+    
+    if (_errorMessage != null && items.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -277,17 +343,16 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
             const SizedBox(height: AppSpacing.md),
             Text(_errorMessage!),
             const SizedBox(height: AppSpacing.lg),
-            ElevatedButton(onPressed: _fetchData, child: const Text('Retry')),
+            ElevatedButton(onPressed: () => _fetchData(), child: const Text('Retry')),
           ],
         ),
       );
     }
 
-    final items = _getFilteredItems(testState, resourceState);
     if (items.isEmpty) return const Center(child: Text("No items found."));
 
     return RefreshIndicator(
-      onRefresh: _fetchData,
+      onRefresh: _refreshAll,
       child: ListView.separated(
         padding: const EdgeInsets.all(AppSpacing.md),
         itemCount: items.length,

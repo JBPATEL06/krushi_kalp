@@ -59,6 +59,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
 
   bool _hadNetworkError = false;
   bool _isProcessing = false;
+  DateTime? _lastSyncTime;
 
   @override
   void initState() {
@@ -98,36 +99,59 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
     }
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadData({bool forceRefresh = true, bool bypassThrottle = false}) async {
     if (_isProcessing) return;
-    _isProcessing = true;
+    if (!mounted) return;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-      try {
-        await Future.wait([
-          ref.read(testNotifierProvider.notifier).fetchTests(forceRefresh: true),
-          ref.read(resourceNotifierProvider.notifier).fetchAll(forceRefresh: true),
-          ref.read(offerNotifierProvider.notifier).fetchActiveOffers(forceRefresh: true),
-        ]);
-
-        if (!mounted) return;
-
-        final user = ref.read(authNotifierProvider).user;
-        if (user != null) {
-          await ref.read(cartNotifierProvider.notifier).fetchCart();
+    // Smart Refresh Logic: Throttling Supabase hits to 15s
+    bool shouldHitSupabase = forceRefresh;
+    if (forceRefresh && !bypassThrottle && _lastSyncTime != null) {
+      final diff = DateTime.now().difference(_lastSyncTime!);
+      if (diff < const Duration(seconds: 15)) {
+        shouldHitSupabase = false; // Load from Isar instead
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Refreshing from local cache...'),
+              duration: Duration(seconds: 1),
+            ),
+          );
         }
-      } catch (e, stack) {
-        CrashlyticsService.instance
-            .recordError(e, stack, reason: 'store_screen_load');
-      } finally {
-        if (mounted) _isProcessing = false;
       }
-    });
+    }
+
+    setState(() => _isProcessing = true);
+
+    try {
+      await Future.wait([
+        ref.read(testNotifierProvider.notifier).fetchTests(forceRefresh: shouldHitSupabase),
+        ref.read(resourceNotifierProvider.notifier).fetchAll(forceRefresh: shouldHitSupabase),
+        ref.read(offerNotifierProvider.notifier).fetchActiveOffers(forceRefresh: shouldHitSupabase),
+      ]);
+
+      if (shouldHitSupabase) {
+        _lastSyncTime = DateTime.now();
+      }
+
+      if (!mounted) return;
+
+      final user = ref.read(authNotifierProvider).user;
+      if (user != null) {
+        await ref.read(cartNotifierProvider.notifier).fetchCart();
+      }
+    } catch (e, stack) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'store_screen_load');
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    }
   }
 
   Future<void> _refreshAll() async {
-    _loadData();
+    // Manual refresh always bypasses throttle for mandatory sync
+    await _loadData(forceRefresh: true, bypassThrottle: true);
   }
 
   Future<void> _addToCart({

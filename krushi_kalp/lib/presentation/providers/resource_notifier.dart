@@ -86,13 +86,26 @@ class ResourceNotifier extends _$ResourceNotifier {
       }
 
       _updateTypeState(type, resources);
-
       state = state.copyWith(errorMessage: null);
     } catch (e, stack) {
-      state = state.copyWith(errorMessage: 'Failed to load ${type.toString().split('.').last}: $e');
       CrashlyticsService.instance.recordError(e, stack, reason: 'ResourceNotifier: fetchResources($type)');
+      
+      // Only set error message if we have no data for this type
+      final currentList = _getTypeResources(type);
+      if (currentList.isEmpty) {
+        state = state.copyWith(errorMessage: 'Failed to load ${type.toString().split('.').last}. Please check connection.');
+      }
     } finally {
       if (!isBatch) state = state.copyWith(isLoading: false);
+    }
+  }
+
+  List<Resource> _getTypeResources(ResourceType type) {
+    switch (type) {
+      case ResourceType.eBook: return state.ebooks;
+      case ResourceType.studyMaterial: return state.studyMaterials;
+      case ResourceType.pyq: return state.pyqs;
+      case ResourceType.currentAffair: return state.currentAffairs;
     }
   }
 

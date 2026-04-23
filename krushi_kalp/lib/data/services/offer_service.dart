@@ -255,20 +255,46 @@ class OfferService {
   }) async {
     try {
       final user = AuthService.instance.currentUser;
-      final result = await _supabase.rpc('calculate_display_price', params: {
+      
+      final response = await _supabase.rpc('calculate_display_price', params: {
         'p_item_type': itemType,
         'p_item_id': itemId,
         if (user != null) 'p_user_id': user.id,
         if (couponCode != null && couponCode.isNotEmpty)
           'p_coupon_code': couponCode,
       });
-      final map = Map<String, dynamic>.from(result as Map);
+
+      if (response == null) {
+        return {
+          'base_price': 0.0,
+          'final_price': 0.0,
+          'mrp_display': 0.0,
+          'discount_label': null,
+          'has_discount': false,
+        };
+      }
+
+      final map = Map<String, dynamic>.from(response as Map);
       return {
-        'base_price': (map['base_price'] as num).toDouble(),
-        'final_price': (map['final_price'] as num).toDouble(),
-        'mrp_display': (map['mrp_display'] as num).toDouble(),
+        'base_price': (map['base_price'] as num?)?.toDouble() ?? 0.0,
+        'final_price': (map['final_price'] as num?)?.toDouble() ?? 0.0,
+        'mrp_display': (map['mrp_display'] as num?)?.toDouble() ?? 0.0,
         'discount_label': map['discount_label'] as String?,
-        'has_discount': map['has_discount'] as bool,
+        'has_discount': map['has_discount'] as bool? ?? false,
+      };
+    } on PostgrestException catch (e) {
+      // P0001 is thrown by our custom RPC for inactive/not found items
+      if (e.code != 'P0001') {
+        CrashlyticsService.instance.recordError(e, StackTrace.current, 
+            reason: 'offer_service.getDisplayPrice RPC failure');
+      }
+      return {
+        'base_price': 0.0,
+        'final_price': null, // Indicate error/unavailable
+        'mrp_display': 0.0,
+        'discount_label': null,
+        'has_discount': false,
+        'error_code': e.code,
       };
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack,

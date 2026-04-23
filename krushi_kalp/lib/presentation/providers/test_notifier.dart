@@ -81,7 +81,7 @@ class TestNotifier extends _$TestNotifier {
       final fetchedTests = results[0] as List<MockTest>;
       
       // Update state with fresh results
-      state = state.copyWith(cachedTests: fetchedTests);
+      state = state.copyWith(cachedTests: fetchedTests, errorMessage: '');
 
       // 3. Save fresh data to Isar
       if (fetchedTests.isNotEmpty) {
@@ -92,7 +92,9 @@ class TestNotifier extends _$TestNotifier {
       _applyFiltering();
     } catch (e, stack) {
        CrashlyticsService.instance.recordError(e, stack, reason: 'TestNotifier: fetchTests');
-       state = state.copyWith(errorMessage: 'Failed to load tests. Please check connection.');
+       if (state.allTests.isEmpty) {
+         state = state.copyWith(errorMessage: 'Failed to load tests. Please check connection.');
+       }
     } finally {
       state = state.copyWith(isLoading: false);
     }

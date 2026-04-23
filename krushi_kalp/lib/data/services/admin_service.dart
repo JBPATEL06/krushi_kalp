@@ -363,4 +363,58 @@ class AdminService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) { return []; }
   }
+
+  /// Manually grants access to a user for a specific item (test or resource).
+  static Future<bool> grantAccess({
+    required String userId,
+    required int itemId,
+    required String itemType,
+  }) async {
+    try {
+      // 1. Fetch item snapshot for historical integrity
+      Map<String, dynamic> itemSnapshot = {};
+      if (itemType == 'test') {
+        final test = await _supabase.from('mock_tests').select().eq('test_id', itemId).maybeSingle();
+        if (test != null) itemSnapshot = test;
+      } else if (itemType == 'resource') {
+        final resource = await _supabase.from('resources').select().eq('id', itemId).maybeSingle();
+        if (resource != null) itemSnapshot = resource;
+      }
+
+      // 2. Upsert into access table using the unique constraint
+      await _supabase.from('access').upsert({
+        'user_id': userId,
+        'item_id': itemId,
+        'item_type': itemType,
+        'item_snapshot': itemSnapshot,
+        'granted_at': DateTime.now().toIso8601String(),
+        'is_active': true,
+      }, onConflict: 'user_id, item_type, item_id');
+      
+      return true;
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_grant_access');
+      return false;
+    }
+  }
+
+  /// Manually revokes access from a user.
+  static Future<bool> revokeAccess({
+    required String userId,
+    required int itemId,
+    required String itemType,
+  }) async {
+    try {
+      await _supabase
+          .from('access')
+          .delete()
+          .eq('user_id', userId)
+          .eq('item_id', itemId)
+          .eq('item_type', itemType);
+      return true;
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_revoke_access');
+      return false;
+    }
+  }
 }

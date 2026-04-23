@@ -82,19 +82,37 @@ class _StoreGridState extends ConsumerState<StoreGrid> {
         .where((t) => !_pricesCache.containsKey(t.id))
         .toList();
     if (uncached.isEmpty) return;
-    // Fire all RPCs concurrently
-    final results = await Future.wait(
-      uncached.map((t) => OfferService.instance.getDisplayPrice(
-        itemType: 'mock_test',
-        itemId: t.id,
-      )),
-    );
-    if (mounted) {
-      setState(() {
-        for (int i = 0; i < uncached.length; i++) {
-          _pricesCache[uncached[i].id] = results[i];
+
+    // Process in batches of 5 to avoid overwhelming the network and Supabase
+    const int batchSize = 5;
+    for (int i = 0; i < uncached.length; i += batchSize) {
+      if (!mounted) break;
+
+      final end = (i + batchSize < uncached.length) ? i + batchSize : uncached.length;
+      final batch = uncached.sublist(i, end);
+
+      try {
+        final results = await Future.wait(
+          batch.map((t) => OfferService.instance.getDisplayPrice(
+            itemType: 'mock_test',
+            itemId: t.id,
+          )),
+        );
+
+        if (mounted) {
+          setState(() {
+            for (int j = 0; j < batch.length; j++) {
+              _pricesCache[batch[j].id] = results[j];
+            }
+          });
         }
-      });
+      } catch (e) {
+        debugPrint('StoreGrid: Batch price fetch failed at index $i - $e');
+        // Continue to next batch
+      }
+      
+      // Optional: Small delay between batches if needed
+      // await Future.delayed(const Duration(milliseconds: 100));
     }
   }
 
