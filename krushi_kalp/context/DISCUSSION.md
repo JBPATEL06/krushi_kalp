@@ -1,5 +1,29 @@
 # Krushi Kalp Discussion Log
 
+## [2026-04-23] Phase 6: Access & Payment Architecture Migration
+**Goal**: Decouple entitlements from legacy orders to allow user/item deletion without losing history.
+**Decisions**:
+- **Phase 6A: Schema & Data Migration**: Created `payment` and `access` tables (No FKs). Migrated legacy data.
+- **Phase 6B: Service Integration**: Updated `TestService`, `CartService`, and `ResourceService` to use the `access` table. Implemented `is_public` filtering for Store items.
+- **Phase 6C: Firebase Notification Migration**:
+  - Migrated FCM tokens to Firestore (`users/{userId}`).
+  - Switched `NotificationsScreen` to Firestore real-time streams.
+  - Decentralized notification logic to Firestore for faster scaling.
+- **Phase 6D: Transactional Checkout (v1)**: 
+  - Created `complete_checkout_v1` RPC to atomically record payments, grant access, and save JSON snapshots of users and items.
+  - Updated Dart `TestService.checkout` to use the new versioned RPC.
+- **Phase 6E: Stabilization & Lint Resolution**:
+  - Resolved Supabase 2.x `stream().eq().eq()` invalid filtering by switching to local `.map` and `.where`.
+  - Fixed `NotificationService` prefix issues and Firestore `Timestamp` type casting.
+  - Added missing `CartService` imports in `ResourceService` and `TestService`.
+  - Verified `cloud_firestore` dependency resolution via `pub get`.
+**Risks**:
+- Data integrity now relies on `item_snapshot` (JSONB) for historical lookups if original items are deleted.
+- Dual-write for FCM tokens in Supabase is currently maintained but can be deprecated after verification.
+**Status**: COMPLETE & STABLE.
+
+---
+
 ## [2026-04-22] Data Cleanup Request
 **User**: "you have supabase mcp acess you need to only delete all mock test data and all resources table data with their file tooo"
 **Agent**: Identified tables `mock_tests`, `resources`, `results`, `order_items`, `reviews` and storage bucket `mock_test`.

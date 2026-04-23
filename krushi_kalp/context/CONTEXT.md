@@ -8,6 +8,16 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - Backend: Supabase (Auth, Storage, Database)
 - PDF: PDF package for report generation
 
+## Phase 6: Access & Payment Migration (2026-04-23)
+- **Goal**: Transition to a snapshot-based access architecture and Firestore-based notifications.
+- **Actions**:
+    - Created `payment` and `access` tables (PK-only, no FKs) to ensure historical persistence.
+    - Implemented `complete_checkout_v1` RPC for atomic transactional integrity.
+    - Migrated notification infrastructure to Firebase Firestore for real-time scalability.
+    - Updated `TestService`, `ResourceService`, and `CartService` to decouple from legacy `orders` schema.
+    - Fixed lint errors in `NotificationService` and `TestService` related to Supabase 2.x stream filtering and prefixes.
+- **Status**: COMPLETE & VERIFIED.
+
 ## Phase 17: Layout Reversion (Attempted) (2026-04-21)
 - **Goal**: Attempted to revert to "Infinite Vertical Page" layout.
 - **Outcome**: Reversion successful but revealed critical platform limits (truncated at 74 questions on most mobile viewers).

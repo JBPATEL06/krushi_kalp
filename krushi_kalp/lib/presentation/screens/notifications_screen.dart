@@ -25,36 +25,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final user = AuthService.instance.currentUser;
 
     if (user != null) {
-      // Need integer user_id. Fetch it first or use a FutureBuilder wrapper?
-      // Better: Stream query relies on 'id' -> wait.
-      // The 'notifications' table uses 'user_id' (int).
-      // We must map Auth ID (uuid) to User ID (int).
-      // Doing this inside a Stream is tricky.
-      // Alternative: Use Future to get ID, then Stream.
-      // For now, I'll allow a loading state.
-      _notificationsStream = Stream.empty();
-      _fetchUserIdAndStream(user.id);
+      // Now using String userId (Auth ID) directly for Firestore
+      _notificationsStream = NotificationService().fetchNotificationsStream(user.id);
     } else {
       _notificationsStream = Stream.value([]);
     }
   }
 
-  Future<void> _fetchUserIdAndStream(String authId) async {
-    try {
-      final intDbId = await AuthService.instance.getUserDbId(authId);
-
-      if (intDbId != null && mounted) {
-        setState(() {
-          _notificationsStream =
-              NotificationService().fetchNotificationsStream(intDbId);
-        });
-      }
-    } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: '_fetchUserIdAndStream failed');
-    }
-  }
-
-  Future<void> _deleteNotification(int id) async {
+  Future<void> _deleteNotification(String id) async {
     try {
       await NotificationService().deleteNotification(id);
 
@@ -64,7 +42,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ).showSnackBar(const SnackBar(content: Text('Notification removed')));
       }
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'notifications_screen');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'notifications_screen_delete');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
@@ -95,7 +73,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               message: isNetworkError(snapshot.error)
                   ? 'Unable to load notifications.'
                   : 'Something went wrong.',
-              onRetry: _setupStream,
+              onRetry: () {
+                setState(() {
+                  _setupStream();
+                });
+              },
             );
           }
           final notifications = snapshot.data ?? [];
@@ -119,7 +101,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
           return RefreshIndicator(
             onRefresh: () async {
-              _setupStream();
+              setState(() {
+                _setupStream();
+              });
               await Future.delayed(const Duration(milliseconds: 500));
             },
             child: ListView.separated(
@@ -134,13 +118,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final notif = notifications[index];
-                final id = notif['notification_id'] as int;
+                final id = notif['notification_id']?.toString() ?? '';
                 final title = notif['title'] ?? 'Notification';
                 final message = notif['message'] ?? '';
                 final type = notif['type'] ?? 'General';
+                final isRead = notif['is_read'] ?? false;
 
                 return Dismissible(
-                  key: Key(id.toString()),
+                  key: Key(id),
                   direction: DismissDirection.endToStart,
                   background: Container(
                     color: theme.colorScheme.error,
@@ -152,11 +137,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     _deleteNotification(id);
                   },
                   child: Card(
-                    elevation: 2,
+                    elevation: isRead ? 1 : 4,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ListTile(
+                      onTap: () {
+                        if (!isRead) {
+                          NotificationService().markAsRead(id);
+                        }
+                      },
                       leading: CircleAvatar(
                         backgroundColor: theme.colorScheme.primaryContainer
                             .withValues(alpha: 0.2),
@@ -165,7 +155,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ),
                       title: Text(
                         title,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
+                        ),
                       ),
                       subtitle: Text(message),
                       trailing: Text(

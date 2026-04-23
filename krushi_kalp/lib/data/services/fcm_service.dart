@@ -1,5 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
 import '../../utils/crashlytics_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -48,6 +48,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 class FCMService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
@@ -145,11 +146,6 @@ class FCMService {
     try {
       // Unsubscribe from topics on logout to be safe
       await _firebaseMessaging.unsubscribeFromTopic('admin_updates');
-      // We might keep 'all_users' or unsubscribe, but usually better to unsubscribe
-      // if we want to stop notifications on logout.
-      // However, 'all_users' might be relevant for general app updates?
-      // Let's unsubscribe from personal topics surely.
-      // But FCM topics are device-based.
     } catch (e, stack) {
       CrashlyticsService.instance
           .recordError(e, stack, reason: 'FCM logout unsubscription failed');
@@ -160,9 +156,13 @@ class FCMService {
     final user = AuthService.instance.currentUser;
     if (user != null) {
       try {
-        // We need to store this in a 'users' table.
-        // Use update instead of upsert to avoid accidentally wiping other columns (like username)
-        // or failing not-null constraints if the row is treated as new.
+        // Save to Firestore under users/{userId}
+        await _firestore.collection('users').doc(user.id).set({
+          'fcm_token': token,
+          'updated_at': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+        // Also keep it in Supabase for now
         await AuthService.instance.updateProfile(user.id, {
           'fcm_token': token,
         });
@@ -175,8 +175,6 @@ class FCMService {
 
   // ignore: unused_element
   Future<void> _showForegroundNotification(RemoteMessage message) async {
-    // 0. Suppress if Chat is OPEN
-    // Access current chat user ID (set in ChatScreen/AdminChatDetailScreen)
     final currentChatUserId = NotificationService.currentChatUserId;
     if (currentChatUserId != null) {
       final data = message.data;
@@ -184,26 +182,17 @@ class FCMService {
           data['is_from_admin'] == 'true' || data['is_from_admin'] == true;
       final msgUserId = data['user_id'];
 
-      // Scenario A: User is chatting with Admin (currentChat = 'admin_support_chat')
-      // If notification is from Admin -> Suppress it.
       if (currentChatUserId == 'admin_support_chat') {
         if (isFromAdmin) {
           return;
         }
-      }
-
-      // Scenario B: Admin is chatting with User X (currentChat = 'user_x_id')
-      // If notification is from User X -> Suppress it.
-      else {
-        // Only suppress if message is FROM that user (not from another admin/system)
-        // And ensure it's NOT from admin (which would be weird self-notification, but good check)
+      } else {
         if (!isFromAdmin && msgUserId == currentChatUserId) {
           return;
         }
       }
     }
 
-    // Reuse the Local Notification setup from NotificationService for consistent icon/channel
     await NotificationService().showLocalNotification(
       id: message.hashCode,
       title: message.notification?.title ?? 'New Message',

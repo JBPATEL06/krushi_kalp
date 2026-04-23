@@ -116,22 +116,20 @@ class CartService {
       if (testId == null && resourceId == null) return false;
 
       var query = _supabase
-          .from('order_items')
-          .select('orders!inner(status, user_id)')
-          .eq('orders.user_id', userId)
-          .eq('orders.status', 'SUCCESS');
+          .from('access')
+          .select('access_id')
+          .eq('user_id', userId);
 
       if (testId != null) {
-        query = query.eq('test_id', testId);
+        query = query.eq('item_id', testId).eq('item_type', 'test');
       } else {
-        query = query.eq('resource_id', resourceId as Object);
+        query = query.eq('item_id', resourceId as Object).eq('item_type', 'resource');
       }
 
       final response = await query.limit(1).maybeSingle();
       return response != null;
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service');
-      
+      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service: checkOwnership');
       return false;
     }
   }

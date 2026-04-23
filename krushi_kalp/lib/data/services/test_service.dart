@@ -55,6 +55,9 @@ class TestService {
         query = query.eq('language', language);
       }
 
+      // Only show public tests in the store
+      query = query.eq('is_public', true);
+
       final response = await query
           .order('created_at', ascending: false)
           .range(offset, offset + limit - 1);
@@ -74,6 +77,7 @@ class TestService {
       final response = await RetryHelper.run(() => _supabase
           .from('mock_tests')
           .select()
+          .eq('is_public', true)
           .order('created_at', ascending: false));
 
       final List<dynamic> data = response;
@@ -335,24 +339,14 @@ class TestService {
 
   Future<Set<int>> fetchPurchasedTestIds(String userId) async {
     try {
-      final ordersResponse = await _supabase
-          .from('orders')
-          .select('order_id')
+      final response = await _supabase
+          .from('access')
+          .select('item_id')
           .eq('user_id', userId)
-          .inFilter('status', ['SUCCESS', 'COMPLETED']);
+          .eq('item_type', 'test');
 
-      if ((ordersResponse as List).isEmpty) return {};
-
-      final orderIds = (ordersResponse).map((o) => o['order_id']).toList();
-
-      final itemsResponse = await _supabase
-          .from('order_items')
-          .select('test_id')
-          .inFilter('order_id', orderIds);
-
-      return (itemsResponse as List)
-          .where((i) => i['test_id'] != null)
-          .map((i) => i['test_id'] as int)
+      return (response as List)
+          .map((i) => i['item_id'] as int)
           .toSet();
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'fetchPurchasedTestIds failed for user: $userId');
@@ -362,25 +356,14 @@ class TestService {
 
   Future<List<MockTest>> fetchUserTests(String authUserId) async {
     try {
-      final ordersResponse = await _supabase
-          .from('orders')
-          .select('order_id')
+      final response = await _supabase
+          .from('access')
+          .select('item_id')
           .eq('user_id', authUserId)
-          .inFilter('status', ['SUCCESS', 'COMPLETED']);
+          .eq('item_type', 'test');
 
-      final orderIds =
-          (ordersResponse as List).map((o) => o['order_id']).toList();
-      if (orderIds.isEmpty) return [];
-
-      final itemsResponse = await _supabase
-          .from('order_items')
-          .select('test_id')
-          .inFilter('order_id', orderIds);
-
-      final testIds = (itemsResponse as List)
-          .where((i) => i['test_id'] != null)
-          .map((i) => i['test_id'] as int)
-          .toSet()
+      final testIds = (response as List)
+          .map((i) => i['item_id'] as int)
           .toList();
 
       if (testIds.isEmpty) return [];
@@ -395,7 +378,7 @@ class TestService {
 
       return await _populateSignedUrls(purchasedTests);
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: fetchUserTests');
       throw Exception('Failed to load purchased tests: $e');
     }
   }
@@ -423,32 +406,20 @@ class TestService {
     final authUserId = AuthService.instance.currentUser?.id;
     if (authUserId == null) return Stream.value([]);
     return _supabase
-        .from('orders')
-        .stream(primaryKey: ['order_id'])
+        .from('access')
+        .stream(primaryKey: ['access_id'])
         .eq('user_id', authUserId)
-        .order('created_at', ascending: false)
-        .asyncMap((orders) async {
+        .map((records) => records.where((r) => r['item_type'] == 'test').toList())
+        .asyncMap((accessRecords) async {
           try {
-            final successOrders = orders
-                .where((o) =>
-                    o['status'] == 'SUCCESS' || o['status'] == 'COMPLETED')
-                .toList();
-            if (successOrders.isEmpty) return <MockTest>[];
-            final orderIds = successOrders.map((o) => o['order_id']).toList();
-            final itemsResponse = await _supabase
-                .from('order_items')
-                .select('test_id')
-                .inFilter('order_id', orderIds);
-            final testIds = (itemsResponse as List)
-                .where((i) => i['test_id'] != null)
-                .map((i) => i['test_id'] as int)
-                .toSet()
-                .toList();
-            if (testIds.isEmpty) return <MockTest>[];
+            if (accessRecords.isEmpty) return <MockTest>[];
+            final testIds = accessRecords.map((o) => o['item_id'] as int).toList();
+            
             final testsResponse = await _supabase
                 .from('mock_tests')
                 .select()
                 .inFilter('test_id', testIds);
+                
             final List<MockTest> purchasedTests =
                 await compute(_parseMockTests, testsResponse as List<dynamic>);
             return await _populateSignedUrls(purchasedTests);
@@ -466,31 +437,21 @@ class TestService {
     required String authUserId,
   }) async {
     try {
-      final existingOrder = await _supabase
-          .from('order_items')
-          .select('order_id, orders!inner(user_id, status)')
-          .eq('test_id', testId)
-          .eq('orders.user_id', authUserId)
-          .eq('orders.status', 'SUCCESS')
-          .maybeSingle();
-      if (existingOrder != null) return;
-      final timestamp = DateTime.now().toUtc().toIso8601String();
-      final newOrder = await _supabase
-          .from('orders')
-          .insert({
-            'user_id': authUserId,
-            'status': 'SUCCESS',
-            'total_amount': 0.0,
-            'payment_gateway_id': 'FREE_CLAIM',
-            'created_at': timestamp,
-          })
-          .select('order_id')
-          .single();
-      await _supabase.from('order_items').insert({
-        'order_id': newOrder['order_id'],
-        'test_id': testId,
-        'price_at_purchase': 0.0,
-        'created_at': timestamp,
+      final isOwned = await CartService.instance.checkOwnership(
+        userId: authUserId,
+        testId: testId,
+      );
+      if (isOwned) return;
+
+      final test = await fetchMockTestById(testId);
+      if (test == null) throw Exception("Test not found");
+
+      await _supabase.from('access').insert({
+        'user_id': authUserId,
+        'item_id': testId,
+        'item_type': 'test',
+        'item_snapshot': test.toJson(),
+        'granted_at': DateTime.now().toUtc().toIso8601String(),
       });
     } catch (e, stack) {
       CrashlyticsService.instance
@@ -547,9 +508,9 @@ class TestService {
   }) async {
     try {
       // 1. Call the secure RPC to finalize the order and cleanup cart
-      await _supabase.rpc('complete_checkout', params: {
+      await _supabase.rpc('complete_checkout_v1', params: {
         'p_order_id': orderId,
-        'p_payment_id': paymentId,
+        'p_gateway_payment_id': paymentId,
         'p_amount': amount,
         'p_offer_id': offerId,
         'p_discount_amount': discountAmount,

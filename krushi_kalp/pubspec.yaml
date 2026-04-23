@@ -61,9 +61,10 @@ dependencies:
   intl: ^0.20.2
   rxdart: ^0.28.0
   flutter_animate: ^4.5.0
-  firebase_core: ^4.4.0
-  firebase_crashlytics: ^5.0.7
-  firebase_messaging: ^16.1.1
+  firebase_core: any
+  firebase_crashlytics: any
+  firebase_messaging: any
+  cloud_firestore: any
   googleapis_auth: ^2.0.0
   encrypt: ^5.0.3
   connectivity_plus: ^7.0.0

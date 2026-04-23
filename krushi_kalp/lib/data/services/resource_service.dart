@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/resource.dart';
 import '../../utils/supabase_url_helper.dart';
 import 'test_service.dart';
+import 'cart_service.dart';
 import 'admin_notification_service.dart';
 import '../../utils/crashlytics_service.dart';
 
@@ -50,36 +51,28 @@ class ResourceService {
 
   /// Fetches all resources purchased or claimed by a specific user.
   Future<List<Resource>> fetchPurchasedResources(String userId) async {
-    // 1. Get completed orders for user
-    final response = await _client
-        .from('orders')
-        .select('order_id')
-        .eq('user_id', userId)
-        .filter('status', 'in', '("SUCCESS", "COMPLETED", "DIRECT_CHECKOUT")');
+    try {
+      final response = await _client
+          .from('access')
+          .select('item_id')
+          .eq('user_id', userId)
+          .eq('item_type', 'resource');
 
-    if (response.isEmpty) return [];
+      if (response.isEmpty) return [];
 
-    final orderIds = (response as List).map((e) => e['order_id']).toList();
+      final resourceIds = (response as List).map((e) => e['item_id'] as int).toList();
 
-    // 2. Get items for these orders that are resources
-    final itemsRes = await _client
-        .from('order_items')
-        .select('resource_id, resources(*)')
-        .inFilter('order_id', orderIds)
-        .not('resource_id', 'is', null);
+      final resourcesRes = await _client
+          .from('resources')
+          .select()
+          .inFilter('id', resourceIds);
 
-    final resources = <Resource>[];
-    final seenIds = <int>{};
-    for (var item in itemsRes as List) {
-      if (item['resources'] != null) {
-        final r = Resource.fromJson(item['resources']);
-        if (!seenIds.contains(r.id)) {
-          resources.add(r);
-          seenIds.add(r.id);
-        }
-      }
+      final List<Resource> resources = (resourcesRes as List).map((json) => Resource.fromJson(json)).toList();
+      return await _signResources(resources);
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service: fetchPurchasedResources');
+      return [];
     }
-    return await _signResources(resources);
   }
 
   /// Helper to convert storage paths into signed URLs with 1-year expiry.
@@ -262,48 +255,25 @@ class ResourceService {
     required String userId,
   }) async {
     try {
-      final existingOrder = await _client
-          .from('order_items')
-          .select('order_id, orders!inner(user_id, status)')
-          .eq('resource_id', resourceId)
-          .eq('orders.user_id', userId)
-          .eq('orders.status', 'SUCCESS')
-          .maybeSingle();
-
-      if (existingOrder != null) return;
-
-      final timestamp = DateTime.now().toUtc().toIso8601String();
-      final newOrder = await _client
-          .from('orders')
-          .insert({
-            'user_id': userId,
-            'status': 'DIRECT_CHECKOUT',
-            'total_amount': 0.0,
-            'payment_gateway_id': 'FREE_CLAIM',
-            'created_at': timestamp,
-          })
-          .select('order_id')
-          .single();
-
-      final String orderId = newOrder['order_id'];
-
-      await _client.from('order_items').insert({
-        'order_id': orderId,
-        'resource_id': resourceId,
-        'price_at_purchase': 0.0,
-        'created_at': timestamp,
-      });
-
-      // Finalize the order securely via RPC
-      await TestService.instance.checkout(
-        orderId: orderId,
-        paymentId: 'FREE_CLAIM',
-        amount: 0.0,
+      final isOwned = await CartService.instance.checkOwnership(
         userId: userId,
-        paymentGateway: 'FREE_CLAIM',
+        resourceId: resourceId,
       );
+
+      if (isOwned) return;
+
+      final resource = await getResourceById(resourceId);
+      if (resource == null) throw Exception("Resource not found");
+
+      await _client.from('access').insert({
+        'user_id': userId,
+        'item_id': resourceId,
+        'item_type': 'resource',
+        'item_snapshot': resource.toJson(),
+        'granted_at': DateTime.now().toUtc().toIso8601String(),
+      });
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service: claimResource');
       throw Exception('Failed to claim resource: $e');
     }
   }

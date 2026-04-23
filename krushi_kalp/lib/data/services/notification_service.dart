@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -12,12 +13,11 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Expose the underlying notifications plugin for use by other specialized
-  /// notification services (e.g., TransferNotificationService) to avoid
-  /// double-initialization issues.
   FlutterLocalNotificationsPlugin get plugin => _notificationsPlugin;
 
+  // ignore: unused_field
   final _supabase = Supabase.instance.client;
 
   bool _isInitialized = false;
@@ -400,15 +400,33 @@ class NotificationService {
     await _notificationsPlugin.show(id, title, body, details);
   }
 
-  Stream<List<Map<String, dynamic>>> fetchNotificationsStream(int userDbId) {
-    return _supabase
-        .from('notifications')
-        .stream(primaryKey: ['notification_id'])
-        .eq('user_id', userDbId)
-        .order('created_at', ascending: false);
+  Stream<List<Map<String, dynamic>>> fetchNotificationsStream(String userId) {
+    return _firestore
+        .collection('notifications')
+        .where('userId', whereIn: [userId, null])
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              final data = doc.data();
+              return {
+                'notification_id': doc.id,
+                'title': data['title'],
+                'message': data['message'],
+                'type': data['type'],
+                'is_read': data['isRead'] ?? false,
+                'created_at': data['createdAt'] is Timestamp 
+                    ? (data['createdAt'] as Timestamp).toDate().toIso8601String()
+                    : data['createdAt']?.toString(),
+                'userId': data['userId'],
+              };
+            }).toList());
   }
 
-  Future<void> deleteNotification(int id) async {
-    await _supabase.from('notifications').delete().eq('notification_id', id);
+  Future<void> deleteNotification(String id) async {
+    await _firestore.collection('notifications').doc(id).delete();
+  }
+
+  Future<void> markAsRead(String id) async {
+    await _firestore.collection('notifications').doc(id).update({'isRead': true});
   }
 }
