@@ -647,4 +647,70 @@ class AdminService {
       return false;
     }
   }
+
+  /// Fetches all mock tests for administration purposes.
+  static Future<List<Map<String, dynamic>>> fetchAllMockTests() async {
+    try {
+      final response = await _supabase.from('mock_tests').select('*').order('created_at', ascending: false);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Fetches all resources for administration purposes.
+  static Future<List<Map<String, dynamic>>> fetchAllResources() async {
+    try {
+      final response = await _supabase.from('resources').select('*').order('created_at', ascending: false);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Fetches the IDs of all items a user already has access to.
+  static Future<Map<String, Set<int>>> getUserAccessItemIds(String userId) async {
+    try {
+      final response = await _supabase.from('access').select('item_id, item_type').eq('user_id', userId);
+      final Set<int> testIds = {};
+      final Set<int> resourceIds = {};
+      
+      for (var item in response) {
+        if (item['item_type'] == 'test') {
+          testIds.add(item['item_id'] as int);
+        } else {
+          resourceIds.add(item['item_id'] as int);
+        }
+      }
+      return {'test': testIds, 'resource': resourceIds};
+    } catch (e) {
+      return {'test': {}, 'resource': {}};
+    }
+  }
+
+  /// Grants access to multiple items in a single batch.
+  static Future<bool> grantBatchAccess({
+    required String userId,
+    required List<Map<String, dynamic>> items, // List of {id, type, snapshot}
+  }) async {
+    try {
+      if (items.isEmpty) return true;
+
+      final List<Map<String, dynamic>> payload = items.map((item) => {
+        'user_id': userId,
+        'item_id': item['id'],
+        'item_type': item['type'],
+        'item_snapshot': item['snapshot'],
+        'granted_at': DateTime.now().toIso8601String(),
+        'access_type': 'manual_granted',
+        'is_active': true,
+      }).toList();
+
+      await _supabase.from('access').upsert(payload, onConflict: 'user_id, item_type, item_id');
+      return true;
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_grant_batch_access');
+      return false;
+    }
+  }
 }

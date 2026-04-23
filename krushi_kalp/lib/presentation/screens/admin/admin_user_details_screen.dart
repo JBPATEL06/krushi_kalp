@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../data/services/admin_service.dart';
 import 'admin_user_activity_screen.dart';
+import 'admin_grant_access_screen.dart';
 import '../../widgets/common/network_error_state.dart';
 import 'admin_chat_detail_screen.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
@@ -217,6 +218,24 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
         scrolledUnderElevation: 0,
         elevation: 0,
         centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AdminGrantAccessScreen(
+                    userId: widget.userId,
+                    username: widget.username,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.card_giftcard_rounded),
+            tooltip: 'Gift Access',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(
