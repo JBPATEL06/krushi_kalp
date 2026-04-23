@@ -21,6 +21,9 @@ class AdminGrantAccessScreen extends ConsumerStatefulWidget {
 class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isLoading = true;
+  bool _isSearching = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
   
   // Data lists
   List<Map<String, dynamic>> _allTests = [];
@@ -35,6 +38,13 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -66,16 +76,28 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
     }
   }
 
-  // Filtered lists based on existing access
-  List<Map<String, dynamic>> get _availableTests => _allTests
-      .where((t) => !(_existingAccess['test']?.contains(t['test_id']) ?? false))
-      .toList();
+  // Filtered lists based on existing access and search query
+  List<Map<String, dynamic>> get _availableTests {
+    final filtered = _allTests
+        .where((t) => !(_existingAccess['test']?.contains(t['test_id']) ?? false))
+        .toList();
+    
+    if (_searchQuery.isEmpty) return filtered;
+    return filtered.where((t) => 
+      (t['title']?.toString().toLowerCase() ?? '').contains(_searchQuery.toLowerCase())
+    ).toList();
+  }
 
   List<Map<String, dynamic>> _getAvailableResources(String type) {
-    return _allResources
+    final filtered = _allResources
         .where((r) => r['type'] == type)
         .where((r) => !(_existingAccess['resource']?.contains(r['id']) ?? false))
         .toList();
+
+    if (_searchQuery.isEmpty) return filtered;
+    return filtered.where((r) => 
+      (r['title']?.toString().toLowerCase() ?? '').contains(_searchQuery.toLowerCase())
+    ).toList();
   }
 
   void _toggleSelection(String key) {
@@ -84,24 +106,6 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
         _selectedItems.remove(key);
       } else {
         _selectedItems.add(key);
-      }
-    });
-  }
-
-  void _selectAll(List<Map<String, dynamic>> items, String typePrefix) {
-    setState(() {
-      for (var item in items) {
-        final id = typePrefix == 'test' ? item['test_id'] : item['id'];
-        _selectedItems.add("${typePrefix}_$id");
-      }
-    });
-  }
-
-  void _deselectAll(List<Map<String, dynamic>> items, String typePrefix) {
-    setState(() {
-      for (var item in items) {
-        final id = typePrefix == 'test' ? item['test_id'] : item['id'];
-        _selectedItems.remove("${typePrefix}_$id");
       }
     });
   }
@@ -157,9 +161,35 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Grant Manual Access'),
+        title: _isSearching 
+          ? TextField(
+              controller: _searchController,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: 'Search tests or resources...',
+                hintStyle: TextStyle(color: Colors.white70),
+                border: InputBorder.none,
+              ),
+              onChanged: (val) {
+                setState(() => _searchQuery = val);
+              },
+            )
+          : Text('Grant Access: ${widget.username}'),
         actions: [
-          if (_selectedItems.isNotEmpty)
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchQuery = '';
+                  _searchController.clear();
+                }
+              });
+            },
+          ),
+          if (_selectedItems.isNotEmpty && !_isSearching)
             TextButton.icon(
               onPressed: _grantAccess,
               icon: const Icon(Icons.check_circle_rounded),
@@ -209,30 +239,8 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
       );
     }
 
-    final allSelectedInTab = items.every((i) {
-      final id = typePrefix == 'test' ? i['test_id'] : i['id'];
-      return _selectedItems.contains("${typePrefix}_$id");
-    });
-
     return Column(
       children: [
-        Padding(
-          padding: EdgeInsets.all(AppSpacing.md),
-          child: Row(
-            children: [
-              Text('${items.length} items available', 
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
-              const Spacer(),
-              TextButton(
-                onPressed: () => allSelectedInTab 
-                  ? _deselectAll(items, typePrefix) 
-                  : _selectAll(items, typePrefix),
-                child: Text(allSelectedInTab ? 'Deselect All' : 'Select All'),
-              ),
-            ],
-          ),
-        ),
-        const Divider(height: 1),
         Expanded(
           child: ListView.separated(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
