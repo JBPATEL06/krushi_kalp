@@ -150,8 +150,9 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
   }
 
   Future<void> _refreshAll() async {
-    // Manual refresh always bypasses throttle for mandatory sync
-    await _loadData(forceRefresh: true, bypassThrottle: true);
+    // Manual refresh follows the 15s throttle policy
+    // If triggered within 15s of last sync, it will use local Isar cache
+    await _loadData(forceRefresh: true, bypassThrottle: false);
   }
 
   Future<void> _addToCart({

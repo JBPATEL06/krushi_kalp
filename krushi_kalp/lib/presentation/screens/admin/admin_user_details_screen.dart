@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../../data/services/admin_service.dart';
+import 'admin_user_activity_screen.dart';
 import '../../widgets/common/network_error_state.dart';
 import 'admin_chat_detail_screen.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:krushi_kalp/presentation/widgets/common/modern_card.dart';
+import 'package:intl/intl.dart';
 import '../../../../utils/error_utils.dart';
 import '../../../utils/crashlytics_service.dart';
 
@@ -494,7 +496,6 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
 
   Widget _buildPurchasesStream() {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: AdminService.streamUserOrders(widget.userId),
@@ -509,46 +510,181 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
           );
         }
 
-        final orders = snapshot.data ?? [];
-        if (orders.isEmpty) return _buildEmptyState('No purchased tests found');
+        final items = (snapshot.data ?? []).take(4).toList();
+        final hasMore = (snapshot.data ?? []).length > 4;
 
-        return ListView.separated(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.md,
-            AppSpacing.md,
-            AppSpacing.md,
-            AppSpacing.md + MediaQuery.of(context).padding.bottom,
-          ),
-          itemCount: orders.length,
-          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-          itemBuilder: (context, index) {
-            final order = orders[index];
-            final amount = order['total_amount'];
-            final date = DateTime.parse(order['created_at']);
+        if (items.isEmpty) {
+          return _buildEmptyState('No items found');
+        }
 
-            return ModernCard(
-              child: ListTile(
-                leading: Icon(Icons.shopping_bag_rounded,
-                    color: colorScheme.primary, size: 28),
-                title: Text('Order #${order['order_id']}',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold)),
-                subtitle: Text('${date.day}/${date.month}/${date.year}',
-                    style: theme.textTheme.bodySmall),
-                trailing: Text(
-                  '₹$amount',
-                  style: const TextStyle(
-                      color: Color(0xFF10B981),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18),
-                ),
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+              itemCount: items.length,
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: AppSpacing.md),
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        final name = item['item_name'] ?? 'Untitled Item';
+                        final date = DateTime.parse(item['created_at']);
+                        final accessType = item['access_type'] ?? 'free_claim';
+                        final payment = item['payment_details'] as Map<String, dynamic>?;
+                        
+                        Color badgeColor;
+                        String badgeText;
+                        
+                        switch (accessType) {
+                          case 'paid':
+                            badgeColor = const Color(0xFF10B981); // Green
+                            badgeText = 'Paid';
+                            break;
+                          case 'free_claim':
+                            badgeColor = const Color(0xFF3B82F6); // Blue
+                            badgeText = 'Free Claim';
+                            break;
+                          case 'manual_granted':
+                            badgeColor = const Color(0xFFF59E0B); // Orange
+                            badgeText = 'Manual Grant';
+                            break;
+                          default:
+                            badgeColor = Colors.grey;
+                            badgeText = accessType.toUpperCase();
+                        }
+
+                        return ModernCard(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: badgeColor.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                                      ),
+                                      child: Icon(
+                                        item['item_type'] == 'test'
+                                            ? Icons.quiz_rounded
+                                            : Icons.menu_book_rounded,
+                                        color: badgeColor,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(name,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: theme.textTheme.titleMedium
+                                                  ?.copyWith(fontWeight: FontWeight.bold)),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            DateFormat('dd MMM yyyy, hh:mm a').format(date),
+                                            style: theme.textTheme.bodySmall,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: badgeColor.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(AppRadius.full),
+                                        border: Border.all(color: badgeColor.withValues(alpha: 0.2)),
+                                      ),
+                                      child: Text(
+                                        badgeText,
+                                        style: theme.textTheme.labelSmall?.copyWith(
+                                          color: badgeColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (accessType == 'paid' || (item['price_paid'] ?? 0) > 0) ...[
+                                  const Divider(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Price Paid: ₹${item['price_paid'] ?? 0}',
+                                        style: theme.textTheme.labelMedium?.copyWith(
+                                          color: const Color(0xFF10B981),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      if (payment != null && (payment['discount_amount'] ?? 0) > 0)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            'Offer: ${payment['offer_code'] ?? 'Discount'} (-₹${payment['discount_amount']})',
+                                            style: theme.textTheme.labelSmall?.copyWith(
+                                              color: Colors.red[700],
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  if (hasMore)
+                    Padding(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Center(
+                        child: TextButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AdminUserActivityScreen(
+                                  userId: widget.userId,
+                                  username: widget.username,
+                                  initialIndex: 0,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.arrow_forward_rounded),
+                          label: const Text('Show All Purchased Items'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: theme.colorScheme.primary,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             );
-          },
-        );
-      },
-    );
-  }
+        },
+      );
+    }
 
   Widget _buildAttemptsStream() {
     final theme = Theme.of(context);
@@ -567,55 +703,102 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
           );
         }
 
-        final results = snapshot.data ?? [];
-        if (results.isEmpty) return _buildEmptyState('No test attempts found');
+        final results = (snapshot.data ?? []).take(4).toList();
+        final hasMore = (snapshot.data ?? []).length > 4;
 
-        return ListView.separated(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.md,
-            AppSpacing.md,
-            AppSpacing.md,
-            AppSpacing.md + MediaQuery.of(context).padding.bottom,
-          ),
-          itemCount: results.length,
-          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-          itemBuilder: (context, index) {
-            final result = results[index];
-            final testName = result['mock_tests']?['title'] ?? 'Unknown Test';
-            final score = result['score_obtained'];
-            final total = result['mock_tests']?['total_marks'] ?? 0;
-            final date = DateTime.parse(result['attempt_date']);
+        return results.isEmpty
+            ? _buildEmptyState('No attempts found')
+            : SingleChildScrollView(
+                child: Column(
+                  children: [
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+                    itemCount: results.length,
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: AppSpacing.md),
+                      itemBuilder: (context, index) {
+                        final result = results[index];
+                        final testName =
+                            result['mock_tests']?['title'] ?? 'Unknown Test';
+                        final score = result['score_obtained'];
+                        final total = result['mock_tests']?['total_marks'] ?? 0;
+                        final date = DateTime.parse(result['attempt_date']);
 
-            return ModernCard(
-              child: ListTile(
-                leading: const Icon(Icons.assignment_rounded,
-                    color: Color(0xFFF59E0B), size: 28),
-                title: Text(testName,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold)),
-                subtitle: Text('${date.day}/${date.month}/${date.year}',
-                    style: theme.textTheme.bodySmall),
-                trailing: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  child: Text(
-                    '$score / $total',
-                    style: TextStyle(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13),
-                  ),
-                ),
+                        return ModernCard(
+                          child: ListTile(
+                            leading: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(AppRadius.sm),
+                              ),
+                              child: const Icon(Icons.assignment_rounded,
+                                  color: Color(0xFFF59E0B), size: 24),
+                            ),
+                            title: Text(testName,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold)),
+                            subtitle: Text(
+                                DateFormat('dd MMM yyyy, hh:mm a').format(date),
+                                style: theme.textTheme.bodySmall),
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(AppRadius.md),
+                              ),
+                              child: Text(
+                                '$score / $total',
+                                style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  if (hasMore)
+                    Padding(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: Center(
+                        child: TextButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AdminUserActivityScreen(
+                                  userId: widget.userId,
+                                  username: widget.username,
+                                  initialIndex: 1,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.arrow_forward_rounded),
+                          label: const Text('Show All Attempts'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: theme.colorScheme.primary,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             );
-          },
-        );
-      },
-    );
+        },
+      );
   }
 
   Widget _buildEmptyState(String message) {

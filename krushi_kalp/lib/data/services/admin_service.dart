@@ -37,9 +37,9 @@ class AdminService {
           _supabase.from('resources').count(CountOption.exact),
           _supabase.from('users').count(CountOption.exact),
           _supabase.from('offers').count(CountOption.exact).eq('is_active', true),
-          _supabase.from('order_items').count(CountOption.exact),
-          _supabase.from('order_items').count(CountOption.exact).not('test_id', 'is', null),
-          _supabase.from('order_items').count(CountOption.exact).not('resource_id', 'is', null),
+          _supabase.from('access').count(CountOption.exact),
+          _supabase.from('access').count(CountOption.exact).eq('item_type', 'test'),
+          _supabase.from('access').count(CountOption.exact).eq('item_type', 'resource'),
         ];
 
         final results = await RetryHelper.run(
@@ -52,15 +52,19 @@ class AdminService {
         int totalPurchased = 0;
 
         try {
+          // Use the new RPC which is migrated to payment table
           final rpcRevenue = await _supabase.rpc('calculate_total_revenue');
           revenue = (rpcRevenue as num).toDouble();
-          final ordersCount = await _supabase.from('orders').count(CountOption.exact).eq('status', 'SUCCESS');
-          totalPurchased = ordersCount;
+          
+          // Count from payment table instead of legacy orders
+          final paymentsCount = await _supabase.from('payment').count(CountOption.exact).eq('status', 'SUCCESS');
+          totalPurchased = paymentsCount;
         } catch (e, stack) {
           CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service_stats_rpc');
-          final ordersList = await _supabase.from('orders').select('total_amount').eq('status', 'SUCCESS');
-          totalPurchased = ordersList.length;
-          revenue = ordersList.fold(0.0, (sum, item) => sum + (item['total_amount'] as num).toDouble());
+          // Fallback to manual sum from payment table
+          final paymentList = await _supabase.from('payment').select('amount').eq('status', 'SUCCESS');
+          totalPurchased = paymentList.length;
+          revenue = paymentList.fold(0.0, (sum, item) => sum + (item['amount'] as num).toDouble());
         }
 
         return {
@@ -141,14 +145,14 @@ class AdminService {
         .asyncMap((_) async {
       try {
         final items = await RetryHelper.run(
-          () async => await _supabase.from('order_items').select('test_id').not('test_id', 'is', null).limit(200),
+          () async => await _supabase.from('access').select('item_id').eq('item_type', 'test').limit(200),
           maxRetries: 2,
         );
         if (items.isEmpty) return [];
 
         final Map<int, int> testSalesCount = {};
         for (var item in items) {
-          final id = item['test_id'] as int?;
+          final id = item['item_id'] as int?;
           if (id != null) testSalesCount[id] = (testSalesCount[id] ?? 0) + 1;
         }
 
@@ -222,8 +226,13 @@ class AdminService {
 
   static Future<List<Map<String, dynamic>>> getUserOrders(String userId) async {
     try {
-      final response = await _supabase.from('orders').select('*').eq('user_id', userId).eq('status', 'SUCCESS').order('created_at', ascending: false);
-      return List<Map<String, dynamic>>.from(response);
+      final response = await _supabase.from('payment').select('*').eq('user_id', userId).eq('status', 'SUCCESS').order('created_at', ascending: false);
+      // Map 'amount' to 'total_amount' and 'id' to 'order_id' for UI compatibility
+      return List<Map<String, dynamic>>.from(response).map((p) => {
+        ...p,
+        'order_id': p['id'],
+        'total_amount': p['amount'],
+      }).toList();
     } catch (e) { return []; }
   }
 
@@ -299,17 +308,134 @@ class AdminService {
   }
 
   static Stream<List<Map<String, dynamic>>> streamUserOrders(String userId) {
-    return _supabase.from('orders').stream(primaryKey: ['order_id']).eq('user_id', userId).order('created_at', ascending: false).map((orders) => orders.where((o) => o['status'] == 'SUCCESS').toList());
+    return _supabase
+        .from('access')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', userId)
+        .order('granted_at', ascending: false)
+        .asyncMap((items) async {
+          if (items.isEmpty) return [];
+
+          // Fetch associated payment details for discount info
+          final paymentIds = items
+              .map((i) => i['payment_id'])
+              .where((id) => id != null)
+              .toSet()
+              .toList();
+          
+          Map<String, dynamic> paymentMap = {};
+          if (paymentIds.isNotEmpty) {
+            final payments = await _supabase
+                .from('payment')
+                .select('id, amount, discount_amount, offer_code')
+                .inFilter('id', paymentIds);
+            paymentMap = {for (var p in payments) p['id'].toString(): p};
+          }
+
+          return items.map((item) {
+            final snapshot = item['item_snapshot'] as Map<String, dynamic>? ?? {};
+            final paymentId = item['payment_id']?.toString();
+            final payment = paymentId != null ? paymentMap[paymentId] : null;
+
+            return {
+              ...item,
+              'item_name': snapshot['title'] ?? 'Untitled Item',
+              'created_at': item['granted_at'],
+              'payment_details': payment,
+            };
+          }).toList();
+        });
   }
 
   static Stream<List<Map<String, dynamic>>> streamUserResults(String userId) {
-    return _supabase.from('results').stream(primaryKey: ['result_id']).eq('user_id', userId).order('attempt_date', ascending: false).asyncMap((results) async {
-      if (results.isEmpty) return [];
-      final testIds = results.map((r) => r['test_id']).toSet().toList();
-      final tests = await _supabase.from('mock_tests').select('test_id, title, total_marks').inFilter('test_id', testIds);
-      final testMap = {for (var t in tests) t['test_id']: t};
-      return results.map((r) => { ...r, 'mock_tests': testMap[r['test_id']] }).toList();
-    });
+    return _supabase
+        .from('results')
+        .stream(primaryKey: ['result_id'])
+        .eq('user_id', userId)
+        .order('attempt_date', ascending: false)
+        .asyncMap((results) async {
+          if (results.isEmpty) return [];
+          final testIds = results.map((r) => r['test_id']).toSet().toList();
+          final tests = await _supabase
+              .from('mock_tests')
+              .select('test_id, title, total_marks')
+              .inFilter('test_id', testIds);
+          final testMap = {for (var t in tests) t['test_id']: t};
+          return results.map((r) => {...r, 'mock_tests': testMap[r['test_id']]}).toList();
+        });
+  }
+
+  static Future<List<Map<String, dynamic>>> getUserOrdersPaginated(String userId, {int from = 0, int to = 10, String? searchQuery}) async {
+    try {
+      var query = _supabase
+          .from('access')
+          .select('*, item_snapshot, payment_id')
+          .eq('user_id', userId);
+
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        // Search in item_snapshot JSONB field
+        query = query.ilike('item_snapshot->>title', '%$searchQuery%');
+      }
+
+      final items = await query
+          .order('granted_at', ascending: false)
+          .range(from, to);
+
+      if (items.isEmpty) return [];
+
+      // Fetch associated payment details
+      final paymentIds = items
+          .map((i) => i['payment_id'])
+          .where((id) => id != null)
+          .toSet()
+          .toList();
+      
+      Map<String, dynamic> paymentMap = {};
+      if (paymentIds.isNotEmpty) {
+        final payments = await _supabase
+            .from('payment')
+            .select('id, amount, discount_amount, offer_code')
+            .inFilter('id', paymentIds);
+        paymentMap = {for (var p in payments) p['id'].toString(): p};
+      }
+
+      return items.map((item) {
+        final snapshot = item['item_snapshot'] as Map<String, dynamic>? ?? {};
+        final paymentId = item['payment_id']?.toString();
+        final payment = paymentId != null ? paymentMap[paymentId] : null;
+
+        return {
+          ...item,
+          'item_name': snapshot['title'] ?? 'Untitled Item',
+          'created_at': item['granted_at'],
+          'payment_details': payment,
+        };
+      }).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getUserResultsPaginated(String userId, {int from = 0, int to = 10, String? searchQuery}) async {
+    try {
+      var query = _supabase
+          .from('results')
+          .select('*, mock_tests!inner(title, total_marks)')
+          .eq('user_id', userId);
+
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        // Filter by the joined mock_tests title
+        query = query.ilike('mock_tests.title', '%$searchQuery%');
+      }
+
+      final results = await query
+          .order('attempt_date', ascending: false)
+          .range(from, to);
+
+      return results.map((r) => Map<String, dynamic>.from(r)).toList();
+    } catch (e) {
+      return [];
+    }
   }
 
   static Future<void> deleteUser(String userId) async {
@@ -319,7 +445,8 @@ class AdminService {
   static Future<Map<String, dynamic>> getResourceTypeStats(String type) async {
     try {
       final res = await _supabase.from('resources').select('id').eq('type', type).count(CountOption.exact);
-      final sales = await _supabase.from('order_items').select('item_id, resources!inner(type)').eq('resources.type', type);
+      // Join with resources to ensure we get current type matches, though we could use snapshots if needed
+      final sales = await _supabase.from('access').select('id, resources!inner(type)').eq('item_type', 'resource').eq('resources.type', type);
       return { 'totalCount': res.count, 'salesCount': (sales as List).length };
     } catch (e) { return {'totalCount': 0, 'salesCount': 0}; }
   }
@@ -327,40 +454,142 @@ class AdminService {
   static Future<Map<String, dynamic>> getResourceItemStats(int resourceId) async {
     try {
       final itemRes = await _supabase.from('resources').select('price').eq('id', resourceId).single();
-      final salesRes = await _supabase.from('order_items').select('item_id').eq('resource_id', resourceId).count(CountOption.exact);
+      final salesRes = await _supabase.from('access').select('id').eq('item_type', 'resource').eq('item_id', resourceId).count(CountOption.exact);
       return { 'price': (itemRes['price'] as num?)?.toDouble() ?? 0.0, 'salesCount': salesRes.count };
-    } catch (e) { return {'price': 0.0, 'salesCount': 0}; }
+    } catch (e) { return {'totalCount': 0, 'salesCount': 0}; }
   }
 
   static Future<Map<String, dynamic>> getMockTestItemStats(int testId) async {
     try {
       final itemRes = await _supabase.from('mock_tests').select('price').eq('test_id', testId).single();
-      final salesRes = await _supabase.from('order_items').select('item_id').eq('test_id', testId).count(CountOption.exact);
+      final salesRes = await _supabase.from('access').select('id').eq('item_type', 'test').eq('item_id', testId).count(CountOption.exact);
       return { 'price': (itemRes['price'] as num?)?.toDouble() ?? 0.0, 'salesCount': salesRes.count };
-    } catch (e) { return {'price': 0.0, 'salesCount': 0}; }
+    } catch (e) { return {'totalCount': 0, 'salesCount': 0}; }
   }
 
   static Future<Map<String, dynamic>?> fetchOrderById(String orderId) async {
     try {
-      return await _supabase.from('orders').select('*, users:user_id(username, email, phonenumber), offers:offer_id(code, discount_value, discount_type), order_items(*, mock_tests(title), resources(title, type))').eq('order_id', orderId).maybeSingle();
+      final payment = await _supabase.from('payment').select('*').eq('id', orderId).maybeSingle();
+      if (payment == null) return null;
+
+      // Fetch associated access items to simulate order_items
+      final accessItems = await _supabase.from('access').select('*').eq('payment_id', orderId);
+
+      return {
+        ...payment,
+        'order_id': payment['id'],
+        'total_amount': payment['amount'],
+        'payment_id': payment['gateway_payment_id'],
+        'users': payment['user_snapshot'],
+        'offers': payment['offer_code'] != null ? {'code': payment['offer_code']} : null,
+        'order_items': accessItems.map((a) => {
+          'price_at_purchase': a['price_paid'],
+          'mock_tests': a['item_type'] == 'test' ? a['item_snapshot'] : null,
+          'resources': a['item_type'] == 'resource' ? a['item_snapshot'] : null,
+        }).toList(),
+      };
     } catch (e) { return null; }
   }
 
   static Future<List<Map<String, dynamic>>> fetchPaginatedOrders({ required int offset, required int limit, String? searchQuery }) async {
     try {
-      var query = _supabase.from('orders').select('*, users:user_id(username, email), offers:offer_id(code, discount_value, discount_type), order_items(*, mock_tests(title), resources(title, type))').eq('status', 'SUCCESS');
+      var query = _supabase.from('payment').select('*').eq('status', 'SUCCESS');
       if (searchQuery != null && searchQuery.isNotEmpty) {
-        query = query.or('order_id.ilike.%$searchQuery%,payment_id.ilike.%$searchQuery%');
+        query = query.or('id.ilike.%$searchQuery%,gateway_payment_id.ilike.%$searchQuery%,offer_code.ilike.%$searchQuery%');
       }
-      final response = await query.order('created_at', ascending: false).range(offset, offset + limit - 1);
-      return List<Map<String, dynamic>>.from(response);
+      final payments = await query.order('created_at', ascending: false).range(offset, offset + limit - 1);
+      if (payments.isEmpty) return [];
+
+      // Fetch associated access items
+      final paymentIds = payments.map((p) => p['id'] as String).toList();
+      final accessItems = await _supabase.from('access').select('*').inFilter('payment_id', paymentIds);
+
+      // Fetch offer details for payments with offer_code
+      final offerCodes = payments.map((p) => p['offer_code']).where((c) => c != null).cast<String>().toSet().toList();
+      Map<String, Map<String, dynamic>> offersMap = {};
+      if (offerCodes.isNotEmpty) {
+        final offers = await _supabase.from('offers').select('*').inFilter('code', offerCodes);
+        for (var o in offers) {
+          offersMap[o['code']] = o;
+        }
+      }
+
+      final Map<String, List<Map<String, dynamic>>> itemsMap = {};
+      for (var item in accessItems) {
+        final pid = item['payment_id'] as String;
+        itemsMap.putIfAbsent(pid, () => []).add(item);
+      }
+
+      return List<Map<String, dynamic>>.from(payments).map((p) {
+        final pid = p['id'] as String;
+        final items = itemsMap[pid] ?? [];
+        final offerCode = p['offer_code'];
+        final offerDetails = offerCode != null ? offersMap[offerCode] : null;
+
+        return {
+          ...p,
+          'order_id': p['id'],
+          'total_amount': p['amount'],
+          'discount_amount': p['discount_amount'] ?? 0,
+          'payment_id': p['gateway_payment_id'],
+          'users': p['user_snapshot'],
+          'offers': offerDetails,
+          'order_items': items.map((a) => {
+            'price_at_purchase': a['price_paid'],
+            'mock_tests': a['item_type'] == 'test' ? a['item_snapshot'] : null,
+            'resources': a['item_type'] == 'resource' ? a['item_snapshot'] : null,
+          }).toList(),
+        };
+      }).toList();
     } catch (e) { return []; }
   }
 
   static Future<List<Map<String, dynamic>>> fetchAllOrdersWithDetails() async {
     try {
-      final response = await _supabase.from('orders').select('*, users:user_id(username, email), offers:offer_id(code, discount_value, discount_type), order_items(*, mock_tests(title), resources(title, type))').eq('status', 'SUCCESS').order('created_at', ascending: false);
-      return List<Map<String, dynamic>>.from(response);
+      final payments = await _supabase.from('payment').select('*').eq('status', 'SUCCESS').order('created_at', ascending: false);
+      if (payments.isEmpty) return [];
+
+      // Fetch associated access items
+      final paymentIds = payments.map((p) => p['id'] as String).toList();
+      final accessItems = await _supabase.from('access').select('*').inFilter('payment_id', paymentIds);
+
+      // Fetch offer details for payments with offer_code
+      final offerCodes = payments.map((p) => p['offer_code']).where((c) => c != null).cast<String>().toSet().toList();
+      Map<String, Map<String, dynamic>> offersMap = {};
+      if (offerCodes.isNotEmpty) {
+        final offers = await _supabase.from('offers').select('*').inFilter('code', offerCodes);
+        for (var o in offers) {
+          offersMap[o['code']] = o;
+        }
+      }
+
+      final Map<String, List<Map<String, dynamic>>> itemsMap = {};
+      for (var item in accessItems) {
+        final pid = item['payment_id'] as String;
+        itemsMap.putIfAbsent(pid, () => []).add(item);
+      }
+
+      return List<Map<String, dynamic>>.from(payments).map((p) {
+        final pid = p['id'] as String;
+        final items = itemsMap[pid] ?? [];
+        final offerCode = p['offer_code'];
+        final offerDetails = offerCode != null ? offersMap[offerCode] : null;
+
+        return {
+          ...p,
+          'order_id': p['id'],
+          'total_amount': p['amount'],
+          'discount_amount': p['discount_amount'] ?? 0,
+          'payment_id': p['gateway_payment_id'],
+          'users': p['user_snapshot'],
+          'offers': offerDetails,
+          'order_items': items.map((a) => {
+            'price_at_purchase': a['price_paid'],
+            'mock_tests': a['item_type'] == 'test' ? a['item_snapshot'] : null,
+            'resources': a['item_type'] == 'resource' ? a['item_snapshot'] : null,
+          }).toList(),
+        };
+      }).toList();
     } catch (e) { return []; }
   }
 
@@ -388,6 +617,7 @@ class AdminService {
         'item_type': itemType,
         'item_snapshot': itemSnapshot,
         'granted_at': DateTime.now().toIso8601String(),
+        'access_type': 'manual_granted',
         'is_active': true,
       }, onConflict: 'user_id, item_type, item_id');
       

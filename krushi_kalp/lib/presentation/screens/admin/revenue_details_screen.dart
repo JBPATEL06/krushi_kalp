@@ -305,20 +305,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
             .format(DateTime.parse(order['created_at']).toUtc().toLocal())
         : 'Unknown Date';
 
-    final bool isDirect = offer == null;
-    String offerText = 'Direct Checkout';
-    String discountStr = '';
-
-    if (!isDirect) {
-      final code = offer['code'] ?? 'Sale';
-      final val = offer['discount_value'];
-      final type = offer['discount_type'];
-      if (val != null) {
-        discountStr = type == 'PERCENTAGE' ? '$val% OFF' : '₹$val OFF';
-      }
-      offerText =
-          (offer['code'] == null) ? 'Store Sale Applied' : 'Coupon Code: $code';
-    }
+    final double discount = (order['discount_amount'] as num? ?? 0.0).toDouble();
 
     showDialog(
       context: context,
@@ -352,29 +339,55 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
             _buildDetailRow(
                 context, Icons.calendar_today_rounded, 'DATE & TIME', dateStr),
             const SizedBox(height: AppSpacing.md),
-            if (!isDirect) ...[
-              _buildDetailRow(
-                context,
-                Icons.local_offer_rounded,
-                'OFFER APPLIED',
-                offerText,
-                extra: discountStr.isNotEmpty
-                    ? Container(
-                        margin: const EdgeInsets.only(top: 4),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                            color: colorScheme.tertiary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4)),
-                        child: Text(discountStr,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.tertiary,
-                                fontWeight: FontWeight.bold)),
-                      )
-                    : null,
+            
+            // New Detailed Discount Section - Now Null-Safe
+            if (discount > 0) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.local_offer_rounded, size: context.sp(18), color: colorScheme.outline),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'OFFER APPLIED',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          offer?['title'] ?? 'Coupon Applied',
+                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        Text(
+                          offer != null 
+                            ? '${offer['discount_type'] == 'PERCENTAGE' ? '${offer['discount_value']}% OFF' : '₹${offer['discount_value']} FLAT OFF'} (${offer['code'] ?? 'SYSTEM'})'
+                            : 'Discount Applied (${order['offer_code'] ?? 'SYSTEM'})',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.green.shade700,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    '-₹${discount.toStringAsFixed(0)}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.green.shade700,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.md),
             ],
+
             Text('PURCHASED ITEMS',
                 style: theme.textTheme.labelMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
@@ -382,10 +395,11 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
             const SizedBox(height: AppSpacing.sm),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 180),
-              child: DecoratedBox(
+              child: Container(
                 decoration: BoxDecoration(
-                  color: colorScheme.surface,
+                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
                 ),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(AppSpacing.md),
@@ -393,38 +407,63 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       for (int i = 0; i < items.length; i++) ...[
-                        if (i > 0) const Divider(height: 16),
+                        if (i > 0) Divider(height: 16, color: colorScheme.outline.withValues(alpha: 0.05)),
                         Builder(builder: (context) {
                           final item = items[i];
                           final mockTest = item['mock_tests'];
                           final resource = item['resources'];
                           String title = 'Unknown Item';
+                          String type = 'ITEM';
+                          
                           if (mockTest != null) {
-                            title = '${mockTest['title']}';
+                            title = '${mockTest['title'] ?? 'Untitled Test'}';
+                            type = 'TEST';
                           } else if (resource != null) {
-                            title = '${resource['title']}';
+                            title = '${resource['title'] ?? 'Untitled Resource'}';
+                            type = (resource['type'] ?? 'RESOURCE').toString().toUpperCase();
                           }
-                          final double price =
-                              (item['price_at_purchase'] as num?)?.toDouble() ??
-                                  0.0;
-                          return Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  title,
-                                  style: theme.textTheme.bodySmall,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+
+                          final double price = (item['price_at_purchase'] as num?)?.toDouble() ?? 0.0;
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    type,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: context.sp(7),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '₹${price.toStringAsFixed(0)}',
-                                style: theme.textTheme.bodySmall
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                            ],
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    title,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: context.sp(11),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '₹${price.toStringAsFixed(0)}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
                         }),
                       ],
@@ -434,17 +473,33 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Total Paid',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold)),
-                Text('₹${amount.toStringAsFixed(2)}',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: colorScheme.tertiary)),
-              ],
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: colorScheme.primary,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.primary.withValues(alpha: 0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('TOTAL PAID',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                          color: colorScheme.onPrimary,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1)),
+                  Text('₹${amount.toStringAsFixed(0)}',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                          color: colorScheme.onPrimary,
+                          fontWeight: FontWeight.w900)),
+                ],
+              ),
             ),
           ],
         ),
