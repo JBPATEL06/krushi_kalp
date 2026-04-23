@@ -79,6 +79,15 @@ Krushi Kalp is a Flutter-based educational/agricultural application providing mo
 - **Outcome**: 100% stable PDF generation and viewing workflow.
 - **Status**: COMPLETE.
 
+## Phase 31: Data Cleanup & Mock Reset (2026-04-22)
+- **Goal**: Wipe all mock tests and resources to prepare for fresh production data.
+- **Actions**:
+    - Truncated `public.mock_tests` with CASCADE (wiping results, order items, and reviews).
+    - Truncated `public.resources` with CASCADE (wiping order items and reviews).
+    - Deleted all storage objects in the `mock_test` bucket (Resources, JSON files, Covers, and Results).
+- **Outcome**: Database and Storage cleared of all temporary/mock entities.
+- **Status**: COMPLETE.
+
 ## Completed Phases
 - Phase 1: Authentication & Navigation (v1-v4)
 - Phase 2: Administrative Stabilization (v5-v7)

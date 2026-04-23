@@ -17,15 +17,19 @@ Follows Clean Architecture:
 - `core/`: Constants, Theme, and App Router.
 
 ## Current Active Phase
-- Cleaning up mock test detail UI.
+- Phase 6: Payment & Access Schema Migration (`feature/payment-access-schema`)
+  - DB migration: DONE ✅
+  - Flutter code migration: PENDING
 
 ## Completed Phases
 - [x] Phase 1: Background Upload Stabilization (Isolate Refactor)
-- [/] Phase 2: User Dashboard Polishing
-- [ ] Phase 3: Analytics Integration
-- Store integration with Razorpay.
-- Authentication with Google and Email/Password.
-- Play Store Compliance Audit (Privacy Policy, Account Deletion, Encryption).
+- [x] Phase 2: User Dashboard Polishing
+- [x] Phase 3: Simplified PDF Generation UX (Inline Progress)
+- [x] Phase 4: Profile & Feedback Stability (FutureBuilder & Google Link UX)
+- [x] Phase 5: Production Release v1.0.1+7 (Signed AAB Generated)
+- [x] Phase 6A: DB Schema — payment + access tables (no FK, with snapshots), is_public on mock_tests
+- [x] Authentication with Google and Email/Password.
+- [x] Play Store Compliance Audit (Privacy Policy, Account Deletion, Encryption).
 
 ## Known Risks or Constraints
 - **Database Function Overloading**: Caution is needed when creating RPCs to avoid duplicated signatures (PGRST203).

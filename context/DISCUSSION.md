@@ -38,3 +38,34 @@
 
 ## Conclusion on Crashes
 By offloading all storage and network operations to a **managed background isolate** and wrapping the entry point in a **Global Error Zone**, the primary causes of the observed ANRs (Application Not Responding) and "Method Not Found" crashes are effectively neutralized.
+
+## 2026-04-18: PDF UX & Profile Stability
+
+### Discussion: PDF Generation UX Refactor
+- **Problem**: PDF generation used a blocking modal dialog that made the app feel "frozen" and "unresponsive". Users couldn't cancel, and there was a risk of data loss if they navigated away.
+- **Decision**: 
+    - Replaced the modal with **Inline Progress** inside the Download button.
+    - Added a **Cancel** button to abort the process.
+    - Implemented **Safe-Exit Protection** via `PopScope` to warn users if a PDF is unsaved.
+- **Outcome**: The experience feels much faster and safer.
+
+### Discussion: Profile Stability & Linking
+- **Problem**: 
+    1. Users on 5G reported occasional "network errors" on the Profile screen due to `StreamBuilder` overhead.
+    2. The "Link Google" button was always visible, leading to redundant clicks or confusion.
+- **Decision**:
+    - Converted `ProfileScreen` to `FutureBuilder` to reduce constant socket connections for static data.
+    - Implemented **Conditional Visibility**: The "Link Google Account" button now hides automatically if a Google provider is already detected in the user's identities.
+    - Integrated `ErrorUtils` to handle the specific "identity already linked" (conflict) scenario gracefully with user-friendly feedback.
+- **Branch**: `fix/profile-future-pdf-ux`
+- **Status**: Completed and Verified.
+
+## 2026-04-23: NDK Build Resolution & Production AAB
+- **Problem**: Persistent NDK build failure blocking production AAB generation. Environment was mismatching NDK versions.
+- **Solution**: 
+    1. Configured Android SDK to include NDK r27.0.12077973.
+    2. Verified project structure and ensured `flutter build appbundle` is run from the correct root (`krushi_kalp`).
+    3. Successfully generated `build\app\outputs\bundle\release\app-release.aab` (v1.0.1+7).
+- **Outcome**: The production build pipeline is now clear and stable.
+- **Status**: Completed.
+

@@ -1,5 +1,18 @@
 # Krushi Kalp Discussion Log
 
+## [2026-04-22] Data Cleanup Request
+**User**: "you have supabase mcp acess you need to only delete all mock test data and all resources table data with their file tooo"
+**Agent**: Identified tables `mock_tests`, `resources`, `results`, `order_items`, `reviews` and storage bucket `mock_test`.
+**Plan**:
+1. Truncate `mock_tests` CASCADE.
+2. Truncate `resources` CASCADE.
+3. Delete from `storage.objects` where `bucket_id = 'mock_test'`.
+**Risk Confirmation**: User confirmed awareness of irreversible deletion.
+**Branch**: Proceeding on the existing branch as per user instruction "proceed".
+
+---
+
+
 ## [2026-04-17] Mock Test Navigation & UI Refinement
 - **Problem**: 
     - "Start Mock Test" button in `MockTestDetailScreen` is unresponsive.
