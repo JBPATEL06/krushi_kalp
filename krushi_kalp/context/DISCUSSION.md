@@ -382,3 +382,22 @@ The `complete_checkout_v1` RPC was trying to update `payment.status` to `'COMPLE
 ### Status: ✅ COMPLETED
 
 ---
+
+## [Phase 12.1: Add to Cart Table Name Fix]
+
+### Problem Summary
+**Symptom**: "Add to Cart" was failing. Items were not appearing in the cart even though the user clicked the button.
+
+### Root Cause
+In `CartService.addToCart`, the code was attempting to fetch user information for the payment snapshot from a table named `profiles`. This table does not exist in the current schema (the correct table is `users`). This caused the entire insertion transaction to fail.
+
+### Resolution
+- Updated `CartService.dart` to correctly reference the `users` table instead of `profiles`.
+- Verified that `email` and `username` columns exist in the `users` table.
+
+### Files Modified
+- `lib/data/services/cart_service.dart`
+
+### Status: ✅ COMPLETED
+
+---

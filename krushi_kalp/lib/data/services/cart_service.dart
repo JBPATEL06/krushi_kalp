@@ -246,7 +246,7 @@ class CartService {
         // Create new PENDING payment with user snapshot
         // We import AuthService logic here to get the snapshot
         final userProfileRes = await _supabase
-            .from('profiles')
+            .from('users')
             .select('email, username')
             .eq('id', authUserId)
             .maybeSingle();
