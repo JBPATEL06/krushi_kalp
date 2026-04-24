@@ -238,9 +238,15 @@ class AdminService {
 
   static Future<List<Map<String, dynamic>>> getUserResults(String userId) async {
     try {
-      final response = await _supabase.from('results').select('*, mock_tests(title, total_marks)').eq('user_id', userId).order('attempt_date', ascending: false);
+      final response = await _supabase
+          .from('results')
+          .select('*, mock_tests(title, total_marks)')
+          .eq('user_id', userId)
+          .order('attempt_date', ascending: false);
       return List<Map<String, dynamic>>.from(response);
-    } catch (e) { return []; }
+    } catch (e) {
+      return [];
+    }
   }
 
   static Future<void> promoteToAdmin(String userId) async {
@@ -434,7 +440,6 @@ class AdminService {
           .eq('user_id', userId);
 
       if (searchQuery != null && searchQuery.isNotEmpty) {
-        // Filter by the joined mock_tests title
         query = query.ilike('mock_tests.title', '%$searchQuery%');
       }
 
@@ -454,27 +459,64 @@ class AdminService {
 
   static Future<Map<String, dynamic>> getResourceTypeStats(String type) async {
     try {
-      final res = await _supabase.from('resources').select('id').eq('type', type).count(CountOption.exact);
-      // Join with resources to ensure we get current type matches, though we could use snapshots if needed
-      final sales = await _supabase.from('access').select('id, resources!inner(type)').eq('item_type', 'resource').eq('resources.type', type);
-      return { 'totalCount': res.count, 'salesCount': (sales as List).length };
-    } catch (e) { return {'totalCount': 0, 'salesCount': 0}; }
+      // 1. Total resources of this type
+      final totalCount = await _supabase
+          .from('resources')
+          .count(CountOption.exact)
+          .eq('type', type);
+      
+      // 2. Fetch all resource IDs of this type to filter 'access' table
+      final resourceIdsRes = await _supabase.from('resources').select('id').eq('type', type);
+      final List resourceIds = (resourceIdsRes as List).map((r) => r['id']).toList();
+      
+      if (resourceIds.isEmpty) {
+        return { 'totalCount': totalCount, 'salesCount': 0 };
+      }
+
+      // 3. Count access records where item_id is in these resourceIds
+      final salesCount = await _supabase
+          .from('access')
+          .count(CountOption.exact)
+          .eq('item_type', 'resource')
+          .inFilter('item_id', resourceIds);
+      
+      return { 
+        'totalCount': totalCount, 
+        'salesCount': salesCount 
+      };
+    } catch (e) { 
+      return {'totalCount': 0, 'salesCount': 0}; 
+    }
   }
 
   static Future<Map<String, dynamic>> getResourceItemStats(int resourceId) async {
     try {
       final itemRes = await _supabase.from('resources').select('price').eq('id', resourceId).single();
-      final salesRes = await _supabase.from('access').select('id').eq('item_type', 'resource').eq('item_id', resourceId).count(CountOption.exact);
-      return { 'price': (itemRes['price'] as num?)?.toDouble() ?? 0.0, 'salesCount': salesRes.count };
-    } catch (e) { return {'totalCount': 0, 'salesCount': 0}; }
+      final salesCount = await _supabase
+          .from('access')
+          .count(CountOption.exact)
+          .eq('item_type', 'resource')
+          .eq('item_id', resourceId);
+      return { 
+        'price': (itemRes['price'] as num?)?.toDouble() ?? 0.0, 
+        'salesCount': salesCount 
+      };
+    } catch (e) { return {'price': 0.0, 'salesCount': 0}; }
   }
 
   static Future<Map<String, dynamic>> getMockTestItemStats(int testId) async {
     try {
       final itemRes = await _supabase.from('mock_tests').select('price').eq('test_id', testId).single();
-      final salesRes = await _supabase.from('access').select('id').eq('item_type', 'test').eq('item_id', testId).count(CountOption.exact);
-      return { 'price': (itemRes['price'] as num?)?.toDouble() ?? 0.0, 'salesCount': salesRes.count };
-    } catch (e) { return {'totalCount': 0, 'salesCount': 0}; }
+      final salesCount = await _supabase
+          .from('access')
+          .count(CountOption.exact)
+          .eq('item_type', 'test')
+          .eq('item_id', testId);
+      return { 
+        'price': (itemRes['price'] as num?)?.toDouble() ?? 0.0, 
+        'salesCount': salesCount 
+      };
+    } catch (e) { return {'price': 0.0, 'salesCount': 0}; }
   }
 
   static Future<Map<String, dynamic>?> fetchOrderById(String orderId) async {

@@ -33,9 +33,34 @@ Refactor `AdminResourceList` to use `infinite_scroll_pagination` instead of fetc
 
 ## [Phase 2 Outcome]
 - Successfully migrated `AdminMockTestList` from a stream-based approach (fetching all data) to a paginated approach.
-- Optimized performance by offloading search and sorting to Supabase via query parameters in `fetchPaginatedMockTests`.
-- Added `EasyDebounce` for search inputs to prevent excessive API calls.
-- Verified that signed URLs and other metadata are correctly populated during paginated loads.
+- Optimized performance by offloading search and sorting to Supabase via query parameters.
+
+## Current Active Phase
+- Phase 10: No-FK Refactoring & Bug Fixing (COMPLETED)
+- Phase 11: TBD - Refactoring remaining SQL joins in `AdminService` to comply with No-FK policy.
+    - Fixing IDE errors in `AdminService`, `CartService`, and `TestService`.
+
+## Completed Phases
+- Initial project structure and core features (Pre-existing)
+- Phase 1: Refactor AdminResourceList for infinite scroll.
+- Phase 2: Refactor AdminMockTestList for infinite scroll (Stabilized).
+- Phase 3: Implement search and filter in paginated services (Integrated).
+- Phase 4.1: Backend Service Prep (toggle status, fetch users by access type).
+- Phase 5: Admin Access Audit & Visibility Integration (Sub-phases 5.1-5.3).
+- Phase 6: Payment & Access Schema Migration.
+- Phase 7: Razorpay & Checkout Stabilization.
+- Phase 8: Razorpay UPI ID Accessibility.
+- Phase 9: No-FK Refactor (Initial - Resource Service & Partial Admin Service).
+
+## Key Decisions
+- **No-FK Policy**: All cross-table data fetching must use manual "Fetch-and-Stitch" instead of SQL joins.
+- Use `infinite_scroll_pagination` package for consistent pagination across the app.
+- Refactor Supabase services to support offset-based pagination.
+
+## Known Risks or Constraints
+- Supabase pagination requires careful offset/limit management.
+- Signed URLs for resources need to be handled during paginated loads.
+- Manual stitching requires careful null handling for missing related data.
 
 ---
 
@@ -101,7 +126,8 @@ Enhance administrative control by adding visibility toggles and a detailed multi
   - Add Access Audit icon to the AppBar or Performance section.
 
 ### Sub-Phase 5.4: Service Layer Verification
-- **Files**: `lib/data/services/admin_service.dart`
+- **Files**:
+  - `lib/data/services/admin_service.dart`
 - **Action**:
   - Verify/Implement `getPaginatedUsersByAccessType`.
 
@@ -200,3 +226,41 @@ Ensure users without UPI apps installed on their device can easily pay by enteri
 
 ### Resolved and How
 - Added the `config` block to the Razorpay `options` map. This explicitly instructs the Razorpay SDK to provide a manual entry field for UPI IDs (the "Collect Flow"), which works independently of locally installed apps.
+
+---
+
+### Phase 10: No-FK Refactoring & Bug Fixing
+- **Goal**: Enforce No-FK policy and fix Supabase v2 syntax errors.
+- **Outcome**: 
+    - Enforced Fetch-and-Stitch for `payment` and `access` tables.
+    - Maintained SQL joins for `results` table (has FKs).
+    - Migrated `.in_()` to `.inFilter()`.
+    - Fixed `AdminService` count errors by switching from `FetchOptions` (unsupported version) to `.count(CountOption.exact)`.
+    - Verified stability across `AdminService`, `CartService`, and `TestService`.
+- **Status**: Completed.
+- **[TestService]**:
+  - Fix `fetchUserResults` (Line 363) by adding explicit `.cast<String, dynamic>()` to the stitched maps before parsing.
+
+---
+
+## [Phase 11: Payment RLS & Accessibility Fixes]
+### Goal
+Resolve `42501 Forbidden` errors during checkout caused by missing RLS policies on the `payment` table.
+
+### Proposed Changes
+- **Database**:
+  - Add `INSERT` policy for `payment` table: `(auth.uid() = user_id)`.
+  - Add `UPDATE` policy for `payment` table: `(auth.uid() = user_id)`.
+- **Reason**: The app inserts and then immediately updates payment records for direct orders, which requires both policies to be present for regular users.
+
+### Risks / Side Effects
+- None. Access is strictly scoped to the user's own `user_id`.
+
+### Confirmed by User
+- Confirmed to proceed in the same branch.
+
+### Resolved and How
+- Applied SQL migration to create `payment_user_insert` and `payment_user_update` policies.
+- Verified that these policies now exist alongside the existing `SELECT` policy.
+
+---

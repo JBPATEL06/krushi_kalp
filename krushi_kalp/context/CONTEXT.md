@@ -16,9 +16,7 @@ Clean Architecture:
 - **Data**: API services (Supabase) and repository implementations
 
 ## Current Active Phase
-- **Phase 8: Razorpay UPI ID Accessibility** (Completed)
-    - Modified Razorpay configuration to enable and prioritize UPI ID (VPA) manual entry.
-    - Ensures functionality even when no UPI apps are installed on the device.
+- Phase 11: Payment RLS & Accessibility Fixes.
 
 ## Completed Phases
 - Initial project structure and core features (Pre-existing)
@@ -30,6 +28,10 @@ Clean Architecture:
 - Phase 6: Payment & Access Schema Migration.
 - Phase 7: Razorpay & Checkout Stabilization.
 - Phase 8: Razorpay UPI ID Accessibility.
+- Phase 9: Resource Visibility Policy Enforced.
+- Phase 10: No-FK Refactoring & Supabase v2 Bug Fixes.
+
+- Phase 11: Payment RLS & Accessibility Fixes.
 
 ## Key Decisions
 - Use `infinite_scroll_pagination` package for consistent pagination across the app.

@@ -342,8 +342,7 @@ class TestService {
           .eq('user_id', authUserId)
           .order('attempt_date', ascending: false);
       
-      final List<dynamic> data = response as List<dynamic>;
-      return data.map((json) => TestResult.fromJson(json)).toList();
+      return (response as List).map((json) => TestResult.fromJson(json)).toList();
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: fetchUserResults failed');
       throw Exception('Failed to load history: $e');
@@ -401,14 +400,27 @@ class TestService {
   /// Fetches the most recent test result for a user.
   Future<Map<String, dynamic>?> fetchLatestResult(String authUserId) async {
     try {
-      final response = await _supabase
+      final result = await _supabase
           .from('results')
-          .select('*, mock_tests(title)')
+          .select('*')
           .eq('user_id', authUserId)
           .order('attempt_date', ascending: false)
           .limit(1)
           .maybeSingle();
-      return response;
+
+      if (result == null) return null;
+
+      final testId = result['test_id'];
+      final test = await _supabase
+          .from('mock_tests')
+          .select('title')
+          .eq('test_id', testId)
+          .maybeSingle();
+
+      return {
+        ...result,
+        'mock_tests': test,
+      };
     } catch (e, stack) {
       CrashlyticsService.instance
           .recordError(e, stack, reason: 'fetchLatestResult failed');

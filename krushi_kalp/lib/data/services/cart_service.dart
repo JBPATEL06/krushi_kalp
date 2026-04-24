@@ -18,7 +18,7 @@ class CartService {
   /// Fetches all items in the user's current PENDING payment (the cart).
   Future<List<OrderItem>> fetchCartItems(String userId) async {
     try {
-      // 1. Find PENDING payment (replaces orders)
+      // 1. Find PENDING payment
       final pendingPaymentRes = await _supabase
           .from('payment')
           .select('id, offer_code')
@@ -29,19 +29,54 @@ class CartService {
       if (pendingPaymentRes.isEmpty) return [];
 
       final String paymentId = pendingPaymentRes.first['id'];
-      final String? appliedOfferCode = pendingPaymentRes.first['offer_code'] as String?;
+      final String? appliedOfferCode =
+          pendingPaymentRes.first['offer_code'] as String?;
 
-      // 2. Fetch items from 'access' table (replaces order_items)
-      // For cart, we look for items linked to this payment that are not yet active
-      final itemsResponse = await _supabase
+      // 2. Fetch raw items from 'access' table (No joins here to respect 'No FK' policy)
+      final List<dynamic> itemsResponse = await _supabase
           .from('access')
-          .select('*, mock_tests(*), resources(*)')
+          .select('*')
           .eq('payment_id', paymentId)
           .eq('is_active', false)
           .order('granted_at');
 
-      // 3. Fetch offer if applied (using offer_code instead of ID if needed, 
-      // but keeping compatibility with existing Offer logic if possible)
+      if (itemsResponse.isEmpty) return [];
+
+      // 3. Manual Stitching: Collect IDs for bulk fetching
+      final testIds = itemsResponse
+          .where((i) => i['item_type'] == 'test')
+          .map((i) => i['item_id'] as int)
+          .toList();
+      final resourceIds = itemsResponse
+          .where((i) => i['item_type'] == 'resource')
+          .map((i) => i['item_id'] as int)
+          .toList();
+
+      // 4. Bulk fetch related data
+      Map<int, dynamic> testsMap = {};
+      Map<int, dynamic> resourcesMap = {};
+
+      if (testIds.isNotEmpty) {
+        final tests = await _supabase
+            .from('mock_tests')
+            .select('*')
+            .inFilter('test_id', testIds);
+        for (var t in tests) {
+          testsMap[t['test_id']] = t;
+        }
+      }
+
+      if (resourceIds.isNotEmpty) {
+        final resources = await _supabase
+            .from('resources')
+            .select('*')
+            .inFilter('id', resourceIds);
+        for (var r in resources) {
+          resourcesMap[r['id']] = r;
+        }
+      }
+
+      // 5. Fetch offer if applied
       Map<String, dynamic>? globalOfferData;
       if (appliedOfferCode != null) {
         try {
@@ -54,12 +89,19 @@ class CartService {
         } catch (_) {}
       }
 
-      final List<OrderItem> rawItems = (itemsResponse as List).map((json) {
-        // Map access table schema to OrderItem model expectations
+      // 6. Assemble the final list
+      final List<OrderItem> rawItems = itemsResponse.map((json) {
         final String itemType = json['item_type'] ?? '';
         final int itemId = json['item_id'] ?? 0;
-        
-        // Inject keys that OrderItem.fromJson expects
+
+        // Manually inject the 'joined' data
+        if (itemType == 'test') {
+          json['mock_tests'] = testsMap[itemId];
+        } else if (itemType == 'resource') {
+          json['resources'] = resourcesMap[itemId];
+        }
+
+        // Map access table schema to OrderItem model expectations
         json['order_id'] = json['payment_id'];
         json['item_id'] = json['id']; // use access.id as item_id
         if (itemType == 'test') {
@@ -76,10 +118,11 @@ class CartService {
         return OrderItem.fromJson(json);
       }).toList();
 
-      // 4. Transform items to include fresh signed URLs for thumbnails
+      // 7. Transform items to include fresh signed URLs for thumbnails
       return await _signCartItems(rawItems);
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service: fetchCartItems');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'cart_service: fetchCartItems');
       return [];
     }
   }
