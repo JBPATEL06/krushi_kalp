@@ -162,7 +162,7 @@ Resolve Razorpay SDK hangs and performance bottlenecks by correctly structuring 
   - **Action**: Moved the Supabase Payment UUID from the Razorpay `order_id` field to the `notes` map as `supabase_order_id`. 
   - **Reason**: `order_id` in Razorpay is strictly for Razorpay-generated orders. Using a custom UUID there causes the SDK to hang or fail silently.
 - **File**: `lib/presentation/screens/cart_screen.dart`
-  - **Action**: Fixed a scope error where `orderIdStr` was declared inside the `try` block but used outside it. Added robustness to handle empty carts and missing payment IDs.
+- **Action**: Fixed a scope error where `orderIdStr` was declared inside the `try` block but used outside it. Added robustness to handle empty carts and missing payment IDs.
 - **File**: `lib/presentation/widgets/direct_checkout_sheet.dart`
   - **Action**: Updated `openCheckout` signature to include specific item descriptions.
 
@@ -177,3 +177,26 @@ Resolve Razorpay SDK hangs and performance bottlenecks by correctly structuring 
 - Verified and fixed scope errors in `CartScreen`.
 - Standardized error reporting with `CrashlyticsService`.
 - Verified that `_isProcessing` gates are properly placed to prevent double-charging.
+
+---
+
+## [Phase 8: Razorpay UPI ID Accessibility]
+### Goal
+Ensure users without UPI apps installed on their device can easily pay by entering their UPI ID (VPA) manually.
+
+### Proposed Changes
+- **File**: `lib/data/services/payment_service.dart`
+  - **Action**: Modified the `options` map in `openCheckout` to include a `config` block.
+  - **Details**:
+    - Created a dedicated `upi` block titled "Pay via UPI ID".
+    - Explicitly enabled `vpa: true` to show the entry field.
+    - Set the sequence to prioritize `block.upi`.
+
+### Risks / Side Effects
+- **Visuals**: The Razorpay UI will change slightly to prioritize the UPI entry field. This is intentional to solve the user's request.
+
+### Confirmed by User
+- User requested: "in razor pay put option of pay via upi id even they not have any upi apps in mobile can it possible?"
+
+### Resolved and How
+- Added the `config` block to the Razorpay `options` map. This explicitly instructs the Razorpay SDK to provide a manual entry field for UPI IDs (the "Collect Flow"), which works independently of locally installed apps.
