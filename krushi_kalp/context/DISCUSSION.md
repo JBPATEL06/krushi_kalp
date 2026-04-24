@@ -392,7 +392,7 @@ The `complete_checkout_v1` RPC was trying to update `payment.status` to `'COMPLE
 In `CartService.addToCart`, the code was attempting to fetch user information for the payment snapshot from a table named `profiles`. This table does not exist in the current schema (the correct table is `users`). This caused the entire insertion transaction to fail.
 
 ### Resolution
-- **Status**: Completed (RPC updated, Access insert working)
+- **Outcome**: Cart checkout flow now correctly verifies prices against the live cart data.
 
 ### [Phase 12.2: Price & Network Resilience]
 - **Goal**: Prevent ₹0 price display on slow networks and handle price fetch failures gracefully.
