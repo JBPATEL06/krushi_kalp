@@ -41,6 +41,10 @@ class TestService {
     String? searchQuery,
     String? category,
     String? language,
+    bool isAdmin = false,
+    String sortBy = 'created_at',
+    bool ascending = false,
+    bool? isFree,
   }) async {
     try {
       var query = _supabase.from('mock_tests').select();
@@ -55,18 +59,29 @@ class TestService {
         query = query.eq('language', language);
       }
 
-      // Only show public tests in the store
-      query = query.eq('is_public', true);
+      if (isFree != null) {
+        if (isFree) {
+          query = query.eq('price', 0);
+        } else {
+          query = query.gt('price', 0);
+        }
+      }
+
+      // Only show public tests in the store, unless admin
+      if (!isAdmin) {
+        query = query.eq('is_public', true);
+      }
 
       final response = await query
-          .order('created_at', ascending: false)
+          .order(sortBy, ascending: ascending)
           .range(offset, offset + limit - 1);
       final List<dynamic> data = response;
       List<MockTest> tests = await compute(_parseMockTests, data);
 
       return await _populateSignedUrls(tests);
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: fetchPaginatedMockTests');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'test_service: fetchPaginatedMockTests');
       return [];
     }
   }

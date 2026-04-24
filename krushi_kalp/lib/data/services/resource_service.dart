@@ -37,6 +37,40 @@ class ResourceService {
     return await _signResources(resources);
   }
 
+  /// Fetches a precise page of resources for infinite scrolling.
+  Future<List<Resource>> fetchPaginatedResources({
+    required ResourceType type,
+    required int offset,
+    required int limit,
+    String? category,
+    bool isAdmin = false,
+  }) async {
+    try {
+      final typeStr = _typeToString(type);
+      var query = _client.from('resources').select().eq('type', typeStr);
+
+      if (!isAdmin) {
+        query = query.eq('is_active', true);
+      }
+
+      if (category != null && category.isNotEmpty) {
+        query = query.eq('category', category);
+      }
+
+      final response = await query
+          .order('created_at', ascending: false)
+          .range(offset, offset + limit - 1);
+
+      final resources =
+          await compute(_parseResources, response as List<dynamic>);
+      return await _signResources(resources);
+    } catch (e, stack) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'resource_service: fetchPaginatedResources');
+      return [];
+    }
+  }
+
   /// Fetches a single resource by its ID.
   Future<Resource?> getResourceById(int id) async {
     final response =

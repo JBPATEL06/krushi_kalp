@@ -8,6 +8,8 @@ import 'admin_mock_test_detail_screen.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import 'package:krushi_kalp/core/theme/app_radius.dart';
 import '../../../../utils/crashlytics_service.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:easy_debounce/easy_debounce.dart';
 
 class AdminMockTestList extends StatefulWidget {
   final bool? isFree; // null = all, true = free only, false = paid only
@@ -19,11 +21,10 @@ class AdminMockTestList extends StatefulWidget {
 }
 
 class _AdminMockTestListState extends State<AdminMockTestList> {
-  // State
-  List<MockTest> _allTests = [];
-  List<MockTest> _displayTests = [];
-  bool _isLoading = true;
-  StreamSubscription? _subscription;
+  static const _pageSize = 20;
+  
+  final PagingController<int, MockTest> _pagingController =
+      PagingController(firstPageKey: 0);
 
   // Filters
   String _searchQuery = '';
@@ -34,77 +35,83 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _pagingController.addPageRequestListener((pageKey) {
+      _fetchPage(pageKey);
+    });
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    _pagingController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  void _loadData() {
-    setState(() => _isLoading = true);
-    _subscription = TestService.instance.streamMockTests().listen((tests) {
-      if (mounted) {
-        setState(() {
-          _allTests = tests;
-          _isLoading = false;
-          _applyFilters();
-        });
+  Future<void> _fetchPage(int pageKey) async {
+    try {
+      String sortBy = 'created_at';
+      bool ascending = false;
+
+      switch (_sortOption) {
+        case 'oldest':
+          sortBy = 'created_at';
+          ascending = true;
+          break;
+        case 'price_asc':
+          sortBy = 'price';
+          ascending = true;
+          break;
+        case 'price_desc':
+          sortBy = 'price';
+          ascending = false;
+          break;
+        case 'newest':
+        default:
+          sortBy = 'created_at';
+          ascending = false;
+          break;
       }
-    }, onError: (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+
+      final newItems = await TestService.instance.fetchPaginatedMockTests(
+        offset: pageKey,
+        limit: _pageSize,
+        searchQuery: _searchQuery,
+        isAdmin: true,
+        sortBy: sortBy,
+        ascending: ascending,
+        isFree: widget.isFree,
+      );
+
+      final isLastPage = newItems.length < _pageSize;
+      if (isLastPage) {
+        _pagingController.appendLastPage(newItems);
+      } else {
+        final nextPageKey = pageKey + newItems.length;
+        _pagingController.appendPage(newItems, nextPageKey);
       }
-    });
+    } catch (error, stack) {
+      CrashlyticsService.instance
+          .recordError(error, stack, reason: 'admin_mock_test_list: _fetchPage');
+      _pagingController.error = error;
+    }
   }
 
-  void _applyFilters() {
-    List<MockTest> temp = List.from(_allTests);
+  void _onSearchChanged(String val) {
+    _searchQuery = val;
+    EasyDebounce.debounce(
+      'mock_test_search',
+      const Duration(milliseconds: 500),
+      () => _pagingController.refresh(),
+    );
+  }
 
-    // 0. Filter by isFree (if set)
-    if (widget.isFree != null) {
-      if (widget.isFree == true) {
-        temp = temp.where((t) => t.price == 0).toList();
-      } else {
-        temp = temp.where((t) => t.price > 0).toList();
-      }
+  void _onSortChanged(String option) {
+    if (_sortOption != option) {
+      setState(() {
+        _sortOption = option;
+      });
+      _pagingController.refresh();
     }
-
-    // 1. Search
-    if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      temp = temp
-          .where((t) =>
-              t.title.toLowerCase().contains(q) ||
-              t.category.toLowerCase().contains(q))
-          .toList();
-    }
-
-    // 2. Sort
-    switch (_sortOption) {
-      case 'oldest':
-        temp.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-        break;
-      case 'price_asc':
-        temp.sort((a, b) => a.price.compareTo(b.price));
-        break;
-      case 'price_desc':
-        temp.sort((a, b) => b.price.compareTo(a.price));
-        break;
-      case 'newest':
-      default:
-        temp.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        break;
-    }
-
-    setState(() {
-      _displayTests = temp;
-    });
   }
 
   Future<void> _deleteTest(int id) async {
@@ -139,6 +146,7 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Test deleted successfully')),
           );
+          _pagingController.refresh();
         }
       } catch (e, stack) {
         CrashlyticsService.instance.recordError(e, stack, reason: 'admin_mock_test_list');
@@ -159,11 +167,14 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const MockTestUploadScreen()),
           );
+          if (result == true) {
+            _pagingController.refresh();
+          }
         },
         label: Text('ADD TEST',
             style: TextStyle(fontSize: context.sp(14))), // FIXED
@@ -195,10 +206,7 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
                     hintText: 'Search by title or category...',
                     hintStyle: TextStyle(fontSize: context.sp(14)), // FIXED
                   ),
-                  onChanged: (val) {
-                    setState(() => _searchQuery = val);
-                    _applyFilters();
-                  },
+                  onChanged: _onSearchChanged,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Row(
@@ -232,36 +240,46 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
             ),
           ),
           Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                _subscription?.cancel();
-                _loadData();
-                await Future.delayed(const Duration(milliseconds: 500));
-              },
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _displayTests.isEmpty
-                      ? SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 100),
-                            child: _buildEmptyState(),
-                          ),
-                        )
-                      : ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: EdgeInsets.only(
-                            top: AppSpacing.md,
-                            bottom: AppSpacing.md +
-                                MediaQuery.of(context).padding.bottom +
-                                80, // Space for FAB
-                          ),
-                          itemCount: _displayTests.length,
-                          itemBuilder: (context, index) {
-                            return _buildMockTestRow(
-                                context, _displayTests[index]);
-                          },
-                        ),
+            child: PagedListView<int, MockTest>(
+              pagingController: _pagingController,
+              padding: EdgeInsets.only(
+                top: AppSpacing.md,
+                bottom: AppSpacing.md +
+                    MediaQuery.of(context).padding.bottom +
+                    80, // Space for FAB
+              ),
+              builderDelegate: PagedChildBuilderDelegate<MockTest>(
+                itemBuilder: (context, item, index) =>
+                    _buildMockTestRow(context, item),
+                firstPageProgressIndicatorBuilder: (_) =>
+                    const Center(child: CircularProgressIndicator()),
+                newPageProgressIndicatorBuilder: (_) =>
+                    const Center(child: CircularProgressIndicator()),
+                noItemsFoundIndicatorBuilder: (_) => SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 100),
+                    child: _buildEmptyState(),
+                  ),
+                ),
+                firstPageErrorIndicatorBuilder: (_) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.error_outline_rounded,
+                          color: colorScheme.error, size: context.sp(48)),
+                      const SizedBox(height: AppSpacing.md),
+                      Text('Something went wrong. Please try again.',
+                          style: theme.textTheme.bodySmall),
+                      const SizedBox(height: AppSpacing.md),
+                      ElevatedButton(
+                        onPressed: () => _pagingController.refresh(),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -283,9 +301,7 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
                 builder: (_) => AdminMockTestDetailScreen(test: test)),
           );
           if (result == true) {
-            // refresh data is already handled by the stream subscription
-            // but if something changed that stream doesn't catch, we could trigger a refresh.
-            // streamMockTests() should handle it.
+            _pagingController.refresh();
           }
         },
         child: Container(
@@ -428,7 +444,6 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
       ),
     );
   }
-
   Widget _buildSortChip(String label, String value) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -441,10 +456,7 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
         selected: isSelected,
         onSelected: (bool selected) {
           if (selected) {
-            setState(() {
-              _sortOption = value;
-              _applyFilters();
-            });
+            _onSortChanged(value);
           }
         },
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -466,4 +478,5 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
       ),
     );
   }
+
 }

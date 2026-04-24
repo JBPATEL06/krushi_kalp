@@ -12,7 +12,7 @@ import 'admin_resource_form.dart';
 import '../../../../utils/error_utils.dart';
 import '../../../../utils/crashlytics_service.dart';
 import '../admin_grant_access_screen.dart' as admin_grant;
-import '../admin_user_list_screen.dart' as admin_user_list;
+
 
 class AdminResourceDetailScreen extends StatefulWidget {
   final Resource resource;
@@ -258,22 +258,11 @@ class _AdminResourceDetailScreenState
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => admin_user_list.AdminUserListScreen(
-                    onUserSelected: (userId, username) {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => admin_grant.AdminGrantAccessScreen(
-                            userId: userId,
-                            username: username,
-                            initialItemType: 'resource',
-                            initialItemId: _resource.id,
-                            initialResourceCategory: _resource.typeString,
-                          ),
-                        ),
-                      );
-                    },
+                  builder: (context) => admin_grant.AdminGrantAccessScreen(
+                    itemType: 'resource',
+                    itemId: _resource.id,
+                    itemTitle: _resource.title,
+                    itemSnapshot: _resource.toJson(),
                   ),
                 ),
               );

@@ -14,6 +14,7 @@ import 'admin_resource_detail_screen.dart';
 import '../../../../../utils/error_utils.dart';
 import '../../../utils/ui_helpers.dart';
 import '../../../../utils/crashlytics_service.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 class AdminResourceList extends StatefulWidget {
   final ResourceType type;
@@ -25,24 +26,51 @@ class AdminResourceList extends StatefulWidget {
 }
 
 class _AdminResourceListState extends State<AdminResourceList> {
+  static const _pageSize = 20;
   final ResourceService _resourceService = ResourceService.instance;
-  late Future<List<Resource>> _futureResources;
+  
+  final PagingController<int, Resource> _pagingController =
+      PagingController(firstPageKey: 0);
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _pagingController.addPageRequestListener((pageKey) {
+      _fetchPage(pageKey);
+    });
   }
 
-  void _loadData() {
-    _futureResources =
-        _resourceService.fetchResources(type: widget.type, isAdmin: true);
+  @override
+  void dispose() {
+    _pagingController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchPage(int pageKey) async {
+    try {
+      final newItems = await _resourceService.fetchPaginatedResources(
+        type: widget.type,
+        offset: pageKey,
+        limit: _pageSize,
+        isAdmin: true,
+      );
+
+      final isLastPage = newItems.length < _pageSize;
+      if (isLastPage) {
+        _pagingController.appendLastPage(newItems);
+      } else {
+        final nextPageKey = pageKey + newItems.length;
+        _pagingController.appendPage(newItems, nextPageKey);
+      }
+    } catch (error, stack) {
+      CrashlyticsService.instance
+          .recordError(error, stack, reason: 'admin_resource_list: _fetchPage');
+      _pagingController.error = error;
+    }
   }
 
   Future<void> _refresh() async {
-    setState(() {
-      _loadData();
-    });
+    _pagingController.refresh();
   }
 
   Future<void> _deleteResource(int id) async {
@@ -103,41 +131,38 @@ class _AdminResourceListState extends State<AdminResourceList> {
       body: RefreshIndicator(
         onRefresh: _refresh,
         color: colorScheme.primary,
-        child: FutureBuilder<List<Resource>>(
-          future: _futureResources,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.error_outline_rounded,
-                        color: colorScheme.error,
-                        size: context.sp(48)), // FIXED
-                    const SizedBox(height: AppSpacing.md),
-                    Text('Something went wrong. Please try again.',
-                        style: theme.textTheme.bodySmall),
-                  ],
-                ),
-              );
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return _buildEmptyState();
-            }
-
-            final items = snapshot.data!;
-            return ListView.builder(
-              padding: EdgeInsets.only(
-                top: AppSpacing.md,
-                bottom: AppSpacing.md + MediaQuery.of(context).padding.bottom,
+        child: PagedListView<int, Resource>(
+          pagingController: _pagingController,
+          padding: EdgeInsets.only(
+            top: AppSpacing.md,
+            bottom: AppSpacing.md + MediaQuery.of(context).padding.bottom,
+          ),
+          builderDelegate: PagedChildBuilderDelegate<Resource>(
+            itemBuilder: (context, item, index) =>
+                _buildResourceRow(context, item),
+            firstPageProgressIndicatorBuilder: (_) =>
+                const Center(child: CircularProgressIndicator()),
+            newPageProgressIndicatorBuilder: (_) =>
+                const Center(child: CircularProgressIndicator()),
+            noItemsFoundIndicatorBuilder: (_) => _buildEmptyState(),
+            firstPageErrorIndicatorBuilder: (_) => Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline_rounded,
+                      color: colorScheme.error, size: context.sp(48)),
+                  const SizedBox(height: AppSpacing.md),
+                  Text('Something went wrong. Please try again.',
+                      style: theme.textTheme.bodySmall),
+                  const SizedBox(height: AppSpacing.md),
+                  ElevatedButton(
+                    onPressed: () => _pagingController.refresh(),
+                    child: const Text('Retry'),
+                  ),
+                ],
               ),
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                return _buildResourceRow(context, items[index]);
-              },
-            );
-          },
+            ),
+          ),
         ),
       ),
     );

@@ -273,6 +273,16 @@ class AdminService {
     });
   }
 
+  static Future<List<Map<String, dynamic>>> fetchAllUsersForGifting() async {
+    try {
+      final response = await _supabase.from('users').select('id, email, username, created_at').order('username', ascending: true);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service_fetch_users_gifting');
+      return [];
+    }
+  }
+
   static Future<List<Map<String, dynamic>>> getPaginatedUsers({ required int offset, required int limit, String? searchQuery, String? statusFilter }) async {
     try {
       var query = _supabase.from('users').select('id, email, username, created_at');
@@ -668,6 +678,57 @@ class AdminService {
     }
   }
 
+  /// Fetches paginated mock tests for administration.
+  static Future<List<Map<String, dynamic>>> getPaginatedMockTests({
+    required int offset,
+    required int limit,
+    String? searchQuery,
+  }) async {
+    try {
+      var query = _supabase.from('mock_tests').select('*');
+      
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        query = query.ilike('title', '%$searchQuery%');
+      }
+
+      final response = await query
+          .order('created_at', ascending: false)
+          .range(offset, offset + limit - 1);
+          
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Fetches paginated resources for administration.
+  static Future<List<Map<String, dynamic>>> getPaginatedResources({
+    required int offset,
+    required int limit,
+    String? searchQuery,
+    String? type,
+  }) async {
+    try {
+      var query = _supabase.from('resources').select('*');
+      
+      if (type != null) {
+        query = query.eq('type', type);
+      }
+      
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        query = query.ilike('title', '%$searchQuery%');
+      }
+
+      final response = await query
+          .order('created_at', ascending: false)
+          .range(offset, offset + limit - 1);
+          
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      return [];
+    }
+  }
+
   /// Fetches the IDs of all items a user already has access to.
   static Future<Map<String, Set<int>>> getUserAccessItemIds(String userId) async {
     try {
@@ -685,6 +746,25 @@ class AdminService {
       return {'test': testIds, 'resource': resourceIds};
     } catch (e) {
       return {'test': {}, 'resource': {}};
+    }
+  }
+
+  /// Fetches user IDs that have access to a specific item
+  static Future<Set<String>> getUsersWithAccessToItem(String itemType, int itemId) async {
+    try {
+      final response = await _supabase
+          .from('access')
+          .select('user_id')
+          .eq('item_type', itemType)
+          .eq('item_id', itemId);
+      
+      final Set<String> userIds = {};
+      for (final item in response) {
+        userIds.add(item['user_id'] as String);
+      }
+      return userIds;
+    } catch (e) {
+      return {};
     }
   }
 
@@ -710,6 +790,32 @@ class AdminService {
       return true;
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'admin_grant_batch_access');
+      return false;
+    }
+  }
+
+  /// Grants access to a single item for multiple users in a single batch.
+  static Future<bool> grantItemToUsersBatch({
+    required List<String> userIds,
+    required Map<String, dynamic> item, // {id, type, snapshot}
+  }) async {
+    try {
+      if (userIds.isEmpty) return true;
+
+      final List<Map<String, dynamic>> payload = userIds.map((userId) => {
+        'user_id': userId,
+        'item_id': item['id'],
+        'item_type': item['type'],
+        'item_snapshot': item['snapshot'],
+        'granted_at': DateTime.now().toIso8601String(),
+        'access_type': 'manual_granted',
+        'is_active': true,
+      }).toList();
+
+      await _supabase.from('access').upsert(payload, onConflict: 'user_id, item_type, item_id');
+      return true;
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_grant_item_batch_access');
       return false;
     }
   }

@@ -12,7 +12,7 @@ import '../mock_test_edit_screen.dart';
 import '../../../../utils/crashlytics_service.dart';
 import '../../../../utils/error_utils.dart';
 import '../admin_grant_access_screen.dart' as admin_grant;
-import '../admin_user_list_screen.dart' as admin_user_list;
+
 
 class AdminMockTestDetailScreen extends StatefulWidget {
   final MockTest test;
@@ -152,22 +152,11 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => admin_user_list.AdminUserListScreen(
-                    onUserSelected: (userId, username) {
-                      Navigator.pop(context); // Pop user list
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => admin_grant.AdminGrantAccessScreen(
-                            userId: userId,
-                            username: username,
-                            initialItemType: 'test',
-                            initialItemId: _test.id,
-                            initialResourceCategory: 'mock_test',
-                          ),
-                        ),
-                      );
-                    },
+                  builder: (context) => admin_grant.AdminGrantAccessScreen(
+                    itemType: 'test',
+                    itemId: _test.id,
+                    itemTitle: _test.title,
+                    itemSnapshot: _test.toJson(),
                   ),
                 ),
               );

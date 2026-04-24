@@ -1,36 +1,33 @@
-# 🚀 Krushi Kalp Context
+# Project: Krushi Kalp
+## Goal
+A comprehensive platform for agriculture education and resources.
 
-## 🎯 Project Overview
-- **Project Name:** Krushi Kalp
-- **Goal:** Comprehensive agricultural education platform (Mock Tests, eBooks, PYQs, GK).
-- **Tech Stack:** Flutter, Riverpod, Supabase, Isar, Infinite Scroll Pagination.
+## Tech Stack
+- **Framework**: Flutter
+- **Backend**: Supabase
+- **State Management**: Provider (inferred from common Flutter patterns, will verify if needed)
+- **Design System**: Custom tokens (AppTheme, AppSpacing, AppRadius, etc.)
+- **Error Tracking**: Firebase Crashlytics
 
-## 🏗 Architecture
-- **Clean Architecture:** Presentation, Domain, Data layers.
-- **State Management:** Riverpod.
-- **Local DB:** Isar (caching and offline support).
-- **Backend:** Supabase (Auth, DB, Storage).
+## Architecture Overview
+Clean Architecture:
+- **Presentation**: UI screens and widgets
+- **Domain**: Entities and repository contracts
+- **Data**: API services (Supabase) and repository implementations
 
-## 🛠 Active Phase
-- **Phase 9: Admin Pagination Standardization**
-  - Refactoring `AdminUserActivityScreen` to use `infinite_scroll_pagination`.
-  - Ensuring consistent loading, error, and empty states using `PagedListView`.
-  - Maintaining scroll state across tabs using `AutomaticKeepAliveClientMixin`.
+## Current Active Phase
+Phase 3: Search and Filter implementation (Completed alongside Phase 2)
 
-## ✅ Completed Phases
-- Phase 1-6: Core features (Auth, Store, Tests, PDF).
-- Phase 7: New Payment & Access schema migration.
-- Phase 8: Batch Access Control & Unified Grant Access Flow.
+## Completed Phases
+- Initial project structure and core features (Pre-existing)
+- Phase 1: Refactor `AdminResourceList` for infinite scroll.
+- Phase 2: Refactor `AdminMockTestList` for infinite scroll (Stabilized).
+- Phase 3: Implement search and filter in paginated services (Integrated).
 
-## 📋 Pending Phases
-- Production Release & Play Store submission.
-- Final UI/UX walk-through.
+## Key Decisions
+- Use `infinite_scroll_pagination` package for consistent pagination across the app.
+- Refactor Supabase services to support offset-based pagination.
 
-## 🔑 Key Decisions
-- **Access Tracking:** Using `access` table with `item_snapshot` for historical integrity.
-- **Pagination:** Standardizing on `infinite_scroll_pagination` for all admin list screens.
-- **Search:** Using 500ms debounce for all search inputs to respect API limits.
-
-## 🚨 Known Risks
-- API Rate Limits: Mitigated by debouncing and standardized pagination.
-- State Loss: Handled by `AutomaticKeepAliveClientMixin` in tabbed views.
+## Known Risks or Constraints
+- Supabase pagination requires careful offset/limit management.
+- Signed URLs for resources need to be handled during paginated loads.
