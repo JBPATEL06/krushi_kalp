@@ -31,8 +31,10 @@ Clean Architecture:
 - Phase 9: Resource Visibility Policy Enforced.
 - Phase 10: No-FK Refactoring & Supabase v2 Bug Fixes.
 - Phase 11: Payment RLS & Accessibility Fixes.
-- Phase 12: Payment Status Alignment & Access Fix.
-- Phase 12.1: Add to Cart Table Name Fix.
+- Phase 12: Fixed Payment Status Mapping (SUCCESS)
+- Phase 12.1: Fixed Cart Service table mismatch (profiles -> users)
+- Phase 12.2: Price & Network Resilience (₹0 fix)
+- Phase 12.3: Cart RPC & RLS Fix
 
 ## Key Decisions
 - Use `infinite_scroll_pagination` package for consistent pagination across the app.

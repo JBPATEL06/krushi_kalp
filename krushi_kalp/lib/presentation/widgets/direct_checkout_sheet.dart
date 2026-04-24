@@ -36,7 +36,7 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
   final TextEditingController _couponController = TextEditingController();
 
   Offer? _appliedOffer;
-  double _finalPrice = 0.0;
+  late double _finalPrice;
   bool _isApplyingCoupon = false;
   bool _isProcessing = false;
   String? _couponError;
@@ -69,6 +69,7 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
       onExternalWallet: (response) {},
     );
 
+    _finalPrice = _basePrice; // PRO FIX: Initialize with local base price immediately
     // Initialize with passed offer if any
     _applyInitialOffer();
   }

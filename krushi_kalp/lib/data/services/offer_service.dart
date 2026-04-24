@@ -311,7 +311,7 @@ class OfferService {
           reason: 'offer_service.getDisplayPrice');
       return {
         'base_price': 0.0,
-        'final_price': 0.0,
+        'final_price': null, // FALLBACK: null allows UI to use base_price
         'mrp_display': 0.0,
         'discount_label': null,
         'has_discount': false,

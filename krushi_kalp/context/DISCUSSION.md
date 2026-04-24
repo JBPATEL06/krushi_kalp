@@ -392,12 +392,23 @@ The `complete_checkout_v1` RPC was trying to update `payment.status` to `'COMPLE
 In `CartService.addToCart`, the code was attempting to fetch user information for the payment snapshot from a table named `profiles`. This table does not exist in the current schema (the correct table is `users`). This caused the entire insertion transaction to fail.
 
 ### Resolution
-- Updated `CartService.dart` to correctly reference the `users` table instead of `profiles`.
-- Verified that `email` and `username` columns exist in the `users` table.
+- **Status**: Completed (RPC updated, Access insert working)
+
+### [Phase 12.2: Price & Network Resilience]
+- **Goal**: Prevent ₹0 price display on slow networks and handle price fetch failures gracefully.
+- **Files modified**:
+    - `lib/data/services/offer_service.dart`: Fixed `getDisplayPrice` to return `null` on error instead of `0.0`.
+    - `lib/presentation/widgets/direct_checkout_sheet.dart`: Initialized `_finalPrice` with `_basePrice` in `initState` to prevent flickering.
+- **Outcome**: UI now shows the base price immediately while discounts load in the background.
+
+### [Phase 12.3: Cart RPC Alignment]
+- **Goal**: Fix "Proceed to Payment" failure in Cart Screen caused by RPC pointing to old tables.
+- **Changes**:
+    - Updated `calculate_secure_cart_price` RPC to query `payment` and `access` tables instead of `orders` and `order_items`.
+    - Simplified `access` table RLS policies to allow authenticated users to `INSERT` and `DELETE` their own items.
+- **Outcome**: Cart checkout flow now correctly verifies prices against the live cart data.
 
 ### Files Modified
 - `lib/data/services/cart_service.dart`
-
-### Status: ✅ COMPLETED
 
 ---
