@@ -560,14 +560,16 @@ class TestService {
       debugPrint('User ID: $userId');
 
       // 1. Call the secure RPC to finalize the payment and grant access
-      // Updated RPC 'complete_checkout_v1' now expects payment.id and works with 'access' table.
+      // 'p_order_id' is the payment.id UUID from our payment table.
+      // 'p_gateway' identifies the payment provider (razorpay).
       final response = await _supabase.rpc('complete_checkout_v1', params: {
-        'p_payment_id': orderId, // We map orderId to p_payment_id in the new schema
+        'p_order_id': orderId,
         'p_gateway_payment_id': paymentId,
         'p_amount': amount,
         'p_offer_id': offerId,
         'p_discount_amount': discountAmount,
         'p_user_id': userId,
+        'p_gateway': paymentGateway,
       });
 
       debugPrint('RPC Response: $response');

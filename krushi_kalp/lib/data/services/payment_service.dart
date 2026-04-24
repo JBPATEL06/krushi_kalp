@@ -72,17 +72,7 @@ class PaymentService {
       },
       'config': {
         'display': {
-          'blocks': {
-            'upi': {
-              'name': 'Pay via Any UPI App / ID',
-              'instruments': [
-                {
-                  'method': 'upi',
-                },
-              ],
-            },
-          },
-          'sequence': ['block.upi', 'block.other'],
+          'sequence': ['upi', 'card', 'netbanking'],
           'preferences': {
             'show_default_blocks': true,
           },
@@ -90,7 +80,6 @@ class PaymentService {
       },
       'modal': {
         'confirm_close': true,
-        'read_only': false,
       },
     };
 
