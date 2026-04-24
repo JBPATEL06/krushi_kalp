@@ -749,6 +749,54 @@ class AdminService {
     }
   }
 
+  /// Fetches detailed user information and access metadata for a specific item.
+  static Future<List<Map<String, dynamic>>> getDetailedUsersWithAccess({
+    required String itemType,
+    required int itemId,
+  }) async {
+    try {
+      final accessResponse = await _supabase
+          .from('access')
+          .select('*')
+          .eq('item_type', itemType)
+          .eq('item_id', itemId)
+          .order('granted_at', ascending: false);
+      
+      final List accessList = accessResponse as List;
+      if (accessList.isEmpty) return [];
+
+      final userIds = accessList.map((a) => a['user_id'] as String).toList();
+      
+      final List<Map<String, dynamic>> allUsers = [];
+      const chunkSize = 200;
+      for (int i = 0; i < userIds.length; i += chunkSize) {
+        final chunk = userIds.sublist(i, i + chunkSize > userIds.length ? userIds.length : i + chunkSize);
+        final usersResponse = await _supabase
+            .from('users')
+            .select('id, email, username')
+            .inFilter('id', chunk);
+        allUsers.addAll((usersResponse as List).cast<Map<String, dynamic>>());
+      }
+
+      final userMap = {for (var u in allUsers) u['id']: u};
+
+      return accessList.map((item) {
+        final accessMap = Map<String, dynamic>.from(item);
+        final uid = accessMap['user_id'];
+        final user = userMap[uid];
+        if (user != null) {
+          accessMap['users'] = user;
+        }
+        return accessMap;
+      }).where((item) => item.containsKey('users')).toList();
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_get_detailed_access');
+      return [];
+    }
+  }
+
+  /// Fetches user IDs that have access to a specific item
+
   /// Fetches user IDs that have access to a specific item
   static Future<Set<String>> getUsersWithAccessToItem(String itemType, int itemId) async {
     try {
@@ -802,8 +850,8 @@ class AdminService {
     try {
       if (userIds.isEmpty) return true;
 
-      final List<Map<String, dynamic>> payload = userIds.map((userId) => {
-        'user_id': userId,
+      final List<Map<String, dynamic>> payload = userIds.map((uid) => {
+        'user_id': uid,
         'item_id': item['id'],
         'item_type': item['type'],
         'item_snapshot': item['snapshot'],
@@ -815,8 +863,102 @@ class AdminService {
       await _supabase.from('access').upsert(payload, onConflict: 'user_id, item_type, item_id');
       return true;
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_grant_item_batch_access');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_grant_item_to_users_batch');
       return false;
+    }
+  }
+
+  /// Toggles the public visibility of a mock test.
+  static Future<bool> toggleMockTestPublicStatus(int testId, bool isPublic) async {
+    try {
+      await _supabase.from('mock_tests').update({'is_public': isPublic}).eq('test_id', testId);
+      return true;
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_toggle_test_visibility');
+      return false;
+    }
+  }
+
+  /// Toggles the active (visible) status of a resource.
+  /// NOTE: The 'resources' table uses 'is_active' for visibility, not 'is_public'.
+  static Future<bool> toggleResourcePublicStatus(int resourceId, bool isPublic) async {
+    try {
+      await _supabase.from('resources').update({'is_active': isPublic}).eq('id', resourceId);
+      return true;
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_toggle_resource_visibility');
+      return false;
+    }
+  }
+
+  /// Fetches users who have access to a specific item, filtered by access type.
+  static Future<List<Map<String, dynamic>>> getPaginatedUsersByAccessType({
+    required String itemType,
+    required int itemId,
+    required String accessType,
+    required int offset,
+    required int limit,
+    String? searchQuery,
+  }) async {
+    try {
+      // Step 1: Fetch all access records for this item and access type
+      final accessResponse = await _supabase
+          .from('access')
+          .select('user_id, granted_at')
+          .eq('item_type', itemType)
+          .eq('item_id', itemId)
+          .eq('access_type', accessType)
+          .order('granted_at', ascending: false);
+
+      final List accessList = accessResponse as List;
+      if (accessList.isEmpty) return [];
+
+      final userIds = accessList.map((a) => a['user_id'] as String).toList();
+
+      // Step 2: Fetch matching users
+      // We chunk the userIds to avoid URL length limits if the list is large
+      final List<Map<String, dynamic>> allUsers = [];
+      const chunkSize = 200;
+      for (int i = 0; i < userIds.length; i += chunkSize) {
+        final chunk = userIds.sublist(i, i + chunkSize > userIds.length ? userIds.length : i + chunkSize);
+        var userQuery = _supabase
+            .from('users')
+            .select('id, email, username')
+            .inFilter('id', chunk);
+
+        if (searchQuery != null && searchQuery.isNotEmpty) {
+          userQuery = userQuery.or('username.ilike.%$searchQuery%,email.ilike.%$searchQuery%');
+        }
+        
+        final usersResponse = await userQuery;
+        allUsers.addAll((usersResponse as List).cast<Map<String, dynamic>>());
+      }
+
+      final userMap = {for (var u in allUsers) u['id']: u};
+
+      // Step 3: Combine, maintaining the granted_at sort order
+      final List<Map<String, dynamic>> combined = [];
+      for (var access in accessList) {
+        final uid = access['user_id'];
+        final user = userMap[uid];
+        if (user != null) {
+          combined.add({
+            'id': user['id'],
+            'username': user['username'],
+            'email': user['email'],
+            'granted_at': access['granted_at'],
+          });
+        }
+      }
+
+      // Step 4: Paginate locally
+      if (offset >= combined.length) return [];
+      final end = (offset + limit < combined.length) ? offset + limit : combined.length;
+      return combined.sublist(offset, end);
+      
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_fetch_users_by_access_type');
+      return [];
     }
   }
 }
