@@ -264,3 +264,15 @@ Resolve `42501 Forbidden` errors during checkout caused by missing RLS policies 
 - Verified that these policies now exist alongside the existing `SELECT` policy.
 
 ---
+
+## [Phase 11.1: Razorpay UPI Accessibility Fix]
+### Goal
+Ensure the UPI payment option is visible and prioritized in the Razorpay checkout popup.
+
+### Proposed Changes
+- **Action**: 
+    - Refactored the `config` block in `PaymentService.openCheckout` to use a more robust definition.
+    - Added `modal.confirm_close: true` to prevent accidental exits.
+- **Outcome**: UPI should now appear as the primary block in the payment method list.
+
+---

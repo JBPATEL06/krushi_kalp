@@ -70,16 +70,14 @@ class PaymentService {
       'external': {
         'wallets': ['paytm']
       },
-      // Explicitly configure UPI ID (VPA) to be prominent for users without local apps
       'config': {
         'display': {
           'blocks': {
             'upi': {
-              'name': 'Pay via UPI ID',
+              'name': 'Pay via Any UPI App / ID',
               'instruments': [
                 {
                   'method': 'upi',
-                  'vpa': true, // Enables Enter UPI ID field
                 },
               ],
             },
@@ -89,6 +87,10 @@ class PaymentService {
             'show_default_blocks': true,
           },
         },
+      },
+      'modal': {
+        'confirm_close': true,
+        'read_only': false,
       },
     };
 
