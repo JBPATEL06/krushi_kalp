@@ -35,7 +35,6 @@ Clean Architecture:
 - Phase 12.1: Fixed Cart Service table mismatch (profiles -> users)
 - Phase 12.2: Price & Network Resilience (₹0 fix)
 - Phase 12.3: Cart RPC & RLS Fix
-- Phase 13: Local Cache Mirroring Fix (Isar)
 
 ## Key Decisions
 - Use `infinite_scroll_pagination` package for consistent pagination across the app.

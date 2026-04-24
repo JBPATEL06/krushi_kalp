@@ -48,14 +48,6 @@ class LocalCachingService {
     });
   }
 
-  /// PRO FIX: Sync Mock Tests (Clear + Put) to prevent ghost data
-  static Future<void> syncMockTests(List<MockTestEntity> tests) async {
-    await isar.writeTxn(() async {
-      await isar.mockTestEntitys.clear();
-      await isar.mockTestEntitys.putAll(tests);
-    });
-  }
-
   /// Get all cached mock tests
   static Future<List<MockTestEntity>> getCachedMockTests() async {
     return await isar.mockTestEntitys.where().findAll();
@@ -72,14 +64,6 @@ class LocalCachingService {
     });
   }
 
-  /// PRO FIX: Sync Offers (Clear + Put)
-  static Future<void> syncOffers(List<OfferEntity> offers) async {
-    await isar.writeTxn(() async {
-      await isar.offerEntitys.clear();
-      await isar.offerEntitys.putAll(offers);
-    });
-  }
-
   /// Get all cached offers
   static Future<List<OfferEntity>> getCachedOffers() async {
     return await isar.offerEntitys.where().findAll();
@@ -92,18 +76,6 @@ class LocalCachingService {
   /// Save multiple resources safely (Upsert)
   static Future<void> saveResources(List<ResourceEntity> resources) async {
     await isar.writeTxn(() async {
-      await isar.resourceEntitys.putAll(resources);
-    });
-  }
-
-  /// PRO FIX: Sync Resources by Type (Clear specific type + Put)
-  static Future<void> syncResources(List<ResourceEntity> resources, String typeString) async {
-    await isar.writeTxn(() async {
-      // Delete only resources of the specified type
-      await isar.resourceEntitys
-          .filter()
-          .typeStringEqualTo(typeString)
-          .deleteAll();
       await isar.resourceEntitys.putAll(resources);
     });
   }

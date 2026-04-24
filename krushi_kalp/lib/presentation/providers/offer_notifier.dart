@@ -39,8 +39,10 @@ class OfferNotifier extends _$OfferNotifier {
       final offers = await OfferService.instance.fetchActiveSaleOffers();
       state = state.copyWith(activeOffers: offers, errorMessage: '');
 
-      // 3. Sync fresh data to Isar (Always sync to prevent ghost data)
-      LocalCachingService.syncOffers(offers.map((o) => OfferEntity.fromOffer(o)).toList());
+      // 3. Save fresh data to Isar
+      if (offers.isNotEmpty) {
+        LocalCachingService.saveOffers(offers.map((o) => OfferEntity.fromOffer(o)).toList());
+      }
     } catch (e, stack) {
       state = state.copyWith(errorMessage: e.toString());
       CrashlyticsService.instance.recordError(e, stack, reason: 'OfferNotifier: fetchActiveOffers');

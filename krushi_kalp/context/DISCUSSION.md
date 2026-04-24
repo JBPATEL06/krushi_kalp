@@ -408,15 +408,6 @@ In `CartService.addToCart`, the code was attempting to fetch user information fo
     - Simplified `access` table RLS policies to allow authenticated users to `INSERT` and `DELETE` their own items.
 - **Outcome**: Cart checkout flow now correctly verifies prices against the live cart data.
 
-### [Phase 13: Cache Mirroring Fix]
-- **Goal**: Fix "ghost" data issue where deleted Supabase records still appeared in the app due to stale Isar cache.
-- **Files modified**:
-    - `lib/data/services/local_caching_service.dart`: Added `syncMockTests`, `syncResources`, and `syncOffers` methods that clear segments before updating.
-    - `lib/presentation/providers/test_notifier.dart`: Updated to use `syncMockTests`.
-    - `lib/presentation/providers/resource_notifier.dart`: Updated to use `syncResources` (scoped by type).
-    - `lib/presentation/providers/offer_notifier.dart`: Updated to use `syncOffers`.
-- **Outcome**: The local cache now exactly mirrors the remote database, even when the database is cleared.
-
 ### Files Modified
 - `lib/data/services/cart_service.dart`
 
