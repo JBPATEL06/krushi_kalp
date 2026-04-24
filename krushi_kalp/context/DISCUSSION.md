@@ -276,3 +276,89 @@ Ensure the UPI payment option is visible and prioritized in the Razorpay checkou
 - **Outcome**: UPI should now appear as the primary block in the payment method list.
 
 ---
+
+## [Phase 11.2: Checkout RPC Parameter Mismatch — Root Cause Analysis]
+
+### Problem Summary
+**Symptom**: Payment was successful (money deducted by Razorpay), but user received NO access to the purchased item.
+
+### Root Cause Chain (Full Trace)
+
+#### Error 1 — Wrong parameter name (PGRST202)
+The Dart code in `TestService.checkout()` was calling the DB function with:
+```
+'p_payment_id': orderId  ❌ WRONG
+```
+But the DB function expected:
+```
+p_order_id uuid           ✅ CORRECT
+```
+**Why**: During the migration from the old `orders/order_items` schema to the new `payment/access` schema, the DB function was renamed + re-signed, but the Dart RPC call was NEVER updated. An old comment even said `"We map orderId to p_payment_id"` — a silent, incorrect assumption that survived the refactor.
+
+**Error code**: `PGRST202 — Function not found`
+
+**Fix**: Changed `p_payment_id` → `p_order_id`, added `p_gateway: paymentGateway` in `test_service.dart`.
+
+---
+
+#### Error 2 — Duplicate overloaded function (PGRST203)
+After fixing the parameter name, a new error appeared:
+```
+PGRST203 — Multiple Choices: Could not choose between:
+  complete_checkout_v1(p_offer_id => bigint, ...)
+  complete_checkout_v1(p_offer_id => integer, ...)
+```
+**Why**: Two separate DB migrations had each created `complete_checkout_v1` without first dropping the previous version — creating two overloads. PostgREST could not resolve which to call when a nullable int? was passed.
+
+**Error code**: `PGRST203 — Multiple Choices`
+
+**Fix**: Dropped both overloaded versions via migration `consolidate_complete_checkout_v1`.
+
+---
+
+### Architecture Flow (Correct Payment → Access Grant)
+```
+User taps Pay
+  → createDirectOrder() → INSERT payment (status: PENDING, metadata: {item_type, item_id})
+  → Razorpay opens → User pays → Razorpay returns gateway_payment_id
+  → TestService.checkout(orderId: payment.id, paymentId: razorpay_id)
+  → RPC complete_checkout_v1():
+      1. UPDATE payment: status=COMPLETED, gateway_payment_id set, offer_code set
+      2. READ item_type + item_id from payment.metadata
+      3. INSERT into access: user_id, item_type, item_id, access_type='paid'
+  → User now has access ✅
+```
+
+### Files Modified
+- `lib/data/services/test_service.dart` — Fixed RPC parameter names
+- DB: Dropped `complete_checkout` (old schema)
+- DB: Dropped `get_admin_orders` (old schema)  
+- DB: Dropped both duplicate `complete_checkout_v1` overloads
+
+### Status
+- ✅ Parameter name fix applied (`p_payment_id` → `p_order_id`)
+- ✅ Legacy functions dropped from DB
+- ✅ Duplicate overloads dropped from DB
+- 🔄 Phase 11.3 IN PROGRESS: Recreate single canonical `complete_checkout_v1`
+
+---
+
+## [Phase 11.3: Recreate Canonical complete_checkout_v1]
+
+### Goal
+Create one clean, unambiguous `complete_checkout_v1` DB function.
+
+### What the Function Does
+1. Fetches and locks the `payment` record by `p_order_id` (FOR UPDATE)
+2. Guards against double-processing (returns success if already COMPLETED)
+3. Updates `payment`: `status=COMPLETED`, `gateway_payment_id`, `offer_code`, `discount_amount`
+4. Reads `item_type` + `item_id` from `payment.metadata` (stored during `createDirectOrder`)
+5. Inserts into `access` table: `user_id`, `payment_id`, `item_type`, `item_id`, `access_type='paid'`
+6. Returns `{success: true}` or `{success: false, message: reason}`
+
+### Status: ✅ COMPLETED
+- Single canonical function created with `p_offer_id bigint`
+- Verified: only ONE version exists in the DB
+- No more overload conflicts
+
+---
