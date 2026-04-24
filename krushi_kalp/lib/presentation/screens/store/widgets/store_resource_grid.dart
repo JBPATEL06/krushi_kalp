@@ -191,7 +191,7 @@ class _StoreResourceGridState extends ConsumerState<StoreResourceGrid> {
       discountTag: discountTag,
       coverUrl: resource.thumbnailUrl,
       actionLabel:
-          isPurchased ? 'Download' : (displayPrice == 0 ? 'Claim' : 'Buy Now'),
+          isPurchased ? 'Download' : (displayPrice == 0 ? 'Free Claim' : 'Buy Now'),
       customAction: isPurchased
           ? DownloadActionButton(
               testId: resource.id.toString(),

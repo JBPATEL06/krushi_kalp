@@ -232,7 +232,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content:
-                Text('Claimed ${test?.title ?? resource?.title} successfully!'),
+                Text('Free Claimed ${test?.title ?? resource?.title} successfully!'),
             backgroundColor: theme.colorScheme.tertiary,
           ),
         );

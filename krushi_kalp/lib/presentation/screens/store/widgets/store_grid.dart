@@ -176,7 +176,7 @@ class _StoreGridState extends ConsumerState<StoreGrid> {
       originalPrice: mrp,
       discountTag: discountTag,
       coverUrl: test.signedUrl,
-      actionLabel: displayPrice == 0 ? 'Claim' : 'Buy Now',
+      actionLabel: displayPrice == 0 ? 'Free Claim' : 'Buy Now',
       customAction: isPurchased
           ? DownloadActionButton(
               testId: test.id.toString(),

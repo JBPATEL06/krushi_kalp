@@ -92,7 +92,7 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Claimed $itemName successfully!'),
+            content: Text('Free Claimed $itemName successfully!'),
             backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
@@ -378,7 +378,7 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
       subtitle: '${test.totalQuestions} Questions',
       typeLabel: 'Mock Test',
       coverUrl: test.signedUrl,
-      actionLabel: 'Claim Free',
+      actionLabel: 'Free Claim',
       isPurchased: isPurchased,
       onTap: () {
         Navigator.push(
@@ -405,7 +405,7 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
       subtitle: resource.category ?? 'Free Material',
       typeLabel: 'Resource',
       coverUrl: resource.thumbnailUrl,
-      actionLabel: 'Claim Free',
+      actionLabel: 'Free Claim',
       isPurchased: isPurchased,
       onTap: () {
         Navigator.push(
