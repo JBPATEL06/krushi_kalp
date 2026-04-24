@@ -104,7 +104,8 @@ class TestNotifier extends _$TestNotifier {
     final user = AuthService.instance.currentUser;
     if (user == null) return {};
     try {
-      final ids = await TestService.instance.fetchPurchasedTestIds(user.id).timeout(const Duration(seconds: 15));
+      final idsList = await TestService.instance.fetchPurchasedTestIds(user.id).timeout(const Duration(seconds: 15));
+      final ids = idsList.toSet();
       state = state.copyWith(purchasedTestIds: ids);
       return ids;
     } catch (e, stack) {
