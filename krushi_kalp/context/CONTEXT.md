@@ -12,24 +12,25 @@
 - **Backend:** Supabase (Auth, DB, Storage).
 
 ## 🛠 Active Phase
-- **Phase 10: Final Audit & Admin Polish**
-  - Refining Admin Grant Access functionality.
-  - Consistent UI/UX across Admin tools.
+- **Phase 9: Admin Pagination Standardization**
+  - Refactoring `AdminUserActivityScreen` to use `infinite_scroll_pagination`.
+  - Ensuring consistent loading, error, and empty states using `PagedListView`.
+  - Maintaining scroll state across tabs using `AutomaticKeepAliveClientMixin`.
 
 ## ✅ Completed Phases
 - Phase 1-6: Core features (Auth, Store, Tests, PDF).
 - Phase 7: New Payment & Access schema migration.
-- Phase 8: Offline support and Isar integration.
-- Phase 9: Admin Dashboard expansion.
+- Phase 8: Batch Access Control & Unified Grant Access Flow.
 
 ## 📋 Pending Phases
 - Production Release & Play Store submission.
+- Final UI/UX walk-through.
 
 ## 🔑 Key Decisions
 - **Access Tracking:** Using `access` table with `item_snapshot` for historical integrity.
-- **Manual Granting:** Admins can grant items with `manual_granted` access type.
-- **Store Performance:** 15s throttled refresh to save Supabase resources.
+- **Pagination:** Standardizing on `infinite_scroll_pagination` for all admin list screens.
+- **Search:** Using 500ms debounce for all search inputs to respect API limits.
 
 ## 🚨 Known Risks
-- RenderFlex overflows in long lists (mitigated but need monitoring).
-- Payment gateway deep-linking configuration.
+- API Rate Limits: Mitigated by debouncing and standardized pagination.
+- State Loss: Handled by `AutomaticKeepAliveClientMixin` in tabbed views.

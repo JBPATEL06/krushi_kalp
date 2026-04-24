@@ -6,6 +6,8 @@ import 'package:krushi_kalp/presentation/widgets/common/modern_card.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:krushi_kalp/presentation/widgets/common/network_error_state.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:krushi_kalp/core/theme/app_colors.dart';
 
 class AdminUserActivityScreen extends StatefulWidget {
   final String userId;
@@ -125,117 +127,96 @@ class _PurchasedItemsTab extends StatefulWidget {
   State<_PurchasedItemsTab> createState() => _PurchasedItemsTabState();
 }
 
-class _PurchasedItemsTabState extends State<_PurchasedItemsTab> {
-  final List<Map<String, dynamic>> _items = [];
-  bool _isLoading = false;
-  bool _isError = false;
-  bool _hasMore = true;
-  int _page = 0;
+class _PurchasedItemsTabState extends State<_PurchasedItemsTab> with AutomaticKeepAliveClientMixin {
+  final PagingController<int, Map<String, dynamic>> _pagingController =
+      PagingController(firstPageKey: 0);
   static const int _pageSize = 15;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
-    _loadMore();
+    _pagingController.addPageRequestListener((pageKey) {
+      _fetchPage(pageKey);
+    });
   }
 
   @override
   void didUpdateWidget(_PurchasedItemsTab oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.searchQuery != widget.searchQuery) {
-      _reset();
+      _pagingController.refresh();
     }
   }
 
-  void _reset() {
-    setState(() {
-      _items.clear();
-      _page = 0;
-      _hasMore = true;
-      _isError = false;
-    });
-    _loadMore();
-  }
-
-  Future<void> _loadMore() async {
-    if (_isLoading || !_hasMore) return;
-    setState(() => _isLoading = true);
-
-    final from = _page * _pageSize;
-    final to = from + _pageSize - 1;
-
+  Future<void> _fetchPage(int pageKey) async {
     try {
       final newItems = await AdminService.getUserOrdersPaginated(
         widget.userId,
-        from: from,
-        to: to,
+        from: pageKey,
+        to: pageKey + _pageSize - 1,
         searchQuery: widget.searchQuery,
       );
 
-      if (mounted) {
-        setState(() {
-          _items.addAll(newItems);
-          _isLoading = false;
-          _isError = false;
-          _page++;
-          if (newItems.length < _pageSize) _hasMore = false;
-        });
+      final isLastPage = newItems.length < _pageSize;
+      if (isLastPage) {
+        _pagingController.appendLastPage(newItems);
+      } else {
+        final nextPageKey = pageKey + newItems.length;
+        _pagingController.appendPage(newItems, nextPageKey);
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isError = true;
-        });
-      }
+    } catch (error) {
+      _pagingController.error = error;
     }
   }
 
   @override
+  void dispose() {
+    _pagingController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (_isError && _items.isEmpty) {
-      return NetworkErrorState(
-        onRetry: _reset,
-      );
-    }
-
-    if (_items.isEmpty && !_isLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off_rounded, size: 64, color: Colors.grey[300]),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              widget.searchQuery.isEmpty ? 'No purchases found' : 'No matches for "${widget.searchQuery}"',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-          ],
+    super.build(context);
+    return PagedListView<int, Map<String, dynamic>>.separated(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      pagingController: _pagingController,
+      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+      builderDelegate: PagedChildBuilderDelegate<Map<String, dynamic>>(
+        itemBuilder: (context, item, index) => _buildOrderCard(context, item),
+        firstPageErrorIndicatorBuilder: (context) => NetworkErrorState(
+          onRetry: () => _pagingController.refresh(),
         ),
-      );
-    }
-
-    return NotificationListener<ScrollNotification>(
-      onNotification: (ScrollNotification scrollInfo) {
-        if (!_isLoading && _hasMore && scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
-          _loadMore();
-        }
-        return false;
-      },
-      child: ListView.separated(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        itemCount: _items.length + (_hasMore ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-        itemBuilder: (context, index) {
-          if (index == _items.length) {
-            return const Center(child: Padding(
-              padding: EdgeInsets.all(8.0),
-              child: CircularProgressIndicator(),
-            ));
-          }
-          final item = _items[index];
-          return _buildOrderCard(context, item);
-        },
+        newPageErrorIndicatorBuilder: (context) => NetworkErrorState(
+          onRetry: () => _pagingController.retryLastFailedRequest(),
+        ),
+        noItemsFoundIndicatorBuilder: (context) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.search_off_rounded, size: 64, color: Colors.grey[300]),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                widget.searchQuery.isEmpty
+                    ? 'No purchases found'
+                    : 'No matches for "${widget.searchQuery}"',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        ),
+        firstPageProgressIndicatorBuilder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+        newPageProgressIndicatorBuilder: (context) => const Center(
+          child: Padding(
+            padding: EdgeInsets.all(8.0),
+            child: CircularProgressIndicator(),
+          ),
+        ),
       ),
     );
   }
@@ -373,117 +354,96 @@ class _AttemptsTab extends StatefulWidget {
   State<_AttemptsTab> createState() => _AttemptsTabState();
 }
 
-class _AttemptsTabState extends State<_AttemptsTab> {
-  final List<Map<String, dynamic>> _results = [];
-  bool _isLoading = false;
-  bool _isError = false;
-  bool _hasMore = true;
-  int _page = 0;
+class _AttemptsTabState extends State<_AttemptsTab> with AutomaticKeepAliveClientMixin {
+  final PagingController<int, Map<String, dynamic>> _pagingController =
+      PagingController(firstPageKey: 0);
   static const int _pageSize = 15;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
-    _loadMore();
+    _pagingController.addPageRequestListener((pageKey) {
+      _fetchPage(pageKey);
+    });
   }
 
   @override
   void didUpdateWidget(_AttemptsTab oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.searchQuery != widget.searchQuery) {
-      _reset();
+      _pagingController.refresh();
     }
   }
 
-  void _reset() {
-    setState(() {
-      _results.clear();
-      _page = 0;
-      _hasMore = true;
-      _isError = false;
-    });
-    _loadMore();
-  }
-
-  Future<void> _loadMore() async {
-    if (_isLoading || !_hasMore) return;
-    setState(() => _isLoading = true);
-
-    final from = _page * _pageSize;
-    final to = from + _pageSize - 1;
-
+  Future<void> _fetchPage(int pageKey) async {
     try {
       final newResults = await AdminService.getUserResultsPaginated(
         widget.userId,
-        from: from,
-        to: to,
+        from: pageKey,
+        to: pageKey + _pageSize - 1,
         searchQuery: widget.searchQuery,
       );
 
-      if (mounted) {
-        setState(() {
-          _results.addAll(newResults);
-          _isLoading = false;
-          _isError = false;
-          _page++;
-          if (newResults.length < _pageSize) _hasMore = false;
-        });
+      final isLastPage = newResults.length < _pageSize;
+      if (isLastPage) {
+        _pagingController.appendLastPage(newResults);
+      } else {
+        final nextPageKey = pageKey + newResults.length;
+        _pagingController.appendPage(newResults, nextPageKey);
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isError = true;
-        });
-      }
+    } catch (error) {
+      _pagingController.error = error;
     }
   }
 
   @override
+  void dispose() {
+    _pagingController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (_isError && _results.isEmpty) {
-      return NetworkErrorState(
-        onRetry: _reset,
-      );
-    }
-
-    if (_results.isEmpty && !_isLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.assignment_late_rounded, size: 64, color: Colors.grey[300]),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              widget.searchQuery.isEmpty ? 'No attempts found' : 'No matches for "${widget.searchQuery}"',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-          ],
+    super.build(context);
+    return PagedListView<int, Map<String, dynamic>>.separated(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      pagingController: _pagingController,
+      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+      builderDelegate: PagedChildBuilderDelegate<Map<String, dynamic>>(
+        itemBuilder: (context, item, index) => _buildAttemptCard(context, item),
+        firstPageErrorIndicatorBuilder: (context) => NetworkErrorState(
+          onRetry: () => _pagingController.refresh(),
         ),
-      );
-    }
-
-    return NotificationListener<ScrollNotification>(
-      onNotification: (ScrollNotification scrollInfo) {
-        if (!_isLoading && _hasMore && scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
-          _loadMore();
-        }
-        return false;
-      },
-      child: ListView.separated(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        itemCount: _results.length + (_hasMore ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-        itemBuilder: (context, index) {
-          if (index == _results.length) {
-            return const Center(child: Padding(
-              padding: EdgeInsets.all(8.0),
-              child: CircularProgressIndicator(),
-            ));
-          }
-          final result = _results[index];
-          return _buildAttemptCard(context, result);
-        },
+        newPageErrorIndicatorBuilder: (context) => NetworkErrorState(
+          onRetry: () => _pagingController.retryLastFailedRequest(),
+        ),
+        noItemsFoundIndicatorBuilder: (context) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.assignment_late_rounded, size: 64, color: Colors.grey[300]),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                widget.searchQuery.isEmpty
+                    ? 'No attempts found'
+                    : 'No matches for "${widget.searchQuery}"',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        ),
+        firstPageProgressIndicatorBuilder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+        newPageProgressIndicatorBuilder: (context) => const Center(
+          child: Padding(
+            padding: EdgeInsets.all(8.0),
+            child: CircularProgressIndicator(),
+          ),
+        ),
       ),
     );
   }
