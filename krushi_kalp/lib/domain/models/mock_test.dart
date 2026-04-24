@@ -19,6 +19,7 @@ class MockTest {
   final String? discount;
   final double? mrp;
   final DateTime createdAt;
+  final bool isPublic;
 
   MockTest({
     required this.id,
@@ -39,6 +40,7 @@ class MockTest {
     this.contentUrl, // NEW
     this.mrp,
     required this.createdAt,
+    this.isPublic = true,
   });
 
   // Helper implementation to display time string
@@ -54,7 +56,7 @@ class MockTest {
     return ((mrp! - price) / mrp! * 100).round();
   }
 
-  MockTest copyWith({String? signedUrl, String? contentUrl}) {
+  MockTest copyWith({String? signedUrl, String? contentUrl, bool? isPublic}) {
     return MockTest(
       id: id,
       title: title,
@@ -74,6 +76,7 @@ class MockTest {
       contentUrl: contentUrl ?? this.contentUrl, // NEW
       mrp: mrp,
       createdAt: createdAt,
+      isPublic: isPublic ?? this.isPublic,
     );
   }
 
@@ -111,6 +114,9 @@ class MockTest {
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
+      isPublic: json['is_public'] is bool
+          ? json['is_public']
+          : (json['is_public']?.toString() == 'true'),
     );
   }
 
@@ -129,6 +135,7 @@ class MockTest {
       'language': language,
       'cover_image_path': coverImagePath,
       'created_at': createdAt.toIso8601String(),
+      'is_public': isPublic,
     };
   }
 }

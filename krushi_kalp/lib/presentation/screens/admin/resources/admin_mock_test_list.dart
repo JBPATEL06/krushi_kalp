@@ -10,6 +10,8 @@ import 'package:krushi_kalp/core/theme/app_radius.dart';
 import '../../../../utils/crashlytics_service.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:easy_debounce/easy_debounce.dart';
+import '../../../../data/services/admin_service.dart';
+import '../admin_grant_access_screen.dart';
 
 class AdminMockTestList extends StatefulWidget {
   final bool? isFree; // null = all, true = free only, false = paid only
@@ -156,6 +158,24 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
           );
         }
       }
+    }
+  }
+
+  Future<void> _toggleVisibility(MockTest test, bool val) async {
+    try {
+      final success = await AdminService.toggleMockTestPublicStatus(test.id, val);
+      if (success && mounted) {
+        setState(() {
+          // Update the item in the paging controller's list directly if possible
+          // or just refresh. Refreshing is safer for pagination consistency.
+          _pagingController.refresh();
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Test visibility ${val ? "enabled" : "disabled"}')),
+        );
+      }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_mock_test_list_toggle');
     }
   }
 
@@ -405,14 +425,49 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  IconButton(
-                    icon: Icon(Icons.delete_outline_rounded,
-                        color: colorScheme.error.withValues(alpha: 0.5),
-                        size: context.sp(16)), // FIXED
-                    onPressed: () => _deleteTest(test.id),
-                    constraints: const BoxConstraints(),
-                    padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.people_alt_outlined,
+                            color: colorScheme.primary.withValues(alpha: 0.7),
+                            size: context.sp(18)),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AdminGrantAccessScreen(
+                              itemType: 'test',
+                              itemId: test.id,
+                              itemTitle: test.title,
+                              itemSnapshot: test.toJson(),
+                              isAuditMode: true,
+                            ),
+                          ),
+                        ),
+                        constraints: const BoxConstraints(),
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      const SizedBox(width: 8),
+                      Transform.scale(
+                        scale: 0.7,
+                        child: Switch(
+                          value: test.isPublic,
+                          onChanged: (val) => _toggleVisibility(test, val),
+                          activeColor: colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: Icon(Icons.delete_outline_rounded,
+                            color: colorScheme.error.withValues(alpha: 0.5),
+                            size: context.sp(16)), // FIXED
+                        onPressed: () => _deleteTest(test.id),
+                        constraints: const BoxConstraints(),
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
                   ),
                 ],
               ),

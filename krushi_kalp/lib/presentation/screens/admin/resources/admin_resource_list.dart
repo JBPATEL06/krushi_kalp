@@ -14,6 +14,8 @@ import 'admin_resource_detail_screen.dart';
 import '../../../../../utils/error_utils.dart';
 import '../../../utils/ui_helpers.dart';
 import '../../../../utils/crashlytics_service.dart';
+import '../../../../data/services/admin_service.dart';
+import '../admin_grant_access_screen.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 class AdminResourceList extends StatefulWidget {
@@ -113,6 +115,20 @@ class _AdminResourceListState extends State<AdminResourceList> {
 
     if (result == true) {
       _refresh();
+    }
+  }
+
+  Future<void> _toggleVisibility(Resource resource, bool val) async {
+    try {
+      final success = await AdminService.toggleResourcePublicStatus(resource.id, val);
+      if (success && mounted) {
+        _refresh();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Item visibility ${val ? "enabled" : "disabled"}')),
+        );
+      }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_resource_list_toggle');
     }
   }
 
@@ -295,6 +311,32 @@ class _AdminResourceListState extends State<AdminResourceList> {
                       color: const Color(0xFF10B981),
                     ),
                   ],
+                  const SizedBox(width: 8),
+                  _buildActionIcon(
+                    icon: Icons.people_alt_outlined,
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AdminGrantAccessScreen(
+                          itemType: 'resource',
+                          itemId: item.id,
+                          itemTitle: item.title,
+                          itemSnapshot: item.toJson(),
+                          isAuditMode: true,
+                        ),
+                      ),
+                    ),
+                    tooltip: "Manage Access",
+                  ),
+                  const SizedBox(width: 8),
+                  Transform.scale(
+                    scale: 0.8,
+                    child: Switch(
+                      value: item.isActive,
+                      onChanged: (val) => _toggleVisibility(item, val),
+                      activeColor: colorScheme.primary,
+                    ),
+                  ),
                   const SizedBox(width: 8),
                   _buildActionIcon(
                     icon: Icons.edit_rounded,

@@ -19,6 +19,7 @@ class AdminGrantAccessScreen extends ConsumerStatefulWidget {
   final int? itemId;
   final String? itemTitle;
   final Map<String, dynamic>? itemSnapshot;
+  final bool isAuditMode;
 
   const AdminGrantAccessScreen({
     super.key,
@@ -31,6 +32,7 @@ class AdminGrantAccessScreen extends ConsumerStatefulWidget {
     this.itemId,
     this.itemTitle,
     this.itemSnapshot,
+    this.isAuditMode = false,
   });
 
   @override
@@ -58,6 +60,11 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
   // Pagination (Item Mode - Users)
   final PagingController<int, Map<String, dynamic>> _pagingController = PagingController(firstPageKey: 0);
   Set<String> _existingUserAccess = {};
+
+  // Pagination (Audit Mode)
+  final PagingController<int, Map<String, dynamic>> _auditPaidPagingController = PagingController(firstPageKey: 0);
+  final PagingController<int, Map<String, dynamic>> _auditClaimedPagingController = PagingController(firstPageKey: 0);
+  final PagingController<int, Map<String, dynamic>> _auditManualPagingController = PagingController(firstPageKey: 0);
 
   // Selection states
   final Set<String> _selectedItems = {}; // Format: "type_id" e.g., "test_123" or "resource_456"
@@ -98,9 +105,16 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
       }
       _loadUserData();
     } else if (_isItemMode) {
-      _pagingController.addPageRequestListener((pageKey) {
-        _fetchUserPage(pageKey);
-      });
+      if (widget.isAuditMode) {
+        _tabController = TabController(length: 3, vsync: this);
+        _auditPaidPagingController.addPageRequestListener((pageKey) => _fetchAuditPage(pageKey, 'paid', _auditPaidPagingController));
+        _auditClaimedPagingController.addPageRequestListener((pageKey) => _fetchAuditPage(pageKey, 'claimed', _auditClaimedPagingController));
+        _auditManualPagingController.addPageRequestListener((pageKey) => _fetchAuditPage(pageKey, 'manual_granted', _auditManualPagingController));
+      } else {
+        _pagingController.addPageRequestListener((pageKey) {
+          _fetchUserPage(pageKey);
+        });
+      }
       _loadItemData();
     }
   }
@@ -115,6 +129,9 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
     _pyqsPagingController.dispose();
     _gkPagingController.dispose();
     _studyMaterialPagingController.dispose();
+    _auditPaidPagingController.dispose();
+    _auditClaimedPagingController.dispose();
+    _auditManualPagingController.dispose();
     super.dispose();
   }
 
@@ -217,11 +234,40 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
     }
   }
 
+  Future<void> _fetchAuditPage(int pageKey, String accessType, PagingController<int, Map<String, dynamic>> controller) async {
+    try {
+      final newItems = await AdminService.getPaginatedUsersByAccessType(
+        itemType: widget.itemType!,
+        itemId: widget.itemId!,
+        accessType: accessType,
+        offset: pageKey,
+        limit: _pageSize,
+        searchQuery: _searchQuery,
+      );
+
+      final isLastPage = newItems.length < _pageSize;
+      if (isLastPage) {
+        controller.appendLastPage(newItems);
+      } else {
+        final nextPageKey = pageKey + newItems.length;
+        controller.appendPage(newItems, nextPageKey);
+      }
+    } catch (error) {
+      controller.error = error;
+    }
+  }
+
   void _onSearchChanged(String query) {
     _searchQuery = query;
     EasyDebounce.debounce('grant-access-search', const Duration(milliseconds: 500), () {
       if (_isItemMode) {
-        _pagingController.refresh();
+        if (widget.isAuditMode) {
+          _auditPaidPagingController.refresh();
+          _auditClaimedPagingController.refresh();
+          _auditManualPagingController.refresh();
+        } else {
+          _pagingController.refresh();
+        }
       } else {
         _testsPagingController.refresh();
         _ebooksPagingController.refresh();
@@ -328,6 +374,52 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
     }
   }
 
+  Future<void> _revokeAccess(String userId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Revoke Access'),
+        content: const Text('Are you sure you want to revoke this user\'s access?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Revoke'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final success = await AdminService.revokeAccess(
+        userId: userId,
+        itemType: widget.itemType!,
+        itemId: widget.itemId!,
+      );
+
+      if (success) {
+        // Refresh all audit controllers to be safe
+        _auditPaidPagingController.refresh();
+        _auditClaimedPagingController.refresh();
+        _auditManualPagingController.refresh();
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Access revoked successfully')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) ErrorUtils.showError(context, e);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -348,7 +440,9 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
               ),
               onChanged: _onSearchChanged,
             )
-          : Text(_isUserMode ? 'Grant Access: ${widget.username}' : 'Gift: ${widget.itemTitle}'),
+          : Text(widget.isAuditMode 
+              ? 'Access Audit: ${widget.itemTitle}' 
+              : (_isUserMode ? 'Grant Access: ${widget.username}' : 'Gift: ${widget.itemTitle}')),
         actions: [
           IconButton(
             icon: Icon(_isSearching ? Icons.close : Icons.search),
@@ -358,12 +452,20 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
                 if (!_isSearching) {
                   _searchQuery = '';
                   _searchController.clear();
-                  if (_isItemMode) _pagingController.refresh();
+                  if (_isItemMode) {
+                    if (widget.isAuditMode) {
+                      _auditPaidPagingController.refresh();
+                      _auditClaimedPagingController.refresh();
+                      _auditManualPagingController.refresh();
+                    } else {
+                      _pagingController.refresh();
+                    }
+                  }
                 }
               });
             },
           ),
-          if (selectedCount > 0 && !_isSearching)
+          if (selectedCount > 0 && !_isSearching && !widget.isAuditMode)
             TextButton.icon(
               onPressed: _grantAccess,
               icon: const Icon(Icons.check_circle_rounded),
@@ -371,35 +473,97 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
               style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
             ),
         ],
-        bottom: _isUserMode 
+        bottom: widget.isAuditMode
           ? TabBar(
               controller: _tabController,
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
               tabs: const [
-                Tab(text: 'Mock Tests'),
-                Tab(text: 'eBooks'),
-                Tab(text: 'PYQs'),
-                Tab(text: 'GK'),
-                Tab(text: 'Study Material'),
+                Tab(text: 'Paid'),
+                Tab(text: 'Claimed'),
+                Tab(text: 'Manual Access'),
               ],
             )
-          : null,
+          : (_isUserMode 
+            ? TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                tabs: const [
+                  Tab(text: 'Mock Tests'),
+                  Tab(text: 'eBooks'),
+                  Tab(text: 'PYQs'),
+                  Tab(text: 'GK'),
+                  Tab(text: 'Study Material'),
+                ],
+              )
+            : null),
       ),
-      body: _isUserMode 
-        ? (_isLoading 
-            ? const Center(child: CircularProgressIndicator())
-            : TabBarView(
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : (_isUserMode 
+            ? TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildCategoryList(_testsPagingController, 'test', 'No new mock tests available'),
-                  _buildCategoryList(_ebooksPagingController, 'resource', 'No new eBooks available'),
-                  _buildCategoryList(_pyqsPagingController, 'resource', 'No new PYQs available'),
-                  _buildCategoryList(_gkPagingController, 'resource', 'No new GK available'),
-                  _buildCategoryList(_studyMaterialPagingController, 'resource', 'No new study materials available'),
+                  _buildCategoryList(_testsPagingController, 'test', 'No mock tests available'),
+                  _buildCategoryList(_ebooksPagingController, 'ebook', 'No eBooks available'),
+                  _buildCategoryList(_pyqsPagingController, 'pyq', 'No PYQs available'),
+                  _buildCategoryList(_gkPagingController, 'current_affair', 'No GK resources available'),
+                  _buildCategoryList(_studyMaterialPagingController, 'study_material', 'No study materials available'),
                 ],
-              ))
-        : _buildPaginatedUserList(),
+              )
+            : (widget.isAuditMode 
+                ? TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildAuditUserList(_auditPaidPagingController, 'No users have paid access', showRevoke: true),
+                      _buildAuditUserList(_auditClaimedPagingController, 'No users have claimed access', showRevoke: true),
+                      _buildAuditUserList(_auditManualPagingController, 'No users have manual access', showRevoke: true),
+                    ],
+                  )
+                : _buildPaginatedUserList())),
+    );
+  }
+
+  Widget _buildAuditUserList(PagingController<int, Map<String, dynamic>> controller, String emptyMsg, {bool showRevoke = false}) {
+    return PagedListView<int, Map<String, dynamic>>.separated(
+      pagingController: controller,
+      padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      separatorBuilder: (_, __) => const Divider(height: 1, indent: 70),
+      builderDelegate: PagedChildBuilderDelegate<Map<String, dynamic>>(
+        itemBuilder: (context, item, index) {
+          final name = item['username'] ?? item['email'] ?? 'Unknown User';
+          final email = item['email'] ?? '';
+          final grantedAt = item['granted_at'] != null 
+              ? DateTime.parse(item['granted_at']).toLocal().toString().split('.')[0]
+              : '';
+
+          return ListTile(
+            leading: CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?', 
+                style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
+            ),
+            title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: Text('$email\nGranted: $grantedAt', style: const TextStyle(fontSize: 12)),
+            isThreeLine: true,
+            trailing: showRevoke 
+              ? IconButton(
+                  icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                  onPressed: () => _revokeAccess(item['id']),
+                )
+              : null,
+          );
+        },
+        noItemsFoundIndicatorBuilder: (_) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.people_outline, size: 48, color: Colors.grey.shade400),
+              const SizedBox(height: 16),
+              Text(_searchQuery.isNotEmpty ? 'No matches found' : emptyMsg, style: const TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

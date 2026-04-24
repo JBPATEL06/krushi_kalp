@@ -256,6 +256,7 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
       PaymentService.instance.openCheckout(
         amount: secureAmountToPay,
         orderId: orderId,
+        description: 'Purchase: ${widget.resource?.title ?? widget.mockTest?.title ?? 'Item'}',
         email: user.email,
         contact: userPhone,
       );

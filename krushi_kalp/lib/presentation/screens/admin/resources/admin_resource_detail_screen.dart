@@ -12,6 +12,7 @@ import 'admin_resource_form.dart';
 import '../../../../utils/error_utils.dart';
 import '../../../../utils/crashlytics_service.dart';
 import '../admin_grant_access_screen.dart' as admin_grant;
+import '../../../../domain/models/resource.dart' as domain;
 
 
 class AdminResourceDetailScreen extends StatefulWidget {
@@ -194,6 +195,26 @@ class _AdminResourceDetailScreenState
     }
   }
 
+  Future<void> _toggleVisibility(bool value) async {
+    try {
+      await AdminService.toggleResourcePublicStatus(_resource.id, value);
+      if (mounted) {
+        setState(() {
+          _resource = _resource.copyWith(isPublic: value);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(value ? 'Resource is now public' : 'Resource is now hidden'),
+            backgroundColor: value ? const Color(0xFF10B981) : Colors.orange,
+          ),
+        );
+      }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_resource_detail_toggle');
+      if (mounted) ErrorUtils.showError(context, e);
+    }
+  }
+
   // ── Edit / Open ──────────────────────────────────────────────────────────
 
   void _navigateToEdit() async {
@@ -251,6 +272,24 @@ class _AdminResourceDetailScreenState
         title: Text('Resource Details',
             style: TextStyle(fontSize: context.sp(20))),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.people_alt_outlined),
+            tooltip: 'Access Audit',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => admin_grant.AdminGrantAccessScreen(
+                    itemType: 'resource',
+                    itemId: _resource.id,
+                    itemTitle: _resource.title,
+                    itemSnapshot: _resource.toJson(),
+                    isAuditMode: true,
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.card_giftcard),
             tooltip: 'Gift Access',
@@ -376,6 +415,29 @@ class _AdminResourceDetailScreenState
                             ),
                           ],
                         ),
+                        const SizedBox(height: AppSpacing.md),
+                        Row(
+                          children: [
+                            Text(
+                              _resource.isPublic ? 'Public' : 'Hidden',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: _resource.isPublic
+                                    ? const Color(0xFF10B981)
+                                    : Colors.orange,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              height: 32,
+                              child: Switch(
+                                value: _resource.isPublic,
+                                onChanged: _toggleVisibility,
+                                activeColor: const Color(0xFF10B981),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -405,11 +467,11 @@ class _AdminResourceDetailScreenState
                   child: _buildStatCard(
                     context,
                     label: 'Visibility',
-                    value: _resource.isActive ? 'Visible' : 'Hidden',
-                    icon: _resource.isActive
+                    value: _resource.isPublic ? 'Visible' : 'Hidden',
+                    icon: _resource.isPublic
                         ? Icons.visibility_rounded
                         : Icons.visibility_off_rounded,
-                    color: _resource.isActive
+                    color: _resource.isPublic
                         ? const Color(0xFF10B981)
                         : Colors.orange,
                   ),

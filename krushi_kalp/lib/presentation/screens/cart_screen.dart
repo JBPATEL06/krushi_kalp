@@ -337,6 +337,26 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         ref.read(navigationProvider.notifier).setIndex(0);
         Navigator.pop(context);
       }
+    } catch (e) {
+      debugPrint('Checkout Process Error: $e');
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text('Action Required'),
+            content: Text(
+              'Payment was successful, but we encountered an error while granting access:\n\n$e\n\nPlease do not pay again. Contact support with Order ID: $orderId',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -781,19 +801,28 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       String? userPhone = user.phone;
                       double secureTotal = total;
 
+                      String? orderIdStr;
                       // Server-side cart price verification
                       try {
-                        final orderIdStr = _currentCartItems.first['order_id'] as String;
+                        // Get the first item's order_id if it exists, otherwise it will be handled by secureData
+                        orderIdStr = _currentCartItems.isNotEmpty 
+                          ? _currentCartItems.first['order_id'] as String? 
+                          : null;
+                          
                         final priceResponse = await Supabase.instance.client.rpc(
                           'calculate_secure_cart_price',
                           params: {
-                            'p_order_id': orderIdStr,
+                            'p_order_id': orderIdStr ?? '',
                             'p_user_id': user.id,
                             'p_coupon_code': _appliedGlobalOffer?.code ?? '',
                           },
                         );
                         final Map<String, dynamic> secureData = Map<String, dynamic>.from(priceResponse);
                         secureTotal = (secureData['final_total'] as num).toDouble();
+                        // If the RPC returned a new payment_id/order_id, use that
+                        if (secureData['payment_id'] != null) {
+                          orderIdStr = secureData['payment_id'] as String;
+                        }
                       } catch (sqlError) {
                         if (mounted) {
                           setState(() => _isProcessing = false);
@@ -811,9 +840,20 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                         return;
                       }
 
+                      if (orderIdStr == null) {
+                        if (mounted) {
+                          setState(() => _isProcessing = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Payment ID missing. Please refresh cart.')),
+                          );
+                        }
+                        return;
+                      }
+
                       PaymentService.instance.openCheckout(
                         amount: secureTotal,
-                        orderId: 'cart_checkout_${DateTime.now().millisecondsSinceEpoch}',
+                        orderId: orderIdStr!,
+                        description: 'Cart Purchase',
                         email: user.email,
                         contact: userPhone,
                       );

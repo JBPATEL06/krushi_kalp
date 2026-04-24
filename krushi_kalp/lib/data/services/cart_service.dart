@@ -15,54 +15,71 @@ class CartService {
 
   // ── READ ─────────────────────────────────────────────────────────────────
 
-  /// Fetches all items in the user's current PENDING order (the cart).
+  /// Fetches all items in the user's current PENDING payment (the cart).
   Future<List<OrderItem>> fetchCartItems(String userId) async {
     try {
-      // 1. Find PENDING order
-      final pendingOrderRes = await _supabase
-          .from('orders')
-          .select('order_id, offer_id')
+      // 1. Find PENDING payment (replaces orders)
+      final pendingPaymentRes = await _supabase
+          .from('payment')
+          .select('id, offer_code')
           .eq('user_id', userId)
           .eq('status', 'PENDING')
           .limit(1);
 
-      if (pendingOrderRes.isEmpty) return [];
+      if (pendingPaymentRes.isEmpty) return [];
 
-      final String orderId = pendingOrderRes.first['order_id'];
-      final int? appliedOfferId = pendingOrderRes.first['offer_id'] as int?;
+      final String paymentId = pendingPaymentRes.first['id'];
+      final String? appliedOfferCode = pendingPaymentRes.first['offer_code'] as String?;
 
-      // 2. Fetch items with relations
+      // 2. Fetch items from 'access' table (replaces order_items)
+      // For cart, we look for items linked to this payment that are not yet active
       final itemsResponse = await _supabase
-          .from('order_items')
+          .from('access')
           .select('*, mock_tests(*), resources(*)')
-          .eq('order_id', orderId)
-          .order('created_at');
+          .eq('payment_id', paymentId)
+          .eq('is_active', false)
+          .order('granted_at');
 
-      // 3. Fetch global offer if applied to the cart
+      // 3. Fetch offer if applied (using offer_code instead of ID if needed, 
+      // but keeping compatibility with existing Offer logic if possible)
       Map<String, dynamic>? globalOfferData;
-      if (appliedOfferId != null) {
+      if (appliedOfferCode != null) {
         try {
           final offerRes = await _supabase
               .from('offers')
               .select()
-              .eq('offer_id', appliedOfferId)
+              .eq('code', appliedOfferCode)
               .maybeSingle();
           globalOfferData = offerRes;
         } catch (_) {}
       }
 
       final List<OrderItem> rawItems = (itemsResponse as List).map((json) {
+        // Map access table schema to OrderItem model expectations
+        final String itemType = json['item_type'] ?? '';
+        final int itemId = json['item_id'] ?? 0;
+        
+        // Inject keys that OrderItem.fromJson expects
+        json['order_id'] = json['payment_id'];
+        json['item_id'] = json['id']; // use access.id as item_id
+        if (itemType == 'test') {
+          json['test_id'] = itemId;
+        } else if (itemType == 'resource') {
+          json['resource_id'] = itemId;
+        }
+        json['price_at_purchase'] = json['price_paid'];
+        json['created_at'] = json['granted_at'];
+
         if (globalOfferData != null) {
           json['offers'] = globalOfferData;
         }
         return OrderItem.fromJson(json);
       }).toList();
 
-      // 4. Transform items to include 1-year signed URLs for thumbnails
+      // 4. Transform items to include fresh signed URLs for thumbnails
       return await _signCartItems(rawItems);
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service');
-      
+      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service: fetchCartItems');
       return [];
     }
   }
@@ -134,7 +151,7 @@ class CartService {
     }
   }
 
-  /// Adds an item to the user's cart. Handles duplicate and ownership checks.
+  /// Adds an item to the user's cart. Handles duplicate and ownership checks using the new schema.
   Future<void> addToCart({
     required String authUserId,
     int? testId,
@@ -146,7 +163,7 @@ class CartService {
     }
 
     try {
-      // 0. OWNERSHIP CHECK
+      // 0. OWNERSHIP CHECK (Already uses 'access' table via instance)
       final isOwned = await checkOwnership(
         userId: authUserId,
         testId: testId,
@@ -157,70 +174,95 @@ class CartService {
         throw Exception("You already own this item.");
       }
 
-      // 1. Find/Create PENDING order
-      final pendingOrderRes = await _supabase
-          .from('orders')
-          .select('order_id')
+      // 1. Find/Create PENDING payment
+      final pendingPaymentRes = await _supabase
+          .from('payment')
+          .select('id')
           .eq('user_id', authUserId)
           .eq('status', 'PENDING')
           .limit(1);
 
-      String orderId;
-      if (pendingOrderRes.isNotEmpty) {
-        orderId = pendingOrderRes.first['order_id'];
+      String paymentId;
+      if (pendingPaymentRes.isNotEmpty) {
+        paymentId = pendingPaymentRes.first['id'];
 
-        // DUPLICATE CHECK (In Cart)
-        var query = _supabase
-            .from('order_items')
-            .select('item_id')
-            .eq('order_id', orderId);
+        // DUPLICATE CHECK (In Cart - using access table)
+        final existingItem = await _supabase
+            .from('access')
+            .select('id')
+            .eq('payment_id', paymentId)
+            .eq('item_id', (testId ?? resourceId)!)
+            .eq('item_type', testId != null ? 'test' : 'resource')
+            .eq('is_active', false)
+            .maybeSingle();
 
-        if (testId != null) {
-          query = query.eq('test_id', testId);
-        } else {
-          query = query.eq('resource_id', resourceId as Object);
-        }
-
-        final existingItem = await query.maybeSingle();
         if (existingItem != null) {
           throw Exception("Item is already in your cart.");
         }
       } else {
-        final newOrder = await _supabase
-            .from('orders')
+        // Create new PENDING payment with user snapshot
+        // We import AuthService logic here to get the snapshot
+        final userProfileRes = await _supabase
+            .from('profiles')
+            .select('email, username')
+            .eq('id', authUserId)
+            .maybeSingle();
+        
+        final userSnapshot = {
+          'email': userProfileRes?['email'] ?? 'unknown',
+          'username': userProfileRes?['username'] ?? 'User',
+        };
+
+        final newPayment = await _supabase
+            .from('payment')
             .insert({
               'user_id': authUserId,
+              'user_snapshot': userSnapshot,
               'status': 'PENDING',
-              'total_amount': 0,
+              'amount': 0, // Will be calculated by triggers or on checkout
+              'gateway': 'razorpay',
               'created_at': DateTime.now().toUtc().toIso8601String(),
             })
-            .select('order_id')
+            .select('id')
             .single();
-        orderId = newOrder['order_id'];
+        paymentId = newPayment['id'];
       }
 
-      // 2. Insert Item
-      await _supabase.from('order_items').insert({
-        'order_id': orderId,
-        'test_id': testId,
-        'resource_id': resourceId,
-        'price_at_purchase': price,
-        'created_at': DateTime.now().toUtc().toIso8601String(),
+      // 2. Insert Item into 'access' table (is_active = false for Cart)
+      // We also store a snapshot of the item for history
+      Map<String, dynamic> itemSnapshot = {};
+      try {
+        if (testId != null) {
+          final testRes = await _supabase.from('mock_tests').select('title, price').eq('test_id', testId).single();
+          itemSnapshot = {'title': testRes['title'], 'price': testRes['price']};
+        } else {
+          final resRes = await _supabase.from('resources').select('title, price').eq('id', resourceId!).single();
+          itemSnapshot = {'title': resRes['title'], 'price': resRes['price']};
+        }
+      } catch (_) {}
+
+      await _supabase.from('access').insert({
+        'user_id': authUserId,
+        'payment_id': paymentId,
+        'item_type': testId != null ? 'test' : 'resource',
+        'item_id': testId ?? resourceId,
+        'item_snapshot': itemSnapshot,
+        'price_paid': price,
+        'is_active': false,
+        'granted_at': DateTime.now().toUtc().toIso8601String(),
       });
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service');
-      
+      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service: addToCart');
       throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }
 
-  /// Removes a specific item from the cart.
+  /// Removes a specific item from the cart (access table).
   Future<void> removeCartItem(int itemId) async {
     try {
-      await _supabase.from('order_items').delete().eq('item_id', itemId);
+      await _supabase.from('access').delete().eq('id', itemId).eq('is_active', false);
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service');
-      
+      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service: removeCartItem');
       throw Exception('Failed to remove item: $e');
     }
   }

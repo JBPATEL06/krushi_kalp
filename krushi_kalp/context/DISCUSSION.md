@@ -129,3 +129,51 @@ Update user-facing UI labels from "Claim" / "Claim Free" to "Free Claim" for bet
 ### Resolved and How
 - Modified actionLabel in StoreGrid, StoreResourceGrid, and FreeItemCard usages.
 - Modified SnackBar text in store_screen.dart and free_content_screen.dart.
+
+---
+
+## [Phase 6.6: Checkout Process Stabilization]
+### Goal
+Fix silent failures and "long wait" issues in the checkout flow reported by the user.
+
+### Proposed Changes
+- **File**: `lib/data/services/test_service.dart`
+  - **Action**: Update `checkout` to capture RPC results and throw exceptions if `success` is false. Add detailed debug logging.
+- **File**: `lib/presentation/screens/cart_screen.dart`
+  - **Action**: Add `catch` blocks and error dialogs to `_handlePaymentSuccess` and `_processDirectPurchase`.
+- **File**: `lib/data/services/payment_service.dart`
+  - **Action**: Pass the `orderId` to Razorpay's `options` for better tracking.
+
+### Risks / Side Effects
+- **RPC Logic**: Mismatch between client parameters and backend SQL signature.
+- **Error Visibility**: Ensure user gets meaningful messages without exposing technical details.
+
+### Confirmed by User
+- User requested to "hurry" and proceed in the same branch.
+
+---
+
+## [Phase 7: Razorpay & Checkout Stabilization]
+### Goal
+Resolve Razorpay SDK hangs and performance bottlenecks by correctly structuring options and fixing code-level scope errors.
+
+### Proposed Changes
+- **File**: `lib/data/services/payment_service.dart`
+  - **Action**: Moved the Supabase Payment UUID from the Razorpay `order_id` field to the `notes` map as `supabase_order_id`. 
+  - **Reason**: `order_id` in Razorpay is strictly for Razorpay-generated orders. Using a custom UUID there causes the SDK to hang or fail silently.
+- **File**: `lib/presentation/screens/cart_screen.dart`
+  - **Action**: Fixed a scope error where `orderIdStr` was declared inside the `try` block but used outside it. Added robustness to handle empty carts and missing payment IDs.
+- **File**: `lib/presentation/widgets/direct_checkout_sheet.dart`
+  - **Action**: Updated `openCheckout` signature to include specific item descriptions.
+
+### Risks / Side Effects
+- **Verification**: Post-payment reconciliation (the `checkout` RPC) still relies on the `supabase_order_id` which is now retrieved from the `notes` or passed back via our internal state.
+
+### Confirmed by User
+- User requested to "clean this mess in single shot" and proceed in the same branch.
+
+### Resolved and How
+- Implemented the notes-based referencing in `PaymentService`.
+- Verified and fixed scope errors in `CartScreen`.
+- Standardized error reporting with `CrashlyticsService`.
+- Verified that `_isProcessing` gates are properly placed to prevent double-charging.

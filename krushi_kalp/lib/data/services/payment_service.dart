@@ -55,33 +55,27 @@ class PaymentService {
     var options = {
       'key': _razorpayKey,
       'amount': (amount * 100).toInt(),
-      'name': 'Krushi kalp',
-      'description': description ?? 'Purchase',
+      'name': 'Krushi Kalp',
+      'description': description ?? 'Order Payment',
       'retry': {'enabled': true, 'max_count': 1},
       'send_sms_hash': true,
       'prefill': {
-        if (contact != null && contact.isNotEmpty) 'contact': contact,
+        'contact': contact ?? '',
         'email': email ?? '',
       },
-      'readonly': {
-        'email': true,
-      },
-      'method': {
-        'netbanking': false,
-        'card': false,
-        'wallet': false,
-        'upi': true,
+      'notes': {
+        'supabase_order_id': orderId, // Strictly adhere to notes-based referencing
       },
       'external': {
-        'wallets': ['google_pay', 'phonepe']
+        'wallets': ['paytm']
       }
     };
 
     try {
       _razorpay.open(options);
     } catch (e, stack) {
-      CrashlyticsService.instance
-          .recordError(e, stack, reason: 'Razorpay checkout open failed');
+      debugPrint('Razorpay Open Error: $e');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'razorpay_open_failed');
     }
   }
 

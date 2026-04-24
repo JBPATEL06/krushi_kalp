@@ -15,6 +15,7 @@ class Resource {
   final String? thumbnailUrl;
   final double price;
   final bool isActive;
+  final bool isPublic;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -29,6 +30,7 @@ class Resource {
     this.thumbnailUrl,
     this.price = 0.0,
     required this.isActive,
+    this.isPublic = true,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -47,6 +49,7 @@ class Resource {
       thumbnailUrl: json['thumbnail_url'] as String?,
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       isActive: (json['is_active'] as bool?) ?? true,
+      isPublic: (json['is_public'] as bool?) ?? true,
       // FIX #3: 'mrp' and 'discount' do NOT exist in the DB schema.
       // 'created_at' is null-guarded to prevent crash on malformed cache.
       createdAt: json['created_at'] != null
@@ -69,6 +72,7 @@ class Resource {
       'thumbnail_url': thumbnailUrl,
       'price': price,
       'is_active': isActive,
+      'is_public': isPublic,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -85,6 +89,7 @@ class Resource {
     String? thumbnailUrl,
     double? price,
     bool? isActive,
+    bool? isPublic,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -99,6 +104,7 @@ class Resource {
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       price: price ?? this.price,
       isActive: isActive ?? this.isActive,
+      isPublic: isPublic ?? this.isPublic,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

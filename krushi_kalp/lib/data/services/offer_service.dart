@@ -67,11 +67,14 @@ class OfferService {
       }
 
       return counts;
-    } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
-      if (NetworkUtils.isNetworkError(e)) {
+    } on PostgrestException catch (e) {
+      if (e.code == 'PGRST205') {
+        debugPrint('OfferService: offer_redemptions table not found (migrated). Returning empty counts.');
         return {};
       }
+      rethrow;
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service: getOfferClaimCounts');
       return {};
     }
   }
@@ -136,8 +139,14 @@ class OfferService {
           .eq('offer_id', offerId)
           .eq('user_id', userId);
       return count < limit;
+    } on PostgrestException catch (e) {
+      if (e.code == 'PGRST205') {
+        debugPrint('OfferService: offer_redemptions table not found. Bypassing limit check.');
+        return true; 
+      }
+      rethrow;
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service: checkUsageLimit');
       return true;
     }
   }

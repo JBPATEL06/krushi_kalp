@@ -352,20 +352,20 @@ class TestService {
 
   // ── PURCHASES ────────────────────────────────────────────────────────────
 
-  Future<Set<int>> fetchPurchasedTestIds(String userId) async {
+  Future<List<int>> fetchPurchasedTestIds(String userId) async {
     try {
       final response = await _supabase
           .from('access')
           .select('item_id')
           .eq('user_id', userId)
-          .eq('item_type', 'test');
+          .eq('item_type', 'test')
+          .eq('is_active', true);
 
-      return (response as List)
-          .map((i) => i['item_id'] as int)
-          .toSet();
+      return (response as List).map((e) => e['item_id'] as int).toList();
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'fetchPurchasedTestIds failed for user: $userId');
-      return {};
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'test_service: fetchPurchasedTestIds');
+      return [];
     }
   }
 
@@ -475,46 +475,66 @@ class TestService {
     }
   }
 
-  /// Initiates a direct purchase for a single test.
+  /// Initiates a direct purchase for a single test using the new payment table.
   Future<String> createDirectOrder({
     required int testId,
     required double price,
     required String authUserId,
   }) async {
     try {
+      // 1. Check ownership in the 'access' table
       final isOwned = await CartService.instance.checkOwnership(
         userId: authUserId,
         testId: testId,
       );
       if (isOwned) throw Exception("You already own this item.");
-      final newOrder = await _supabase
-          .from('orders')
+
+      // 2. Fetch User Profile for Snapshot
+      final userProfile = await AuthService.instance.getUserProfile(authUserId);
+      final userSnapshot = {
+        'email': userProfile?['email'] ?? 'unknown',
+        'username': userProfile?['username'] ?? 'User',
+      };
+
+      // 3. Create entry in 'payment' table (Status: PENDING for Direct)
+      final newPayment = await _supabase
+          .from('payment')
           .insert({
             'user_id': authUserId,
-            'status': 'DIRECT_CHECKOUT',
-            'total_amount': price,
+            'user_snapshot': userSnapshot,
+            'status': 'PENDING',
+            'amount': price,
+            'gateway': 'razorpay',
             'created_at': DateTime.now().toUtc().toIso8601String(),
           })
-          .select('order_id')
+          .select('id')
           .single();
-      final orderId = newOrder['order_id'];
-      await _supabase.from('order_items').insert({
-        'order_id': orderId,
-        'test_id': testId,
-        'price_at_purchase': price,
-        'created_at': DateTime.now().toUtc().toIso8601String(),
-      });
-      return orderId;
+
+      final paymentId = newPayment['id'];
+      
+      // Note: In the new schema, access is granted AFTER successful checkout.
+      // However, we still need to record WHICH item this payment is for.
+      // We store this in the payment metadata or a separate link table if needed.
+      // For now, we'll use metadata to track the item during the PENDING state.
+      await _supabase.from('payment').update({
+        'metadata': {
+          'item_type': 'test',
+          'item_id': testId,
+          'price_at_purchase': price,
+        }
+      }).eq('id', paymentId);
+
+      return paymentId; // This is the UUID required by Razorpay / Checkout
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: createDirectOrder');
       throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }
 
-  /// Completes a purchase transaction.
+  /// Completes a purchase transaction using the updated RPC for the payment/access schema.
   Future<void> checkout({
-    required String orderId,
-    required String paymentId,
+    required String orderId, // This is the payment.id UUID
+    required String paymentId, // Razorpay Payment ID
     required double amount,
     int? offerId,
     double discountAmount = 0,
@@ -522,9 +542,15 @@ class TestService {
     String paymentGateway = 'Razorpay',
   }) async {
     try {
-      // 1. Call the secure RPC to finalize the order and cleanup cart
-      await _supabase.rpc('complete_checkout_v1', params: {
-        'p_order_id': orderId,
+      debugPrint('--- CHECKOUT START ---');
+      debugPrint('Order ID: $orderId');
+      debugPrint('Payment ID: $paymentId');
+      debugPrint('User ID: $userId');
+
+      // 1. Call the secure RPC to finalize the payment and grant access
+      // Updated RPC 'complete_checkout_v1' now expects payment.id and works with 'access' table.
+      final response = await _supabase.rpc('complete_checkout_v1', params: {
+        'p_payment_id': orderId, // We map orderId to p_payment_id in the new schema
         'p_gateway_payment_id': paymentId,
         'p_amount': amount,
         'p_offer_id': offerId,
@@ -532,25 +558,50 @@ class TestService {
         'p_user_id': userId,
       });
 
-      // 2. Trigger Admin Notification (Client-side is fine for push notifications)
+      debugPrint('RPC Response: $response');
+
+      // 2. Validate the response
+      if (response == null) {
+        throw Exception('Database response was null. Order ID: $orderId');
+      }
+
+      final bool success = response['success'] ?? false;
+      final String? message = response['message'];
+
+      if (!success) {
+        debugPrint('Checkout Failed: $message');
+        throw Exception(message ?? 'Unknown database error during checkout.');
+      }
+
+      debugPrint('--- CHECKOUT SUCCESS ---');
+
+      // 3. Trigger Admin Notification
       try {
         await AdminNotificationService().sendToTopic(
           topic: 'admin_updates',
           title: '🎉 New Sale! (₹$amount)',
-          body: 'Order #$orderId has been completed.',
+          body: 'Payment #$orderId has been completed.',
           data: {
             'type': 'sale_alert',
-            'order_id': orderId,
+            'payment_id': orderId,
             'amount': amount.toString()
           },
         );
       } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'Admin sale notification failed for order: $orderId');
+        CrashlyticsService.instance.recordError(e, stack, reason: 'Admin sale notification failed for payment: $orderId');
       }
     } catch (e, stack) {
+      debugPrint('--- CHECKOUT ERROR ---');
+      debugPrint('Error: $e');
       CrashlyticsService.instance
-          .recordError(e, stack, reason: 'checkout failed');
-      throw Exception('Checkout failed: $e');
+          .recordError(e, stack, reason: 'test_service: checkout failed');
+      
+      // If the RPC fails due to signature mismatch, it throws a PostgrestException.
+      // We handle it gracefully and rethrow with clarity.
+      if (e is PostgrestException) {
+         throw Exception('Database Error: ${e.message} (Code: ${e.code})');
+      }
+      rethrow;
     }
   }
 

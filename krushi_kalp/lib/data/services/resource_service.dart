@@ -311,34 +311,55 @@ class ResourceService {
     }
   }
 
-  /// Initializes a direct purchase for a single resource.
+  /// Initializes a direct purchase for a single resource using the payment/access schema.
   Future<String> createDirectOrder({
     required int resourceId,
     required double price,
     required String userId,
   }) async {
     try {
-      final newOrder = await _client
-          .from('orders')
+      // 1. Ownership Check
+      final isOwned = await CartService.instance.checkOwnership(
+        userId: userId,
+        resourceId: resourceId,
+      );
+      if (isOwned) throw Exception("You already own this item.");
+
+      // 2. Fetch User Profile for Snapshot
+      final userProfile = await AuthService.instance.getUserProfile(userId);
+      final userSnapshot = {
+        'email': userProfile?['email'] ?? 'unknown',
+        'username': userProfile?['username'] ?? 'User',
+      };
+
+      // 3. Create entry in 'payment' table
+      final newPayment = await _client
+          .from('payment')
           .insert({
             'user_id': userId,
-            'status': 'DIRECT_CHECKOUT',
-            'total_amount': price,
+            'user_snapshot': userSnapshot,
+            'status': 'PENDING',
+            'amount': price,
+            'gateway': 'razorpay',
+            'created_at': DateTime.now().toUtc().toIso8601String(),
           })
-          .select('order_id')
+          .select('id')
           .single();
 
-      final orderId = newOrder['order_id'];
+      final paymentId = newPayment['id'];
 
-      await _client.from('order_items').insert({
-        'order_id': orderId,
-        'resource_id': resourceId,
-        'price_at_purchase': price,
-      });
+      // 4. Store resource link in metadata for the RPC to process later
+      await _client.from('payment').update({
+        'metadata': {
+          'item_type': 'resource',
+          'item_id': resourceId,
+          'price_at_purchase': price,
+        }
+      }).eq('id', paymentId);
 
-      return orderId;
+      return paymentId;
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service: createDirectOrder');
       throw Exception('Failed to create order: $e');
     }
   }
