@@ -83,11 +83,9 @@ class TestNotifier extends _$TestNotifier {
       // Update state with fresh results
       state = state.copyWith(cachedTests: fetchedTests, errorMessage: '');
 
-      // 3. Save fresh data to Isar
-      if (fetchedTests.isNotEmpty) {
-        final entitiesToSave = fetchedTests.map((t) => MockTestEntity.fromMockTest(t)).toList();
-        LocalCachingService.saveMockTests(entitiesToSave);
-      }
+      // 3. Sync fresh data to Isar (Always sync, even if empty, to prevent ghost data)
+      final entitiesToSave = fetchedTests.map((t) => MockTestEntity.fromMockTest(t)).toList();
+      LocalCachingService.syncMockTests(entitiesToSave);
 
       _applyFiltering();
     } catch (e, stack) {

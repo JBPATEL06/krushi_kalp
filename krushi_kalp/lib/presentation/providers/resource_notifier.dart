@@ -80,10 +80,11 @@ class ResourceNotifier extends _$ResourceNotifier {
       // 2. Fetch fresh data from Supabase
       final resources = await ResourceService.instance.fetchResources(type: type).timeout(const Duration(seconds: 15));
 
-      // 3. Save to Isar
-      if (resources.isNotEmpty) {
-        LocalCachingService.saveResources(resources.map((r) => ResourceEntity.fromResource(r)).toList());
-      }
+      // 3. Sync fresh data to Isar (Always sync specific type to prevent ghost data)
+      LocalCachingService.syncResources(
+        resources.map((r) => ResourceEntity.fromResource(r)).toList(),
+        type.name,
+      );
 
       _updateTypeState(type, resources);
       state = state.copyWith(errorMessage: null);
