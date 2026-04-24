@@ -362,3 +362,23 @@ Create one clean, unambiguous `complete_checkout_v1` DB function.
 - No more overload conflicts
 
 ---
+
+## [Phase 12: Payment Status Alignment Fix]
+
+### Problem Summary
+**Symptom**: Razorpay payments were successful, but the `payment` table status remained `PENDING`, and users were not granted access.
+
+### Root Cause
+The `complete_checkout_v1` RPC was trying to update `payment.status` to `'COMPLETED'`. However, the `payment` table has a CHECK constraint that only allows `['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED']`. This caused the RPC to fail silently (returning an error object that the app caught but the DB transaction rolled back).
+
+### Resolution
+- Updated `complete_checkout_v1` RPC to use `'SUCCESS'` instead of `'COMPLETED'`.
+- Verified that the Dart codebase (specifically `AdminService`) already expects `'SUCCESS'` for reporting.
+- Verified that the double-processing guard in the RPC now correctly checks for `'SUCCESS'`.
+
+### Files Modified
+- Supabase RPC: `complete_checkout_v1`
+
+### Status: ✅ COMPLETED
+
+---

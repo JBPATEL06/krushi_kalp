@@ -16,7 +16,7 @@ Clean Architecture:
 - **Data**: API services (Supabase) and repository implementations
 
 ## Current Active Phase
-- Phase 11: Payment RLS & Accessibility Fixes.
+- Phase 12: Payment Status Alignment & Access Fix.
 
 ## Completed Phases
 - Initial project structure and core features (Pre-existing)
@@ -30,8 +30,8 @@ Clean Architecture:
 - Phase 8: Razorpay UPI ID Accessibility.
 - Phase 9: Resource Visibility Policy Enforced.
 - Phase 10: No-FK Refactoring & Supabase v2 Bug Fixes.
-
 - Phase 11: Payment RLS & Accessibility Fixes.
+- Phase 12: Payment Status Alignment & Access Fix.
 
 ## Key Decisions
 - Use `infinite_scroll_pagination` package for consistent pagination across the app.
