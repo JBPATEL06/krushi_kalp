@@ -78,58 +78,49 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> with Picker
   static const int maxImageSizeBytes = 1024 * 1024; // 1MB
 
   Future<void> _pickCoverImage() async {
-    if (isPicking) return;
-    isPicking = true;
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        withData: false,
-      );
-      if (result != null && result.files.single.path != null) {
-        final file = result.files.first;
-        final bytes = await File(file.path!).readAsBytes();
-        if (file.size > maxImageSizeBytes) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Image must be less than 1MB')),
-            );
-          }
-          return;
+    final result = await safePickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+    );
+    if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
+      final file = result.files.first;
+      if (file.size > maxImageSizeBytes) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Image must be less than 1MB')),
+          );
         }
+        return;
+      }
+      try {
+        final bytes = await File(file.path!).readAsBytes();
         setState(() {
           _coverImage = file;
           _imageBytes = bytes;
           _imagePath = file.path;
         });
+      } catch (e, stack) {
+        await CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to read cover image bytes');
       }
-    } catch (e, stack) {
-      await CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to pick cover image');
-    } finally {
-      isPicking = false;
     }
   }
 
   Future<void> _pickQuestionsFile() async {
-    if (isPicking) return;
-    isPicking = true;
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['xlsx', 'xls', 'json'],
-        withData: false,
-      );
-      if (result != null && result.files.single.path != null) {
-        final file = result.files.first;
+    final result = await safePickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['xlsx', 'xls', 'json'],
+    );
+    if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
+      final file = result.files.first;
+      try {
         final bytes = await File(file.path!).readAsBytes();
         setState(() {
           _questionsFile = file;
           _questionsBytes = bytes;
         });
+      } catch (e, stack) {
+        await CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to read questions file bytes');
       }
-    } catch (e, stack) {
-      await CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to pick questions file');
-    } finally {
-      isPicking = false;
     }
   }
 

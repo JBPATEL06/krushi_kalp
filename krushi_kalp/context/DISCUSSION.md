@@ -1,414 +1,340 @@
-# Discussion Log: Infinite Pagination Refactoring
+# Discussion Log: Krushi Kalp Development
 
-## [Phase 1: AdminResourceList Pagination]
+[... previous logs ...]
+
+---
+
+## [Phase 21: Admin Resource Detail Fix]
 ### Goal
-Refactor `AdminResourceList` to use `infinite_scroll_pagination` instead of fetching all records at once.
+Fix compiler errors in `AdminResourceDetailScreen` following the removal of `isPublic` from the `Resource` model.
 
 ### Proposed Changes
+- **File**: `lib/presentation/screens/admin/resources/admin_resource_detail_screen.dart`
+  - **Action**: Replaced all `isPublic` references with `isActive`.
+  - **Action**: Updated `copyWith` to use `isActive`.
+  - **Action**: Fixed deprecated `activeColor` to `activeThumbColor` in `Switch`.
+  - **Action**: Removed duplicate import of `Resource` model.
+
+### Risks / Side Effects
+- None.
+
+### Resolved and How
+- Screen functionality restored and aligned with updated domain model.
+
+---
+
+## [Phase 20: Resource Schema Fix]
+### Goal
+Resolve the `PGRST204` database crash occurring when creating/updating resources due to a missing `is_public` column in the `resources` table.
+
+### Proposed Changes
+- **File**: `lib/domain/models/resource.dart`
+  - **Action**: Removed `isPublic` field. The `resources` table uses `is_active` for visibility.
 - **File**: `lib/data/services/resource_service.dart`
-  - **Action**: Add `fetchPaginatedResources` method.
-  - **Why**: To support offset/limit based fetching from Supabase.
-- **File**: `lib/presentation/screens/admin/resources/admin_resource_list.dart`
-  - **Action**: 
-    - Replace `FutureBuilder` with `PagedListView`.
-    - Implement `PagingController<int, Resource>`.
-    - Update `_loadData` to fetch pages.
-    - Maintain existing logic for delete, edit, and view PDF.
+  - **Action**: Updated `_signResources` to remove `isPublic` from the constructor call.
+- **File**: `lib/presentation/screens/admin/resources/admin_resource_form.dart`
+  - **Action**: Removed all references to `isPublic`.
 
 ### Risks / Side Effects
-- **Pagination Logic**: Incorrect offset calculation could lead to duplicate items or missing items.
-- **State Management**: Ensuring the `PagingController` is correctly disposed and updated after CRUD operations.
-- **Signed URLs**: Must ensure signed URLs are fetched for each page load.
-
-### Confirmed by User
-- Confirmed implementation of infinite scrolling for both Admin Resource List and Admin Mock Test List.
+- None expected as `isActive` is the primary visibility flag.
 
 ### Resolved and How
-- Implemented `fetchPaginatedResources` in `ResourceService` and updated `fetchPaginatedMockTests` in `TestService`.
-- Refactored `AdminResourceList` and `AdminMockTestList` to use `PagingController` and `PagedListView`.
-- Integrated server-side search and sorting for `AdminMockTestList`.
-- Ensured `PagingController.refresh()` is called after every CRUD operation (Add, Edit, Delete) to keep the UI in sync.
+- Model updated and service calls synchronized.
 
 ---
 
-## [Phase 2 Outcome]
-- Successfully migrated `AdminMockTestList` from a stream-based approach (fetching all data) to a paginated approach.
-- Optimized performance by offloading search and sorting to Supabase via query parameters.
-
-## Current Active Phase
-- Phase 10: No-FK Refactoring & Bug Fixing (COMPLETED)
-- Phase 11: TBD - Refactoring remaining SQL joins in `AdminService` to comply with No-FK policy.
-    - Fixing IDE errors in `AdminService`, `CartService`, and `TestService`.
-
-## Completed Phases
-- Initial project structure and core features (Pre-existing)
-- Phase 1: Refactor AdminResourceList for infinite scroll.
-- Phase 2: Refactor AdminMockTestList for infinite scroll (Stabilized).
-- Phase 3: Implement search and filter in paginated services (Integrated).
-- Phase 4.1: Backend Service Prep (toggle status, fetch users by access type).
-- Phase 5: Admin Access Audit & Visibility Integration (Sub-phases 5.1-5.3).
-- Phase 6: Payment & Access Schema Migration.
-- Phase 7: Razorpay & Checkout Stabilization.
-- Phase 8: Razorpay UPI ID Accessibility.
-- Phase 9: No-FK Refactor (Initial - Resource Service & Partial Admin Service).
-
-## Key Decisions
-- **No-FK Policy**: All cross-table data fetching must use manual "Fetch-and-Stitch" instead of SQL joins.
-- Use `infinite_scroll_pagination` package for consistent pagination across the app.
-- Refactor Supabase services to support offset-based pagination.
-
-## Known Risks or Constraints
-- Supabase pagination requires careful offset/limit management.
-- Signed URLs for resources need to be handled during paginated loads.
-- Manual stitching requires careful null handling for missing related data.
-
----
-
-## [Phase 2: AdminMockTestList Pagination]
+## [Phase 19: Revenue Calculation & Schema Alignment]
 ### Goal
-Refactor `AdminMockTestList` to use `infinite_scroll_pagination`.
+Resolve transaction revenue discrepancies and ensure Admin UI correctly reflects the `payment` and `access` table schema (replacing legacy `order_items`).
 
 ### Proposed Changes
-- **File**: `lib/data/services/test_service.dart`
-  - **Action**: Update/Verify `fetchPaginatedMockTests` to support `isAdmin` flag (show non-public tests).
-- **File**: `lib/presentation/screens/admin/resources/admin_mock_test_list.dart`
-  - **Action**:
-    - Replace `StreamSubscription` based full load with `PagedListView`.
-    - Move search and filter logic to the paginated fetch call (server-side filtering where possible, or client-side if dataset is small enough but still paginated). *Recommendation: Server-side for search.*
-
-### Risks / Side Effects
-- **Real-time updates**: Moving away from `stream` means updates won't be instantaneous unless we manually refresh or add a listener. However, for admin management, manual refresh or `refresh()` on CRUD is standard.
-- **Search/Filter**: Search must now trigger a reset of the `PagingController`.
-
-### Confirmed by User
-- Confirmed implementation of infinite scrolling for both Admin Resource List and Admin Mock Test List.
-- Reported syntax errors in `admin_mock_test_list.dart` after previous edits.
-
-### Resolved and How
-- Implemented `fetchPaginatedResources` in `ResourceService` and updated `fetchPaginatedMockTests` in `TestService`.
-- Refactored `AdminResourceList` and `AdminMockTestList` to use `PagingController` and `PagedListView`.
-- Integrated server-side search and sorting for `AdminMockTestList`.
-- Ensured `PagingController.refresh()` is called after every CRUD operation (Add, Edit, Delete) to keep the UI in sync.
-- **Fixed Syntax Errors**: Removed a duplicate class declaration in `admin_mock_test_list.dart` that caused nested scope errors and broken member references. Verified the structure is now clean.
+- **File**: `lib/data/services/admin_service.dart`
+  - **Action**: Fix `fetchAllOrdersWithDetails` mapping to include `item_snapshot` in the `order_items` compatibility list.
+- **File**: `lib/presentation/screens/admin/revenue_details_screen.dart`
+  - **Action**: Refactor math logic in `_showOrderDetailsDialog` and `_buildOrderRow`.
+- **File**: `lib/presentation/screens/admin/admin_order_list_screen.dart`
+  - **Action**: Align dialog math with the updated logic.
 
 ---
 
----
-
-## [Phase 5: Admin Access Audit & Visibility Integration]
+## [Phase 18: Timezone & Dashboard Synchronization]
 ### Goal
-Enhance administrative control by adding visibility toggles and a detailed multi-tab access audit view (Paid, Free, Claimed, Manual) for Resources and Mock Tests.
-
-### Sub-Phase 5.1: AdminGrantAccessScreen Refactoring (Audit Mode)
-- **Files**: `lib/presentation/screens/admin/admin_grant_access_screen.dart`
-- **Action**:
-  - Update constructor to accept `bool isAuditMode = false`.
-  - Implement `TabBar` with 4 tabs: **Paid**, **Free**, **Claimed**, **Manual**.
-  - Update fetch logic to filter by `access_type` when in audit mode.
-- **Risks**: Ensuring correct filtering in the `access` table.
-
-### Sub-Phase 5.2: AdminResourceList & AdminMockTestList Enhancements
-- **Files**: 
-  - `lib/presentation/screens/admin/resources/admin_resource_list.dart`
-  - `lib/presentation/screens/admin/resources/admin_mock_test_list.dart`
-- **Action**:
-  - Add `Switch` widget for `isActive` / `isPublic` status.
-  - Add `IconButton` (Icons.people_alt_outlined) for Access Audit.
-  - Connect status toggle to `AdminService.toggleResourcePublicStatus` / `AdminService.toggleMockTestPublicStatus`.
-- **Risks**: List state sync after toggle.
-
-### Sub-Phase 5.3: Detail Screen Enhancements
-- **Files**:
-  - `lib/presentation/screens/admin/resources/admin_resource_detail_screen.dart`
-  - `lib/presentation/screens/admin/resources/admin_mock_test_detail_screen.dart`
-- **Action**:
-  - Add visibility toggle in the header card.
-  - Add Access Audit icon to the AppBar or Performance section.
-
-### Sub-Phase 5.4: Service Layer Verification
-- **Files**:
-  - `lib/data/services/admin_service.dart`
-- **Action**:
-  - Verify/Implement `getPaginatedUsersByAccessType`.
-
-### Test Criteria
-- Toggling visibility updates the DB and UI immediately.
-- Audit Mode in `AdminGrantAccessScreen` correctly displays users in separate tabs.
-- Audit icon opens the correct screen with the correct item ID.
----
-
-## [Phase 6: Update "Claim" to "Free Claim" Terminology]
-### Goal
-Update user-facing UI labels from "Claim" / "Claim Free" to "Free Claim" for better clarity on store screens.
+Fix "Today" filtering issues where revenue was not showing due to server-side UTC offsets.
 
 ### Proposed Changes
-- **Files**:
-  - lib/presentation/screens/store_screen.dart
-  - lib/presentation/screens/store/widgets/store_grid.dart
-  - lib/presentation/screens/store/widgets/store_resource_grid.dart
-  - lib/presentation/screens/free_content_screen.dart
-- **Action**: Replace action button texts and snackbar success messages from "Claim" to "Free Claim".
-
-### Confirmed by User
-- The user requested "claim is not make sense it is freeclaim", proceeding in the same branch.
-
-### Resolved and How
-- Modified actionLabel in StoreGrid, StoreResourceGrid, and FreeItemCard usages.
-- Modified SnackBar text in store_screen.dart and free_content_screen.dart.
+- **Supabase RPC**: `get_admin_performance` — updated to use `Asia/Kolkata` timezone.
+- **File**: `lib/presentation/screens/admin/admin_order_list_screen.dart` — improved username fallback.
+- **File**: `lib/presentation/screens/admin/revenue_details_screen.dart` — fixed date filtering.
+- **File**: `lib/data/services/admin_service.dart` — fixed `_parseNum` and username fallbacks.
 
 ---
 
-## [Phase 6.6: Checkout Process Stabilization]
+## [Phase 17: Payment & Access Integrity Stabilization]
 ### Goal
-Fix silent failures and "long wait" issues in the checkout flow reported by the user.
+Resolve blank admin lists, access type mismatches, and user-side content visibility issues.
 
 ### Proposed Changes
-- **File**: `lib/data/services/test_service.dart`
-  - **Action**: Update `checkout` to capture RPC results and throw exceptions if `success` is false. Add detailed debug logging.
-- **File**: `lib/presentation/screens/cart_screen.dart`
-  - **Action**: Add `catch` blocks and error dialogs to `_handlePaymentSuccess` and `_processDirectPurchase`.
-- **File**: `lib/data/services/payment_service.dart`
-  - **Action**: Pass the `orderId` to Razorpay's `options` for better tracking.
-
-### Risks / Side Effects
-- **RPC Logic**: Mismatch between client parameters and backend SQL signature.
-- **Error Visibility**: Ensure user gets meaningful messages without exposing technical details.
-
-### Confirmed by User
-- User requested to "hurry" and proceed in the same branch.
+- **Supabase RPCs**: Dropped old `complete_checkout_v1`, updated `process_item_claim` to use `access_type = 'claimed'`.
+- **File**: `lib/data/services/admin_service.dart` — added `_parseNum` helper.
+- **Files**: `lib/data/services/test_service.dart`, `resource_service.dart` — added `is_active` filter and `item_snapshot` fallback.
 
 ---
 
-## [Phase 7: Razorpay & Checkout Stabilization]
+## [Phase 22: Admin Revenue Screen — Payment Table Alignment]
 ### Goal
-Resolve Razorpay SDK hangs and performance bottlenecks by correctly structuring options and fixing code-level scope errors.
+Fix revenue screen showing wrong amounts. Understand `payment.amount` semantics and fix all display logic.
 
-### Proposed Changes
-- **File**: `lib/data/services/payment_service.dart`
-  - **Action**: Moved the Supabase Payment UUID from the Razorpay `order_id` field to the `notes` map as `supabase_order_id`. 
-  - **Reason**: `order_id` in Razorpay is strictly for Razorpay-generated orders. Using a custom UUID there causes the SDK to hang or fail silently.
-- **File**: `lib/presentation/screens/cart_screen.dart`
-- **Action**: Fixed a scope error where `orderIdStr` was declared inside the `try` block but used outside it. Added robustness to handle empty carts and missing payment IDs.
-- **File**: `lib/presentation/widgets/direct_checkout_sheet.dart`
-  - **Action**: Updated `openCheckout` signature to include specific item descriptions.
+### What Was Done
+- **Confirmed**: `payment.amount` = net paid (after discount). `payment.discount_amount` = discount applied.
+- **`complete_checkout_v1` RPC bug**: `amount` was never written on checkout (cart created with `amount=0`, RPC never updated it).
+- **Fix**: Added `amount = p_amount` to the UPDATE in `complete_checkout_v1`.
+- **Data fix**: Backfilled 4 broken `amount=0` Razorpay records using `SUM(access.price_paid)`.
+- **Further fix**: Records where `amount` stored gross price — corrected to net paid via `amount = amount - discount_amount`.
+- **Flutter**: `revenue_details_screen.dart` — `totalRevenue` now sums `total_amount` directly (= net paid). Row and dialog show correct amounts.
 
-### Risks / Side Effects
-- **Verification**: Post-payment reconciliation (the `checkout` RPC) still relies on the `supabase_order_id` which is now retrieved from the `notes` or passed back via our internal state.
-
-### Confirmed by User
-- User requested to "clean this mess in single shot" and proceed in the same branch.
-
-### Resolved and How
-- Implemented the notes-based referencing in `PaymentService`.
-- Verified and fixed scope errors in `CartScreen`.
-- Standardized error reporting with `CrashlyticsService`.
-- Verified that `_isProcessing` gates are properly placed to prevent double-charging.
+### Files Changed
+- `lib/presentation/screens/admin/revenue_details_screen.dart`
+- Supabase: `complete_checkout_v1` RPC
 
 ---
 
-## [Phase 8: Razorpay UPI ID Accessibility]
+## [Phase 23: Timezone Fix — Joined Date & Purchased Items]
 ### Goal
-Ensure users without UPI apps installed on their device can easily pay by entering their UPI ID (VPA) manually.
+Fix dates showing wrong day/time due to missing `.toLocal()` conversion.
 
-### Proposed Changes
-- **File**: `lib/data/services/payment_service.dart`
-  - **Action**: Modified the `options` map in `openCheckout` to include a `config` block.
-  - **Details**:
-    - Created a dedicated `upi` block titled "Pay via UPI ID".
-    - Explicitly enabled `vpa: true` to show the entry field.
-    - Set the sequence to prioritize `block.upi`.
-
-### Risks / Side Effects
-- **Visuals**: The Razorpay UI will change slightly to prioritize the UPI entry field. This is intentional to solve the user's request.
-
-### Confirmed by User
-- User requested: "in razor pay put option of pay via upi id even they not have any upi apps in mobile can it possible?"
-
-### Resolved and How
-- Added the `config` block to the Razorpay `options` map. This explicitly instructs the Razorpay SDK to provide a manual entry field for UPI IDs (the "Collect Flow"), which works independently of locally installed apps.
+### What Was Done
+- **`admin_user_details_screen.dart`**: `DateTime.tryParse(user['created_at'])` → added `.toLocal()` so "Joined" date shows correct local day.
+- **`admin_user_details_screen.dart`**: `DateTime.parse(item['created_at'])` → added `.toLocal()` for purchased item dates.
+- **`revenue_details_screen.dart`**: Removed redundant `.toUtc()` before `.toLocal()` in all 3 date format calls.
 
 ---
 
-### Phase 10: No-FK Refactoring & Bug Fixing
-- **Goal**: Enforce No-FK policy and fix Supabase v2 syntax errors.
-- **Outcome**: 
-    - Enforced Fetch-and-Stitch for `payment` and `access` tables.
-    - Maintained SQL joins for `results` table (has FKs).
-    - Migrated `.in_()` to `.inFilter()`.
-    - Fixed `AdminService` count errors by switching from `FetchOptions` (unsupported version) to `.count(CountOption.exact)`.
-    - Verified stability across `AdminService`, `CartService`, and `TestService`.
-- **Status**: Completed.
-- **[TestService]**:
-  - Fix `fetchUserResults` (Line 363) by adding explicit `.cast<String, dynamic>()` to the stitched maps before parsing.
-
----
-
-## [Phase 11: Payment RLS & Accessibility Fixes]
+## [Phase 24: Revenue Screen — Offer Display]
 ### Goal
-Resolve `42501 Forbidden` errors during checkout caused by missing RLS policies on the `payment` table.
+Show offer name, % discount, and ₹ saved in transaction details dialog.
 
-### Proposed Changes
-- **Database**:
-  - Add `INSERT` policy for `payment` table: `(auth.uid() = user_id)`.
-  - Add `UPDATE` policy for `payment` table: `(auth.uid() = user_id)`.
-- **Reason**: The app inserts and then immediately updates payment records for direct orders, which requires both policies to be present for regular users.
-
-### Risks / Side Effects
-- None. Access is strictly scoped to the user's own `user_id`.
-
-### Confirmed by User
-- Confirmed to proceed in the same branch.
-
-### Resolved and How
-- Applied SQL migration to create `payment_user_insert` and `payment_user_update` policies.
-- Verified that these policies now exist alongside the existing `SELECT` policy.
+### What Was Done
+- **`revenue_details_screen.dart`** `_showOrderDetailsDialog`:
+  - Shows offer `title` (name).
+  - If `discount_type = PERCENTAGE`: shows `X% OFF • saved ₹Y`.
+  - If `discount_type = FLAT`: shows `₹X FLAT OFF`.
+  - Fallback: shows `saved ₹X` if no offer details in DB.
+  - Shows offer `code` below.
+  - Right side shows `-₹discount` in green.
 
 ---
 
-## [Phase 11.1: Razorpay UPI Accessibility Fix]
+## [Phase 25: Forgot Password — SMTP Fix]
 ### Goal
-Ensure the UPI payment option is visible and prioritized in the Razorpay checkout popup.
-
-### Proposed Changes
-- **Action**: 
-    - Refactored the `config` block in `PaymentService.openCheckout` to use a more robust definition.
-    - Added `modal.confirm_close: true` to prevent accidental exits.
-- **Outcome**: UPI should now appear as the primary block in the payment method list.
-
----
-
-## [Phase 11.2: Checkout RPC Parameter Mismatch — Root Cause Analysis]
-
-### Problem Summary
-**Symptom**: Payment was successful (money deducted by Razorpay), but user received NO access to the purchased item.
-
-### Root Cause Chain (Full Trace)
-
-#### Error 1 — Wrong parameter name (PGRST202)
-The Dart code in `TestService.checkout()` was calling the DB function with:
-```
-'p_payment_id': orderId  ❌ WRONG
-```
-But the DB function expected:
-```
-p_order_id uuid           ✅ CORRECT
-```
-**Why**: During the migration from the old `orders/order_items` schema to the new `payment/access` schema, the DB function was renamed + re-signed, but the Dart RPC call was NEVER updated. An old comment even said `"We map orderId to p_payment_id"` — a silent, incorrect assumption that survived the refactor.
-
-**Error code**: `PGRST202 — Function not found`
-
-**Fix**: Changed `p_payment_id` → `p_order_id`, added `p_gateway: paymentGateway` in `test_service.dart`.
-
----
-
-#### Error 2 — Duplicate overloaded function (PGRST203)
-After fixing the parameter name, a new error appeared:
-```
-PGRST203 — Multiple Choices: Could not choose between:
-  complete_checkout_v1(p_offer_id => bigint, ...)
-  complete_checkout_v1(p_offer_id => integer, ...)
-```
-**Why**: Two separate DB migrations had each created `complete_checkout_v1` without first dropping the previous version — creating two overloads. PostgREST could not resolve which to call when a nullable int? was passed.
-
-**Error code**: `PGRST203 — Multiple Choices`
-
-**Fix**: Dropped both overloaded versions via migration `consolidate_complete_checkout_v1`.
-
----
-
-### Architecture Flow (Correct Payment → Access Grant)
-```
-User taps Pay
-  → createDirectOrder() → INSERT payment (status: PENDING, metadata: {item_type, item_id})
-  → Razorpay opens → User pays → Razorpay returns gateway_payment_id
-  → TestService.checkout(orderId: payment.id, paymentId: razorpay_id)
-  → RPC complete_checkout_v1():
-      1. UPDATE payment: status=COMPLETED, gateway_payment_id set, offer_code set
-      2. READ item_type + item_id from payment.metadata
-      3. INSERT into access: user_id, item_type, item_id, access_type='paid'
-  → User now has access ✅
-```
-
-### Files Modified
-- `lib/data/services/test_service.dart` — Fixed RPC parameter names
-- DB: Dropped `complete_checkout` (old schema)
-- DB: Dropped `get_admin_orders` (old schema)  
-- DB: Dropped both duplicate `complete_checkout_v1` overloads
-
-### Status
-- ✅ Parameter name fix applied (`p_payment_id` → `p_order_id`)
-- ✅ Legacy functions dropped from DB
-- ✅ Duplicate overloads dropped from DB
-- 🔄 Phase 11.3 IN PROGRESS: Recreate single canonical `complete_checkout_v1`
-
----
-
-## [Phase 11.3: Recreate Canonical complete_checkout_v1]
-
-### Goal
-Create one clean, unambiguous `complete_checkout_v1` DB function.
-
-### What the Function Does
-1. Fetches and locks the `payment` record by `p_order_id` (FOR UPDATE)
-2. Guards against double-processing (returns success if already COMPLETED)
-3. Updates `payment`: `status=COMPLETED`, `gateway_payment_id`, `offer_code`, `discount_amount`
-4. Reads `item_type` + `item_id` from `payment.metadata` (stored during `createDirectOrder`)
-5. Inserts into `access` table: `user_id`, `payment_id`, `item_type`, `item_id`, `access_type='paid'`
-6. Returns `{success: true}` or `{success: false, message: reason}`
-
-### Status: ✅ COMPLETED
-- Single canonical function created with `p_offer_id bigint`
-- Verified: only ONE version exists in the DB
-- No more overload conflicts
-
----
-
-## [Phase 12: Payment Status Alignment Fix]
-
-### Problem Summary
-**Symptom**: Razorpay payments were successful, but the `payment` table status remained `PENDING`, and users were not granted access.
+Fix `AuthRetryableFetchException: Error sending recovery email` (500 error).
 
 ### Root Cause
-The `complete_checkout_v1` RPC was trying to update `payment.status` to `'COMPLETED'`. However, the `payment` table has a CHECK constraint that only allows `['PENDING', 'SUCCESS', 'FAILED', 'REFUNDED']`. This caused the RPC to fail silently (returning an error object that the app caught but the DB transaction rolled back).
+Supabase auth logs showed: `535 5.7.8 Username and Password not accepted` from Gmail SMTP. The Gmail app password configured in Supabase Auth SMTP settings was expired/wrong.
 
-### Resolution
-- Updated `complete_checkout_v1` RPC to use `'SUCCESS'` instead of `'COMPLETED'`.
-- Verified that the Dart codebase (specifically `AdminService`) already expects `'SUCCESS'` for reporting.
-- Verified that the double-processing guard in the RPC now correctly checks for `'SUCCESS'`.
-
-### Files Modified
-- Supabase RPC: `complete_checkout_v1`
-
-### Status: ✅ COMPLETED
+### Fix (Manual — Supabase Dashboard)
+1. Go to Supabase Dashboard → Authentication → Settings → SMTP Settings.
+2. Generate a new Gmail App Password at myaccount.google.com/apppasswords.
+3. Update the SMTP password field.
+4. Settings: Host=`smtp.gmail.com`, Port=`587`.
 
 ---
 
-## [Phase 12.1: Add to Cart Table Name Fix]
+## [Phase 26: Admin Delete — FK Error Fix]
+### Goal
+Allow admin to delete users, mock tests, and resources without foreign key constraint errors.
 
-### Problem Summary
-**Symptom**: "Add to Cart" was failing. Items were not appearing in the cart even though the user clicked the button.
+### What Was Done
+**3 new Supabase RPC functions deployed:**
+
+| Function | Deletes in order |
+|---|---|
+| `admin_hard_delete_user` | `access` → `payment` → `results` → `user_streaks` → `messages` → `notifications` → `reviews` → `users` → `auth.users` |
+| `admin_delete_mock_test` | `access` (test) → `results` → `reviews` → `mock_tests` |
+| `admin_delete_resource` | `access` (resource) → `reviews` → `resources` |
+
+**Flutter changes:**
+- `lib/data/services/test_service.dart` — `deleteMockTest` now calls `admin_delete_mock_test` RPC, then cleans storage best-effort.
+- `lib/data/services/resource_service.dart` — `deleteResource` now calls `admin_delete_resource` RPC, then cleans storage best-effort.
+- `lib/data/services/admin_service.dart` — `deleteUser` already called `admin_hard_delete_user`, which was updated to use `payment`/`access` instead of legacy `orders`/`order_items`.
+
+---
+
+## [Phase 27: Grant/Gift Access Screen — Theme Fix]
+### Goal
+Fix hardcoded colors in `AdminGrantAccessScreen` that broke dark/light theme.
+
+### What Was Done
+- **`lib/presentation/screens/admin/admin_grant_access_screen.dart`**:
+  - All `Colors.grey.shade400/600` → `colorScheme.onSurfaceVariant.withValues(alpha: ...)`
+  - `Colors.red` (revoke icon) → `colorScheme.error`
+  - `const TextStyle(color: Colors.grey)` → `theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)`
+  - `const Divider()` → `Divider(color: colorScheme.outlineVariant...)`
+  - `ListTile` → added `tileColor: colorScheme.surface`
+  - `TabBar` → added `labelColor`, `unselectedLabelColor`, `indicatorColor`
+  - `Scaffold` → added `backgroundColor: theme.scaffoldBackgroundColor`
+  - Search field text color fixed (was using `onPrimary`, now uses default theme)
+
+---
+
+## [Phase 28: Direct Checkout — Image URI Fix]
+### Goal
+Fix `Invalid argument(s): No host specified in URI file://` crash in direct checkout sheet when item has no image.
 
 ### Root Cause
-In `CartService.addToCart`, the code was attempting to fetch user information for the payment snapshot from a table named `profiles`. This table does not exist in the current schema (the correct table is `users`). This caused the entire insertion transaction to fail.
+`Image.network()` was called with a raw storage path (e.g. `mock_test_cover/30.jpg`) or `file://` path instead of a valid `https://` URL.
 
-### Resolution
-- **Outcome**: Cart checkout flow now correctly verifies prices against the live cart data.
-
-### [Phase 12.2: Price & Network Resilience]
-- **Goal**: Prevent ₹0 price display on slow networks and handle price fetch failures gracefully.
-- **Files modified**:
-    - `lib/data/services/offer_service.dart`: Fixed `getDisplayPrice` to return `null` on error instead of `0.0`.
-    - `lib/presentation/widgets/direct_checkout_sheet.dart`: Initialized `_finalPrice` with `_basePrice` in `initState` to prevent flickering.
-- **Outcome**: UI now shows the base price immediately while discounts load in the background.
-
-### [Phase 12.3: Cart RPC Alignment]
-- **Goal**: Fix "Proceed to Payment" failure in Cart Screen caused by RPC pointing to old tables.
-- **Changes**:
-    - Updated `calculate_secure_cart_price` RPC to query `payment` and `access` tables instead of `orders` and `order_items`.
-    - Simplified `access` table RLS policies to allow authenticated users to `INSERT` and `DELETE` their own items.
-- **Outcome**: Cart checkout flow now correctly verifies prices against the live cart data.
-
-### Files Modified
-- `lib/data/services/cart_service.dart`
+### What Was Done
+- **`lib/presentation/widgets/direct_checkout_sheet.dart`**: Added `startsWith('http')` guard before `Image.network()` + `errorBuilder` fallback.
+- **`lib/presentation/screens/admin/admin_home_screen.dart`**: Added `startsWith('http')` guard on top test image.
+- Verified all other `Image.network` usages already had the guard.
 
 ---
+
+## [Phase 29: Weekly Study Minutes — Stale Data Fix]
+### Goal
+Fix performance card showing last week's reading minutes on the current week even if user didn't study.
+
+### Root Cause
+`get_user_performance` RPC returned `weekly_study_minutes` raw from DB without adjusting for days elapsed since `last_active_date`. The 7-element array `[0,0,0,0,0,0,today]` was never shifted when the user skipped days.
+
+### What Was Done
+- **Supabase RPC `get_user_performance`** updated:
+  - Calculates `days_since = CURRENT_DATE - last_active_date`.
+  - If `days_since >= 7`: returns `[0,0,0,0,0,0,0]` (entire window stale).
+  - If `0 < days_since < 7`: shifts array left by `days_since`, fills right with zeros.
+  - If `days_since = 0`: returns array unchanged (active today).
+- No Flutter changes needed.
+
+### Verified
+Query confirmed correct shifting:
+- User active 9 days ago: `[0,0,0,0,0,0,1]` → `[0,0,0,0,0,0,0]` ✓
+- User active today: `[0,0,0,0,0,0,1]` → `[0,0,0,0,0,0,1]` ✓
+- User active 5 days ago: `[0,0,0,0,0,0,1]` → `[0,1,0,0,0,0,0]` ✓
+
+---
+
+## [Phase 30: Code Audit — Database Cost & Stream Analysis]
+### Goal
+Identify patterns that could inflate Supabase database bill (realtime connections, polling streams, excessive queries).
+
+### Findings — see audit below.
+
+---
+
+## [Phase 30: Code Audit — Database Cost & Stream Analysis]
+
+### Supabase Billing Factors
+- **Realtime connections** (`.stream(primaryKey:...)`) — each open a persistent WebSocket. Supabase Free tier allows 200 concurrent. Each active user screen with a stream = 1 connection.
+- **Polling streams** (`Stream.periodic + asyncMap`) — fire HTTP requests every N seconds regardless of whether data changed.
+- **Row reads** — every query counts toward your monthly row read quota.
+
+---
+
+### 🔴 HIGH RISK — Polling Streams (Admin Only, but expensive)
+
+| Stream | Interval | Queries per tick | Issue |
+|---|---|---|---|
+| `streamDashboardStats()` | 30s | 9 queries (7 counts + revenue RPC + payment count) | 9 DB hits every 30s while admin screen is open |
+| `streamTopUsers()` | 60s | 3 queries (results×100 + users + mock_tests) | Fetches 100 results rows every minute |
+| `streamTopTests()` | 60s | 2 queries + signed URL generation | Generates signed URLs every minute |
+| `streamUsers()` | 60s | 2 queries (users + results) | Runs even when admin isn't looking at user list |
+
+**Fix**: Increase intervals. `streamDashboardStats` → 5 min. `streamTopUsers/Tests` → 10 min. Or replace with manual refresh-on-demand.
+
+---
+
+### 🟡 MEDIUM RISK — Realtime WebSocket Streams
+
+| Stream | Table | Who uses it | Issue |
+|---|---|---|---|
+| `streamPurchasedTests()` | `access` | Every logged-in user on Library screen | 1 persistent WS per user. Fine for small scale, watch at 1000+ concurrent users |
+| `streamUserDetails()` | `users` | Admin user detail screen | Opens WS per admin view — fine |
+| `streamUserOrders()` | `access` | Admin user detail screen | Opens WS per admin view — fine |
+| `streamUserResults()` | `results` | Admin user detail screen | Opens WS per admin view — fine |
+| `streamAllBanners()` | `banner` | Admin banner management | Fine — admin only |
+| `streamOffers()` | `offers` | Admin offer list | Fine — admin only |
+| `auth_service stream` | `users` | Auth state — always open | Necessary |
+| `test_service stream` | `mock_tests` | Store screen | 1 WS per user on store — watch at scale |
+
+---
+
+### 🟡 MEDIUM RISK — `streamPurchasedTests` does extra query on every change
+
+Every time the `access` table changes (for any reason), `streamPurchasedTests` fires an `asyncMap` that queries `mock_tests` again. This means if admin grants access to 10 users at once, each affected user's stream fires a `mock_tests` query.
+
+---
+
+### 🟢 LOW RISK — One-time fetches (fine)
+
+- `fetchAllOrdersWithDetails()` — called once on revenue screen open, not streamed.
+- `fetchPaginatedOrders()` — paginated, fine.
+- `getUserPerformance()` — single RPC call, fine.
+- All `getPaginated*` methods — fine, user-triggered.
+
+---
+
+### Fixes Applied
+
+**`streamDashboardStats`** — interval increased from 30s → 5 minutes.
+**`streamTopUsers`** — interval increased from 60s → 10 minutes.
+**`streamTopTests`** — interval increased from 60s → 10 minutes.
+**`streamUsers`** — interval increased from 60s → 5 minutes.
+
+---
+
+## [Phase 31: Android 15 16KB Memory Page Size Migration & Stability]
+### Goal
+Migrate the application to support Android 15's 16KB memory page size requirement and resolve associated build/logic regressions.
+
+### What Was Done
+- **Isar Migration**: Replaced `isar` with `isar_community` across the project for 16KB page size compatibility.
+- **Dependency Upgrades**: 
+  - Upgraded to Riverpod 3.0-dev (`flutter_riverpod 3.3.1`, `riverpod_generator 4.0.3`) to meet new `build` package requirements.
+  - Upgraded to Freezed 3.0-dev (`freezed 3.2.5`).
+- **Code Refactoring**:
+  - Renamed `*NotifierProvider` to `*Provider` to align with the latest Riverpod generator conventions.
+  - Fixed `Future.wait` type-casting errors in `home_screen.dart`, `free_content_screen.dart`, and `downloads_screen.dart`.
+  - Updated `app_router.dart` to use `Ref` instead of the now-internal `AppRouterRef`.
+  - Converted all Freezed state classes to `abstract class` to satisfy new Dart 3 mixin requirements.
+- **Compliance**: Removed `USE_EXACT_ALARM` permission to satisfy Google Play Store policy rejections.
+- **Cleanup**: Deleted corrupted `.g.dart` files and performed a clean build generation.
+
+### Risks / Side Effects
+- **Experimental Versions**: Using dev/pre-release versions of core libraries (Riverpod/Freezed) may have unknown edge cases.
+- **Build Runner**: `isar_community_generator` is incompatible with stable `freezed`, necessitating the push to 3.0-dev across the stack.
+
+### Resolved and How
+- Compiled clean with `dart analyze` reporting 0 errors.
+- Successfully generated a release App Bundle (`1.0.3+17`).
+- Ready for 16KB alignment verification and Play Store submission.
+
+---
+
+## [Phase 32: Android Storage Permission Fix & Admin File Picker Reliability]
+### Goal
+Fix admin file picker silently not opening and resolve Google Play storage permission rejection.
+
+### Root Cause — Double isPicking Flag Bug
+`MockTestUploadScreen._pickCoverImage` and `_pickQuestionsFile` both manually called `isPicking = true` **before** calling `safePickFiles()`. Since `safePickFiles()` internally checks `if (isPicking) return null;` as its very first line, every button tap was silently returning null without ever opening the system picker. The mixin owns the lifecycle entirely — callers must NOT set `isPicking` manually.
+
+### Root Cause — Missing Storage Permissions
+`AndroidManifest.xml` had no storage read/write permissions at all for Android ≤12. While `file_picker` uses SAF on Android 13+, on Android 9 (API 28) and Android 10–12 (API 32) the OS requires explicit permissions for legacy storage path access.
+
+### Files Changed
+- **`android/app/src/main/AndroidManifest.xml`**:
+  - Added `WRITE_EXTERNAL_STORAGE` (maxSdkVersion=28) for Android 9 and below.
+  - Added `READ_EXTERNAL_STORAGE` (maxSdkVersion=32) for Android 10–12.
+  - Kept `READ_MEDIA_*` removal entries — not needed for SAF on Android 13+.
+  - No `MANAGE_EXTERNAL_STORAGE` — Play Store policy violation, not justifiable.
+- **`lib/presentation/screens/mock_test_upload_screen.dart`**:
+  - Removed manual `isPicking = true/false` from `_pickCoverImage` and `_pickQuestionsFile`.
+  - Moved size check before byte read (correct order: check size → read bytes).
+  - Error handling scoped to the byte read only (not the picker call, since safePickFiles handles that).
+
+### Rules Established
+- All admin pick methods MUST call `safePickFiles()` directly — never wrap with `isPicking`.
+- `admin_resource_form.dart` and `mock_test_edit_screen.dart` were already correct.
+- `MockTestUploadScreen` was the only screen with the bug.
+
+### Verified
+- `dart analyze` on changed file: 0 issues.

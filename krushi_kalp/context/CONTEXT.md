@@ -4,42 +4,41 @@ A comprehensive platform for agriculture education and resources.
 
 ## Tech Stack
 - **Framework**: Flutter
-- **Backend**: Supabase
-- **State Management**: Provider (inferred from common Flutter patterns, will verify if needed)
+- **Backend**: Supabase (PostgreSQL)
+- **State Management**: Riverpod (Notifiers)
 - **Design System**: Custom tokens (AppTheme, AppSpacing, AppRadius, etc.)
 - **Error Tracking**: Firebase Crashlytics
 
 ## Architecture Overview
 Clean Architecture:
-- **Presentation**: UI screens and widgets
-- **Domain**: Entities and repository contracts
-- **Data**: API services (Supabase) and repository implementations
+- **Presentation**: UI screens (ConsumerStatefulWidget) and Riverpod Notifiers.
+- **Domain**: Entities (MockTest, Resource, UserPerformance) and repository contracts.
+- **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
-- Phase 12.1: Cart Stabilization & Table Sync.
-
-## Completed Phases
-- Initial project structure and core features (Pre-existing)
-- Phase 1: Refactor AdminResourceList for infinite scroll.
-- Phase 2: Refactor AdminMockTestList for infinite scroll (Stabilized).
-- Phase 3: Implement search and filter in paginated services (Integrated).
-- Phase 4.1: Backend Service Prep (toggle status, fetch users by access type).
-- Phase 5: Admin Access Audit & Visibility Integration (Sub-phases 5.1-5.3).
-- Phase 6: Payment & Access Schema Migration.
-- Phase 7: Razorpay & Checkout Stabilization.
-- Phase 8: Razorpay UPI ID Accessibility.
-- Phase 9: Resource Visibility Policy Enforced.
-- Phase 10: No-FK Refactoring & Supabase v2 Bug Fixes.
-- Phase 11: Payment RLS & Accessibility Fixes.
-- Phase 12: Fixed Payment Status Mapping (SUCCESS)
-- Phase 12.1: Fixed Cart Service table mismatch (profiles -> users)
-- Phase 12.2: Price & Network Resilience (₹0 fix)
-- Phase 12.3: Cart RPC & RLS Fix
+- All current phases up to Phase 31 are completed.
+- **Phase 32**: Android Storage Permission Fix & Admin File Picker Reliability (Completed)
+- All previous phases (1-31) completed.
 
 ## Key Decisions
-- Use `infinite_scroll_pagination` package for consistent pagination across the app.
-- Refactor Supabase services to support offset-based pagination.
+- **Snapshot Integrity**: Store full item and user snapshots in transaction tables. Fallback to these snapshots in the user library if live records are missing.
+- **Robust Parsing**: Use `_parseNum` and `double.tryParse` for all financial data to handle Postgres `numeric` string conversions safely.
+- **Timezone Standardization**: Standardized "Today" metrics to use IST (Asia/Kolkata) in both RPCs and UI filters for regional consistency.
+- **Access Type Alignment**: Standardize access types between backend RPCs and UI filters ('claimed', 'paid', 'manual_granted').
+- **Isar Migration**: Migrated to `isar_community` for Android 15 16KB page size support.
+- **Riverpod/Freezed Upgrade**: Upgraded to Riverpod 3.0-dev and Freezed 3.0-dev to support the latest `build` package requirements.
+- **State Pattern**: Implemented `abstract class` pattern for Freezed state classes to comply with latest Dart/Freezed requirements.
+- **Provider Naming**: Standardized on `*Provider` naming convention for all generated Riverpod notifiers.
+
+## Key Decisions
+- **Storage Permissions**: Use `WRITE_EXTERNAL_STORAGE` (maxSdkVersion=28) and `READ_EXTERNAL_STORAGE` (maxSdkVersion=32). Never request `MANAGE_EXTERNAL_STORAGE` — Google Play policy violation.
+- **File Picker Pattern**: All admin screens must use `safePickFiles()` from `PickerLifecycleMixin` — never wrap it with manual `isPicking` flags; the mixin manages the flag internally.
+- **SAF (Android 13+)**: `file_picker` uses Storage Access Framework on API 33+ automatically — no `READ_MEDIA_*` permissions required.
 
 ## Known Risks or Constraints
-- Supabase pagination requires careful offset/limit management.
-- Signed URLs for resources need to be handled during paginated loads.
+- **Function Overloading**: Avoid overloading Supabase RPCs to prevent PostgREST ambiguity errors.
+- **Snapshot Size**: Increased storage usage for historical auditing.
+- **Is_Active Filter**: Must be explicitly applied to all user-side content fetches.
+- **Build Version**: Incremented to `1.0.3+17` for the Google Play Store submission.
+- **Experimental Versions**: Using pre-release versions of Riverpod and Freezed may introduce unexpected behavior; monitoring is required.
+- **16KB Alignment**: Final App Bundle must be verified with `check_align.py` before submission.
