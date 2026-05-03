@@ -82,7 +82,10 @@ class ResourceNotifier extends _$ResourceNotifier {
 
       // 3. Save to Isar
       if (resources.isNotEmpty) {
-        LocalCachingService.saveResources(resources.map((r) => ResourceEntity.fromResource(r)).toList());
+        LocalCachingService.syncResourcesByType(
+          type.name,
+          resources.map((r) => ResourceEntity.fromResource(r)).toList(),
+        );
       }
 
       _updateTypeState(type, resources);

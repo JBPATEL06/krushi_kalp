@@ -307,7 +307,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
 
         String joined = 'Unknown';
         if (user['created_at'] != null) {
-          final date = DateTime.tryParse(user['created_at']);
+          final date = DateTime.tryParse(user['created_at'])?.toLocal();
           if (date != null) {
             joined = '${date.day}/${date.month}/${date.year}';
           }
@@ -549,7 +549,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                       itemBuilder: (context, index) {
                         final item = items[index];
                         final name = item['item_name'] ?? 'Untitled Item';
-                        final date = DateTime.parse(item['created_at']);
+                        final date = DateTime.parse(item['created_at']).toLocal();
                         final accessType = item['access_type'] ?? 'free_claim';
                         final payment = item['payment_details'] as Map<String, dynamic>?;
                         

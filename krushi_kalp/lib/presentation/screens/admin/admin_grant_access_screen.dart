@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:easy_debounce/easy_debounce.dart';
 import '../../../../data/services/admin_service.dart';
@@ -427,22 +428,27 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
     final selectedCount = _isUserMode ? _selectedItems.length : _selectedUserIds.length;
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: _isSearching 
-          ? TextField(
-              controller: _searchController,
-              autofocus: true,
-              style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.onPrimary),
-              decoration: InputDecoration(
-                hintText: _isUserMode ? 'Search tests or resources...' : 'Search users...',
-                hintStyle: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onPrimary.withValues(alpha: 0.7)),
-                border: InputBorder.none,
-              ),
-              onChanged: _onSearchChanged,
-            )
-          : Text(widget.isAuditMode 
-              ? 'Access Audit: ${widget.itemTitle}' 
-              : (_isUserMode ? 'Grant Access: ${widget.username}' : 'Gift: ${widget.itemTitle}')),
+        backgroundColor: theme.appBarTheme.backgroundColor ?? colorScheme.surface,
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: theme.textTheme.titleMedium,
+                decoration: InputDecoration(
+                  hintText: _isUserMode ? 'Search tests or resources...' : 'Search users...',
+                  hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant),
+                  border: InputBorder.none,
+                ),
+                onChanged: _onSearchChanged,
+              )
+            : Text(widget.isAuditMode
+                ? 'Access Audit: ${widget.itemTitle}'
+                : (_isUserMode
+                    ? 'Grant Access: ${widget.username}'
+                    : 'Gift: ${widget.itemTitle}')),
         actions: [
           IconButton(
             icon: Icon(_isSearching ? Icons.close : Icons.search),
@@ -474,28 +480,34 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
             ),
         ],
         bottom: widget.isAuditMode
-          ? TabBar(
-              controller: _tabController,
-              tabs: const [
-                Tab(text: 'Paid'),
-                Tab(text: 'Claimed'),
-                Tab(text: 'Manual Access'),
-              ],
-            )
-          : (_isUserMode 
             ? TabBar(
                 controller: _tabController,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
+                labelColor: colorScheme.primary,
+                unselectedLabelColor: colorScheme.onSurfaceVariant,
+                indicatorColor: colorScheme.primary,
                 tabs: const [
-                  Tab(text: 'Mock Tests'),
-                  Tab(text: 'eBooks'),
-                  Tab(text: 'PYQs'),
-                  Tab(text: 'GK'),
-                  Tab(text: 'Study Material'),
+                  Tab(text: 'Paid'),
+                  Tab(text: 'Claimed'),
+                  Tab(text: 'Manual Access'),
                 ],
               )
-            : null),
+            : (_isUserMode
+                ? TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    labelColor: colorScheme.primary,
+                    unselectedLabelColor: colorScheme.onSurfaceVariant,
+                    indicatorColor: colorScheme.primary,
+                    tabs: const [
+                      Tab(text: 'Mock Tests'),
+                      Tab(text: 'eBooks'),
+                      Tab(text: 'PYQs'),
+                      Tab(text: 'GK'),
+                      Tab(text: 'Study Material'),
+                    ],
+                  )
+                : null),
       ),
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator())
@@ -524,42 +536,53 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
   }
 
   Widget _buildAuditUserList(PagingController<int, Map<String, dynamic>> controller, String emptyMsg, {bool showRevoke = false}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
     return PagedListView<int, Map<String, dynamic>>.separated(
       pagingController: controller,
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      separatorBuilder: (_, __) => const Divider(height: 1, indent: 70),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      separatorBuilder: (_, __) => Divider(height: 1, indent: 70, color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
       builderDelegate: PagedChildBuilderDelegate<Map<String, dynamic>>(
         itemBuilder: (context, item, index) {
           final name = item['username'] ?? item['email'] ?? 'Unknown User';
           final email = item['email'] ?? '';
-          final grantedAt = item['granted_at'] != null 
-              ? DateTime.parse(item['granted_at']).toLocal().toString().split('.')[0]
+          final grantedAt = item['granted_at'] != null
+              ? DateFormat('MMM dd, yyyy • hh:mm a').format(DateTime.parse(item['granted_at']).toLocal())
               : '';
 
           return ListTile(
+            tileColor: colorScheme.surface,
             leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-              child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?', 
-                style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
+              backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+              child: Text(
+                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold),
+              ),
             ),
-            title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text('$email\nGranted: $grantedAt', style: const TextStyle(fontSize: 12)),
+            title: Text(name, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+            subtitle: Text(
+              '$email\nGranted: $grantedAt',
+              style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+            ),
             isThreeLine: true,
-            trailing: showRevoke 
-              ? IconButton(
-                  icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
-                  onPressed: () => _revokeAccess(item['id']),
-                )
-              : null,
+            trailing: showRevoke
+                ? IconButton(
+                    icon: Icon(Icons.remove_circle_outline, color: colorScheme.error),
+                    onPressed: () => _revokeAccess(item['id']),
+                  )
+                : null,
           );
         },
         noItemsFoundIndicatorBuilder: (_) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.people_outline, size: 48, color: Colors.grey.shade400),
+              Icon(Icons.people_outline, size: 48, color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
               const SizedBox(height: 16),
-              Text(_searchQuery.isNotEmpty ? 'No matches found' : emptyMsg, style: const TextStyle(color: Colors.grey)),
+              Text(
+                _searchQuery.isNotEmpty ? 'No matches found' : emptyMsg,
+                style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+              ),
             ],
           ),
         ),
@@ -568,39 +591,49 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
   }
 
   Widget _buildCategoryList(PagingController<int, Map<String, dynamic>> controller, String typePrefix, String emptyMsg) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
     return PagedListView<int, Map<String, dynamic>>.separated(
       pagingController: controller,
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      separatorBuilder: (_, __) => const Divider(height: 1, indent: 70),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      separatorBuilder: (_, __) => Divider(height: 1, indent: 70, color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
       builderDelegate: PagedChildBuilderDelegate<Map<String, dynamic>>(
         itemBuilder: (context, item, index) {
           final id = typePrefix == 'test' ? item['test_id'] : item['id'];
           final key = "${typePrefix}_$id";
           final isSelected = _selectedItems.contains(key);
-          
+
           return CheckboxListTile(
+            tileColor: colorScheme.surface,
             value: isSelected,
             onChanged: (_) => _toggleSelection(key),
-            title: Text(item['title'] ?? 'Untitled', 
-              maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text(item['description'] ?? '', 
-              maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            title: Text(
+              item['title'] ?? 'Untitled',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              item['description'] ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+            ),
             secondary: Container(
-              width: 40, height: 40,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                color: colorScheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 typePrefix == 'test' ? Icons.quiz_outlined : Icons.menu_book_outlined,
-                color: Theme.of(context).colorScheme.primary,
+                color: colorScheme.primary,
                 size: 20,
               ),
             ),
             controlAffinity: ListTileControlAffinity.trailing,
-            activeColor: Theme.of(context).colorScheme.primary,
+            activeColor: colorScheme.primary,
             checkboxShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
           );
         },
@@ -608,9 +641,12 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey.shade400),
+              Icon(Icons.inventory_2_outlined, size: 48, color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
               const SizedBox(height: 16),
-              Text(_searchQuery.isNotEmpty ? 'No matches found' : emptyMsg, style: const TextStyle(color: Colors.grey)),
+              Text(
+                _searchQuery.isNotEmpty ? 'No matches found' : emptyMsg,
+                style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+              ),
             ],
           ),
         ),
@@ -619,15 +655,23 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
   }
 
   Widget _buildPaginatedUserList() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
     return Column(
       children: [
         if (!_isLoading)
           Padding(
-            padding: EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Select Users for Gifting', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                Text(
+                  'Select Users for Gifting',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
                 TextButton(
                   onPressed: () {
                     final loadedItems = _pagingController.itemList ?? [];
@@ -639,41 +683,53 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
                       }
                     });
                   },
-                  child: Text(_selectedUserIds.length == (_pagingController.itemList?.length ?? 0) && (_pagingController.itemList?.isNotEmpty ?? false)
-                    ? 'Deselect Loaded' 
-                    : 'Select All Loaded'),
-                )
+                  child: Text(
+                    _selectedUserIds.length == (_pagingController.itemList?.length ?? 0) &&
+                            (_pagingController.itemList?.isNotEmpty ?? false)
+                        ? 'Deselect Loaded'
+                        : 'Select All Loaded',
+                  ),
+                ),
               ],
             ),
           ),
         Expanded(
           child: PagedListView<int, Map<String, dynamic>>.separated(
             pagingController: _pagingController,
-            padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-            separatorBuilder: (_, __) => const Divider(height: 1, indent: 70),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            separatorBuilder: (_, __) => Divider(height: 1, indent: 70, color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
             builderDelegate: PagedChildBuilderDelegate<Map<String, dynamic>>(
               itemBuilder: (context, user, index) {
                 final id = user['id'].toString();
                 final isSelected = _selectedUserIds.contains(id);
                 final name = user['username'] ?? user['email'] ?? 'Unknown User';
                 final phone = user['phone'] ?? user['email'] ?? '';
-                
+
                 return CheckboxListTile(
+                  tileColor: colorScheme.surface,
                   value: isSelected,
                   onChanged: (_) => _toggleSelection(id),
-                  title: Text(name, 
-                    maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: Text(phone, 
-                    maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  title: Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    phone,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                  ),
                   secondary: CircleAvatar(
-                    backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                    child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?', 
-                      style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
+                    backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+                    child: Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : '?',
+                      style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold),
+                    ),
                   ),
                   controlAffinity: ListTileControlAffinity.trailing,
-                  activeColor: Theme.of(context).colorScheme.primary,
+                  activeColor: colorScheme.primary,
                   checkboxShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                 );
               },
@@ -681,9 +737,14 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.people_outline, size: 48, color: Colors.grey.shade400),
+                    Icon(Icons.people_outline, size: 48, color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
                     const SizedBox(height: 16),
-                    Text(_searchQuery.isNotEmpty ? 'No users found for "$_searchQuery"' : 'No users available for gifting', style: const TextStyle(color: Colors.grey)),
+                    Text(
+                      _searchQuery.isNotEmpty
+                          ? 'No users found for "$_searchQuery"'
+                          : 'No users available for gifting',
+                      style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                    ),
                   ],
                 ),
               ),

@@ -45,9 +45,14 @@ class TestService {
     String sortBy = 'created_at',
     bool ascending = false,
     bool? isFree,
+    List<int>? excludedIds,
   }) async {
     try {
       var query = _supabase.from('mock_tests').select();
+
+      if (excludedIds != null && excludedIds.isNotEmpty) {
+        query = query.filter('test_id', 'not.in', '(${excludedIds.join(',')})');
+      }
 
       if (searchQuery != null && searchQuery.isNotEmpty) {
         query = query.ilike('title', '%$searchQuery%');
@@ -195,59 +200,43 @@ class TestService {
 
       await _supabase.from('mock_tests').insert(payload);
 
-      try {
-        await AdminNotificationService().sendBroadcast(
-          title: '🆕 New Mock Test Available!',
-          body: 'Check out the new test: ${test.title}',
-        );
-      } catch (notiErr, stack) {
-        CrashlyticsService.instance.recordError(notiErr, stack, reason: 'Broadcast failed after creating mock test: ${test.title}');
-      }
+
+      // Notifications moved to AdminService.toggleMockTestPublicStatus
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
       throw Exception('Failed to create test: $e');
     }
   }
 
-  /// Deletes a mock test and its associated files.
+  /// Deletes a mock test, its results, access records, reviews, and storage files.
   Future<void> deleteMockTest(int testId) async {
     try {
+      // Fetch file paths before deletion for storage cleanup
       final testRow = await _supabase
           .from('mock_tests')
-          .select()
+          .select('file_path, cover_image_path')
           .eq('test_id', testId)
           .maybeSingle();
 
+      // Call RPC — handles results, access, reviews, then mock_tests row
+      await _supabase.rpc('admin_delete_mock_test', params: {'p_test_id': testId});
+
+      // Clean up storage files (best-effort, non-blocking)
       if (testRow != null) {
         final filePath = testRow['file_path'] as String?;
         final coverImagePath = testRow['cover_image_path'] as String?;
-
         if (filePath != null && filePath.isNotEmpty) {
-          try {
-            await _supabase.storage.from('mock_test').remove([filePath]);
-          } catch (e, stack) {
-            CrashlyticsService.instance.recordError(e, stack, reason: 'Storage removal failed for test file: $filePath');
-          }
+          try { await _supabase.storage.from('mock_test').remove([filePath]); } catch (_) {}
         }
         if (coverImagePath != null && coverImagePath.isNotEmpty) {
-          String cleanPath = coverImagePath.replaceAll('mock_test/', '');
-          try {
-            await _supabase.storage.from('mock_test').remove([cleanPath]);
-          } catch (e, stack) {
-            CrashlyticsService.instance.recordError(e, stack, reason: 'Storage removal failed for cover image: $cleanPath');
-          }
+          final cleanPath = coverImagePath.replaceAll('mock_test/', '');
+          try { await _supabase.storage.from('mock_test').remove([cleanPath]); } catch (_) {}
         }
       }
-
-      await _supabase.from('mock_tests').delete().eq('test_id', testId);
     } on PostgrestException catch (e) {
-      if (e.code == '23503') {
-        throw Exception(
-            'Cannot delete this test because it has been purchased by one or more users.');
-      }
       throw Exception('Failed to delete test: ${e.message}');
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service_delete_mock_test');
       throw Exception('Failed to delete test: $e');
     }
   }
@@ -372,28 +361,45 @@ class TestService {
     try {
       final response = await _supabase
           .from('access')
-          .select('item_id')
+          .select('item_id, item_snapshot')
           .eq('user_id', authUserId)
-          .eq('item_type', 'test');
+          .eq('item_type', 'test')
+          .eq('is_active', true);
 
-      final testIds = (response as List)
-          .map((i) => i['item_id'] as int)
-          .toList();
+      if ((response as List).isEmpty) return [];
 
-      if (testIds.isEmpty) return [];
+      final List accessList = response;
+      final testIds = accessList.map((i) => i['item_id'] as int).toList();
 
+      // Fetch live items to get the most up-to-date data
       final testsResponse = await _supabase
           .from('mock_tests')
           .select()
           .inFilter('test_id', testIds);
 
+      final liveTestsMap = {
+        for (var t in (testsResponse as List)) t['test_id']: t
+      };
+
+      final List<dynamic> finalJsonList = [];
+      for (var access in accessList) {
+        final itemId = access['item_id'];
+        final liveData = liveTestsMap[itemId];
+        
+        if (liveData != null) {
+          finalJsonList.add(liveData);
+        } else if (access['item_snapshot'] != null && (access['item_snapshot'] as Map).isNotEmpty) {
+          finalJsonList.add(access['item_snapshot']);
+        }
+      }
+
       final List<MockTest> purchasedTests =
-          await compute(_parseMockTests, testsResponse as List<dynamic>);
+          await compute(_parseMockTests, finalJsonList);
 
       return await _populateSignedUrls(purchasedTests);
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: fetchUserTests');
-      throw Exception('Failed to load purchased tests: $e');
+      return [];
     }
   }
 
@@ -494,21 +500,29 @@ class TestService {
     required String authUserId,
   }) async {
     try {
-      // 1. Check ownership in the 'access' table
+      // 1. Check ownership
       final isOwned = await CartService.instance.checkOwnership(
         userId: authUserId,
         testId: testId,
       );
       if (isOwned) throw Exception("You already own this item.");
 
-      // 2. Fetch User Profile for Snapshot
-      final userProfile = await AuthService.instance.getUserProfile(authUserId);
-      final userSnapshot = {
-        'email': userProfile?['email'] ?? 'unknown',
-        'username': userProfile?['username'] ?? 'User',
-      };
+      // 2. Fetch item snapshot for history
+      Map<String, dynamic> itemSnapshot = {};
+      try {
+        final testRes = await _supabase
+            .from('mock_tests')
+            .select('test_id, title, category, price, description, language')
+            .eq('test_id', testId)
+            .single();
+        itemSnapshot = Map<String, dynamic>.from(testRes);
+      } catch (_) {}
 
-      // 3. Create entry in 'payment' table (Status: PENDING for Direct)
+      // 3. Fetch User Profile for Snapshot
+      final userProfile = await AuthService.instance.getUserProfile(authUserId);
+      final userSnapshot = userProfile ?? {'email': 'unknown', 'username': 'User'};
+
+      // 4. Create PENDING payment
       final newPayment = await _supabase
           .from('payment')
           .insert({
@@ -518,28 +532,20 @@ class TestService {
             'amount': price,
             'gateway': 'razorpay',
             'created_at': DateTime.now().toUtc().toIso8601String(),
+            'metadata': {
+              'item_type': 'test',
+              'item_id': testId,
+              'price_at_purchase': price,
+              'item_snapshot': itemSnapshot,
+            },
           })
           .select('id')
           .single();
 
-      final paymentId = newPayment['id'];
-      
-      // Note: In the new schema, access is granted AFTER successful checkout.
-      // However, we still need to record WHICH item this payment is for.
-      // We store this in the payment metadata or a separate link table if needed.
-      // For now, we'll use metadata to track the item during the PENDING state.
-      await _supabase.from('payment').update({
-        'metadata': {
-          'item_type': 'test',
-          'item_id': testId,
-          'price_at_purchase': price,
-        }
-      }).eq('id', paymentId);
-
-      return paymentId; // This is the UUID required by Razorpay / Checkout
+      return newPayment['id'];
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: createDirectOrder');
-      throw Exception(e.toString().replaceAll('Exception: ', ''));
+      throw Exception('Failed to create order: $e');
     }
   }
 

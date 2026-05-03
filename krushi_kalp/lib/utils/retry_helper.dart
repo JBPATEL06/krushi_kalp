@@ -30,7 +30,7 @@ class RetryHelper {
 
         if (!isNetwork || attempt > maxRetries) {
           // Log final failure to Crashlytics
-          CrashlyticsService.instance.recordError(e, stack, reason: 'retry_helper_failed_after_$attempt\_attempts');
+          CrashlyticsService.instance.recordError(e, stack, reason: 'retry_helper_failed_after_${attempt}_attempts');
           rethrow;
         }
 

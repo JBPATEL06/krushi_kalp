@@ -233,25 +233,32 @@ class OfferService {
     required int offerId,
   }) async {
     try {
-      await _supabase.from('orders').update({
-        'offer_id': offerId,
-        'updated_at': DateTime.now().toUtc().toIso8601String()
-      }).eq('order_id', orderId);
+      // Resolve offer code from offer_id
+      final offer = await _supabase
+          .from('offers')
+          .select('code')
+          .eq('offer_id', offerId)
+          .maybeSingle();
+      final String? offerCode = offer?['code'] as String?;
+
+      await _supabase.from('payment').update({
+        'offer_code': offerCode,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', orderId);
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service: applyCouponToOrder');
       throw Exception('Failed to apply coupon');
     }
   }
 
   Future<void> removeCouponFromOrder(String orderId) async {
     try {
-      await _supabase.from('orders').update({
-        'offer_id': null,
-        'updated_at': DateTime.now().toIso8601String()
-      }).eq('order_id', orderId);
+      await _supabase.from('payment').update({
+        'offer_code': null,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', orderId);
     } catch (e, stack) {
-      await CrashlyticsService.instance.recordError(e, stack,
-          reason: 'Failed to remove coupon from order');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service: removeCouponFromOrder');
     }
   }
 

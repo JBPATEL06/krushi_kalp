@@ -13,15 +13,17 @@ import 'mock_test_detail_screen.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../utils/crashlytics_service.dart';
 import '../widgets/common/debounced_search_bar.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/test_notifier.dart';
 
-class AllTestsScreen extends StatefulWidget {
+class AllTestsScreen extends ConsumerStatefulWidget {
   const AllTestsScreen({super.key});
 
   @override
-  State<AllTestsScreen> createState() => _AllTestsScreenState();
+  ConsumerState<AllTestsScreen> createState() => _AllTestsScreenState();
 }
 
-class _AllTestsScreenState extends State<AllTestsScreen> {
+class _AllTestsScreenState extends ConsumerState<AllTestsScreen> {
   static const _pageSize = 20;
   final PagingController<int, MockTest> _pagingController =
       PagingController(firstPageKey: 0);
@@ -40,10 +42,13 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
 
   Future<void> _fetchPage(int pageKey) async {
     try {
+      final ownedIds = ref.read(testProvider.select((s) => s.purchasedTestIds)).toList();
+
       final newItems = await TestService.instance.fetchPaginatedMockTests(
         offset: pageKey,
         limit: _pageSize,
         searchQuery: _searchQuery,
+        excludedIds: ownedIds,
       );
 
       final isLastPage = newItems.length < _pageSize;
@@ -136,6 +141,13 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Refresh catalog if ownership changes (e.g. after purchase)
+    ref.listen(testProvider.select((s) => s.purchasedTestIds), (prev, next) {
+      if (prev != next) {
+        _pagingController.refresh();
+      }
+    });
+
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -181,7 +193,7 @@ class _AllTestsScreenState extends State<AllTestsScreen> {
               return ActiveTestCard(
                 category: test.category,
                 title: test.title,
-                subtitle: '${test.language} • ${test.durationMinutes} mins',
+                subtitle: '${test.language} â€¢ ${test.durationMinutes} mins',
                 status:
                     isCompleted ? TestStatus.evaluated : TestStatus.newTest,
                 time: '${test.durationMinutes}m',

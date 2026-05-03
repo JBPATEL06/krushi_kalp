@@ -86,7 +86,7 @@ class TestNotifier extends _$TestNotifier {
       // 3. Save fresh data to Isar
       if (fetchedTests.isNotEmpty) {
         final entitiesToSave = fetchedTests.map((t) => MockTestEntity.fromMockTest(t)).toList();
-        LocalCachingService.saveMockTests(entitiesToSave);
+        LocalCachingService.syncMockTests(entitiesToSave);
       }
 
       _applyFiltering();
@@ -179,7 +179,7 @@ class TestNotifier extends _$TestNotifier {
 @riverpod
 List<String> testCategories(Ref ref) {
   final cachedTests =
-      ref.watch(testNotifierProvider.select((s) => s.cachedTests));
+      ref.watch(testProvider.select((s) => s.cachedTests));
   final uniqueCategories = cachedTests
       .map((t) => t.category)
       .where((c) => c.isNotEmpty)

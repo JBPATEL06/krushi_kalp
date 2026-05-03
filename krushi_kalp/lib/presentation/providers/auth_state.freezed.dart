@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,109 +9,62 @@ part of 'auth_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
 mixin _$AuthState {
-  User? get user => throw _privateConstructorUsedError;
-  String? get role => throw _privateConstructorUsedError;
-  String? get username => throw _privateConstructorUsedError;
-  bool get isLoading => throw _privateConstructorUsedError;
-  bool get isAuthCheckComplete => throw _privateConstructorUsedError;
-  bool get isPasswordRecovery => throw _privateConstructorUsedError;
-  String? get localSessionId => throw _privateConstructorUsedError;
-  String? get errorMessage => throw _privateConstructorUsedError;
+  User? get user;
+  String? get role;
+  String? get username;
+  bool get isLoading;
+  bool get isAuthCheckComplete;
+  bool get isPasswordRecovery;
+  String? get localSessionId;
+  String? get errorMessage;
 
-  @JsonKey(ignore: true)
-  $AuthStateCopyWith<AuthState> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $AuthStateCopyWith<$Res> {
-  factory $AuthStateCopyWith(AuthState value, $Res Function(AuthState) then) =
-      _$AuthStateCopyWithImpl<$Res, AuthState>;
-  @useResult
-  $Res call(
-      {User? user,
-      String? role,
-      String? username,
-      bool isLoading,
-      bool isAuthCheckComplete,
-      bool isPasswordRecovery,
-      String? localSessionId,
-      String? errorMessage});
-}
-
-/// @nodoc
-class _$AuthStateCopyWithImpl<$Res, $Val extends AuthState>
-    implements $AuthStateCopyWith<$Res> {
-  _$AuthStateCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
+  /// Create a copy of AuthState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
+  $AuthStateCopyWith<AuthState> get copyWith =>
+      _$AuthStateCopyWithImpl<AuthState>(this as AuthState, _$identity);
+
   @override
-  $Res call({
-    Object? user = freezed,
-    Object? role = freezed,
-    Object? username = freezed,
-    Object? isLoading = null,
-    Object? isAuthCheckComplete = null,
-    Object? isPasswordRecovery = null,
-    Object? localSessionId = freezed,
-    Object? errorMessage = freezed,
-  }) {
-    return _then(_value.copyWith(
-      user: freezed == user
-          ? _value.user
-          : user // ignore: cast_nullable_to_non_nullable
-              as User?,
-      role: freezed == role
-          ? _value.role
-          : role // ignore: cast_nullable_to_non_nullable
-              as String?,
-      username: freezed == username
-          ? _value.username
-          : username // ignore: cast_nullable_to_non_nullable
-              as String?,
-      isLoading: null == isLoading
-          ? _value.isLoading
-          : isLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isAuthCheckComplete: null == isAuthCheckComplete
-          ? _value.isAuthCheckComplete
-          : isAuthCheckComplete // ignore: cast_nullable_to_non_nullable
-              as bool,
-      isPasswordRecovery: null == isPasswordRecovery
-          ? _value.isPasswordRecovery
-          : isPasswordRecovery // ignore: cast_nullable_to_non_nullable
-              as bool,
-      localSessionId: freezed == localSessionId
-          ? _value.localSessionId
-          : localSessionId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      errorMessage: freezed == errorMessage
-          ? _value.errorMessage
-          : errorMessage // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is AuthState &&
+            (identical(other.user, user) || other.user == user) &&
+            (identical(other.role, role) || other.role == role) &&
+            (identical(other.username, username) ||
+                other.username == username) &&
+            (identical(other.isLoading, isLoading) ||
+                other.isLoading == isLoading) &&
+            (identical(other.isAuthCheckComplete, isAuthCheckComplete) ||
+                other.isAuthCheckComplete == isAuthCheckComplete) &&
+            (identical(other.isPasswordRecovery, isPasswordRecovery) ||
+                other.isPasswordRecovery == isPasswordRecovery) &&
+            (identical(other.localSessionId, localSessionId) ||
+                other.localSessionId == localSessionId) &&
+            (identical(other.errorMessage, errorMessage) ||
+                other.errorMessage == errorMessage));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, user, role, username, isLoading,
+      isAuthCheckComplete, isPasswordRecovery, localSessionId, errorMessage);
+
+  @override
+  String toString() {
+    return 'AuthState(user: $user, role: $role, username: $username, isLoading: $isLoading, isAuthCheckComplete: $isAuthCheckComplete, isPasswordRecovery: $isPasswordRecovery, localSessionId: $localSessionId, errorMessage: $errorMessage)';
   }
 }
 
 /// @nodoc
-abstract class _$$AuthStateImplCopyWith<$Res>
-    implements $AuthStateCopyWith<$Res> {
-  factory _$$AuthStateImplCopyWith(
-          _$AuthStateImpl value, $Res Function(_$AuthStateImpl) then) =
-      __$$AuthStateImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $AuthStateCopyWith<$Res> {
+  factory $AuthStateCopyWith(AuthState value, $Res Function(AuthState) _then) =
+      _$AuthStateCopyWithImpl;
   @useResult
   $Res call(
       {User? user,
@@ -125,13 +78,14 @@ abstract class _$$AuthStateImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$AuthStateImplCopyWithImpl<$Res>
-    extends _$AuthStateCopyWithImpl<$Res, _$AuthStateImpl>
-    implements _$$AuthStateImplCopyWith<$Res> {
-  __$$AuthStateImplCopyWithImpl(
-      _$AuthStateImpl _value, $Res Function(_$AuthStateImpl) _then)
-      : super(_value, _then);
+class _$AuthStateCopyWithImpl<$Res> implements $AuthStateCopyWith<$Res> {
+  _$AuthStateCopyWithImpl(this._self, this._then);
 
+  final AuthState _self;
+  final $Res Function(AuthState) _then;
+
+  /// Create a copy of AuthState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -144,47 +98,255 @@ class __$$AuthStateImplCopyWithImpl<$Res>
     Object? localSessionId = freezed,
     Object? errorMessage = freezed,
   }) {
-    return _then(_$AuthStateImpl(
+    return _then(_self.copyWith(
       user: freezed == user
-          ? _value.user
+          ? _self.user
           : user // ignore: cast_nullable_to_non_nullable
               as User?,
       role: freezed == role
-          ? _value.role
+          ? _self.role
           : role // ignore: cast_nullable_to_non_nullable
               as String?,
       username: freezed == username
-          ? _value.username
+          ? _self.username
           : username // ignore: cast_nullable_to_non_nullable
               as String?,
       isLoading: null == isLoading
-          ? _value.isLoading
+          ? _self.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
               as bool,
       isAuthCheckComplete: null == isAuthCheckComplete
-          ? _value.isAuthCheckComplete
+          ? _self.isAuthCheckComplete
           : isAuthCheckComplete // ignore: cast_nullable_to_non_nullable
               as bool,
       isPasswordRecovery: null == isPasswordRecovery
-          ? _value.isPasswordRecovery
+          ? _self.isPasswordRecovery
           : isPasswordRecovery // ignore: cast_nullable_to_non_nullable
               as bool,
       localSessionId: freezed == localSessionId
-          ? _value.localSessionId
+          ? _self.localSessionId
           : localSessionId // ignore: cast_nullable_to_non_nullable
               as String?,
       errorMessage: freezed == errorMessage
-          ? _value.errorMessage
+          ? _self.errorMessage
           : errorMessage // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [AuthState].
+extension AuthStatePatterns on AuthState {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_AuthState value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AuthState() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_AuthState value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AuthState():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_AuthState value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AuthState() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            User? user,
+            String? role,
+            String? username,
+            bool isLoading,
+            bool isAuthCheckComplete,
+            bool isPasswordRecovery,
+            String? localSessionId,
+            String? errorMessage)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _AuthState() when $default != null:
+        return $default(
+            _that.user,
+            _that.role,
+            _that.username,
+            _that.isLoading,
+            _that.isAuthCheckComplete,
+            _that.isPasswordRecovery,
+            _that.localSessionId,
+            _that.errorMessage);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            User? user,
+            String? role,
+            String? username,
+            bool isLoading,
+            bool isAuthCheckComplete,
+            bool isPasswordRecovery,
+            String? localSessionId,
+            String? errorMessage)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AuthState():
+        return $default(
+            _that.user,
+            _that.role,
+            _that.username,
+            _that.isLoading,
+            _that.isAuthCheckComplete,
+            _that.isPasswordRecovery,
+            _that.localSessionId,
+            _that.errorMessage);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            User? user,
+            String? role,
+            String? username,
+            bool isLoading,
+            bool isAuthCheckComplete,
+            bool isPasswordRecovery,
+            String? localSessionId,
+            String? errorMessage)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _AuthState() when $default != null:
+        return $default(
+            _that.user,
+            _that.role,
+            _that.username,
+            _that.isLoading,
+            _that.isAuthCheckComplete,
+            _that.isPasswordRecovery,
+            _that.localSessionId,
+            _that.errorMessage);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 
-class _$AuthStateImpl extends _AuthState {
-  const _$AuthStateImpl(
+class _AuthState extends AuthState {
+  const _AuthState(
       {this.user,
       this.role,
       this.username,
@@ -215,16 +377,19 @@ class _$AuthStateImpl extends _AuthState {
   @override
   final String? errorMessage;
 
+  /// Create a copy of AuthState
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'AuthState(user: $user, role: $role, username: $username, isLoading: $isLoading, isAuthCheckComplete: $isAuthCheckComplete, isPasswordRecovery: $isPasswordRecovery, localSessionId: $localSessionId, errorMessage: $errorMessage)';
-  }
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$AuthStateCopyWith<_AuthState> get copyWith =>
+      __$AuthStateCopyWithImpl<_AuthState>(this, _$identity);
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$AuthStateImpl &&
+            other is _AuthState &&
             (identical(other.user, user) || other.user == user) &&
             (identical(other.role, role) || other.role == role) &&
             (identical(other.username, username) ||
@@ -245,43 +410,87 @@ class _$AuthStateImpl extends _AuthState {
   int get hashCode => Object.hash(runtimeType, user, role, username, isLoading,
       isAuthCheckComplete, isPasswordRecovery, localSessionId, errorMessage);
 
-  @JsonKey(ignore: true)
+  @override
+  String toString() {
+    return 'AuthState(user: $user, role: $role, username: $username, isLoading: $isLoading, isAuthCheckComplete: $isAuthCheckComplete, isPasswordRecovery: $isPasswordRecovery, localSessionId: $localSessionId, errorMessage: $errorMessage)';
+  }
+}
+
+/// @nodoc
+abstract mixin class _$AuthStateCopyWith<$Res>
+    implements $AuthStateCopyWith<$Res> {
+  factory _$AuthStateCopyWith(
+          _AuthState value, $Res Function(_AuthState) _then) =
+      __$AuthStateCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {User? user,
+      String? role,
+      String? username,
+      bool isLoading,
+      bool isAuthCheckComplete,
+      bool isPasswordRecovery,
+      String? localSessionId,
+      String? errorMessage});
+}
+
+/// @nodoc
+class __$AuthStateCopyWithImpl<$Res> implements _$AuthStateCopyWith<$Res> {
+  __$AuthStateCopyWithImpl(this._self, this._then);
+
+  final _AuthState _self;
+  final $Res Function(_AuthState) _then;
+
+  /// Create a copy of AuthState
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  _$$AuthStateImplCopyWith<_$AuthStateImpl> get copyWith =>
-      __$$AuthStateImplCopyWithImpl<_$AuthStateImpl>(this, _$identity);
+  $Res call({
+    Object? user = freezed,
+    Object? role = freezed,
+    Object? username = freezed,
+    Object? isLoading = null,
+    Object? isAuthCheckComplete = null,
+    Object? isPasswordRecovery = null,
+    Object? localSessionId = freezed,
+    Object? errorMessage = freezed,
+  }) {
+    return _then(_AuthState(
+      user: freezed == user
+          ? _self.user
+          : user // ignore: cast_nullable_to_non_nullable
+              as User?,
+      role: freezed == role
+          ? _self.role
+          : role // ignore: cast_nullable_to_non_nullable
+              as String?,
+      username: freezed == username
+          ? _self.username
+          : username // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isLoading: null == isLoading
+          ? _self.isLoading
+          : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isAuthCheckComplete: null == isAuthCheckComplete
+          ? _self.isAuthCheckComplete
+          : isAuthCheckComplete // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isPasswordRecovery: null == isPasswordRecovery
+          ? _self.isPasswordRecovery
+          : isPasswordRecovery // ignore: cast_nullable_to_non_nullable
+              as bool,
+      localSessionId: freezed == localSessionId
+          ? _self.localSessionId
+          : localSessionId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      errorMessage: freezed == errorMessage
+          ? _self.errorMessage
+          : errorMessage // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
+  }
 }
 
-abstract class _AuthState extends AuthState {
-  const factory _AuthState(
-      {final User? user,
-      final String? role,
-      final String? username,
-      final bool isLoading,
-      final bool isAuthCheckComplete,
-      final bool isPasswordRecovery,
-      final String? localSessionId,
-      final String? errorMessage}) = _$AuthStateImpl;
-  const _AuthState._() : super._();
-
-  @override
-  User? get user;
-  @override
-  String? get role;
-  @override
-  String? get username;
-  @override
-  bool get isLoading;
-  @override
-  bool get isAuthCheckComplete;
-  @override
-  bool get isPasswordRecovery;
-  @override
-  String? get localSessionId;
-  @override
-  String? get errorMessage;
-  @override
-  @JsonKey(ignore: true)
-  _$$AuthStateImplCopyWith<_$AuthStateImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
+// dart format on

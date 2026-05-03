@@ -4,7 +4,7 @@ import '../../domain/models/mock_test.dart';
 part 'test_state.freezed.dart';
 
 @freezed
-class TestState with _$TestState {
+abstract class TestState with _$TestState {
   const factory TestState({
     @Default([]) List<MockTest> allTests,
     @Default([]) List<MockTest> cachedTests,

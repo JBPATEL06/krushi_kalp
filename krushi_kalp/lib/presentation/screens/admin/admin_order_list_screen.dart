@@ -91,22 +91,27 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
   void _showOrderDetailsDialog(Map<String, dynamic> order) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    const emerald = Color(0xFF10B981);
 
     final user = order['users'] as Map<String, dynamic>?;
     final offer = order['offers'] as Map<String, dynamic>?;
     final items = order['order_items'] as List<dynamic>? ?? [];
-    final double amount = (order['total_amount'] as num?)?.toDouble() ?? 0.0;
+    final double amount = double.tryParse(order['total_amount']?.toString() ?? '0') ?? 0.0;
     final double discountAmount =
-        (order['discount_amount'] as num?)?.toDouble() ?? 0.0;
+        double.tryParse(order['discount_amount']?.toString() ?? '0') ?? 0.0;
     final String paymentId = order['payment_id'] as String? ?? '—';
     final String orderId = order['order_id'] as String? ?? '—';
     final String dateStr = order['created_at'] != null
         ? DateFormat('MMM dd, yyyy • hh:mm a')
-            .format(DateTime.parse(order['created_at']).toUtc().toLocal())
+            .format(DateTime.parse(order['created_at']).toLocal())
         : 'Unknown Date';
 
-    final String userName = user?['username'] ?? 'Unknown';
     final String userEmail = user?['email'] ?? '';
+    String userName = user?['username'] ?? '';
+    if (userName.isEmpty || userName == 'User' || userName == 'Legacy User') {
+      userName = userEmail.isNotEmpty ? userEmail.split('@')[0] : 'Customer';
+    }
+
     final String userPhone = user?['phonenumber'] ?? '—';
 
     // Offer info
@@ -123,17 +128,15 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
       }
     }
 
-    final emerald = colorScheme.tertiary;
-
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.lg)),
         insetPadding: EdgeInsets.symmetric(
-            horizontal: context.w(20), vertical: context.h(40)), // FIXED
+            horizontal: context.w(20), vertical: context.h(40)),
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: context.w(520)), // FIXED
+          constraints: BoxConstraints(maxWidth: context.w(520)),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: SingleChildScrollView(
@@ -151,7 +154,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                           borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         child: Icon(Icons.receipt_long_rounded,
-                            color: emerald, size: context.sp(22)), // FIXED
+                            color: emerald, size: context.sp(22)),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -162,23 +165,23 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                               'Transaction Details',
                               style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: context.sp(20)), // FIXED
+                                  fontSize: context.sp(20)),
                             ),
                             Text(
                               dateStr,
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
-                                fontSize: context.sp(11), // FIXED
+                                fontSize: context.sp(11),
                               ),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
-                        iconSize: context.sp(20), // FIXED
+                        iconSize: context.sp(20),
                         icon: Icon(Icons.close_rounded,
                             color: colorScheme.onSurfaceVariant,
-                            size: context.sp(20)), // FIXED
+                            size: context.sp(20)),
                         style: IconButton.styleFrom(
                           backgroundColor: colorScheme.surfaceContainerHighest
                               .withValues(alpha: 0.4),
@@ -296,19 +299,19 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                                           as Map<String, dynamic>?;
                                       final resource = item['resources']
                                           as Map<String, dynamic>?;
-                                      final String title = mockTest != null
-                                          ? (mockTest['title'] ?? 'Mock Test')
-                                          : resource != null
-                                              ? (resource['title'] ??
-                                                  'Resource')
-                                              : 'Unknown Item';
-                                      final String type = mockTest != null
-                                          ? 'Test'
-                                          : (resource?['type'] ?? 'Resource');
-                                      final double price =
-                                          (item['price_at_purchase'] as num?)
-                                                  ?.toDouble() ??
-                                              0.0;
+
+                                      String title = 'Unknown Item';
+                                      String typeLabel = 'Item';
+                                      double priceAtPurchase = _parseNum(item['price_at_purchase']);
+
+                                      if (mockTest != null) {
+                                        title = mockTest['title'] ?? 'Untitled Test';
+                                        typeLabel = 'Test';
+                                      } else if (resource != null) {
+                                        title = resource['title'] ?? 'Untitled Resource';
+                                        typeLabel = (resource['type'] ?? 'Resource').toString();
+                                      }
+
                                       return Padding(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: AppSpacing.sm,
@@ -322,19 +325,19 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                                                       vertical: 2),
                                               decoration: BoxDecoration(
                                                 color: colorScheme.primary
-                                                    .withValues(alpha: 0.5),
+                                                    .withValues(alpha: 0.1),
                                                 borderRadius:
                                                     BorderRadius.circular(4),
                                               ),
                                               child: Text(
-                                                type.toUpperCase(),
+                                                typeLabel.toUpperCase(),
                                                 style: theme
                                                     .textTheme.labelSmall
                                                     ?.copyWith(
                                                   color: colorScheme.primary,
                                                   fontWeight: FontWeight.bold,
                                                   fontSize:
-                                                      context.sp(8), // FIXED
+                                                      context.sp(8),
                                                 ),
                                               ),
                                             ),
@@ -352,7 +355,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                                             ),
                                             const SizedBox(width: 8),
                                             Text(
-                                              '₹${price.toStringAsFixed(0)}',
+                                              '₹${priceAtPurchase.toStringAsFixed(0)}',
                                               style: theme.textTheme.bodySmall
                                                   ?.copyWith(
                                                       fontWeight:
@@ -374,27 +377,60 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   const SizedBox(height: AppSpacing.sm),
 
                   // ── Total ───────────────────────────────────────────
-                  if (discountAmount > 0) ...[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Builder(builder: (context) {
+                    // REFINED MATH (Per User Instruction):
+                    final double netPaid = amount;
+                    final double actualDiscount = discountAmount;
+                    final double grossSubtotal = netPaid + actualDiscount;
+                    
+                    final String? offerCode = order['offer_code']?.toString();
+                    final offer = order['offers'] as Map?;
+                    String discountLabel = 'Discount';
+                    if (offerCode != null) {
+                      final percent = offer?['discount_percent'];
+                      discountLabel = percent != null ? 'Discount ($offerCode $percent% OFF)' : 'Discount ($offerCode)';
+                    }
+
+                    return Column(
                       children: [
-                        Text('Discount',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurfaceVariant)),
-                        Text(
-                          '-₹${discountAmount.toStringAsFixed(2)}',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                              color: emerald, fontWeight: FontWeight.w600),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Subtotal',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant)),
+                            Text(
+                              '₹${grossSubtotal.toStringAsFixed(2)}',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ],
                         ),
+                        if (actualDiscount > 0) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(discountLabel,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.onSurfaceVariant)),
+                              Text(
+                                '-₹${actualDiscount.toStringAsFixed(2)}',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: emerald, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: AppSpacing.xs),
                       ],
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                  ],
+                    );
+                  }),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Total Paid',
+                        'Net Paid',
                         style: theme.textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
@@ -422,7 +458,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final emerald = colorScheme.tertiary;
+    const emerald = Color(0xFF10B981); // Emerald Green
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -518,15 +554,20 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
 
   Widget _buildOrderRow(BuildContext context, Map<String, dynamic> order,
       ThemeData theme, ColorScheme colorScheme, Color emerald) {
-    final amount = (order['total_amount'] as num).toDouble();
+    final amount = double.tryParse(order['total_amount']?.toString() ?? '0') ?? 0.0;
     final dateStr = order['created_at'] as String;
     final date = DateTime.tryParse(dateStr) ?? DateTime.now();
     final formattedDate =
         DateFormat('MMM d, yyyy • h:mm a').format(date.toLocal());
 
     final user = order['users'] as Map<String, dynamic>?;
-    final userEmail = user?['email'] ?? 'Unknown User';
-    final userName = user?['username'] ?? 'User';
+    final String userEmail = user?['email'] ?? '';
+    String userName = user?['username'] ?? '';
+    
+    if (userName.isEmpty || userName == 'User' || userName == 'Legacy User') {
+      userName = userEmail.isNotEmpty ? userEmail.split('@')[0] : 'Customer';
+    }
+    if (userName.isEmpty) userName = 'Customer';
 
     return Material(
       color: colorScheme.surface,
@@ -552,7 +593,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(Icons.receipt_rounded,
-                      color: emerald, size: context.sp(24)), // FIXED
+                      color: emerald, size: context.sp(24)),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
@@ -571,7 +612,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                         userEmail,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
-                          fontSize: context.sp(12), // FIXED
+                          fontSize: context.sp(12),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -580,7 +621,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: colorScheme.onSurfaceVariant
                               .withValues(alpha: 0.5),
-                          fontSize: context.sp(10), // FIXED
+                          fontSize: context.sp(10),
                         ),
                       ),
                     ],
@@ -591,11 +632,11 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '₹${amount.toStringAsFixed(0)}',
+                      '₹${amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2)}',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w900,
                         color: colorScheme.onSurface,
-                        fontSize: context.sp(22), // FIXED
+                        fontSize: context.sp(22),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -609,19 +650,12 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                       child: Text(
                         'SUCCESS',
                         style: TextStyle(
-                          fontSize: context.sp(8), // FIXED
+                          fontSize: context.sp(8),
                           fontWeight: FontWeight.w900,
                           color: emerald,
                           letterSpacing: 0.5,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: context.sp(14), // FIXED
-                      color:
-                          colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
                     ),
                   ],
                 ),
@@ -631,6 +665,15 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
         ),
       ),
     );
+  }
+
+  double _parseNum(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    final String str = value.toString().trim();
+    if (str.isEmpty) return 0.0;
+    final cleanStr = str.replaceAll(RegExp(r'[^\d.]'), '');
+    return double.tryParse(cleanStr) ?? 0.0;
   }
 }
 
@@ -655,7 +698,7 @@ class _DialogSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon,
-            size: context.sp(18), // FIXED
+            size: context.sp(18),
             color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6)),
         const SizedBox(width: 12),
         Expanded(
@@ -712,5 +755,3 @@ class _IdChip extends StatelessWidget {
     );
   }
 }
-
-

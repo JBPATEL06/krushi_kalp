@@ -1,6 +1,5 @@
 import 'dart:io'; // NEW
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/download_service.dart'; // NEW
 import '../../domain/models/mock_test.dart';

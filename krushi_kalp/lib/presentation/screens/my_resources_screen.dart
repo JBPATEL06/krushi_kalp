@@ -51,9 +51,9 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     if (user != null) {
-      await ref.read(resourceNotifierProvider.notifier).fetchPurchasedResources(user.id);
+      await ref.read(resourceProvider.notifier).fetchPurchasedResources(user.id);
     }
     if (mounted) {
       setState(() => _isLoading = false);
@@ -98,7 +98,7 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final resourceState = ref.watch(resourceNotifierProvider);
+    final resourceState = ref.watch(resourceProvider);
     final resources = _getFilteredResources(resourceState);
 
     return Scaffold(
@@ -296,7 +296,7 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
   }
 
   Future<void> _openResource(Resource resource) async {
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     
     // Use the unified ResourceHelper (strictly in-app)
     await ResourceHelper.openResource(

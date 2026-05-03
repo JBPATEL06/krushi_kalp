@@ -22,8 +22,8 @@ import 'route_constants.dart';
 part 'app_router.g.dart';
 
 @riverpod
-GoRouter appRouter(AppRouterRef ref) {
-  final authState = ref.watch(authNotifierProvider);
+GoRouter appRouter(Ref ref) {
+  final authState = ref.watch(authProvider);
 
   return GoRouter(
     navigatorKey: navigatorKey,

@@ -62,7 +62,7 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
     if (_isProcessing) return;
 
     try {
-      final user = ref.read(authNotifierProvider).user;
+      final user = ref.read(authProvider).user;
       if (user == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -80,12 +80,12 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
           authUserId: user.id,
         );
         if (mounted) {
-          await ref.read(testNotifierProvider.notifier).fetchUserTests(user.id);
-          await ref.read(testNotifierProvider.notifier).fetchTests(forceRefresh: true);
+          await ref.read(testProvider.notifier).fetchUserTests(user.id);
+          await ref.read(testProvider.notifier).fetchTests(forceRefresh: true);
         }
       } else if (resource != null) {
         await ref
-            .read(resourceNotifierProvider.notifier)
+            .read(resourceProvider.notifier)
             .claimResource(resource.id, user.id);
       }
 
@@ -135,22 +135,20 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
     });
 
     try {
-      final user = ref.read(authNotifierProvider).user;
+      final user = ref.read(authProvider).user;
       
       // Use silent catches for each future to prevent one timeout from killing the whole UI
-      await Future.wait([
-        ref.read(testNotifierProvider.notifier).fetchTests(forceRefresh: shouldHitSupabase).catchError((e) {
+      await Future.wait<void>([
+        ref.read(testProvider.notifier).fetchTests(forceRefresh: shouldHitSupabase).catchError((e) {
           CrashlyticsService.instance.log('FreeContent: fetchTests failed: $e');
-          return null;
         }),
-        ref.read(resourceNotifierProvider.notifier).fetchAll(forceRefresh: shouldHitSupabase).catchError((e) {
+        ref.read(resourceProvider.notifier).fetchAll(forceRefresh: shouldHitSupabase).catchError((e) {
           CrashlyticsService.instance.log('FreeContent: fetchAll resources failed: $e');
-          return null;
         }),
         if (user != null) 
-          ref.read(testNotifierProvider.notifier).fetchUserTests(user.id).catchError((e) => null),
+          ref.read(testProvider.notifier).fetchUserTests(user.id).catchError((e) {}),
         if (user != null) 
-          ref.read(resourceNotifierProvider.notifier).fetchPurchasedResources(user.id).catchError((e) => null),
+          ref.read(resourceProvider.notifier).fetchPurchasedResources(user.id).catchError((e) {}),
       ]);
 
       if (shouldHitSupabase) {
@@ -170,8 +168,8 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
           _isLoading = false;
           _isProcessing = false;
           // Only show error if we have no data at all
-          final testState = ref.read(testNotifierProvider);
-          final resourceState = ref.read(resourceNotifierProvider);
+          final testState = ref.read(testProvider);
+          final resourceState = ref.read(resourceProvider);
           if (testState.allTests.isEmpty && resourceState.ebooks.isEmpty) {
             _errorMessage = 'Failed to load content. Please check your connection.';
           }
@@ -318,8 +316,8 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
           Expanded(
             child: Consumer(
               builder: (context, ref, _) {
-                final testState = ref.watch(testNotifierProvider);
-                final resourceState = ref.watch(resourceNotifierProvider);
+                final testState = ref.watch(testProvider);
+                final resourceState = ref.watch(resourceProvider);
                 return _buildContent(testState, resourceState);
               },
             ),

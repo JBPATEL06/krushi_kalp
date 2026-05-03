@@ -6,21 +6,54 @@ part of 'resource_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$resourceNotifierHash() => r'e5b237585333c2020dc76af6e9b4294574a4ef43';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [ResourceNotifier].
 @ProviderFor(ResourceNotifier)
-final resourceNotifierProvider =
-    NotifierProvider<ResourceNotifier, ResourceState>.internal(
-  ResourceNotifier.new,
-  name: r'resourceNotifierProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$resourceNotifierHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+final resourceProvider = ResourceNotifierProvider._();
 
-typedef _$ResourceNotifier = Notifier<ResourceState>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+final class ResourceNotifierProvider
+    extends $NotifierProvider<ResourceNotifier, ResourceState> {
+  ResourceNotifierProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'resourceProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$resourceNotifierHash();
+
+  @$internal
+  @override
+  ResourceNotifier create() => ResourceNotifier();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ResourceState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ResourceState>(value),
+    );
+  }
+}
+
+String _$resourceNotifierHash() => r'40e0f9084e55f56a36a0ceb34bdbcf7753e09a26';
+
+abstract class _$ResourceNotifier extends $Notifier<ResourceState> {
+  ResourceState build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<ResourceState, ResourceState>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<ResourceState, ResourceState>,
+        ResourceState,
+        Object?,
+        Object?>;
+    element.handleCreate(ref, build);
+  }
+}

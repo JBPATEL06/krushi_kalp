@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:krushi_kalp/domain/models/mock_test.dart';
 
 part 'mock_test_entity.g.dart';

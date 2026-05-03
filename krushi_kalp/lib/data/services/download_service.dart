@@ -278,10 +278,14 @@ class DownloadService {
 
     // Promote to foreground so OS doesn't kill it during download 
     try {
-      final isRunning = await bgService.isRunning();
+      bool isRunning = await bgService.isRunning();
       if (!isRunning) {
         await bgService.startService();
-        await Future.delayed(const Duration(milliseconds: 300));
+        int retries = 0;
+        while (!(await bgService.isRunning()) && retries < 15) {
+          await Future.delayed(const Duration(milliseconds: 100));
+          retries++;
+        }
       }
       bgService.invoke('setAsForeground');
       bgService.invoke('updateProgress', {
@@ -338,8 +342,8 @@ class DownloadService {
           task.progress = progress;
           onProgress(progress);
 
-          // Update notification every ~5% to reduce overhead
-          if (progress - lastNotifiedProgress >= 0.05 || progress >= 0.99) {
+          // Update notification every ~10% to reduce bridge overhead and UI lag
+          if (progress - lastNotifiedProgress >= 0.10 || progress >= 0.99) {
             final percent = (progress * 100).toInt();
             bgService.invoke('updateProgress', {
               'title': 'Downloading... $percent%',

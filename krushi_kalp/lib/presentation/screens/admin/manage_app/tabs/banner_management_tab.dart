@@ -114,7 +114,8 @@ class _BannerManagementTabState extends State<BannerManagementTab> with PickerLi
   // ─── Upload Multiple New Banners ───────────────────
   Future<void> _uploadBanners() async {
     final result = await safePickFiles(
-      type: FileType.image,
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
       allowMultiple: true,
     );
 
@@ -148,7 +149,10 @@ class _BannerManagementTabState extends State<BannerManagementTab> with PickerLi
 
   // ─── Replace Image at a Specific Banner ───────────────────
   Future<void> _replaceBannerImage(HomeBanner banner) async {
-    final result = await safePickFiles(type: FileType.image);
+    final result = await safePickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+    );
 
     if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
       setState(() => _isUploading = true);
@@ -216,7 +220,7 @@ class _BannerManagementTabState extends State<BannerManagementTab> with PickerLi
                 SwitchListTile(
                   title: const Text("Show in App", style: TextStyle(fontSize: 14)),
                   value: isActive,
-                  activeColor: colorScheme.primary,
+                  activeThumbColor: colorScheme.primary,
                   onChanged: (val) => setDialogState(() => isActive = val),
                   contentPadding: EdgeInsets.zero,
                 ),

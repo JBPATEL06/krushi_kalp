@@ -54,7 +54,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
       if (_selectedFilter == 'All') return true;
       if (order['created_at'] == null) return false;
 
-      final date = DateTime.parse(order['created_at']).toUtc().toLocal();
+      final date = DateTime.parse(order['created_at']).toLocal();
       if (_selectedFilter == 'Today') {
         return date.year == now.year &&
             date.month == now.month &&
@@ -207,13 +207,19 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final user = order['users'];
-    final double amount = (order['total_amount'] as num?)?.toDouble() ?? 0.0;
+
+    final double netPaid = (order['total_amount'] as num?)?.toDouble() ?? 0.0;
+
     final String dateStr = order['created_at'] != null
         ? DateFormat('MMM dd • hh:mm a')
-            .format(DateTime.parse(order['created_at']).toUtc().toLocal())
+            .format(DateTime.parse(order['created_at']).toLocal())
         : 'Unknown Date';
-    final String username =
-        user != null ? (user['username'] ?? 'Unknown') : 'Unknown User';
+
+    final String userEmail = user?['email'] ?? '';
+    String username = user?['username'] ?? '';
+    if (username.isEmpty || username == 'Unknown' || username == 'Legacy User') {
+      username = userEmail.isNotEmpty ? userEmail.split('@')[0] : 'Customer';
+    }
 
     return Material(
       color: Colors.transparent,
@@ -272,7 +278,7 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '+ ₹${amount.toStringAsFixed(2)}',
+                    '+ ₹${netPaid.toStringAsFixed(2)}',
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w900,
                       color: const Color(0xFF10B981),
@@ -299,13 +305,21 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
     final user = order['users'];
     final offer = order['offers'];
     final items = order['order_items'] as List<dynamic>? ?? [];
-    final double amount = (order['total_amount'] as num?)?.toDouble() ?? 0.0;
+
+    final double netPaid = (order['total_amount'] as num?)?.toDouble() ?? 0.0;
+    final double discount = (order['discount_amount'] as num?)?.toDouble() ?? 0.0;
+    final double originalPrice = netPaid + discount;
+
     final String dateStr = order['created_at'] != null
         ? DateFormat('MMM dd, yyyy • hh:mm a')
-            .format(DateTime.parse(order['created_at']).toUtc().toLocal())
+            .format(DateTime.parse(order['created_at']).toLocal())
         : 'Unknown Date';
 
-    final double discount = (order['discount_amount'] as num? ?? 0.0).toDouble();
+    final String userEmail = user?['email'] ?? '';
+    String username = user?['username'] ?? '';
+    if (username.isEmpty || username == 'Unknown' || username == 'Legacy User') {
+      username = userEmail.isNotEmpty ? userEmail.split('@')[0] : 'Customer';
+    }
 
     showDialog(
       context: context,
@@ -334,18 +348,18 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
             ),
             const Divider(height: 24),
             _buildDetailRow(context, Icons.person_rounded, 'CUSTOMER',
-                '${user?['username'] ?? 'Unknown'}\n${user?['email'] ?? ''}'),
+                '$username\n$userEmail'),
             const SizedBox(height: AppSpacing.md),
             _buildDetailRow(
                 context, Icons.calendar_today_rounded, 'DATE & TIME', dateStr),
             const SizedBox(height: AppSpacing.md),
             
-            // New Detailed Discount Section - Now Null-Safe
+            // Offer applied section
             if (discount > 0) ...[
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.local_offer_rounded, size: context.sp(18), color: colorScheme.outline),
+                  Icon(Icons.local_offer_rounded, size: context.sp(18), color: Colors.orange),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
@@ -360,19 +374,50 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                           ),
                         ),
                         const SizedBox(height: 4),
+                        // Offer name
                         Text(
-                          offer?['title'] ?? 'Coupon Applied',
-                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                          offer?['title'] ?? order['offer_code'] ?? 'Discount Applied',
+                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
                         ),
-                        Text(
-                          offer != null 
-                            ? '${offer['discount_type'] == 'PERCENTAGE' ? '${offer['discount_value']}% OFF' : '₹${offer['discount_value']} FLAT OFF'} (${offer['code'] ?? 'SYSTEM'})'
-                            : 'Discount Applied (${order['offer_code'] ?? 'SYSTEM'})',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.green.shade700,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        const SizedBox(height: 2),
+                        // % and ₹ saved
+                        Builder(builder: (context) {
+                          final discountType = offer?['discount_type']?.toString();
+                          final discountValue = (offer?['discount_value'] as num?)?.toDouble();
+                          final offerCode = offer?['code'] ?? order['offer_code'];
+
+                          String discountLine = '';
+                          if (discountType == 'PERCENTAGE' && discountValue != null) {
+                            // Show both % and ₹ saved
+                            discountLine = '${discountValue.toStringAsFixed(0)}% OFF  •  saved ₹${discount.toStringAsFixed(0)}';
+                          } else if (discountType == 'FLAT' && discountValue != null) {
+                            // Flat — show ₹ only
+                            discountLine = '₹${discountValue.toStringAsFixed(0)} FLAT OFF';
+                          } else {
+                            // Fallback — just show ₹ saved
+                            discountLine = 'saved ₹${discount.toStringAsFixed(0)}';
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                discountLine,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: Colors.green.shade700,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              if (offerCode != null)
+                                Text(
+                                  'Code: $offerCode',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                            ],
+                          );
+                        }),
                       ],
                     ),
                   ),
@@ -421,6 +466,11 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
                           } else if (resource != null) {
                             title = '${resource['title'] ?? 'Untitled Resource'}';
                             type = (resource['type'] ?? 'RESOURCE').toString().toUpperCase();
+                          } else {
+                            // fallback to item_snapshot directly
+                            final snap = (item['item_snapshot'] as Map?)?.cast<String, dynamic>() ?? {};
+                            title = snap['title']?.toString() ?? 'Item #${item['item_id'] ?? '?'}';
+                            type = (item['item_type'] ?? 'ITEM').toString().toUpperCase();
                           }
 
                           final double price = (item['price_at_purchase'] as num?)?.toDouble() ?? 0.0;
@@ -473,6 +523,23 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
+            // Price breakdown
+            if (discount > 0)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Original Price',
+                        style: theme.textTheme.bodyMedium
+                            ?.copyWith(color: colorScheme.onSurfaceVariant)),
+                    Text('₹${originalPrice.toStringAsFixed(0)}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            decoration: TextDecoration.lineThrough,
+                            color: colorScheme.onSurfaceVariant)),
+                  ],
+                ),
+              ),
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
@@ -489,12 +556,21 @@ class _RevenueDetailsScreenState extends State<RevenueDetailsScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('TOTAL PAID',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                          color: colorScheme.onPrimary,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1)),
-                  Text('₹${amount.toStringAsFixed(0)}',
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('ACTUAL PAID',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                              color: colorScheme.onPrimary,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1)),
+                      if (discount > 0)
+                        Text('saved ₹${discount.toStringAsFixed(0)}',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onPrimary.withValues(alpha: 0.7))),
+                    ],
+                  ),
+                  Text('₹${netPaid.toStringAsFixed(0)}',
                       style: theme.textTheme.headlineSmall?.copyWith(
                           color: colorScheme.onPrimary,
                           fontWeight: FontWeight.w900)),

@@ -6,34 +6,92 @@ part of 'test_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$testCategoriesHash() => r'e3db387d8a4678ea9a85fad9d18ba35457b009fb';
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
 
-/// See also [testCategories].
-@ProviderFor(testCategories)
-final testCategoriesProvider = AutoDisposeProvider<List<String>>.internal(
-  testCategories,
-  name: r'testCategoriesProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$testCategoriesHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-typedef TestCategoriesRef = AutoDisposeProviderRef<List<String>>;
-String _$testNotifierHash() => r'5b557a6604f9fa145a5c958c491fdddc6830e68b';
-
-/// See also [TestNotifier].
 @ProviderFor(TestNotifier)
-final testNotifierProvider = NotifierProvider<TestNotifier, TestState>.internal(
-  TestNotifier.new,
-  name: r'testNotifierProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$testNotifierHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+final testProvider = TestNotifierProvider._();
 
-typedef _$TestNotifier = Notifier<TestState>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+final class TestNotifierProvider
+    extends $NotifierProvider<TestNotifier, TestState> {
+  TestNotifierProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'testProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$testNotifierHash();
+
+  @$internal
+  @override
+  TestNotifier create() => TestNotifier();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(TestState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<TestState>(value),
+    );
+  }
+}
+
+String _$testNotifierHash() => r'0b47b012f7a71aee8a9e255cef25d19a1bdcd81f';
+
+abstract class _$TestNotifier extends $Notifier<TestState> {
+  TestState build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<TestState, TestState>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<TestState, TestState>, TestState, Object?, Object?>;
+    element.handleCreate(ref, build);
+  }
+}
+
+@ProviderFor(testCategories)
+final testCategoriesProvider = TestCategoriesProvider._();
+
+final class TestCategoriesProvider
+    extends $FunctionalProvider<List<String>, List<String>, List<String>>
+    with $Provider<List<String>> {
+  TestCategoriesProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'testCategoriesProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$testCategoriesHash();
+
+  @$internal
+  @override
+  $ProviderElement<List<String>> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  List<String> create(Ref ref) {
+    return testCategories(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(List<String> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<List<String>>(value),
+    );
+  }
+}
+
+String _$testCategoriesHash() => r'0c1fa935c9f0b7425f761576e555ed378f8d5f0e';

@@ -41,7 +41,7 @@ class _ScoreScreenState extends ConsumerState<ScoreScreen> {
   }
 
   void _onNetworkChange() {
-    final isConnected = ref.read(networkNotifierProvider);
+    final isConnected = ref.read(networkProvider);
     if (isConnected && _hadNetworkError && mounted) {
       _hadNetworkError = false;
       _errorMessage = null;
@@ -50,7 +50,7 @@ class _ScoreScreenState extends ConsumerState<ScoreScreen> {
   }
 
   Future<void> _loadData() async {
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     if (user != null) {
       if (mounted) {
         setState(() {
@@ -68,7 +68,8 @@ class _ScoreScreenState extends ConsumerState<ScoreScreen> {
           });
         }
       } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'score_screen');
+        CrashlyticsService.instance
+            .recordError(e, stack, reason: 'score_screen');
         if (mounted) {
           setState(() {
             _isLoading = false;
@@ -111,12 +112,13 @@ class _ScoreScreenState extends ConsumerState<ScoreScreen> {
       CrashlyticsService.instance.recordError(e, stack, reason: 'score_screen');
       if (mounted) {
         final errorStr = e.toString().toLowerCase();
-        if (errorStr.contains('object not found') || 
-            errorStr.contains('not found') || 
+        if (errorStr.contains('object not found') ||
+            errorStr.contains('not found') ||
             errorStr.contains('404')) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Report not found. Please generate the PDF from the test result screen first.'),
+              content: Text(
+                  'Report not found. Please generate the PDF from the test result screen first.'),
               backgroundColor: Colors.blueAccent,
               behavior: SnackBarBehavior.floating,
             ),
@@ -146,7 +148,7 @@ class _ScoreScreenState extends ConsumerState<ScoreScreen> {
   @override
   Widget build(BuildContext context) {
     // Listen to network changes
-    ref.listen(networkNotifierProvider, (previous, next) {
+    ref.listen(networkProvider, (previous, next) {
       if (next && _hadNetworkError && mounted) {
         _hadNetworkError = false;
         _errorMessage = null;
@@ -538,7 +540,8 @@ class _ScoreScreenState extends ConsumerState<ScoreScreen> {
           );
         }
       } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'score_screen');
+        CrashlyticsService.instance
+            .recordError(e, stack, reason: 'score_screen');
         // Rollback on error
         if (!mounted) return;
         setState(() {
@@ -552,6 +555,6 @@ class _ScoreScreenState extends ConsumerState<ScoreScreen> {
   }
 
   String _formatDate(DateTime date) {
-    return "${date.day}/${date.month}/${date.year} • ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
+    return "${date.day}/${date.month}/${date.year} â€¢ ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
   }
 }

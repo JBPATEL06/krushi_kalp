@@ -38,7 +38,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
   late TextEditingController _categoryController;
   late TextEditingController _priceController;
 
-  bool _isActive = true;
+  bool _isActive = false;
 
   String? _fileName;
   Uint8List? _fileBytes;
@@ -94,14 +94,15 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
 
   Future<void> _pickCover() async {
     final result = await safePickFiles(
-      type: FileType.image,
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
     );
     if (result != null && result.files.isNotEmpty) {
       final platformFile = result.files.first;
-      if (platformFile.size > 1024 * 1024) {
+      if (platformFile.size > 50 * 1024 * 1024) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Cover image must be under 1MB')),
+            const SnackBar(content: Text('Cover image must be under 50MB')),
           );
         }
         return;
@@ -183,19 +184,19 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
           fileBytes: _fileBytes,
           filePath: _filePath,
           fileType: 'resource_pdf',
-          onProgress: (p) {
-            // Progress is now handled by BackgroundUploadService notification
+          dbUpdate: {
+            'table': 'resources',
+            'idColumn': 'id',
+            'idValue': resourceId,
+            'updateColumn': 'file_url',
           },
+          onProgress: (p) {},
           onComplete: (completedPath) async {
-            await _resourceService.updateResource(resourceId, {'file_url': completedPath});
             if (existingId != null && _existingFileUrl != null) {
               await _resourceService.deleteFileFromStorage(_existingFileUrl!).catchError((_) => null);
             }
-            // Success notification is now handled by BackgroundUploadService
           },
-          onError: (err) {
-            // Failure notification is now handled by BackgroundUploadService
-          },
+          onError: (err) {},
         );
       }
 
@@ -213,19 +214,19 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
           fileBytes: _coverBytes,
           filePath: _coverPath,
           fileType: 'resource_cover',
-          onProgress: (p) {
-            // Progress is now handled by BackgroundUploadService notification
+          dbUpdate: {
+            'table': 'resources',
+            'idColumn': 'id',
+            'idValue': resourceId,
+            'updateColumn': 'thumbnail_url',
           },
+          onProgress: (p) {},
           onComplete: (completedPath) async {
-            await _resourceService.updateResource(resourceId, {'thumbnail_url': completedPath});
             if (existingId != null && _existingCoverUrl != null) {
               await _resourceService.deleteFileFromStorage(_existingCoverUrl!).catchError((_) => null);
             }
-            // Success notification is now handled by BackgroundUploadService
           },
-          onError: (err) {
-            // Failure notification is now handled by BackgroundUploadService
-          },
+          onError: (err) {},
         );
       }
 

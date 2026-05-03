@@ -19,10 +19,11 @@ class AdminMockTestList extends StatefulWidget {
   const AdminMockTestList({super.key, this.isFree});
 
   @override
-  State<AdminMockTestList> createState() => _AdminMockTestListState();
+  State<AdminMockTestList> createState() => AdminMockTestListState();
 }
 
-class _AdminMockTestListState extends State<AdminMockTestList> {
+class AdminMockTestListState extends State<AdminMockTestList> {
+  void refresh() => _pagingController.refresh();
   static const _pageSize = 20;
   
   final PagingController<int, MockTest> _pagingController =
@@ -260,19 +261,21 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
             ),
           ),
           Expanded(
-            child: PagedListView<int, MockTest>(
-              pagingController: _pagingController,
-              padding: EdgeInsets.only(
-                top: AppSpacing.md,
-                bottom: AppSpacing.md +
-                    MediaQuery.of(context).padding.bottom +
-                    80, // Space for FAB
-              ),
-              builderDelegate: PagedChildBuilderDelegate<MockTest>(
-                itemBuilder: (context, item, index) =>
-                    _buildMockTestRow(context, item),
-                firstPageProgressIndicatorBuilder: (_) =>
-                    const Center(child: CircularProgressIndicator()),
+            child: RefreshIndicator(
+              onRefresh: () async => _pagingController.refresh(),
+              child: PagedListView<int, MockTest>(
+                pagingController: _pagingController,
+                padding: EdgeInsets.only(
+                  top: AppSpacing.md,
+                  bottom: AppSpacing.md +
+                      MediaQuery.of(context).padding.bottom +
+                      80, // Space for FAB
+                ),
+                builderDelegate: PagedChildBuilderDelegate<MockTest>(
+                  itemBuilder: (context, item, index) =>
+                      _buildMockTestRow(context, item),
+                  firstPageProgressIndicatorBuilder: (_) =>
+                      const Center(child: CircularProgressIndicator()),
                 newPageProgressIndicatorBuilder: (_) =>
                     const Center(child: CircularProgressIndicator()),
                 noItemsFoundIndicatorBuilder: (_) => SingleChildScrollView(
@@ -299,6 +302,7 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
                     ],
                   ),
                 ),
+                ), // Add missing PagedChildBuilderDelegate closing
               ),
             ),
           ),
@@ -454,7 +458,7 @@ class _AdminMockTestListState extends State<AdminMockTestList> {
                         child: Switch(
                           value: test.isPublic,
                           onChanged: (val) => _toggleVisibility(test, val),
-                          activeColor: colorScheme.primary,
+                          activeThumbColor: colorScheme.primary,
                         ),
                       ),
                       const SizedBox(width: 4),

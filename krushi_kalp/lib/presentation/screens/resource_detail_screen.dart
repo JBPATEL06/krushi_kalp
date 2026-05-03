@@ -52,6 +52,23 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
     super.initState();
     _loadData();
     _fetchDisplayPrice();
+    _refreshOwnershipIfNeeded();
+  }
+
+  /// If this resource isn't in the cached purchased set, do a fresh DB check.
+  /// This handles cases where admin granted access after the user logged in.
+  Future<void> _refreshOwnershipIfNeeded() async {
+    final user = ref.read(authProvider).user;
+    if (user == null) return;
+    final alreadyKnown = ref.read(resourceProvider)
+        .purchasedResourceIds
+        .contains(widget.resource.id);
+    if (!alreadyKnown) {
+      // Silently refresh purchased resources from DB
+      await ref
+          .read(resourceProvider.notifier)
+          .fetchPurchasedResources(user.id);
+    }
   }
 
   Future<void> _fetchDisplayPrice() async {
@@ -72,7 +89,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
     if (!mounted) return;
     setState(() => _isLoadingReviews = true);
     try {
-      final user = ref.read(authNotifierProvider).user;
+      final user = ref.read(authProvider).user;
       final futures = <Future>[
         ReviewService.getReviewsForItem(widget.resource.id, 'resource'),
         ReviewService.getRatingStats(widget.resource.id, 'resource'),
@@ -104,7 +121,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
   }
 
   void _showReviewDialog() {
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please login to review')),
@@ -166,7 +183,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
   }
 
   Future<void> _openResource(Resource resource) async {
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     
     // Use the unified ResourceHelper (strictly in-app)
     await ResourceHelper.openResource(
@@ -181,12 +198,12 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final resource = widget.resource;
-    final isPurchased = ref.watch(resourceNotifierProvider)
+    final isPurchased = ref.watch(resourceProvider)
         .purchasedResourceIds
         .contains(resource.id);
 
     // Watch for offer changes (for reactivity if offers update)
-    ref.watch(offerNotifierProvider);
+    ref.watch(offerProvider);
 
     // DB-driven display pricing from _priceData
     final double finalPrice =
@@ -270,7 +287,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
                                   const SizedBox(width: AppSpacing.sm),
                                 ],
                                 Text(
-                                  '₹${finalPrice.toStringAsFixed(0)}',
+                                  'â‚¹${finalPrice.toStringAsFixed(0)}',
                                   style: Theme.of(context)
                                       .textTheme
                                       .headlineSmall
@@ -347,7 +364,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
                               url: resource.fileUrl,
                               startLabel: 'Open PDF',
                               isFullWidth: true,
-                              userId: ref.read(authNotifierProvider).user?.id,
+                              userId: ref.read(authProvider).user?.id,
                               displayName: resource.title,
                               updatedAt: resource.updatedAt, // CHANGED (Freshness)
                               onAction: () => _openResource(resource),
@@ -505,7 +522,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
       return const SizedBox.shrink();
     }
 
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     final positiveReviews = _reviews.where((r) => r.rating >= 4).toList();
     final displayedReviews = positiveReviews.take(3).toList();
     final hasMoreReviews = _reviews.length > displayedReviews.length;

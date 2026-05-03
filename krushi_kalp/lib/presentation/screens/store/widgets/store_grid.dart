@@ -73,7 +73,7 @@ class _StoreGridState extends ConsumerState<StoreGrid> {
       final bulk = await ReviewService.getBulkRatingStats(uncachedIds, 'test');
       if (mounted) setState(() => _ratingsCache.addAll(bulk));
     } catch (_) {
-      // Silently skip — cards will render without ratings
+      // Silently skip â€” cards will render without ratings
     }
   }
 
@@ -184,7 +184,7 @@ class _StoreGridState extends ConsumerState<StoreGrid> {
               url: test.contentUrl,
               startLabel: "Start",
               isFullWidth: true, // Needs to be full width in the vertical card
-              userId: ref.read(authNotifierProvider).user?.id,
+              userId: ref.read(authProvider).user?.id,
               displayName: test.title, // CHANGED
               onAction: () async {
                 await ExamHelper.startExam(context, test);

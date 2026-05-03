@@ -63,14 +63,14 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
     setState(() => _isLoading = true);
 
     try {
-      final resourceState = ref.read(resourceNotifierProvider);
-      final testState = ref.read(testNotifierProvider);
+      final resourceState = ref.read(resourceProvider);
+      final testState = ref.read(testProvider);
 
       // If purchased resources haven't been loaded yet, fetch them now
-      final user = ref.read(authNotifierProvider).user;
+      final user = ref.read(authProvider).user;
       if (resourceState.purchasedResources.isEmpty && user != null) {
         await ref
-            .read(resourceNotifierProvider.notifier)
+            .read(resourceProvider.notifier)
             .fetchPurchasedResources(user.id);
       }
 
@@ -94,7 +94,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
         return MapEntry<String, bool>('test_${t.id}', exists);
       }).toList();
 
-      final results = await Future.wait([...resourceChecks, ...testChecks]);
+      final results = await Future.wait<MapEntry<String, bool>>([...resourceChecks, ...testChecks]);
       final newStatus = Map<String, bool>.fromEntries(results);
 
       // --- Storage Calculation ---
@@ -156,7 +156,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
   }
 
   Future<void> _deleteSelected() async {
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     if (user == null) return;
 
     final confirmed = await showDialog<bool>(
@@ -203,7 +203,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
   }
 
   Future<void> _clearStorage() async {
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     if (user == null) return;
 
     final confirmed = await showDialog<bool>(
@@ -241,13 +241,13 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
 
   /// Opens a resource PDF using internal viewer after verifying ownership.
   Future<void> _openResourceSecurely(Resource resource) async {
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     if (user == null) return;
 
     final filename = 'resource_${resource.id}.pdf';
     final ds = DownloadService();
 
-    // 1. Ownership check — manifest must confirm this user downloaded the file
+    // 1. Ownership check â€” manifest must confirm this user downloaded the file
     final owned = await ds.verifyOwnership(filename, userId: user.id);
     if (!mounted) return;
     if (!owned) {
@@ -281,7 +281,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
 
   /// Starts a mock test after verifying ownership and purchase status.
   Future<void> _startTestSecurely(MockTest test) async {
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     if (user == null) return;
 
     final filename = 'mock_test_${test.id}.json';
@@ -301,8 +301,8 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
       return;
     }
 
-    // 2. Purchase check â€” current user must have this test purchased
-    final testState = ref.read(testNotifierProvider);
+    // 2. Purchase check Ã¢â‚¬â€ current user must have this test purchased
+    final testState = ref.read(testProvider);
     final isPurchased = testState.userTests.any((t) => t.id == test.id);
     if (!isPurchased) {
       if (mounted) {
@@ -334,8 +334,8 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
       'Study Material'
     ];
     // Watch state for changes
-    final resourceState = ref.watch(resourceNotifierProvider);
-    final testState = ref.watch(testNotifierProvider);
+    final resourceState = ref.watch(resourceProvider);
+    final testState = ref.watch(testProvider);
 
     final myTests = testState.userTests;
     final myResources = resourceState.purchasedResources;
@@ -697,7 +697,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
                   ),
                   SizedBox(height: context.h(2)),
                   Text(
-                    "${resource.category ?? 'PDF'} • PDF",
+                    "${resource.category ?? 'PDF'} â€¢ PDF",
                     style: TextStyle(
                       color: theme.colorScheme.onSurfaceVariant,
                       fontSize: context.sp(11),

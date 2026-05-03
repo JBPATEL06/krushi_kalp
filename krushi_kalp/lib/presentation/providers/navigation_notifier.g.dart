@@ -6,20 +6,54 @@ part of 'navigation_notifier.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+
+@ProviderFor(Navigation)
+final navigationProvider = NavigationProvider._();
+
+final class NavigationProvider
+    extends $NotifierProvider<Navigation, NavigationState> {
+  NavigationProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'navigationProvider',
+          isAutoDispose: true,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$navigationHash();
+
+  @$internal
+  @override
+  Navigation create() => Navigation();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(NavigationState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<NavigationState>(value),
+    );
+  }
+}
+
 String _$navigationHash() => r'1a99f8ba116f3068c1ca9cdb7cfd50a9888fb146';
 
-/// See also [Navigation].
-@ProviderFor(Navigation)
-final navigationProvider =
-    AutoDisposeNotifierProvider<Navigation, NavigationState>.internal(
-  Navigation.new,
-  name: r'navigationProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$navigationHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-typedef _$Navigation = AutoDisposeNotifier<NavigationState>;
-// ignore_for_file: type=lint
-// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member
+abstract class _$Navigation extends $Notifier<NavigationState> {
+  NavigationState build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<NavigationState, NavigationState>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<NavigationState, NavigationState>,
+        NavigationState,
+        Object?,
+        Object?>;
+    element.handleCreate(ref, build);
+  }
+}

@@ -91,7 +91,7 @@ class ExcelToJsonConverter {
       }
 
       return questions;
-    } catch (e, stack) {
+    } catch (e) {
       print('ExcelToJsonConverter: Parsing failed: $e');
       return [];
     }

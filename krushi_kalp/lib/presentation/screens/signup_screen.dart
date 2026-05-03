@@ -61,7 +61,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
   }
 
   void _listenToAuth() {
-    ref.listenManual(authNotifierProvider, (AuthState? previous, AuthState next) {
+    ref.listenManual(authProvider, (AuthState? previous, AuthState next) {
       if (next.isLoggedIn && !next.isLoading) {
         if (mounted) context.go('/');
       }
@@ -87,7 +87,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
     }
 
     try {
-      await ref.read(authNotifierProvider.notifier).signUpWithEmail(
+      await ref.read(authProvider.notifier).signUpWithEmail(
             name: _nameController.text.trim(),
             email: _emailController.text.trim(),
             password: _passwordController.text,
@@ -136,7 +136,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
       return;
     }
     try {
-      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+      await ref.read(authProvider.notifier).signInWithGoogle();
     } catch (e, s) {
       CrashlyticsService().recordError(e, s);
       if (mounted) {
@@ -156,7 +156,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(authNotifierProvider).isLoading;
+    final isLoading = ref.watch(authProvider).isLoading;
     final theme = Theme.of(context);
 
     return Scaffold(

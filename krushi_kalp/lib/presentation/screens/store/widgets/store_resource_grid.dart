@@ -71,7 +71,7 @@ class _StoreResourceGridState extends ConsumerState<StoreResourceGrid> {
           await ReviewService.getBulkRatingStats(uncachedIds, 'resource');
       if (mounted) setState(() => _ratingsCache.addAll(bulk));
     } catch (_) {
-      // Silently skip — cards will render without ratings
+      // Silently skip â€” cards will render without ratings
     }
   }
 
@@ -124,8 +124,8 @@ class _StoreResourceGridState extends ConsumerState<StoreResourceGrid> {
               const SizedBox(height: AppSpacing.md),
               ElevatedButton.icon(
                 onPressed: () {
-                  ref.read(resourceNotifierProvider.notifier).fetchAll(forceRefresh: true);
-                  ref.read(testNotifierProvider.notifier).fetchTests(forceRefresh: true);
+                  ref.read(resourceProvider.notifier).fetchAll(forceRefresh: true);
+                  ref.read(testProvider.notifier).fetchTests(forceRefresh: true);
                 },
                 icon: const Icon(Icons.refresh),
                 label: const Text("Refresh Content"),
@@ -199,7 +199,7 @@ class _StoreResourceGridState extends ConsumerState<StoreResourceGrid> {
               url: resource.fileUrl,
               startLabel: "Open",
               isFullWidth: false,
-              userId: ref.read(authNotifierProvider).user?.id,
+              userId: ref.read(authProvider).user?.id,
               displayName: resource.title, // CHANGED
               onAction: () async {
                 widget.onBuyTap(resource);

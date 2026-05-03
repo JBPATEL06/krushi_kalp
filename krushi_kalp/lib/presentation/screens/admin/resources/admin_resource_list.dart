@@ -334,7 +334,7 @@ class _AdminResourceListState extends State<AdminResourceList> {
                     child: Switch(
                       value: item.isActive,
                       onChanged: (val) => _toggleVisibility(item, val),
-                      activeColor: colorScheme.primary,
+                      activeThumbColor: colorScheme.primary,
                     ),
                   ),
                   const SizedBox(width: 8),

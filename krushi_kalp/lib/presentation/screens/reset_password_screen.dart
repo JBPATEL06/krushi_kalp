@@ -51,7 +51,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen>
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      await ref.read(authNotifierProvider.notifier).updatePassword(
+      await ref.read(authProvider.notifier).updatePassword(
             _passwordController.text.trim(),
           );
       if (mounted) {
@@ -73,7 +73,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen>
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authNotifierProvider);
+    final authState = ref.watch(authProvider);
 
     return Scaffold(
       appBar: AppBar(

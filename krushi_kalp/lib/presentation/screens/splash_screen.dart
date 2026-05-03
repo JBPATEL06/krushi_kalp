@@ -78,7 +78,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     await Future.delayed(const Duration(milliseconds: 300));
 
     if (!mounted) return;
-    final authState = ref.read(authNotifierProvider);
+    final authState = ref.read(authProvider);
 
     int attempts = 0;
     while (!authState.isAuthCheckComplete && attempts < 4) {

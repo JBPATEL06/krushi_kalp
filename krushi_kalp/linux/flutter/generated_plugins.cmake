@@ -6,7 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   auto_start_flutter
   flutter_timezone
   gtk
-  isar_flutter_libs
+  isar_community_flutter_libs
   url_launcher_linux
 )
 

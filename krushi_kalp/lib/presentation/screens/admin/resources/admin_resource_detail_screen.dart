@@ -12,7 +12,6 @@ import 'admin_resource_form.dart';
 import '../../../../utils/error_utils.dart';
 import '../../../../utils/crashlytics_service.dart';
 import '../admin_grant_access_screen.dart' as admin_grant;
-import '../../../../domain/models/resource.dart' as domain;
 
 
 class AdminResourceDetailScreen extends StatefulWidget {
@@ -200,7 +199,7 @@ class _AdminResourceDetailScreenState
       await AdminService.toggleResourcePublicStatus(_resource.id, value);
       if (mounted) {
         setState(() {
-          _resource = _resource.copyWith(isPublic: value);
+          _resource = _resource.copyWith(isActive: value);
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -272,6 +271,17 @@ class _AdminResourceDetailScreenState
         title: Text('Resource Details',
             style: TextStyle(fontSize: context.sp(20))),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Refresh',
+            onPressed: () {
+              _loadStats();
+              _checkCacheStatus();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Refreshing details...')),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.people_alt_outlined),
             tooltip: 'Access Audit',
@@ -419,9 +429,9 @@ class _AdminResourceDetailScreenState
                         Row(
                           children: [
                             Text(
-                              _resource.isPublic ? 'Public' : 'Hidden',
+                              _resource.isActive ? 'Public' : 'Hidden',
                               style: theme.textTheme.labelMedium?.copyWith(
-                                color: _resource.isPublic
+                                color: _resource.isActive
                                     ? const Color(0xFF10B981)
                                     : Colors.orange,
                                 fontWeight: FontWeight.bold,
@@ -431,9 +441,9 @@ class _AdminResourceDetailScreenState
                             SizedBox(
                               height: 32,
                               child: Switch(
-                                value: _resource.isPublic,
+                                value: _resource.isActive,
                                 onChanged: _toggleVisibility,
-                                activeColor: const Color(0xFF10B981),
+                                activeThumbColor: const Color(0xFF10B981),
                               ),
                             ),
                           ],
@@ -467,11 +477,11 @@ class _AdminResourceDetailScreenState
                   child: _buildStatCard(
                     context,
                     label: 'Visibility',
-                    value: _resource.isPublic ? 'Visible' : 'Hidden',
-                    icon: _resource.isPublic
+                    value: _resource.isActive ? 'Visible' : 'Hidden',
+                    icon: _resource.isActive
                         ? Icons.visibility_rounded
                         : Icons.visibility_off_rounded,
-                    color: _resource.isPublic
+                    color: _resource.isActive
                         ? const Color(0xFF10B981)
                         : Colors.orange,
                   ),

@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -48,6 +48,14 @@ class LocalCachingService {
     });
   }
 
+  /// Synchronize mock tests (Clear existing and replace with fresh data)
+  static Future<void> syncMockTests(List<MockTestEntity> tests) async {
+    await isar.writeTxn(() async {
+      await isar.mockTestEntitys.clear();
+      await isar.mockTestEntitys.putAll(tests);
+    });
+  }
+
   /// Get all cached mock tests
   static Future<List<MockTestEntity>> getCachedMockTests() async {
     return await isar.mockTestEntitys.where().findAll();
@@ -76,6 +84,22 @@ class LocalCachingService {
   /// Save multiple resources safely (Upsert)
   static Future<void> saveResources(List<ResourceEntity> resources) async {
     await isar.writeTxn(() async {
+      await isar.resourceEntitys.putAll(resources);
+    });
+  }
+
+  /// Synchronize resources of a specific type (Clear existing type and replace)
+  static Future<void> syncResourcesByType(String typeStr, List<ResourceEntity> resources) async {
+    await isar.writeTxn(() async {
+      await isar.resourceEntitys.filter().typeStringEqualTo(typeStr).deleteAll();
+      await isar.resourceEntitys.putAll(resources);
+    });
+  }
+
+  /// Synchronize resources (Clear existing and replace with fresh data)
+  static Future<void> syncResources(List<ResourceEntity> resources) async {
+    await isar.writeTxn(() async {
+      await isar.resourceEntitys.clear();
       await isar.resourceEntitys.putAll(resources);
     });
   }

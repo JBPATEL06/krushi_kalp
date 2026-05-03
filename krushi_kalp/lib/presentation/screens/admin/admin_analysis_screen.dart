@@ -94,7 +94,7 @@ class _AdminAnalysisScreenState extends ConsumerState<AdminAnalysisScreen> {
                         Icons.people_rounded,
                         const Color(0xFF3B82F6), // Blue
                         onTap: () =>
-                            ref.read(adminNotifierProvider.notifier).setNavIndex(2),
+                            ref.read(adminProvider.notifier).setNavIndex(2),
                       ),
                       _buildStatCard(
                         context,

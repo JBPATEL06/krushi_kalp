@@ -41,7 +41,6 @@ class StoreScreen extends ConsumerStatefulWidget {
 class _StoreScreenState extends ConsumerState<StoreScreen>
     with SingleTickerProviderStateMixin {
   String _searchQuery = '';
-  final String _sortOption = 'Latest';
   bool _isSearching = false;
 
   final Map<String, String> _categoryMap = {
@@ -76,7 +75,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
   }
 
   void _onNetworkChange() {
-    final isConnected = ref.read(networkNotifierProvider);
+    final isConnected = ref.read(networkProvider);
     if (isConnected && _hadNetworkError && mounted) {
       _hadNetworkError = false;
       _loadData();
@@ -99,7 +98,8 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
     }
   }
 
-  Future<void> _loadData({bool forceRefresh = true, bool bypassThrottle = false}) async {
+  Future<void> _loadData(
+      {bool forceRefresh = true, bool bypassThrottle = false}) async {
     if (_isProcessing) return;
     if (!mounted) return;
 
@@ -124,9 +124,15 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
 
     try {
       await Future.wait([
-        ref.read(testNotifierProvider.notifier).fetchTests(forceRefresh: shouldHitSupabase),
-        ref.read(resourceNotifierProvider.notifier).fetchAll(forceRefresh: shouldHitSupabase),
-        ref.read(offerNotifierProvider.notifier).fetchActiveOffers(forceRefresh: shouldHitSupabase),
+        ref
+            .read(testProvider.notifier)
+            .fetchTests(forceRefresh: shouldHitSupabase),
+        ref
+            .read(resourceProvider.notifier)
+            .fetchAll(forceRefresh: shouldHitSupabase),
+        ref
+            .read(offerProvider.notifier)
+            .fetchActiveOffers(forceRefresh: shouldHitSupabase),
       ]);
 
       if (shouldHitSupabase) {
@@ -135,9 +141,9 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
 
       if (!mounted) return;
 
-      final user = ref.read(authNotifierProvider).user;
+      final user = ref.read(authProvider).user;
       if (user != null) {
-        await ref.read(cartNotifierProvider.notifier).fetchCart();
+        await ref.read(cartProvider.notifier).fetchCart();
       }
     } catch (e, stack) {
       CrashlyticsService.instance
@@ -150,9 +156,8 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
   }
 
   Future<void> _refreshAll() async {
-    // Manual refresh follows the 15s throttle policy
-    // If triggered within 15s of last sync, it will use local Isar cache
-    await _loadData(forceRefresh: true, bypassThrottle: false);
+    // Manual refresh bypasses the 15s throttle policy
+    await _loadData(forceRefresh: true, bypassThrottle: true);
   }
 
   Future<void> _addToCart({
@@ -162,7 +167,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
     required String title,
   }) async {
     try {
-      final user = ref.read(authNotifierProvider).user;
+      final user = ref.read(authProvider).user;
       if (user == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -172,7 +177,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
         return;
       }
 
-      await ref.read(cartNotifierProvider.notifier).addToCart(
+      await ref.read(cartProvider.notifier).addToCart(
             testId: testId,
             resourceId: resourceId,
             price: price,
@@ -201,7 +206,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
     Resource? resource,
   }) async {
     try {
-      final user = ref.read(authNotifierProvider).user;
+      final user = ref.read(authProvider).user;
       if (user == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -217,13 +222,11 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
           authUserId: user.id,
         );
         if (mounted) {
-          ref
-              .read(testNotifierProvider.notifier)
-              .fetchTests(forceRefresh: true);
+          ref.read(testProvider.notifier).fetchTests(forceRefresh: true);
         }
       } else if (resource != null) {
         await ref
-            .read(resourceNotifierProvider.notifier)
+            .read(resourceProvider.notifier)
             .claimResource(resource.id, user.id);
       }
 
@@ -231,8 +234,8 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
         final theme = Theme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text('Free Claimed ${test?.title ?? resource?.title} successfully!'),
+            content: Text(
+                'Free Claimed ${test?.title ?? resource?.title} successfully!'),
             backgroundColor: theme.colorScheme.tertiary,
           ),
         );
@@ -270,7 +273,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
 
   Future<void> _openOrDownloadResource(Resource resource) async {
     final filename = 'resource_${resource.id}.pdf';
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     final userId = user?.id;
 
     final isDownloaded =
@@ -338,9 +341,9 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
   }
 
   void _openTestDetail(MockTest test) {
-    final activeOffers = ref.read(offerNotifierProvider).activeOffers;
+    final activeOffers = ref.read(offerProvider).activeOffers;
     final isPurchased =
-        ref.read(testNotifierProvider).purchasedTestIds.contains(test.id);
+        ref.read(testProvider).purchasedTestIds.contains(test.id);
 
     Navigator.push(
       context,
@@ -374,7 +377,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
       return;
     }
 
-    final cartState = ref.read(cartNotifierProvider);
+    final cartState = ref.read(cartProvider);
     if (cartState.isLoading) return; // Prevent multiple taps during sync
 
     final cartItemIds = cartState.cartItems
@@ -387,7 +390,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
         final cartItem =
             cartState.cartItems.firstWhere((item) => item.testId == test.id);
         await ref
-            .read(cartNotifierProvider.notifier)
+            .read(cartProvider.notifier)
             .removeFromCart(itemId: cartItem.itemId);
 
         if (mounted) {
@@ -401,7 +404,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
         return;
       }
 
-      await ref.read(cartNotifierProvider.notifier).addToCart(
+      await ref.read(cartProvider.notifier).addToCart(
             testId: test.id,
             price: test.price,
             authUserId: userId,
@@ -435,7 +438,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
       return;
     }
 
-    final cartState = ref.read(cartNotifierProvider);
+    final cartState = ref.read(cartProvider);
     if (cartState.isLoading) return; // Prevent multiple taps during sync
 
     final cartItemIds = cartState.cartItems
@@ -448,7 +451,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
         final cartItem = cartState.cartItems
             .firstWhere((item) => item.resourceId == resource.id);
         await ref
-            .read(cartNotifierProvider.notifier)
+            .read(cartProvider.notifier)
             .removeFromCart(itemId: cartItem.itemId);
 
         if (mounted) {
@@ -462,7 +465,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
         return;
       }
 
-      await ref.read(cartNotifierProvider.notifier).addToCart(
+      await ref.read(cartProvider.notifier).addToCart(
             resourceId: resource.id,
             price: resource.price,
             authUserId: userId,
@@ -506,7 +509,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
       }
       return;
     }
-    final resourceState = ref.read(resourceNotifierProvider);
+    final resourceState = ref.read(resourceProvider);
     if (resourceState.purchasedResourceIds.contains(resource.id)) {
       _openOrDownloadResource(resource);
     } else {
@@ -538,7 +541,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
     final purchasedTestIds = testState.purchasedTestIds;
     tests = tests.where((t) => !purchasedTestIds.contains(t.id)).toList();
 
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
 
     return StoreGrid(
       allTests: tests,
@@ -580,11 +583,11 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
 
     resources.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
 
     return StoreResourceGrid(
       resources: resources,
-      activeOffers: ref.read(offerNotifierProvider).activeOffers,
+      activeOffers: ref.read(offerProvider).activeOffers,
       purchasedIds: resourceState.purchasedResourceIds,
       cartItemIds: cartItemIds,
       onBuyTap: (r) => _handleBuyResource(r, user?.id),
@@ -597,18 +600,18 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
   @override
   Widget build(BuildContext context) {
     // Listen for network changes to retry loading
-    ref.listen<bool>(networkNotifierProvider.select((value) => value),
+    ref.listen<bool>(networkProvider.select((value) => value),
         (previous, next) {
       if (next && !(previous ?? true)) {
         _loadData();
       }
     });
 
-    final testState = ref.watch(testNotifierProvider);
-    final resourceState = ref.watch(resourceNotifierProvider);
-    final cartState = ref.watch(cartNotifierProvider);
-    final offerState = ref.watch(offerNotifierProvider);
-    final authState = ref.watch(authNotifierProvider);
+    final testState = ref.watch(testProvider);
+    final resourceState = ref.watch(resourceProvider);
+    final cartState = ref.watch(cartProvider);
+    final offerState = ref.watch(offerProvider);
+    final authState = ref.watch(authProvider);
 
     final cartItemIds = cartState.cartItems
         .map((item) => item.testId ?? item.resourceId)

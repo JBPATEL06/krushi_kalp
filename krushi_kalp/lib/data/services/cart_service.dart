@@ -24,6 +24,7 @@ class CartService {
           .select('id, offer_code')
           .eq('user_id', userId)
           .eq('status', 'PENDING')
+          .order('created_at', ascending: false)
           .limit(1);
 
       if (pendingPaymentRes.isEmpty) return [];
@@ -223,6 +224,7 @@ class CartService {
           .select('id')
           .eq('user_id', authUserId)
           .eq('status', 'PENDING')
+          .order('created_at', ascending: false)
           .limit(1);
 
       String paymentId;
@@ -247,13 +249,13 @@ class CartService {
         // We import AuthService logic here to get the snapshot
         final userProfileRes = await _supabase
             .from('users')
-            .select('email, username')
+            .select('*')
             .eq('id', authUserId)
             .maybeSingle();
         
-        final userSnapshot = {
-          'email': userProfileRes?['email'] ?? 'unknown',
-          'username': userProfileRes?['username'] ?? 'User',
+        final userSnapshot = userProfileRes ?? {
+          'email': 'unknown',
+          'username': 'User',
         };
 
         final newPayment = await _supabase
@@ -272,17 +274,23 @@ class CartService {
       }
 
       // 2. Insert Item into 'access' table (is_active = false for Cart)
-      // We also store a snapshot of the item for history
+      // Fetch item snapshot — required for admin revenue display
       Map<String, dynamic> itemSnapshot = {};
-      try {
-        if (testId != null) {
-          final testRes = await _supabase.from('mock_tests').select('title, price').eq('test_id', testId).single();
-          itemSnapshot = {'title': testRes['title'], 'price': testRes['price']};
-        } else {
-          final resRes = await _supabase.from('resources').select('title, price').eq('id', resourceId!).single();
-          itemSnapshot = {'title': resRes['title'], 'price': resRes['price']};
-        }
-      } catch (_) {}
+      if (testId != null) {
+        final testRes = await _supabase
+            .from('mock_tests')
+            .select('test_id, title, category, price, description, language')
+            .eq('test_id', testId)
+            .single();
+        itemSnapshot = Map<String, dynamic>.from(testRes);
+      } else {
+        final resRes = await _supabase
+            .from('resources')
+            .select('id, title, type, category, price, description')
+            .eq('id', resourceId!)
+            .single();
+        itemSnapshot = Map<String, dynamic>.from(resRes);
+      }
 
       await _supabase.from('access').insert({
         'user_id': authUserId,

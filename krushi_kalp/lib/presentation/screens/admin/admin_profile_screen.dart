@@ -42,7 +42,7 @@ class AdminProfileScreen extends ConsumerWidget {
     );
 
     if (confirm == true && context.mounted) {
-      await ref.read(authNotifierProvider.notifier).signOut();
+      await ref.read(authProvider.notifier).signOut();
       if (context.mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -134,7 +134,7 @@ class AdminProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildUserInfo(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authNotifierProvider);
+    final authState = ref.watch(authProvider);
     final user = authState.user;
     final metadata = user?.userMetadata;
     final name = metadata?['full_name'] ?? metadata?['name'] ?? 'Administrator';

@@ -54,7 +54,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
   List<String> _languages = ['English', 'Gujarati'];
   bool _isOtherCategory = false;
 
-  static const int maxImageSizeBytes = 1024 * 1024; // 1MB
+  static const int maxImageSizeBytes = 50 * 1024 * 1024; // 50MB
 
   @override
   void initState() {
@@ -123,13 +123,16 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
   }
 
   Future<void> _pickCoverImage() async {
-    final result = await safePickFiles(type: FileType.image);
+    final result = await safePickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+    );
     if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
       final file = result.files.first;
       final bytes = await File(file.path!).readAsBytes();
       if (file.size > maxImageSizeBytes) {
         if (mounted) {
-          ErrorUtils.showError(context, 'Image too large (>1MB)');
+          ErrorUtils.showError(context, 'Image too large (>50MB)');
         }
         return;
       }
@@ -228,17 +231,15 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
           storagePath: imagePath,
           fileBytes: _imageBytes!,
           fileType: 'mock_test_cover',
-          onProgress: (p) {
-            // Progress is now handled by BackgroundUploadService notification
+          dbUpdate: {
+            'table': 'mock_tests',
+            'idColumn': 'test_id',
+            'idValue': widget.test.id,
+            'updateColumn': 'cover_image_path',
           },
-          onComplete: (path) async {
-            await supabase.from('mock_tests').update(
-                {'cover_image_path': path}).eq('test_id', widget.test.id);
-            // Success notification is now handled by BackgroundUploadService
-          },
-          onError: (err) {
-            // Failure notification is now handled by BackgroundUploadService
-          },
+          onProgress: (p) {},
+          onComplete: (path) {},
+          onError: (err) {},
         );
       }
 
@@ -265,18 +266,15 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
           storagePath: jsonPath,
           fileBytes: Uint8List.fromList(jsonBytes),
           fileType: 'mock_test_json',
-          onProgress: (p) {
-            // Progress is now handled by BackgroundUploadService notification
+          dbUpdate: {
+            'table': 'mock_tests',
+            'idColumn': 'test_id',
+            'idValue': widget.test.id,
+            'updateColumn': 'file_path',
           },
-          onComplete: (path) async {
-            await supabase
-                .from('mock_tests')
-                .update({'file_path': path}).eq('test_id', widget.test.id);
-            // Success notification is now handled by BackgroundUploadService
-          },
-          onError: (err) {
-            // Failure notification is now handled by BackgroundUploadService
-          },
+          onProgress: (p) {},
+          onComplete: (path) {},
+          onError: (err) {},
         );
       }
 

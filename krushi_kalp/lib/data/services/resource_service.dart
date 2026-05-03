@@ -4,7 +4,6 @@ import '../../domain/models/resource.dart';
 import '../../utils/supabase_url_helper.dart';
 import 'auth_service.dart';
 import 'cart_service.dart';
-import 'admin_notification_service.dart';
 import '../../utils/crashlytics_service.dart';
 
 /// Service class for interacting with the 'resources' table in Supabase.
@@ -45,10 +44,15 @@ class ResourceService {
     required int limit,
     String? category,
     bool isAdmin = false,
+    List<int>? excludedIds,
   }) async {
     try {
       final typeStr = _typeToString(type);
       var query = _client.from('resources').select().eq('type', typeStr);
+
+      if (excludedIds != null && excludedIds.isNotEmpty) {
+        query = query.filter('id', 'not.in', '(${excludedIds.join(',')})');
+      }
 
       if (!isAdmin) {
         query = query.eq('is_active', true);
@@ -88,20 +92,39 @@ class ResourceService {
     try {
       final response = await _client
           .from('access')
-          .select('item_id')
+          .select('item_id, item_snapshot')
           .eq('user_id', userId)
-          .eq('item_type', 'resource');
+          .eq('item_type', 'resource')
+          .eq('is_active', true);
 
-      if (response.isEmpty) return [];
+      if ((response as List).isEmpty) return [];
 
-      final resourceIds = (response as List).map((e) => e['item_id'] as int).toList();
+      final List accessList = response;
+      final resourceIds = accessList.map((e) => e['item_id'] as int).toList();
 
+      // Fetch live items
       final resourcesRes = await _client
           .from('resources')
           .select()
           .inFilter('id', resourceIds);
 
-      final List<Resource> resources = (resourcesRes as List).map((json) => Resource.fromJson(json)).toList();
+      final liveResourcesMap = {
+        for (var r in (resourcesRes as List)) r['id']: r
+      };
+
+      final List<dynamic> finalJsonList = [];
+      for (var access in accessList) {
+        final itemId = access['item_id'];
+        final liveData = liveResourcesMap[itemId];
+        
+        if (liveData != null) {
+          finalJsonList.add(liveData);
+        } else if (access['item_snapshot'] != null && (access['item_snapshot'] as Map).isNotEmpty) {
+          finalJsonList.add(access['item_snapshot']);
+        }
+      }
+
+      final List<Resource> resources = finalJsonList.map((json) => Resource.fromJson(json)).toList();
       return await _signResources(resources);
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service: fetchPurchasedResources');
@@ -187,15 +210,8 @@ class ResourceService {
       final int newId = response['id'];
 
       // Send broadcast notification for new content
-      try {
-        await AdminNotificationService().sendBroadcast(
-          title: '📖 New Resource Published!',
-          body:
-              'New ${resource.type.name}: ${resource.title} is now available.',
-        );
-      } catch (notiErr, stack) {
-        CrashlyticsService.instance.recordError(notiErr, stack, reason: 'Broadcast failed after creating resource: ${resource.title}');
-      }
+
+      // Notifications moved to AdminService.toggleResourcePublicStatus
       return newId;
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service');
@@ -225,23 +241,27 @@ class ResourceService {
     }
   }
 
-  /// Deletes a resource and its associated files from storage.
+  /// Deletes a resource, its access records, reviews, and storage files.
   Future<void> deleteResource(int id) async {
     try {
       final resource = await getResourceById(id);
 
+      // Call RPC — handles access, reviews, then resources row
+      await _client.rpc('admin_delete_resource', params: {'p_resource_id': id});
+
+      // Clean up storage files (best-effort)
       if (resource != null) {
         if (resource.fileUrl != null) {
-          await deleteFileFromStorage(resource.fileUrl!);
+          try { await deleteFileFromStorage(resource.fileUrl!); } catch (_) {}
         }
         if (resource.thumbnailUrl != null) {
-          await deleteFileFromStorage(resource.thumbnailUrl!);
+          try { await deleteFileFromStorage(resource.thumbnailUrl!); } catch (_) {}
         }
       }
-
-      await _client.from('resources').delete().eq('id', id);
+    } on PostgrestException catch (e) {
+      throw Exception('Failed to delete resource: ${e.message}');
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service_delete');
       throw Exception('Failed to delete resource: $e');
     }
   }
@@ -326,14 +346,22 @@ class ResourceService {
       );
       if (isOwned) throw Exception("You already own this item.");
 
-      // 2. Fetch User Profile for Snapshot
-      final userProfile = await AuthService.instance.getUserProfile(userId);
-      final userSnapshot = {
-        'email': userProfile?['email'] ?? 'unknown',
-        'username': userProfile?['username'] ?? 'User',
-      };
+      // 2. Fetch item snapshot for history
+      Map<String, dynamic> itemSnapshot = {};
+      try {
+        final resRes = await _client
+            .from('resources')
+            .select('id, title, type, category, price, description')
+            .eq('id', resourceId)
+            .single();
+        itemSnapshot = Map<String, dynamic>.from(resRes);
+      } catch (_) {}
 
-      // 3. Create entry in 'payment' table
+      // 3. Fetch User Profile for Snapshot
+      final userProfile = await AuthService.instance.getUserProfile(userId);
+      final userSnapshot = userProfile ?? {'email': 'unknown', 'username': 'User'};
+
+      // 4. Create PENDING payment with snapshot in metadata
       final newPayment = await _client
           .from('payment')
           .insert({
@@ -343,22 +371,17 @@ class ResourceService {
             'amount': price,
             'gateway': 'razorpay',
             'created_at': DateTime.now().toUtc().toIso8601String(),
+            'metadata': {
+              'item_type': 'resource',
+              'item_id': resourceId,
+              'price_at_purchase': price,
+              'item_snapshot': itemSnapshot,
+            },
           })
           .select('id')
           .single();
 
-      final paymentId = newPayment['id'];
-
-      // 4. Store resource link in metadata for the RPC to process later
-      await _client.from('payment').update({
-        'metadata': {
-          'item_type': 'resource',
-          'item_id': resourceId,
-          'price_at_purchase': price,
-        }
-      }).eq('id', paymentId);
-
-      return paymentId;
+      return newPayment['id'];
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service: createDirectOrder');
       throw Exception('Failed to create order: $e');

@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,116 +9,74 @@ part of 'test_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
 mixin _$TestState {
-  List<MockTest> get allTests => throw _privateConstructorUsedError;
-  List<MockTest> get cachedTests => throw _privateConstructorUsedError;
-  List<MockTest> get userTests => throw _privateConstructorUsedError;
-  bool get isLoading => throw _privateConstructorUsedError;
-  String get errorMessage => throw _privateConstructorUsedError;
-  Set<int> get purchasedTestIds => throw _privateConstructorUsedError;
-  String get selectedCategory => throw _privateConstructorUsedError;
-  String get sortOption => throw _privateConstructorUsedError;
-  String get searchQuery => throw _privateConstructorUsedError;
+  List<MockTest> get allTests;
+  List<MockTest> get cachedTests;
+  List<MockTest> get userTests;
+  bool get isLoading;
+  String get errorMessage;
+  Set<int> get purchasedTestIds;
+  String get selectedCategory;
+  String get sortOption;
+  String get searchQuery;
 
-  @JsonKey(ignore: true)
-  $TestStateCopyWith<TestState> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $TestStateCopyWith<$Res> {
-  factory $TestStateCopyWith(TestState value, $Res Function(TestState) then) =
-      _$TestStateCopyWithImpl<$Res, TestState>;
-  @useResult
-  $Res call(
-      {List<MockTest> allTests,
-      List<MockTest> cachedTests,
-      List<MockTest> userTests,
-      bool isLoading,
-      String errorMessage,
-      Set<int> purchasedTestIds,
-      String selectedCategory,
-      String sortOption,
-      String searchQuery});
-}
-
-/// @nodoc
-class _$TestStateCopyWithImpl<$Res, $Val extends TestState>
-    implements $TestStateCopyWith<$Res> {
-  _$TestStateCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
+  /// Create a copy of TestState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
+  $TestStateCopyWith<TestState> get copyWith =>
+      _$TestStateCopyWithImpl<TestState>(this as TestState, _$identity);
+
   @override
-  $Res call({
-    Object? allTests = null,
-    Object? cachedTests = null,
-    Object? userTests = null,
-    Object? isLoading = null,
-    Object? errorMessage = null,
-    Object? purchasedTestIds = null,
-    Object? selectedCategory = null,
-    Object? sortOption = null,
-    Object? searchQuery = null,
-  }) {
-    return _then(_value.copyWith(
-      allTests: null == allTests
-          ? _value.allTests
-          : allTests // ignore: cast_nullable_to_non_nullable
-              as List<MockTest>,
-      cachedTests: null == cachedTests
-          ? _value.cachedTests
-          : cachedTests // ignore: cast_nullable_to_non_nullable
-              as List<MockTest>,
-      userTests: null == userTests
-          ? _value.userTests
-          : userTests // ignore: cast_nullable_to_non_nullable
-              as List<MockTest>,
-      isLoading: null == isLoading
-          ? _value.isLoading
-          : isLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      errorMessage: null == errorMessage
-          ? _value.errorMessage
-          : errorMessage // ignore: cast_nullable_to_non_nullable
-              as String,
-      purchasedTestIds: null == purchasedTestIds
-          ? _value.purchasedTestIds
-          : purchasedTestIds // ignore: cast_nullable_to_non_nullable
-              as Set<int>,
-      selectedCategory: null == selectedCategory
-          ? _value.selectedCategory
-          : selectedCategory // ignore: cast_nullable_to_non_nullable
-              as String,
-      sortOption: null == sortOption
-          ? _value.sortOption
-          : sortOption // ignore: cast_nullable_to_non_nullable
-              as String,
-      searchQuery: null == searchQuery
-          ? _value.searchQuery
-          : searchQuery // ignore: cast_nullable_to_non_nullable
-              as String,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is TestState &&
+            const DeepCollectionEquality().equals(other.allTests, allTests) &&
+            const DeepCollectionEquality()
+                .equals(other.cachedTests, cachedTests) &&
+            const DeepCollectionEquality().equals(other.userTests, userTests) &&
+            (identical(other.isLoading, isLoading) ||
+                other.isLoading == isLoading) &&
+            (identical(other.errorMessage, errorMessage) ||
+                other.errorMessage == errorMessage) &&
+            const DeepCollectionEquality()
+                .equals(other.purchasedTestIds, purchasedTestIds) &&
+            (identical(other.selectedCategory, selectedCategory) ||
+                other.selectedCategory == selectedCategory) &&
+            (identical(other.sortOption, sortOption) ||
+                other.sortOption == sortOption) &&
+            (identical(other.searchQuery, searchQuery) ||
+                other.searchQuery == searchQuery));
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      const DeepCollectionEquality().hash(allTests),
+      const DeepCollectionEquality().hash(cachedTests),
+      const DeepCollectionEquality().hash(userTests),
+      isLoading,
+      errorMessage,
+      const DeepCollectionEquality().hash(purchasedTestIds),
+      selectedCategory,
+      sortOption,
+      searchQuery);
+
+  @override
+  String toString() {
+    return 'TestState(allTests: $allTests, cachedTests: $cachedTests, userTests: $userTests, isLoading: $isLoading, errorMessage: $errorMessage, purchasedTestIds: $purchasedTestIds, selectedCategory: $selectedCategory, sortOption: $sortOption, searchQuery: $searchQuery)';
   }
 }
 
 /// @nodoc
-abstract class _$$TestStateImplCopyWith<$Res>
-    implements $TestStateCopyWith<$Res> {
-  factory _$$TestStateImplCopyWith(
-          _$TestStateImpl value, $Res Function(_$TestStateImpl) then) =
-      __$$TestStateImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $TestStateCopyWith<$Res> {
+  factory $TestStateCopyWith(TestState value, $Res Function(TestState) _then) =
+      _$TestStateCopyWithImpl;
   @useResult
   $Res call(
       {List<MockTest> allTests,
@@ -133,13 +91,14 @@ abstract class _$$TestStateImplCopyWith<$Res>
 }
 
 /// @nodoc
-class __$$TestStateImplCopyWithImpl<$Res>
-    extends _$TestStateCopyWithImpl<$Res, _$TestStateImpl>
-    implements _$$TestStateImplCopyWith<$Res> {
-  __$$TestStateImplCopyWithImpl(
-      _$TestStateImpl _value, $Res Function(_$TestStateImpl) _then)
-      : super(_value, _then);
+class _$TestStateCopyWithImpl<$Res> implements $TestStateCopyWith<$Res> {
+  _$TestStateCopyWithImpl(this._self, this._then);
 
+  final TestState _self;
+  final $Res Function(TestState) _then;
+
+  /// Create a copy of TestState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -153,51 +112,265 @@ class __$$TestStateImplCopyWithImpl<$Res>
     Object? sortOption = null,
     Object? searchQuery = null,
   }) {
-    return _then(_$TestStateImpl(
+    return _then(_self.copyWith(
       allTests: null == allTests
-          ? _value._allTests
+          ? _self.allTests
           : allTests // ignore: cast_nullable_to_non_nullable
               as List<MockTest>,
       cachedTests: null == cachedTests
-          ? _value._cachedTests
+          ? _self.cachedTests
           : cachedTests // ignore: cast_nullable_to_non_nullable
               as List<MockTest>,
       userTests: null == userTests
-          ? _value._userTests
+          ? _self.userTests
           : userTests // ignore: cast_nullable_to_non_nullable
               as List<MockTest>,
       isLoading: null == isLoading
-          ? _value.isLoading
+          ? _self.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
               as bool,
       errorMessage: null == errorMessage
-          ? _value.errorMessage
+          ? _self.errorMessage
           : errorMessage // ignore: cast_nullable_to_non_nullable
               as String,
       purchasedTestIds: null == purchasedTestIds
-          ? _value._purchasedTestIds
+          ? _self.purchasedTestIds
           : purchasedTestIds // ignore: cast_nullable_to_non_nullable
               as Set<int>,
       selectedCategory: null == selectedCategory
-          ? _value.selectedCategory
+          ? _self.selectedCategory
           : selectedCategory // ignore: cast_nullable_to_non_nullable
               as String,
       sortOption: null == sortOption
-          ? _value.sortOption
+          ? _self.sortOption
           : sortOption // ignore: cast_nullable_to_non_nullable
               as String,
       searchQuery: null == searchQuery
-          ? _value.searchQuery
+          ? _self.searchQuery
           : searchQuery // ignore: cast_nullable_to_non_nullable
               as String,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [TestState].
+extension TestStatePatterns on TestState {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_TestState value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _TestState() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_TestState value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TestState():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_TestState value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TestState() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            List<MockTest> allTests,
+            List<MockTest> cachedTests,
+            List<MockTest> userTests,
+            bool isLoading,
+            String errorMessage,
+            Set<int> purchasedTestIds,
+            String selectedCategory,
+            String sortOption,
+            String searchQuery)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _TestState() when $default != null:
+        return $default(
+            _that.allTests,
+            _that.cachedTests,
+            _that.userTests,
+            _that.isLoading,
+            _that.errorMessage,
+            _that.purchasedTestIds,
+            _that.selectedCategory,
+            _that.sortOption,
+            _that.searchQuery);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            List<MockTest> allTests,
+            List<MockTest> cachedTests,
+            List<MockTest> userTests,
+            bool isLoading,
+            String errorMessage,
+            Set<int> purchasedTestIds,
+            String selectedCategory,
+            String sortOption,
+            String searchQuery)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TestState():
+        return $default(
+            _that.allTests,
+            _that.cachedTests,
+            _that.userTests,
+            _that.isLoading,
+            _that.errorMessage,
+            _that.purchasedTestIds,
+            _that.selectedCategory,
+            _that.sortOption,
+            _that.searchQuery);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            List<MockTest> allTests,
+            List<MockTest> cachedTests,
+            List<MockTest> userTests,
+            bool isLoading,
+            String errorMessage,
+            Set<int> purchasedTestIds,
+            String selectedCategory,
+            String sortOption,
+            String searchQuery)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _TestState() when $default != null:
+        return $default(
+            _that.allTests,
+            _that.cachedTests,
+            _that.userTests,
+            _that.isLoading,
+            _that.errorMessage,
+            _that.purchasedTestIds,
+            _that.selectedCategory,
+            _that.sortOption,
+            _that.searchQuery);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 
-class _$TestStateImpl implements _TestState {
-  const _$TestStateImpl(
+class _TestState implements TestState {
+  const _TestState(
       {final List<MockTest> allTests = const [],
       final List<MockTest> cachedTests = const [],
       final List<MockTest> userTests = const [],
@@ -264,16 +437,19 @@ class _$TestStateImpl implements _TestState {
   @JsonKey()
   final String searchQuery;
 
+  /// Create a copy of TestState
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'TestState(allTests: $allTests, cachedTests: $cachedTests, userTests: $userTests, isLoading: $isLoading, errorMessage: $errorMessage, purchasedTestIds: $purchasedTestIds, selectedCategory: $selectedCategory, sortOption: $sortOption, searchQuery: $searchQuery)';
-  }
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$TestStateCopyWith<_TestState> get copyWith =>
+      __$TestStateCopyWithImpl<_TestState>(this, _$identity);
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$TestStateImpl &&
+            other is _TestState &&
             const DeepCollectionEquality().equals(other._allTests, _allTests) &&
             const DeepCollectionEquality()
                 .equals(other._cachedTests, _cachedTests) &&
@@ -306,45 +482,93 @@ class _$TestStateImpl implements _TestState {
       sortOption,
       searchQuery);
 
-  @JsonKey(ignore: true)
+  @override
+  String toString() {
+    return 'TestState(allTests: $allTests, cachedTests: $cachedTests, userTests: $userTests, isLoading: $isLoading, errorMessage: $errorMessage, purchasedTestIds: $purchasedTestIds, selectedCategory: $selectedCategory, sortOption: $sortOption, searchQuery: $searchQuery)';
+  }
+}
+
+/// @nodoc
+abstract mixin class _$TestStateCopyWith<$Res>
+    implements $TestStateCopyWith<$Res> {
+  factory _$TestStateCopyWith(
+          _TestState value, $Res Function(_TestState) _then) =
+      __$TestStateCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {List<MockTest> allTests,
+      List<MockTest> cachedTests,
+      List<MockTest> userTests,
+      bool isLoading,
+      String errorMessage,
+      Set<int> purchasedTestIds,
+      String selectedCategory,
+      String sortOption,
+      String searchQuery});
+}
+
+/// @nodoc
+class __$TestStateCopyWithImpl<$Res> implements _$TestStateCopyWith<$Res> {
+  __$TestStateCopyWithImpl(this._self, this._then);
+
+  final _TestState _self;
+  final $Res Function(_TestState) _then;
+
+  /// Create a copy of TestState
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  _$$TestStateImplCopyWith<_$TestStateImpl> get copyWith =>
-      __$$TestStateImplCopyWithImpl<_$TestStateImpl>(this, _$identity);
+  $Res call({
+    Object? allTests = null,
+    Object? cachedTests = null,
+    Object? userTests = null,
+    Object? isLoading = null,
+    Object? errorMessage = null,
+    Object? purchasedTestIds = null,
+    Object? selectedCategory = null,
+    Object? sortOption = null,
+    Object? searchQuery = null,
+  }) {
+    return _then(_TestState(
+      allTests: null == allTests
+          ? _self._allTests
+          : allTests // ignore: cast_nullable_to_non_nullable
+              as List<MockTest>,
+      cachedTests: null == cachedTests
+          ? _self._cachedTests
+          : cachedTests // ignore: cast_nullable_to_non_nullable
+              as List<MockTest>,
+      userTests: null == userTests
+          ? _self._userTests
+          : userTests // ignore: cast_nullable_to_non_nullable
+              as List<MockTest>,
+      isLoading: null == isLoading
+          ? _self.isLoading
+          : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      errorMessage: null == errorMessage
+          ? _self.errorMessage
+          : errorMessage // ignore: cast_nullable_to_non_nullable
+              as String,
+      purchasedTestIds: null == purchasedTestIds
+          ? _self._purchasedTestIds
+          : purchasedTestIds // ignore: cast_nullable_to_non_nullable
+              as Set<int>,
+      selectedCategory: null == selectedCategory
+          ? _self.selectedCategory
+          : selectedCategory // ignore: cast_nullable_to_non_nullable
+              as String,
+      sortOption: null == sortOption
+          ? _self.sortOption
+          : sortOption // ignore: cast_nullable_to_non_nullable
+              as String,
+      searchQuery: null == searchQuery
+          ? _self.searchQuery
+          : searchQuery // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
 }
 
-abstract class _TestState implements TestState {
-  const factory _TestState(
-      {final List<MockTest> allTests,
-      final List<MockTest> cachedTests,
-      final List<MockTest> userTests,
-      final bool isLoading,
-      final String errorMessage,
-      final Set<int> purchasedTestIds,
-      final String selectedCategory,
-      final String sortOption,
-      final String searchQuery}) = _$TestStateImpl;
-
-  @override
-  List<MockTest> get allTests;
-  @override
-  List<MockTest> get cachedTests;
-  @override
-  List<MockTest> get userTests;
-  @override
-  bool get isLoading;
-  @override
-  String get errorMessage;
-  @override
-  Set<int> get purchasedTestIds;
-  @override
-  String get selectedCategory;
-  @override
-  String get sortOption;
-  @override
-  String get searchQuery;
-  @override
-  @JsonKey(ignore: true)
-  _$$TestStateImplCopyWith<_$TestStateImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
+// dart format on

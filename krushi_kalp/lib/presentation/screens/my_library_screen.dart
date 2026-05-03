@@ -59,11 +59,11 @@ class _MyLibraryScreenState extends ConsumerState<MyLibraryScreen> {
     if (!mounted) return;
     setState(() => _isLoading = true);
 
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     if (user != null) {
       await Future.wait([
-        ref.read(testNotifierProvider.notifier).fetchUserTests(user.id),
-        ref.read(resourceNotifierProvider.notifier).fetchPurchasedResources(user.id),
+        ref.read(testProvider.notifier).fetchUserTests(user.id),
+        ref.read(resourceProvider.notifier).fetchPurchasedResources(user.id),
       ]);
     }
 
@@ -197,8 +197,8 @@ class _MyLibraryScreenState extends ConsumerState<MyLibraryScreen> {
 
   Widget _buildContentList() {
     final theme = Theme.of(context);
-    final testState = ref.watch(testNotifierProvider);
-    final resourceState = ref.watch(resourceNotifierProvider);
+    final testState = ref.watch(testProvider);
+    final resourceState = ref.watch(resourceProvider);
 
     final tests = testState.userTests;
     final resources = resourceState.purchasedResources;
@@ -298,7 +298,7 @@ class _MyLibraryScreenState extends ConsumerState<MyLibraryScreen> {
           if (item is MockTest) {
             card = UniversalItemCard(
               title: item.title,
-              subtitle: 'Mock Test • ${item.totalQuestions} Qs',
+              subtitle: 'Mock Test â€¢ ${item.totalQuestions} Qs',
               time: item.time,
               price: -1,
               coverUrl: item.signedUrl,

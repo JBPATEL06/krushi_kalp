@@ -75,7 +75,7 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
   }
 
   void _applyInitialOffer() {
-    // Fetch display price from DB RPC (async — updates state when done)
+    // Fetch display price from DB RPC (async â€” updates state when done)
     OfferService.instance
         .getDisplayPrice(
           itemType: _testId != null ? 'mock_test' : 'resource',
@@ -111,7 +111,7 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
     });
 
     try {
-      final user = ref.read(authNotifierProvider).user;
+      final user = ref.read(authProvider).user;
       final offer = await OfferService.instance.verifyCoupon(code);
 
       if (offer != null) {
@@ -163,7 +163,7 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
   }
 
   Future<void> _initiatePurchase() async {
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     if (user == null) {
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -276,7 +276,7 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
   String? _pendingOrderId; // To track the order being paid for
 
   Future<void> _completeCheckout(String paymentId) async {
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     if (user == null || _pendingOrderId == null) {
       if (mounted) setState(() => _isProcessing = false);
       return;
@@ -299,7 +299,7 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
 
         Navigator.pop(context); // Close sheet
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text("Purchase Successful! 🎉",
+            content: Text("Purchase Successful! ðŸŽ‰",
                 style: TextStyle(
                     color: Theme.of(context).colorScheme.onPrimaryContainer)),
             backgroundColor: Theme.of(context).colorScheme.primaryContainer));
@@ -308,9 +308,9 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
 
         // SYNC FIX: Auto-refresh data in background
         if (widget.test != null) {
-          ref.read(testNotifierProvider.notifier).fetchUserTests(user.id);
+          ref.read(testProvider.notifier).fetchUserTests(user.id);
         } else if (widget.resource != null) {
-          ref.read(resourceNotifierProvider.notifier).fetchPurchasedResources(user.id);
+          ref.read(resourceProvider.notifier).fetchPurchasedResources(user.id);
         }
       }
     } catch (e, stack) {
@@ -352,9 +352,16 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: _imageUrl != null
+                      child: (_imageUrl != null && _imageUrl!.startsWith('http'))
                           ? Image.network(_imageUrl!,
-                              width: 60, height: 60, fit: BoxFit.cover)
+                              width: 60, height: 60, fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 60,
+                                height: 60,
+                                color: theme.colorScheme.surfaceContainerHighest,
+                                child: Icon(Icons.book, color: theme.colorScheme.outline),
+                              ),
+                            )
                           : Container(
                               width: 60,
                               height: 60,
@@ -436,7 +443,7 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
-                      "✨ Store sale discounts are already active.",
+                      "âœ¨ Store sale discounts are already active.",
                       style: TextStyle(
                         color: const Color(0xFF10B981), // Success Emerald
                         fontSize: 12,

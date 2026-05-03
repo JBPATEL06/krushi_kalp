@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/env/env.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../utils/crashlytics_service.dart';
 
 class AuthService {
@@ -213,6 +214,8 @@ class AuthService {
       CrashlyticsService.instance
           .recordError(e, stack, reason: 'Logout session cleanup failed');
     } finally {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('user_role');
       await _supabase.auth.signOut();
     }
   }
@@ -324,12 +327,24 @@ class AuthService {
           .maybeSingle();
 
       if (response != null) {
-        return response['role'] as String?;
+        final role = response['role'] as String?;
+        if (role != null) {
+          // Cache the role for main.dart optimization
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('user_role', role);
+        }
+        return role;
       }
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'Get user role failed');
     }
     return null;
+  }
+
+  /// Synchronous-ish way to get role from cache (used in main.dart)
+  Future<String?> getCachedRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_role');
   }
 
   Future<int?> getUserDbId(String authId) async {

@@ -33,6 +33,7 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
   int _totalPages = 0;
   bool _isNightMode = false;
   DateTime? _openedAt;
+  String? _userId; // captured in initState, safe to use in dispose
 
   @override
   void initState() {
@@ -41,6 +42,12 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
     _searcher = PdfTextSearcher(_controller);
     _loadInitialNightMode();
     _searcher.addListener(() => setState(() {}));
+    // Capture userId now â€” ref is NOT safe to use in dispose()
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _userId = ref.read(authProvider).user?.id;
+      }
+    });
   }
 
   Future<void> _loadInitialNightMode() async {
@@ -59,13 +66,10 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
   void dispose() {
     if (_openedAt != null) {
       final durationSeconds = DateTime.now().difference(_openedAt!).inSeconds;
-      if (durationSeconds >= 300) {
-        final userId = ref.read(authNotifierProvider).user?.id ?? '';
-        if (userId.isNotEmpty) {
-          PerformanceService.instance
-              .updateUserStreak(userId, durationSeconds, 'resource_read')
-              .ignore();
-        }
+      if (durationSeconds >= 300 && _userId != null && _userId!.isNotEmpty) {
+        PerformanceService.instance
+            .updateUserStreak(_userId!, durationSeconds, 'resource_read')
+            .ignore();
       }
     }
     _searchController.dispose();

@@ -3,6 +3,8 @@ import 'package:rxdart/rxdart.dart';
 import '../../utils/supabase_url_helper.dart';
 import '../../utils/crashlytics_service.dart';
 import '../../utils/retry_helper.dart';
+import 'package:flutter/foundation.dart';
+import 'admin_notification_service.dart';
 
 class AdminService {
   static final _supabase = Supabase.instance.client;
@@ -28,7 +30,7 @@ class AdminService {
   }
 
   static Stream<Map<String, dynamic>> streamDashboardStats() {
-    return Stream.periodic(const Duration(seconds: 30))
+    return Stream.periodic(const Duration(minutes: 5))
         .startWith(null)
         .asyncMap((_) async {
       try {
@@ -88,7 +90,7 @@ class AdminService {
   }
 
   static Stream<List<Map<String, dynamic>>> streamTopUsers() {
-    return Stream.periodic(const Duration(seconds: 60))
+    return Stream.periodic(const Duration(minutes: 10))
         .startWith(null)
         .asyncMap((_) async {
       try {
@@ -140,7 +142,7 @@ class AdminService {
   }
 
   static Stream<List<Map<String, dynamic>>> streamTopTests() {
-    return Stream.periodic(const Duration(seconds: 60))
+    return Stream.periodic(const Duration(minutes: 10))
         .startWith(null)
         .asyncMap((_) async {
       try {
@@ -258,7 +260,7 @@ class AdminService {
   }
 
   static Stream<List<Map<String, dynamic>>> streamUsers() {
-    return Stream.periodic(const Duration(seconds: 60))
+    return Stream.periodic(const Duration(minutes: 5))
         .startWith(null)
         .asyncMap((_) async {
       try {
@@ -913,7 +915,25 @@ class AdminService {
   /// Toggles the public visibility of a mock test.
   static Future<bool> toggleMockTestPublicStatus(int testId, bool isPublic) async {
     try {
+      // Fetch title for notification if making public
+      String? title;
+      if (isPublic) {
+        final res = await _supabase.from('mock_tests').select('title').eq('test_id', testId).single();
+        title = res['title'] as String?;
+      }
+
       await _supabase.from('mock_tests').update({'is_public': isPublic}).eq('test_id', testId);
+
+      if (isPublic && title != null) {
+        try {
+          await AdminNotificationService().sendBroadcast(
+            title: '🆕 New Mock Test Available!',
+            body: 'Check out the new test: $title',
+          );
+        } catch (e) {
+          debugPrint('Notification failed: $e');
+        }
+      }
       return true;
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'admin_toggle_test_visibility');
@@ -925,7 +945,27 @@ class AdminService {
   /// NOTE: The 'resources' table uses 'is_active' for visibility, not 'is_public'.
   static Future<bool> toggleResourcePublicStatus(int resourceId, bool isPublic) async {
     try {
+      // Fetch title and type for notification if making public
+      String? title;
+      String? type;
+      if (isPublic) {
+        final res = await _supabase.from('resources').select('title, type').eq('id', resourceId).single();
+        title = res['title'] as String?;
+        type = res['type'] as String?;
+      }
+
       await _supabase.from('resources').update({'is_active': isPublic}).eq('id', resourceId);
+
+      if (isPublic && title != null) {
+        try {
+          await AdminNotificationService().sendBroadcast(
+            title: '📖 New Resource Published!',
+            body: 'New ${type ?? 'Resource'}: $title is now available.',
+          );
+        } catch (e) {
+          debugPrint('Notification failed: $e');
+        }
+      }
       return true;
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'admin_toggle_resource_visibility');

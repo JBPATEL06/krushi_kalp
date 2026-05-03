@@ -9,6 +9,7 @@ import '../../utils/retry_helper.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import '../../core/env/env.dart';
 import 'package:flutter/material.dart' show debugPrint;
+import 'transfer_notification_service.dart';
 
 /// Status of an upload task managed by [BackgroundUploadService].
 enum UploadTaskStatus { pending, uploading, completed, failed }
@@ -146,8 +147,12 @@ class BackgroundUploadService {
 
   /// Starts a new file upload task. Returns the [taskId] immediately.
   ///
-  /// The upload runs as a background future. Callers should provide callbacks
-  /// for progress, completion, and error handling.
+  /// The upload runs as a background isolate. 
+  /// [dbUpdate] allows specifying a Supabase update to perform automatically upon success.
+  /// Starts a new file upload task. Returns the [taskId] immediately.
+  ///
+  /// The upload runs in the UI isolate but uses the background service to maintain
+  /// foreground presence and update notifications.
   Future<String> uploadFile({
     required String fileName,
     required String itemName,
@@ -160,16 +165,15 @@ class BackgroundUploadService {
     required Function(String path) onComplete,
     required Function(String error) onError,
     String? taskId,
+    Map<String, dynamic>? dbUpdate,
   }) async {
     _cancelIdleWatchdog();
     final id = taskId ?? const Uuid().v4();
     final sanitizedPath = _sanitizePath(storagePath);
+    final bgService = FlutterBackgroundService();
 
     String? finalFilePath = filePath;
 
-    // If we have bytes but no file path, write to a temp file first.
-    // Standard isolate message passing has limits, and Supabase storage
-    // works better with physical files in the background worker.
     if (fileBytes != null && finalFilePath == null) {
       try {
         final tempDir = await _getTempDir();
@@ -199,136 +203,121 @@ class BackgroundUploadService {
       'onError': onError,
     };
     
-    // Ensure the foreground service is running
+    // 1. Initial notification feedback
     try {
-      final service = FlutterBackgroundService();
-      final isRunning = await service.isRunning();
-      if (!isRunning) {
-        await service.startService();
-        await Future.delayed(const Duration(milliseconds: 500));
-      }
-      
-      service.invoke('setAsForeground');
-      
-      // Handoff to background isolate
-      service.invoke('startUpload', {
-        'taskId': id,
-        'fileName': fileName,
-        'itemName': itemName,
-        'bucketName': bucketName,
-        'storagePath': sanitizedPath,
-        'filePath': finalFilePath,
-        'fileType': fileType,
-      });
+      TransferNotificationService().showUploadProgress(
+        taskId: id,
+        fileName: fileName,
+        progress: 0.05,
+      );
+    } catch (_) {}
 
-    } catch (e) {
-      CrashlyticsService.instance.log('Background upload start failed: $e');
-      onError(e.toString());
-    }
+    // 2. Background Upload Execution (UI Isolate)
+    unawaited(() async {
+      Timer? progressTimer;
+      double progress = 0.05;
+      double lastNotifiedProgress = 0.0;
+
+      try {
+        // Ensure background service is running for foreground presence
+        bool isRunning = await bgService.isRunning();
+        if (!isRunning) {
+          await bgService.startService();
+          int retries = 0;
+          while (!(await bgService.isRunning()) && retries < 15) {
+            await Future.delayed(const Duration(milliseconds: 100));
+            retries++;
+          }
+        }
+        bgService.invoke('setAsForeground');
+
+        // Progress simulation
+        progressTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+          if (progress < 0.95) {
+            final remaining = 1.0 - progress;
+            progress += remaining * 0.05;
+            
+            if (progress - lastNotifiedProgress >= 0.10 || progress >= 0.99) {
+              final percent = (progress * 100).toInt();
+              bgService.invoke('updateProgress', {
+                'title': 'Uploading... $percent%',
+                'content': itemName,
+              });
+              lastNotifiedProgress = progress;
+            }
+            
+            task.progress = progress;
+            onProgress(progress);
+          }
+        });
+
+        // Actual Upload
+        await RetryHelper.run(
+          () async {
+            final contentType = _getContentTypeStatic(storagePath);
+            if (finalFilePath != null) {
+              await Supabase.instance.client.storage
+                  .from(bucketName)
+                  .upload(
+                    sanitizedPath,
+                    File(finalFilePath!),
+                    fileOptions: FileOptions(upsert: true, contentType: contentType),
+                  );
+            } else {
+              throw Exception('No file path provided for upload');
+            }
+          },
+          maxRetries: 5,
+        );
+
+        // Database Update
+        if (dbUpdate != null) {
+          final table = dbUpdate['table'] as String;
+          final idColumn = dbUpdate['idColumn'] as String;
+          final idValue = dbUpdate['idValue'];
+          final updateColumn = dbUpdate['updateColumn'] as String;
+
+          await Supabase.instance.client
+              .from(table)
+              .update({updateColumn: sanitizedPath})
+              .eq(idColumn, idValue);
+        }
+
+        // Cleanup and Success
+        progressTimer.cancel();
+        bgService.invoke('clearProgress', {
+          'content': '✓ $itemName uploaded successfully',
+        });
+        TransferNotificationService().showUploadSuccess(taskId: id, fileName: fileName);
+        
+        task.status = UploadTaskStatus.completed;
+        task.completedPath = sanitizedPath;
+        onComplete(sanitizedPath);
+        _cleanupTask(id);
+
+      } catch (e, stack) {
+        progressTimer?.cancel();
+        CrashlyticsService.instance.recordError(e, stack, reason: 'Upload failed: $itemName');
+        
+        bgService.invoke('clearProgress', {
+          'content': '✗ $itemName upload failed',
+        });
+        TransferNotificationService().showUploadFailure(taskId: id, fileName: fileName, error: e.toString());
+        
+        task.status = UploadTaskStatus.failed;
+        task.errorMessage = e.toString();
+        onError(e.toString());
+        _cleanupTask(id);
+      } finally {
+        progressTimer?.cancel();
+      }
+    }());
 
     return id;
   }
 
   Future<Directory> _getTempDir() async {
-    // We use path_provider indirectly if possible, but since this is a service
-    // we might need to import it.
-    // For now, let's assume we can use standard temp dir or pass it in.
     return Directory.systemTemp;
-  }
-
-
-  /// (Isolate-side) Performs the actual Supabase upload within the background isolate.
-  /// This must be static or a top-level function so it can be called safely in the isolate.
-  static Future<void> performUploadTask(ServiceInstance service, Map<String, dynamic> data) async {
-    final taskId = data['taskId'] as String;
-    final fileName = data['fileName'] as String;
-    final itemName = data['itemName'] as String;
-    final bucketName = data['bucketName'] as String;
-    final storagePath = data['storagePath'] as String;
-    final filePath = data['filePath'] as String?;
-    
-    // 1. Ensure Supabase is initialized in THIS isolate
-    if (!isSupabaseInitialized()) {
-      try {
-        await Supabase.initialize(
-          url: Env.supabaseUrl,
-          anonKey: Env.supabaseAnonKey,
-        );
-      } catch (e) {
-        debugPrint('Background Isolate Supabase init failed: $e');
-      }
-    }
-
-    Timer? progressTimer;
-    double progress = 0.05;
-
-    try {
-      // 2. Start progress simulation
-      progressTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
-        if (progress < 0.95) {
-          final remaining = 1.0 - progress;
-          progress += remaining * 0.05;
-          final percent = (progress * 100).toInt();
-          
-          service.invoke('updateProgress', {
-            'title': 'Uploading $itemName',
-            'content': '$percent% complete',
-          });
-          
-          // Send raw progress back to UI isolate if it's listening
-          service.invoke('uploadProgress', {
-            'taskId': taskId,
-            'progress': progress,
-          });
-        }
-      });
-
-      // 3. Perform upload with retries
-      await RetryHelper.run(
-        () async {
-          final contentType = _getContentTypeStatic(storagePath);
-
-          if (filePath != null) {
-            await Supabase.instance.client.storage
-                .from(bucketName)
-                .upload(
-                  storagePath,
-                  File(filePath),
-                  fileOptions: FileOptions(upsert: true, contentType: contentType),
-                );
-          } else {
-             throw Exception('No file path provided in background worker');
-          }
-        },
-        maxRetries: 8,
-        initialDelay: const Duration(seconds: 5),
-        timeout: const Duration(seconds: 300),
-      );
-
-      // 4. Cleanup and success
-      progressTimer.cancel();
-      service.invoke('clearProgress', {
-        'content': '✓ $itemName uploaded successfully',
-      });
-      service.invoke('uploadComplete', {
-        'taskId': taskId,
-        'path': storagePath,
-      });
-
-    } catch (e, stack) {
-      progressTimer?.cancel();
-      CrashlyticsService.instance.recordError(e, stack, reason: 'Background isolate upload crashed: $itemName ($fileName)');
-      
-      service.invoke('clearProgress', {
-        'content': '✗ $itemName upload failed – check your connection',
-      });
-      service.invoke('uploadError', {
-        'taskId': taskId,
-        'error': e.toString(),
-      });
-    } finally {
-      progressTimer?.cancel();
-    }
   }
 
   /// Sanitizes the storage path by ensuring the filename segment contains no illegal characters.

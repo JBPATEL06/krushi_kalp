@@ -33,7 +33,7 @@ class NotificationService {
   // static const int _offerIdBase = 500; // NEW
   static const int _broadcastIdBase = 600; // NEW
 
-  Future<void> initialize() async {
+  Future<void> initialize({bool skipPermissions = false}) async {
     if (_isInitialized) return;
 
     // 1. Initialize Timezones
@@ -46,10 +46,17 @@ class NotificationService {
         InitializationSettings(android: initializationSettingsAndroid);
 
     // Request Permissions (Android 13+) - ONLY IN FOREGROUND
-    await _notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+    // Background isolates do not have an Activity and will crash if this is called.
+    if (!skipPermissions) {
+      try {
+        await _notificationsPlugin
+            .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin>()
+            ?.requestNotificationsPermission();
+      } catch (e) {
+        debugPrint('Notification Permission Request Failed: $e');
+      }
+    }
 
     await _notificationsPlugin.initialize(
       initializationSettings,
@@ -57,6 +64,10 @@ class NotificationService {
         
       },
     );
+
+    // Initialize the unified transfer notification service using our plugin instance
+    TransferNotificationService().initialize(_notificationsPlugin);
+    await TransferNotificationService().setupChannel();
 
     _isInitialized = true;
     
@@ -92,66 +103,9 @@ class NotificationService {
 
   // Renamed from _listenForPublicUpdates and made public for BackgroundService
   Future<void> connectBackground(SupabaseClient supabase) async {
-    // 1. Listen for NEW MOCK TESTS
-    try {
-      
-      supabase
-          .channel('public:mock_tests:updates')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.insert,
-            schema: 'public',
-            table: 'mock_tests',
-            callback: (payload) {
-              final newTest = payload.newRecord;
-              
-              showLocalNotification(
-                id: _generalIdBase + (newTest['test_id'] as int? ?? 0),
-                title: "New Mock Test Added!",
-                body: "Check out: ${newTest['title']}",
-              );
-
-// ... (In Broadcast)
-//                showLocalNotification(
-//                  id: _broadcastIdBase +
-//                      (newNotif['notification_id'] as int? ?? 0),
-//                  title: newNotif['title'] ?? 'Announcement',
-//                  body: newNotif['message'] ?? 'Check the app for updates.',
-//                );
-            },
-          )
-          .subscribe((status, error) {
-        
-      });
-    } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'Connect background (mock tests) failed');
-    }
-
-    // 2. Listen for NEW OFFERS
-    try {
-      
-      supabase
-          .channel('public:offers:updates')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.insert,
-            schema: 'public',
-            table: 'offers',
-            callback: (payload) {
-              final newOffer = payload.newRecord;
-              
-              showLocalNotification(
-                id: _generalIdBase + (newOffer['id'] as int? ?? 0),
-                title: "New Offer Available!",
-                body:
-                    "${newOffer['title']} - ${newOffer['discount_percentage']}% OFF!",
-              );
-            },
-          )
-          .subscribe((status, error) {
-        
-      });
-    } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'Connect background (offers) failed');
-    }
+    // Automatic listeners for mock_tests and offers removed.
+    // Notifications for these items are now handled manually by AdminService toggles
+    // to prevent alerts firing before items are marked as Public.
   }
 
   bool _isConnected = false;
@@ -170,7 +124,7 @@ class NotificationService {
       _isConnected = true;
       await _listenForPersonalNotifications(supabase, userId);
       await _listenForBroadcastNotifications(
-          supabase); // â† ADDED: Global admin broadcasts
+          supabase); // ← ADDED: Global admin broadcasts
       await connectBackground(supabase); // Public (Offers/MockTests)
       await _listenForChatMessages(supabase, userId, isUser: true); // User Mode
     }

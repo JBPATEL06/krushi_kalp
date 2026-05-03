@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:krushi_kalp/presentation/widgets/common/network_error_state.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-import 'package:krushi_kalp/core/theme/app_colors.dart';
 
 class AdminUserActivityScreen extends StatefulWidget {
   final String userId;

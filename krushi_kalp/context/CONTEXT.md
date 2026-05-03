@@ -16,7 +16,16 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
-- All current phases up to Phase 31 are completed.
+- **Phase 37**: Background Logic Restoration & Startup Stability (Completed)
+- [Phase 37] Reverted to UI-isolate based upload logic for stability.
+- [Phase 37] Synchronized main() startup to resolve UI lag.
+- **Phase 36**: Startup Optimization & Background Resilience (Completed)
+- [Phase 36] Eliminated UI lag by removing blocking initializations from main()
+- [Phase 36] Fixed background isolate crashes with lightweight notification initialization
+- [Phase 36] Increased file size limits to 50MB for all administrative forms
+- **Phase 35**: Admin Upload & Notification Stabilization (Completed)
+- **Phase 34**: Global UI Polish & Symbol Cleanup (Completed)
+- **Phase 33**: Privacy by Default, Manual Notifications & Store Refresh (Completed)
 - **Phase 32**: Android Storage Permission Fix & Admin File Picker Reliability (Completed)
 - All previous phases (1-31) completed.
 

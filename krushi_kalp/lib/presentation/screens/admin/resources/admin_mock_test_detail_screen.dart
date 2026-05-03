@@ -147,6 +147,16 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
             style: TextStyle(fontSize: context.sp(20))), // FIXED
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Refresh',
+            onPressed: () {
+              _loadStats();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Refreshing details...')),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.card_giftcard),
             onPressed: () {
               Navigator.push(

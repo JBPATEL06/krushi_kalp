@@ -80,7 +80,7 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
     setState(() => _isLoadingReviews = true);
 
     try {
-      final user = ref.read(authNotifierProvider).user;
+      final user = ref.read(authProvider).user;
       final futures = <Future>[
         ReviewService.getReviewsForItem(widget.test.id, 'test'),
         ReviewService.getRatingStats(widget.test.id, 'test'),
@@ -121,7 +121,7 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
         initialReview: _userReview?.reviewText,
         isEdit: _userReview != null,
         onSubmit: (rating, review) async {
-          final user = ref.read(authNotifierProvider).user;
+          final user = ref.read(authProvider).user;
           if (user == null) return;
 
           await ReviewService.submitReview(
@@ -141,7 +141,7 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isActuallyPurchased = ref
-        .watch(testNotifierProvider)
+        .watch(testProvider)
         .purchasedTestIds
         .contains(widget.test.id);
 
@@ -155,12 +155,28 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
 
     final imageUrl = widget.test.signedUrl ?? widget.test.coverImagePath ?? '';
     return Scaffold(
-      body: CustomScrollView(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await _loadData();
+          await _fetchDisplayPrice();
+        },
+        child: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: context.h(300),
             pinned: true,
-            actions: [],
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded),
+                onPressed: () {
+                  _loadData();
+                  _fetchDisplayPrice();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Refreshing test details...')),
+                  );
+                },
+              ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: widget.heroTag != null
                   ? Hero(
@@ -191,7 +207,8 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
               ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0),
             ),
           ),
-        ],
+          ],
+        ),
       ),
       bottomSheet: _buildBottomBar(isActuallyPurchased, displayPrice),
     );
@@ -362,8 +379,9 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
   }
 
   Widget _buildRatingSummary() {
-    if (!_configLoaded || !AppConfigService.areReviewsVisible)
+    if (!_configLoaded || !AppConfigService.areReviewsVisible) {
       return const SizedBox.shrink();
+    }
     return Row(
       children: [
         RateStars(
@@ -475,9 +493,10 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
   }
 
   Widget _buildReviewsSection(bool isPurchased) {
-    if (!_configLoaded || !AppConfigService.areReviewsVisible)
+    if (!_configLoaded || !AppConfigService.areReviewsVisible) {
       return const SizedBox.shrink();
-    final user = ref.read(authNotifierProvider).user;
+    }
+    final user = ref.read(authProvider).user;
     final canReview = (isPurchased || widget.test.price == 0) &&
         _userReview == null &&
         user != null &&

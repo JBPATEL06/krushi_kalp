@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:krushi_kalp/domain/models/resource.dart';
 
 part 'resource_entity.g.dart';

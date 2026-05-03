@@ -22,7 +22,7 @@ class _AdminChatListScreenState extends ConsumerState<AdminChatListScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final adminState = ref.watch(adminNotifierProvider);
+    final adminState = ref.watch(adminProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -43,7 +43,7 @@ class _AdminChatListScreenState extends ConsumerState<AdminChatListScreen> {
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: () => ref.read(adminNotifierProvider.notifier).triggerRefresh(),
+                  onPressed: () => ref.read(adminProvider.notifier).triggerRefresh(),
                   icon: const Icon(Icons.refresh_rounded, size: 18),
                   label: const Text('Refresh'),
                   style: TextButton.styleFrom(
@@ -69,7 +69,7 @@ class _AdminChatListScreenState extends ConsumerState<AdminChatListScreen> {
                     message: isNetworkError(snapshot.error)
                         ? 'Unable to load conversations. Check connection.'
                         : 'Something went wrong.',
-                    onRetry: () => ref.read(adminNotifierProvider.notifier).triggerRefresh(),
+                    onRetry: () => ref.read(adminProvider.notifier).triggerRefresh(),
                   );
                 }
 
@@ -77,7 +77,7 @@ class _AdminChatListScreenState extends ConsumerState<AdminChatListScreen> {
 
                 return RefreshIndicator(
                   onRefresh: () async {
-                    ref.read(adminNotifierProvider.notifier).triggerRefresh();
+                    ref.read(adminProvider.notifier).triggerRefresh();
                     await Future.delayed(const Duration(milliseconds: 600));
                   },
                   child: ListView.separated(
@@ -145,7 +145,7 @@ class _AdminChatListScreenState extends ConsumerState<AdminChatListScreen> {
                                 ),
                               ),
                             );
-                            ref.read(adminNotifierProvider.notifier).triggerRefresh();
+                            ref.read(adminProvider.notifier).triggerRefresh();
                           },
                         ),
                       );

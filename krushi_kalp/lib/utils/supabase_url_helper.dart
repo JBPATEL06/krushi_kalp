@@ -144,7 +144,7 @@ class SupabaseUrlHelper {
       }
 
       return signedUrl;
-    } on StorageException catch (se, stack) {
+    } on StorageException {
       // Specifically handle 404/Object Not Found without crashing
       print('⚠️ Supabase Storage 404: Object "$storagePath" not found in bucket "$bucketName"');
       

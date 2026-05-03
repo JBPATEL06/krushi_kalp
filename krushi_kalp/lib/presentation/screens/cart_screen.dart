@@ -18,7 +18,7 @@ import '../providers/cart_notifier.dart';
 import '../providers/auth_notifier.dart';
 import '../providers/navigation_notifier.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // NEW: Expose Supabase RPC
-import '../../utils/supabase_url_helper.dart'; 
+import '../../utils/supabase_url_helper.dart';
 import '../../utils/network_utils.dart'; // NEW: Expose NetworkUtils
 import '../../utils/error_utils.dart';
 import '../../utils/crashlytics_service.dart';
@@ -79,7 +79,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   }
 
   void _loadCart() {
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     if (user != null) {
       setState(() {
         _cartFuture = Future.wait([
@@ -118,7 +118,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   imageUrl = await SupabaseUrlHelper()
                       .getFreshSignedUrl('mock_test', path);
                 } catch (e, stack) {
-                  CrashlyticsService.instance.recordError(e, stack, reason: 'cart_screen');
+                  CrashlyticsService.instance
+                      .recordError(e, stack, reason: 'cart_screen');
                   imageUrl = path;
                 }
               } else {
@@ -235,7 +236,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             _currentCartItems.map((e) => e['test_id'] as int).toList();
 
         if (offer.isValid(
-          userId: ref.read(authNotifierProvider).user!.id,
+          userId: ref.read(authProvider).user!.id,
           cartTotal: total,
           cartTestIds: testIds,
         )) {
@@ -277,7 +278,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
 
   Future<void> _deleteItem(int itemId) async {
     try {
-      await ref.read(cartNotifierProvider.notifier).removeFromCart(itemId: itemId);
+      await ref.read(cartProvider.notifier).removeFromCart(itemId: itemId);
       await _refreshCart();
       if (mounted) {
         ScaffoldMessenger.of(
@@ -308,7 +309,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final orderId = _currentCartItems.first['order_id'] as String;
     final total = _calculateTotal(_currentCartItems);
     final discount = _calculateTotalDiscount(_currentCartItems);
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
 
     try {
       if (mounted) {
@@ -321,7 +322,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         orderId: orderId,
         paymentId: paymentId,
         amount: total,
-        offerId: null, // Per-item offers handled by applied_offer_id
+        offerId: _appliedGlobalOffer?.id,
         discountAmount: discount,
         userId: user!.id,
       );
@@ -329,7 +330,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Purchase Complete! 🥳"),
+            content: Text("Purchase Complete! ðŸ¥³"),
             backgroundColor: Colors.green,
           ),
         );
@@ -638,7 +639,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                       .w(AppSpacing.xs), // FIXED: AppSpacing.xs
                                 ),
                                 child: Text(
-                                  "✨ Store sale discounts are already active on items in your cart.",
+                                  "âœ¨ Store sale discounts are already active on items in your cart.",
                                   style: TextStyle(
                                     color: const Color(
                                         0xFF10B981), // Success Emerald
@@ -724,7 +725,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    ref.read(navigationProvider.notifier).setIndex(2); // 2 = Store tab
+                    ref
+                        .read(navigationProvider.notifier)
+                        .setIndex(2); // 2 = Store tab
                   },
                   child: const Text('Go to Store'),
                 ),
@@ -792,7 +795,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       if (_isProcessing) return;
                       setState(() => _isProcessing = true);
 
-                      final user = ref.read(authNotifierProvider).user;
+                      final user = ref.read(authProvider).user;
                       if (user == null) {
                         setState(() => _isProcessing = false);
                         return;
@@ -805,11 +808,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       // Server-side cart price verification
                       try {
                         // Get the first item's order_id if it exists, otherwise it will be handled by secureData
-                        orderIdStr = _currentCartItems.isNotEmpty 
-                          ? _currentCartItems.first['order_id'] as String? 
-                          : null;
-                          
-                        final priceResponse = await Supabase.instance.client.rpc(
+                        orderIdStr = _currentCartItems.isNotEmpty
+                            ? _currentCartItems.first['order_id'] as String?
+                            : null;
+
+                        final priceResponse =
+                            await Supabase.instance.client.rpc(
                           'calculate_secure_cart_price',
                           params: {
                             'p_order_id': orderIdStr ?? '',
@@ -817,25 +821,34 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                             'p_coupon_code': _appliedGlobalOffer?.code ?? '',
                           },
                         );
-                        final Map<String, dynamic> secureData = Map<String, dynamic>.from(priceResponse);
-                        secureTotal = (secureData['final_total'] as num).toDouble();
+                        final Map<String, dynamic> secureData =
+                            Map<String, dynamic>.from(priceResponse);
+                        secureTotal =
+                            (secureData['final_total'] as num).toDouble();
                         // If the RPC returned a new payment_id/order_id, use that
                         if (secureData['payment_id'] != null) {
                           orderIdStr = secureData['payment_id'] as String;
                         }
                       } catch (sqlError) {
+                        debugPrint('Cart RPC Error: $sqlError');
                         if (mounted) {
                           setState(() => _isProcessing = false);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Cart Sync Error: $sqlError')),
+                            SnackBar(
+                              content: Text(
+                                  'Unable to verify cart price. Please check your connection.'),
+                              backgroundColor: Colors.redAccent,
+                            ),
                           );
                         }
                         return;
                       }
 
                       if (secureTotal <= 0) {
-                        await _handlePaymentSuccess(PaymentSuccessResponse.fromMap({
-                          'razorpay_payment_id': 'FREE_CART_${DateTime.now().millisecondsSinceEpoch}'
+                        await _handlePaymentSuccess(
+                            PaymentSuccessResponse.fromMap({
+                          'razorpay_payment_id':
+                              'FREE_CART_${DateTime.now().millisecondsSinceEpoch}'
                         }));
                         return;
                       }
@@ -844,7 +857,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                         if (mounted) {
                           setState(() => _isProcessing = false);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Payment ID missing. Please refresh cart.')),
+                            SnackBar(
+                                content: Text(
+                                    'Payment ID missing. Please refresh cart.')),
                           );
                         }
                         return;
@@ -852,7 +867,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
 
                       PaymentService.instance.openCheckout(
                         amount: secureTotal,
-                        orderId: orderIdStr!,
+                        orderId: orderIdStr,
                         description: 'Cart Purchase',
                         email: user.email,
                         contact: userPhone,

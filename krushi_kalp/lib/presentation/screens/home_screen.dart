@@ -35,17 +35,15 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-
   @override
   void initState() {
     super.initState();
     // _loadBanners(); // REMOVED
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(testNotifierProvider.notifier).fetchTests();
+      ref.read(testProvider.notifier).fetchTests();
       // fetchPurchasedResources is already called by MainScreen
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -91,21 +89,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       drawer: _buildDrawer(),
       body: Consumer(
         builder: (context, ref, child) {
-          final testState = ref.watch(testNotifierProvider);
-          final authState = ref.watch(authNotifierProvider);
+          final testState = ref.watch(testProvider);
+          final authState = ref.watch(authProvider);
           return RefreshIndicator(
             onRefresh: () async {
               try {
-                final authState = ref.read(authNotifierProvider);
-                await Future.wait([
-                  ref.read(authNotifierProvider.notifier).refreshProfile(),
+                final authState = ref.read(authProvider);
+                await Future.wait<void>([
+                  ref.read(authProvider.notifier).refreshProfile(),
                   AppConfigService.fetchConfigs(),
-                  ref.read(testNotifierProvider.notifier).fetchTests(forceRefresh: true),
-                  ref.read(resourceNotifierProvider.notifier).fetchPurchasedResources(
-                      authState.user?.id ?? ''),
+                  ref
+                      .read(testProvider.notifier)
+                      .fetchTests(forceRefresh: true),
+                  ref
+                      .read(resourceProvider.notifier)
+                      .fetchPurchasedResources(authState.user?.id ?? ''),
                 ]).timeout(const Duration(seconds: 20));
               } catch (e, stack) {
-                CrashlyticsService.instance.recordError(e, stack, reason: 'home_screen');
+                CrashlyticsService.instance
+                    .recordError(e, stack, reason: 'home_screen');
                 // The indicator will stop automatically when this async block finishes
               }
             },
@@ -119,7 +121,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     child: Text(
-                      'Hello, ${ref.watch(authNotifierProvider).username ?? 'Aspirant'}',
+                      'Hello, ${ref.watch(authProvider).username ?? 'Aspirant'}',
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurface,
@@ -148,7 +150,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildDrawer() {
     final theme = Theme.of(context);
-    final authState = ref.watch(authNotifierProvider);
+    final authState = ref.watch(authProvider);
     return Drawer(
       backgroundColor: theme.colorScheme.surface,
       child: ListView(
@@ -168,12 +170,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             currentAccountPicture: GestureDetector(
               onTap: () {
                 Navigator.pop(context); // Close drawer
-                ref.read(navigationProvider.notifier).setIndex(4); // Goto Profile
+                ref
+                    .read(navigationProvider.notifier)
+                    .setIndex(4); // Goto Profile
               },
               child: CircleAvatar(
                 backgroundColor: theme.colorScheme.surface,
                 child: Text(
-                  (authState.username ?? 'A').isNotEmpty ? (authState.username ?? 'A')[0].toUpperCase() : 'A',
+                  (authState.username ?? 'A').isNotEmpty
+                      ? (authState.username ?? 'A')[0].toUpperCase()
+                      : 'A',
                   style: TextStyle(
                       fontSize: context.sp(32),
                       color:
@@ -224,7 +230,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             title: const Text('Profile'),
             onTap: () {
               Navigator.pop(context);
-              ref.read(navigationProvider.notifier).setIndex(4); // Navigate to Profile
+              ref
+                  .read(navigationProvider.notifier)
+                  .setIndex(4); // Navigate to Profile
             },
           ),
           const Divider(),
@@ -273,7 +281,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               );
 
               if (confirm == true && mounted) {
-                await ref.read(authNotifierProvider.notifier).signOut();
+                await ref.read(authProvider.notifier).signOut();
                 if (mounted) {
                   Navigator.pushAndRemoveUntil(
                     context,
@@ -324,7 +332,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildPerformanceCard() {
-    final userId = ref.watch(authNotifierProvider).user?.id ?? '';
+    final userId = ref.watch(authProvider).user?.id ?? '';
     if (userId.isEmpty) return const SizedBox.shrink();
     return FutureBuilder<UserPerformance>(
       future: PerformanceService.instance.getUserPerformance(userId),
@@ -460,9 +468,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: Icons.newspaper,
             color: theme.colorScheme.primary,
             onTap: () {
-              final resourceState = ref.read(resourceNotifierProvider);
-              final hasCurrentAffairs = resourceState.currentAffairs
-                  .any((r) => resourceState.purchasedResourceIds.contains(r.id));
+              final resourceState = ref.read(resourceProvider);
+              final hasCurrentAffairs = resourceState.currentAffairs.any(
+                  (r) => resourceState.purchasedResourceIds.contains(r.id));
 
               if (hasCurrentAffairs) {
                 Navigator.push(
@@ -475,7 +483,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 );
               } else {
-                ref.read(navigationProvider.notifier)
+                ref
+                    .read(navigationProvider.notifier)
                     .setStoreCategory('Daily CA');
                 ref.read(navigationProvider.notifier).setIndex(2); // Store
               }
@@ -486,12 +495,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: Icons.quiz_outlined,
             color: theme.colorScheme.secondary,
             onTap: () {
-              final testState = ref.read(testNotifierProvider);
+              final testState = ref.read(testProvider);
               final hasPurchased = testState.purchasedTestIds.isNotEmpty;
               if (hasPurchased) {
                 ref.read(navigationProvider.notifier).setIndex(1); // My Tests
               } else {
-                ref.read(navigationProvider.notifier).setStoreCategory('Mock Tests');
+                ref
+                    .read(navigationProvider.notifier)
+                    .setStoreCategory('Mock Tests');
                 ref.read(navigationProvider.notifier).setIndex(2); // Store
               }
             },
@@ -501,9 +512,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: Icons.menu_book_rounded,
             color: theme.colorScheme.tertiary,
             onTap: () {
-              final resourceState = ref.read(resourceNotifierProvider);
-              final hasPurchased = resourceState.ebooks
-                  .any((r) => resourceState.purchasedResourceIds.contains(r.id));
+              final resourceState = ref.read(resourceProvider);
+              final hasPurchased = resourceState.ebooks.any(
+                  (r) => resourceState.purchasedResourceIds.contains(r.id));
 
               if (hasPurchased) {
                 Navigator.push(
@@ -516,7 +527,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 );
               } else {
-                ref.read(navigationProvider.notifier).setStoreCategory('E-Books');
+                ref
+                    .read(navigationProvider.notifier)
+                    .setStoreCategory('E-Books');
                 ref.read(navigationProvider.notifier).setIndex(2); // Store
               }
             },
@@ -526,9 +539,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: Icons.description_rounded,
             color: theme.colorScheme.primary,
             onTap: () {
-              final resourceState = ref.read(resourceNotifierProvider);
-              final hasPurchased = resourceState.studyMaterials
-                  .any((r) => resourceState.purchasedResourceIds.contains(r.id));
+              final resourceState = ref.read(resourceProvider);
+              final hasPurchased = resourceState.studyMaterials.any(
+                  (r) => resourceState.purchasedResourceIds.contains(r.id));
 
               if (hasPurchased) {
                 Navigator.push(
@@ -541,7 +554,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 );
               } else {
-                ref.read(navigationProvider.notifier)
+                ref
+                    .read(navigationProvider.notifier)
                     .setStoreCategory('Study Material');
                 ref.read(navigationProvider.notifier).setIndex(2); // Store
               }
@@ -565,9 +579,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: Icons.history_edu_rounded,
             color: theme.colorScheme.error,
             onTap: () {
-              final resourceState = ref.read(resourceNotifierProvider);
-              final hasPurchased = resourceState.pyqs
-                  .any((r) => resourceState.purchasedResourceIds.contains(r.id));
+              final resourceState = ref.read(resourceProvider);
+              final hasPurchased = resourceState.pyqs.any(
+                  (r) => resourceState.purchasedResourceIds.contains(r.id));
 
               if (hasPurchased) {
                 Navigator.push(
@@ -594,10 +608,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────
-// Isolated banner slider — owns PageController + Timer
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Isolated banner slider â€” owns PageController + Timer
 // so StreamBuilder rebuilds never reset position.
-// ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _BannerAutoSlider extends StatefulWidget {
   final List<Widget> items;
   final bool autoScroll;

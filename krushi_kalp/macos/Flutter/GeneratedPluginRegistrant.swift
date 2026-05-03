@@ -17,7 +17,7 @@ import firebase_messaging
 import flutter_local_notifications
 import flutter_timezone
 import google_sign_in_ios
-import isar_flutter_libs
+import isar_community_flutter_libs
 import package_info_plus
 import share_plus
 import shared_preferences_foundation

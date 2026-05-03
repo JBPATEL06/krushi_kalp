@@ -46,9 +46,9 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
   Future<void> _loadData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     if (user != null) {
-      await ref.read(testNotifierProvider.notifier).fetchUserTests(user.id);
+      await ref.read(testProvider.notifier).fetchUserTests(user.id);
     }
     if (mounted) {
       setState(() => _isLoading = false);
@@ -78,7 +78,7 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final testState = ref.watch(testNotifierProvider);
+    final testState = ref.watch(testProvider);
     final tests = testState.userTests;
     final filteredTests = _getFilteredData(tests);
 
@@ -121,7 +121,7 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
                             url: item.filePath,
                             startLabel: "Start",
                             isFullWidth: false,
-                            userId: ref.read(authNotifierProvider).user?.id,
+                            userId: ref.read(authProvider).user?.id,
                             displayName: item.title,
                             onAction: () async {
                               await ExamHelper.startExam(context, item);

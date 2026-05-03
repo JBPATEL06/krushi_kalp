@@ -71,7 +71,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _loadProfile() async {
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     if (user != null) {
       setState(() {
         _profileFuture = AuthService.instance.getUserProfile(user.id);
@@ -88,7 +88,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _updateLanguage(String newLang) async {
-    final user = ref.read(authNotifierProvider).user;
+    final user = ref.read(authProvider).user;
     if (user == null) return;
 
     setState(() {
@@ -123,14 +123,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final user = ref.watch(authNotifierProvider).user;
+    final user = ref.watch(authProvider).user;
     final meta = user?.userMetadata ?? {};
     final name = meta['full_name'] as String? ?? meta['name'] as String? ?? 'User';
     final email = user?.email ?? 'No Email';
     final avatarUrl = meta['avatar_url'] as String? ?? meta['picture'] as String?;
     
     // Check if Google is already linked
-    final providers = user?.appMetadata?['providers'] as List? ?? [];
+    final providers = user?.appMetadata['providers'] as List? ?? [];
     final isGoogleLinked = providers.contains('google');
 
     return Scaffold(
@@ -151,7 +151,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               );
               if (result == true && mounted) {
-                ref.read(authNotifierProvider.notifier).refreshProfile();
+                ref.read(authProvider.notifier).refreshProfile();
               }
               }
             },
@@ -339,7 +339,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       subtitle: 'Add Google login for easier access',
                       onTap: () async {
                         try {
-                          await ref.read(authNotifierProvider.notifier).linkGoogle();
+                          await ref.read(authProvider.notifier).linkGoogle();
                           // Refresh the local profile and state to reflect the link
                           await _loadProfile();
                           if (mounted) {
@@ -393,7 +393,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: () async {
-                        await ref.read(authNotifierProvider.notifier).signOut();
+                        await ref.read(authProvider.notifier).signOut();
                       },
                       icon: Icon(Icons.logout, size: context.sp(20)),
                       label: Text('Logout', style: TextStyle(fontSize: context.sp(14))),
@@ -478,7 +478,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             'I want to delete my account. Please process my deletion request.',
           );
         } catch (_) {
-          // Non-critical — form is the primary channel
+          // Non-critical â€” form is the primary channel
         }
 
         // Step 2: Open the official Google Form (Play Store compliant)

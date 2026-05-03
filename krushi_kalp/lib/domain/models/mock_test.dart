@@ -40,7 +40,7 @@ class MockTest {
     this.contentUrl, // NEW
     this.mrp,
     required this.createdAt,
-    this.isPublic = true,
+    this.isPublic = false,
   });
 
   // Helper implementation to display time string

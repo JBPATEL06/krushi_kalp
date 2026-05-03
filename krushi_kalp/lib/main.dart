@@ -10,6 +10,7 @@ import 'core/router/app_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'presentation/widgets/common/network_aware_wrapper.dart';
 import 'data/services/local_caching_service.dart';
+import 'data/services/auth_service.dart';
 
 import 'core/env/env.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -20,7 +21,6 @@ import 'data/services/notification_service.dart';
 import 'data/services/transfer_notification_service.dart';
 import 'data/services/background_upload_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
@@ -50,17 +50,9 @@ Future<bool> onIosBackground(ServiceInstance service) async {
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
-  // 1. Initialize Firebase in this isolate
-  // This is required to prevent [core/no-app] crashes when using Crashlytics in background
-  try {
-    WidgetsFlutterBinding.ensureInitialized();
-    await Firebase.initializeApp();
-    await CrashlyticsService.instance.init();
-    debugPrint('Firebase Background Isolate Init Success');
-  } catch (e) {
-    debugPrint('Firebase Background Isolate Init Failed: $e');
-  }
-
+  // 1. Minimum initialization for background life-cycle
+  WidgetsFlutterBinding.ensureInitialized();
+  
   if (service is AndroidServiceInstance) {
     service.on('setAsForeground').listen((event) {
       service.setAsForegroundService();
@@ -71,10 +63,9 @@ void onStart(ServiceInstance service) async {
     });
 
     // ── REAL-TIME PROGRESS UPDATE ──────────────────────────────────────────
-    // to keep visible while the foreground service is running.
     service.on('updateProgress').listen((event) {
       if (event != null) {
-        final title = event['title'] as String? ?? 'Krushi Kalp Upload Service';
+        final title = event['title'] as String? ?? 'Krushi Kalp Transfer Service';
         final content = event['content'] as String? ?? 'Processing...';
         service.setForegroundNotificationInfo(
           title: title,
@@ -83,7 +74,6 @@ void onStart(ServiceInstance service) async {
       }
     });
 
-    // Reset foreground notification to idle state after upload completes/fails
     service.on('clearProgress').listen((event) {
       if (event != null) {
         final content = event['content'] as String? ?? 'Transfer complete';
@@ -98,73 +88,59 @@ void onStart(ServiceInstance service) async {
   service.on('stopService').listen((event) {
     service.stopSelf();
   });
-
-  // ── BACKGROUND UPLOAD LISTENER ──────────────────────────────────────────
-  service.on('startUpload').listen((event) {
-    if (event != null) {
-      BackgroundUploadService.performUploadTask(service, event);
-    }
-  });
 }
 
 void main() {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    // 0. Kill any dangling ghost notifications from previous crashes
-    try {
-      final service = FlutterBackgroundService();
-      // We don't await isRunning because we want to fire the stop command 
-      // regardless if the native side thinks it's still "alive".
-      service.invoke('stopService');
-    } catch (e) {
-      debugPrint('Startup service cleanup: $e');
-    }
-
-    // 1. Initialize Firebase & Analytics
+    // 1. Firebase and Crashlytics (Foundational)
     await Firebase.initializeApp();
     await CrashlyticsService.instance.init();
 
-    // 2. Setup Crashlytics error reporting for the framework
     FlutterError.onError = (FlutterErrorDetails details) {
       FirebaseCrashlytics.instance.recordFlutterFatalError(details);
     };
 
-    // 3. Initialize Background Service Configuration
+    // 2. Critical Core Services (Blocking)
+    // We MUST await these to ensure the app is stable and database is ready.
+    await LocalCachingService.init();
     await initializeService();
 
-    // 4. Load Environment Variables & DB
-    await LocalCachingService.init();
-
-    // 5. Initialize Supabase
+    // 3. Initialize Supabase
     await Supabase.initialize(
       url: Env.supabaseUrl,
       anonKey: Env.supabaseAnonKey,
     );
 
-    // 6. Initialize Notification Engine
-    final notificationService = NotificationService();
-    await notificationService.initialize();
-
-    // 7. Initialize specialized Transfer Notifications
-    final transferNotifications = TransferNotificationService();
-    transferNotifications.initialize(notificationService.plugin);
-    await transferNotifications.setupChannel();
-
-    // 8. Request Notification Permissions (Android 13+)
-    if (!kIsWeb) {
-      await Permission.notification.isDenied.then((value) {
-        if (value) Permission.notification.request();
-      });
-    }
-
+    // 4. Run App
     runApp(
       const ProviderScope(
         child: MyApp(),
       ),
     );
   }, (error, stack) {
-    CrashlyticsService.instance.recordError(error, stack, fatal: true);
+supabaseUrl,
+      anonKey: Env.supabaseAnonKey,
+    );
+
+    // 6. Run App
+    runApp(
+      const ProviderScope(
+        child: MyApp(),
+      ),
+    );
+  }, (error, stack) {
+    debugPrint('──────────────────────────────────────────────────────────');
+    debugPrint('CRITICAL STARTUP ERROR: $error');
+    debugPrint('STACK TRACE: $stack');
+    debugPrint('──────────────────────────────────────────────────────────');
+    
+    try {
+      CrashlyticsService.instance.recordError(error, stack, fatal: true);
+    } catch (e) {
+      debugPrint('Could not log to Crashlytics (likely not initialized): $e');
+    }
   });
 }
 

@@ -22,8 +22,10 @@ class MockTestUploadScreen extends StatefulWidget {
   State<MockTestUploadScreen> createState() => _MockTestUploadScreenState();
 }
 
-class _MockTestUploadScreenState extends State<MockTestUploadScreen> with PickerLifecycleMixin {
+class _MockTestUploadScreenState extends State<MockTestUploadScreen>
+    with PickerLifecycleMixin {
   final _formKey = GlobalKey<FormState>();
+  bool _isPublic = false;
   bool _isLoading = false;
 
   // Form Fields
@@ -75,19 +77,21 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> with Picker
   Uint8List? _imageBytes;
   String? _imagePath;
 
-  static const int maxImageSizeBytes = 1024 * 1024; // 1MB
+  static const int maxImageSizeBytes = 50 * 1024 * 1024; // 50MB
 
   Future<void> _pickCoverImage() async {
     final result = await safePickFiles(
       type: FileType.custom,
       allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
     );
-    if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
+    if (result != null &&
+        result.files.isNotEmpty &&
+        result.files.single.path != null) {
       final file = result.files.first;
       if (file.size > maxImageSizeBytes) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Image must be less than 1MB')),
+            const SnackBar(content: Text('Image must be less than 50MB')),
           );
         }
         return;
@@ -100,7 +104,8 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> with Picker
           _imagePath = file.path;
         });
       } catch (e, stack) {
-        await CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to read cover image bytes');
+        await CrashlyticsService.instance
+            .recordError(e, stack, reason: 'Failed to read cover image bytes');
       }
     }
   }
@@ -110,7 +115,9 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> with Picker
       type: FileType.custom,
       allowedExtensions: ['xlsx', 'xls', 'json'],
     );
-    if (result != null && result.files.isNotEmpty && result.files.single.path != null) {
+    if (result != null &&
+        result.files.isNotEmpty &&
+        result.files.single.path != null) {
       final file = result.files.first;
       try {
         final bytes = await File(file.path!).readAsBytes();
@@ -119,7 +126,8 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> with Picker
           _questionsBytes = bytes;
         });
       } catch (e, stack) {
-        await CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to read questions file bytes');
+        await CrashlyticsService.instance.recordError(e, stack,
+            reason: 'Failed to read questions file bytes');
       }
     }
   }
@@ -152,7 +160,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> with Picker
         'negative_marks_per_q':
             double.tryParse(_negativeMarksController.text) ?? 0.0,
         'language': _selectedLanguage,
-        'is_active': true,
+        'is_public': _isPublic,
         'file_path': '',
         'cover_image_path': '',
       };
@@ -222,15 +230,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> with Picker
         onError: (err) {},
       );
 
-      try {
-        await AdminNotificationService().sendBroadcast(
-          title: 'New Mock Test Available!',
-          body: 'Check out the new ${_titleController.text.trim()} test now!',
-        );
-      } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack,
-            reason: 'AdminNotification broadcast failed');
-      }
+      // Notifications are now handled by AdminService toggle
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -243,7 +243,8 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> with Picker
         Navigator.pop(context);
       }
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'mock_test_upload_screen');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'mock_test_upload_screen');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -478,6 +479,15 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen> with Picker
                             value: _isNegativeMarking,
                             onChanged: (v) =>
                                 setState(() => _isNegativeMarking = v),
+                            activeThumbColor: theme.colorScheme.primary,
+                          ),
+                          SwitchListTile(
+                            title: Text('Make Public Immediately',
+                                style: Theme.of(context).textTheme.bodyLarge),
+                            subtitle: const Text(
+                                'Users will see this test only when public'),
+                            value: _isPublic,
+                            onChanged: (v) => setState(() => _isPublic = v),
                             activeThumbColor: theme.colorScheme.primary,
                           ),
                           if (_isNegativeMarking)

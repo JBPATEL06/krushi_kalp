@@ -4,7 +4,7 @@ import '../../domain/models/resource.dart';
 part 'resource_state.freezed.dart';
 
 @freezed
-class ResourceState with _$ResourceState {
+abstract class ResourceState with _$ResourceState {
   const factory ResourceState({
     @Default([]) List<Resource> ebooks,
     @Default([]) List<Resource> studyMaterials,

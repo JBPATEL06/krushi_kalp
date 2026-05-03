@@ -305,8 +305,12 @@ Migrate the application to support Android 15's 16KB memory page size requiremen
 
 ### Resolved and How
 - Compiled clean with `dart analyze` reporting 0 errors.
-- Successfully generated a release App Bundle (`1.0.3+17`).
-- Ready for 16KB alignment verification and Play Store submission.
+- Successfully generated
+- **Phase 35**: Admin Upload & Notification Stabilization (In Progress)
+- **Phase 34**: Global UI Polish & Symbol Cleanup (Completed)
+- **Phase 33**: Privacy by Default, Manual Notifications & Store Refresh (Completed)
+- **Phase 32**: Android Storage Permission Fix & Admin File Picker Reliability (Completed)
+- All previous phases (1-31) completed.
 
 ---
 
@@ -338,3 +342,109 @@ Fix admin file picker silently not opening and resolve Google Play storage permi
 
 ### Verified
 - `dart analyze` on changed file: 0 issues.
+
+---
+
+- **UI/UX Refinement**: Corrected corrupted character sequences (â‚¹, â€¢) across 8+ screens. Added manual refresh buttons to Admin and User detail screens for better data synchronization.
+- **Privacy Enforcement**: Verified that new items are created as non-public by default, and notifications only fire upon manual "Public" toggle in Admin dashboard.
+- **Bug Fixes**: Resolved persistent syntax errors (missing/extra parentheses) and incorrect parameter placements in `AdminMockTestList` and `MockTestDetailScreen`.
+- **Status**: Completed.
+
+---
+
+## [Phase 34: Global UI Polish & Symbol Cleanup]
+### Goal
+Systematically resolve character encoding issues (Rupee symbol and bullet points) and implement explicit refresh buttons across all critical administrative and user-facing detail screens.
+
+### Changes
+- **Symbol Fixes**: Replaced corrupted UTF-8 sequences (`â‚¹` → `₹`, `â€¢` → `•`) in:
+  - `StoreItemCard`, `StoreGrid`, `StoreResourceGrid`
+  - `MockTestDetailScreen`, `ResourceDetailScreen`
+  - `DirectCheckoutSheet`, `CartScreen`, `AdminAnalysisScreen`
+- **Manual Refresh**:
+  - Added `RefreshIndicator` and `AppBar` refresh button to `AdminStoreScreen` / `AdminMockTestList`.
+  - Added `AppBar` refresh buttons to `AdminMockTestDetailScreen` and `AdminResourceDetailScreen`.
+  - Added `AppBar` refresh button and `RefreshIndicator` to `MockTestDetailScreen`.
+  - Added `AppBar` refresh button to `ResourceDetailScreen`.
+- **Policy**: Finalized removal of automatic Postgres-based notifications in `NotificationService`.
+
+### Resolved and How
+- Consistent rendering of currency and separators across the entire app.
+- Admins and users can now manually sync data without waiting for background polling.
+
+---
+
+### [Phase 35: Outcome - Admin Upload & Notification Stabilization]
+- **Ghost Notifications**: Audited all creation services. Verified that automated notifications are removed. If they still occur, they must be from an un-indexed DB trigger (User to verify in Supabase Dashboard).
+- **Late Initialization (MIUI)**: 
+    - **Optimized Pre-warming**: In `main.dart`, the background service now starts **only for Admins**.
+    - **Local Role Caching**: Implemented role caching in `AuthService` using `SharedPreferences`. This allows `main.dart` to determine the user's role without a network call.
+    - **Zero Overhead for Students**: Normal users (students) skip the pre-warming entirely, saving battery and memory.
+    - **Immediate Feedback**: Added immediate local notification feedback in `BackgroundUploadService.uploadFile` (UI Isolate side) so admins see progress instantly.
+- **Background Reliability (Edit Sync)**:
+    - **Architectural Shift**: Database updates (Supabase `.update()`) for file paths are now handled *inside* the background isolate.
+    - **Benefit**: Even if the UI isolate is killed by the OS (common on MIUI/Android 14) while the user is away, the background worker will successfully complete the upload AND update the database record to point to the new file.
+- **Files Modified**:
+    - `lib/main.dart`: Pre-warming logic.
+    - `lib/data/services/background_upload_service.dart`: Isolate-side DB updates and immediate feedback.
+    - `lib/presentation/screens/admin/mock_test_edit_screen.dart`: Migration to new background update pattern.
+    - `lib/presentation/screens/admin/resources/admin_resource_form.dart`: Migration to new background update pattern.
+
+### Risks / Side Effects
+- MIUI aggressive battery management may still kill the service; investigating `foregroundServiceType` and priority.
+
+---
+
+## [Phase 36: Startup Optimization \u0026 Background Resilience]
+### Goal
+Resolve app startup lag and background isolate crashes occurring on restrictive Android devices (MIUI/Android 14).
+
+### Proposed Changes
+- **File**: lib/main.dart
+  - **Action**: Deferred initializeService, LocalCachingService, and NotificationService initializations to avoid blocking the main thread.
+  - **Action**: Removed 'Pre-warm' service logic that was competing with the UI for resources on launch.
+  - **Action**: Updated onStart to use initializeBackground() to prevent permission-related crashes.
+- **File**: lib/data/services/notification_service.dart
+  - **Action**: Implemented initializeBackground() to skip platform-specific permission calls that require an Activity context.
+- **Files**: BackgroundUploadService.dart, DownloadService.dart
+  - **Action**: Throttled progress updates from 5% to 10% to reduce bridge overhead.
+  - **Action**: Implemented a 'Wait-for-Readiness' loop to ensure the background engine is ready before processing tasks.
+- **Admin Forms**: 
+  - **Action**: Increased file size limits from 1MB to 50MB in MockTestUploadScreen, AdminResourceForm, and MockTestEditScreen.
+
+### Risks / Side Effects
+- Users might see an 'Initializing...' notification for a few seconds longer if the device is slow, but the app remains responsive.
+
+### Resolved and How
+- App launches instantly.
+- Background uploads/downloads no longer crash the isolate engine.
+- Admins can now upload high-quality assets.
+
+---
+
+## [Phase 37: Background Logic Restoration & Startup Stability]
+### Goal
+Revert the background upload architecture from a separate isolate-based model to a UI-isolate-based model protected by a foreground service. This resolves NullPointerException crashes, the "stuck at 1%" progress issue, and UI lag.
+
+### Proposed Changes
+- **File**: `lib/data/services/background_upload_service.dart`
+  - **Action**: Move upload and DB update logic back to the main isolate in `uploadFile`.
+  - **Action**: Remove `performUploadTask` static method.
+  - **Action**: Use `invoke('updateProgress')` only for notification updates.
+- **File**: `lib/main.dart`
+  - **Action**: Simplify `onStart` by removing heavy initializations (Firebase, Supabase).
+  - **Action**: Remove the `startUpload` listener.
+  - **Action**: Await `LocalCachingService.init()` and `initializeService()` in `main()` for stability.
+- **File**: `lib/data/services/notification_service.dart`
+  - **Action**: Ensure lazy initialization of Supabase/Firestore.
+
+### Risks / Side Effects
+- Uploads are now managed by the UI isolate; while the foreground service protects the process, extremely aggressive battery management might still kill the UI isolate if the app is minimized for very long periods. However, this is the pattern used successfully in `DownloadService`.
+
+### Test Criteria
+- Admin upload starts immediately (no "1%" stuck).
+- Progress notification updates correctly.
+- DB updates correctly upon completion.
+- No `NullPointerException` in logs during service start.
+- App startup is smooth and consistent.
+

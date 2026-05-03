@@ -343,7 +343,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.vertical(
                         top: Radius.circular(AppRadius.lg)),
-                    child: test['image_url'] != null
+                    child: test['image_url'] != null && (test['image_url'] as String).startsWith('http')
                         ? Image.network(
                             test['image_url'],
                             fit: BoxFit.cover,

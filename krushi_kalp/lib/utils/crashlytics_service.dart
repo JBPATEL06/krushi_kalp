@@ -11,7 +11,15 @@ class CrashlyticsService {
 
   static CrashlyticsService get instance => _instance;
 
-  final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
+  FirebaseCrashlytics get _crashlytics {
+    try {
+      return FirebaseCrashlytics.instance;
+    } catch (e) {
+      // If Firebase isn't initialized, this will throw [core/no-app].
+      // We catch it here to prevent the app from getting "stuck" in a crash loop.
+      throw StateError('Firebase not initialized. Cannot access Crashlytics.');
+    }
+  }
 
   /// Initializes Crashlytics configuration and sets up global error catchers.
   Future<void> init() async {

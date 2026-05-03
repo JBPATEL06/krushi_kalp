@@ -12,9 +12,9 @@ const String _kNoInternetRoute = '/no-internet';
 /// Global network-aware wrapper.
 ///
 /// Sits inside MaterialApp.builder so it has access to the navigator.
-/// When connectivity is lost â†’ pushes [NoInternetScreen] on top of everything.
-/// When connectivity returns â†’ pops [NoInternetScreen] automatically.
-/// Back-button on [NoInternetScreen] â†’ exits the app.
+/// When connectivity is lost Ã¢â€ â€™ pushes [NoInternetScreen] on top of everything.
+/// When connectivity returns Ã¢â€ â€™ pops [NoInternetScreen] automatically.
+/// Back-button on [NoInternetScreen] Ã¢â€ â€™ exits the app.
 class NetworkAwareWrapper extends ConsumerStatefulWidget {
   final Widget child;
 
@@ -37,7 +37,7 @@ class _NetworkAwareWrapperState extends ConsumerState<NetworkAwareWrapper> {
   }
 
   void _checkInitialState() {
-    final isConnected = ref.read(networkNotifierProvider);
+    final isConnected = ref.read(networkProvider);
     if (!isConnected) {
       _showGate();
     }
@@ -74,7 +74,7 @@ class _NetworkAwareWrapperState extends ConsumerState<NetworkAwareWrapper> {
     if (!_isNoInternetVisible) return;
     _isNoInternetVisible = false;
 
-    // Pop only the NoInternet route — leave everything below intact.
+    // Pop only the NoInternet route â€” leave everything below intact.
     final nav = navigatorKey.currentState;
     if (nav != null && nav.canPop()) {
       nav.popUntil((route) => route.settings.name != _kNoInternetRoute);
@@ -84,7 +84,7 @@ class _NetworkAwareWrapperState extends ConsumerState<NetworkAwareWrapper> {
   @override
   Widget build(BuildContext context) {
     // Listen for connectivity changes
-    ref.listen(networkNotifierProvider, (previous, next) {
+    ref.listen(networkProvider, (previous, next) {
       if (!next && !_isNoInternetVisible) {
         _showGate();
       } else if (next && _isNoInternetVisible) {
@@ -96,9 +96,9 @@ class _NetworkAwareWrapperState extends ConsumerState<NetworkAwareWrapper> {
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 //  Full-screen No Internet gate
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
 class NoInternetScreen extends ConsumerStatefulWidget {
   const NoInternetScreen({super.key});
@@ -158,7 +158,7 @@ class _NoInternetScreenState extends ConsumerState<NoInternetScreen>
   Future<void> _retry() async {
     if (_isRetrying) return;
     setState(() => _isRetrying = true);
-    await ref.read(networkNotifierProvider.notifier).checkConnectivity();
+    await ref.read(networkProvider.notifier).checkConnectivity();
     if (mounted) setState(() => _isRetrying = false);
   }
 

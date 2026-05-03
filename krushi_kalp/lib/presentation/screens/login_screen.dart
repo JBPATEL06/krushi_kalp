@@ -44,7 +44,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _controller = AnimationController(
       vsync: this,
       duration: AppMotion
-          .slow, // MODIFIED: was Duration(milliseconds: 1200) → now AppMotion.slow (500ms)
+          .slow, // MODIFIED: was Duration(milliseconds: 1200) â†’ now AppMotion.slow (500ms)
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
@@ -61,7 +61,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   void _listenToAuth() {
-    ref.listenManual(authNotifierProvider, (AuthState? previous, AuthState next) {
+    ref.listenManual(authProvider, (AuthState? previous, AuthState next) {
       if (next.isLoggedIn && !next.isLoading) {
         final role = next.userRole;
         if (role != 'Admin') {
@@ -84,7 +84,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     }
 
     try {
-      await ref.read(authNotifierProvider.notifier).loginWithEmail(
+      await ref.read(authProvider.notifier).loginWithEmail(
             _emailController.text.trim(),
             _passwordController.text,
           );
@@ -103,7 +103,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       return;
     }
     try {
-      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+      await ref.read(authProvider.notifier).signInWithGoogle();
     } catch (e, s) {
       CrashlyticsService().recordError(e, s);
       if (mounted) {
@@ -144,7 +144,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(authNotifierProvider).isLoading;
+    final isLoading = ref.watch(authProvider).isLoading;
     final theme = Theme.of(context);
 
     return Scaffold(

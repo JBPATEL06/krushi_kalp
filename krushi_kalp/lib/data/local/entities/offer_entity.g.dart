@@ -114,7 +114,7 @@ const OfferEntitySchema = CollectionSchema(
   getId: _offerEntityGetId,
   getLinks: _offerEntityGetLinks,
   attach: _offerEntityAttach,
-  version: '3.1.0+1',
+  version: '3.3.2',
 );
 
 int _offerEntityEstimateSize(

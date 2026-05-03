@@ -119,7 +119,7 @@ const MockTestEntitySchema = CollectionSchema(
   getId: _mockTestEntityGetId,
   getLinks: _mockTestEntityGetLinks,
   attach: _mockTestEntityAttach,
-  version: '3.1.0+1',
+  version: '3.3.2',
 );
 
 int _mockTestEntityEstimateSize(

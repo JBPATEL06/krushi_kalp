@@ -42,7 +42,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Future<void> _checkAppStatus() async {
-    final authState = ref.read(authNotifierProvider);
+    final authState = ref.read(authProvider);
     if (authState.isAdmin) {
       return;
     }
@@ -83,16 +83,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Future<void> _initialSync() async {
-    final authState = ref.read(authNotifierProvider);
+    final authState = ref.read(authProvider);
     if (authState.isLoggedIn && authState.user != null) {
       final userId = authState.user!.id;
 
       // Trigger background fetches (Non-blocking)
-      ref.read(testNotifierProvider.notifier).fetchTests();
-      ref.read(testNotifierProvider.notifier).fetchUserTests(userId);
-      ref.read(resourceNotifierProvider.notifier).fetchAll();
+      ref.read(testProvider.notifier).fetchTests();
+      ref.read(testProvider.notifier).fetchUserTests(userId);
+      ref.read(resourceProvider.notifier).fetchAll();
       ref
-          .read(resourceNotifierProvider.notifier)
+          .read(resourceProvider.notifier)
           .fetchPurchasedResources(userId);
     }
   }

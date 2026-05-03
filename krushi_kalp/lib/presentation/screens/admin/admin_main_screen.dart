@@ -56,8 +56,8 @@ class _AdminMainScreenState extends ConsumerState<AdminMainScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final adminState = ref.watch(adminNotifierProvider);
-    final authState = ref.watch(authNotifierProvider);
+    final adminState = ref.watch(adminProvider);
+    final authState = ref.watch(authProvider);
 
     // Ensure the current tab is marked as initialized
     if (!_initializedScreens[adminState.navIndex]) {
@@ -74,7 +74,7 @@ class _AdminMainScreenState extends ConsumerState<AdminMainScreen> {
         onPopInvokedWithResult: (didPop, result) {
           if (didPop) return;
           if (adminState.navIndex != 0) {
-            ref.read(adminNotifierProvider.notifier).setNavIndex(0);
+            ref.read(adminProvider.notifier).setNavIndex(0);
             return;
           }
         },
@@ -327,7 +327,7 @@ class _AdminMainScreenState extends ConsumerState<AdminMainScreen> {
                   );
 
                   if (confirm == true) {
-                    await ref.read(authNotifierProvider.notifier).signOut();
+                    await ref.read(authProvider.notifier).signOut();
                   }
                 },
               ),
@@ -363,38 +363,38 @@ class _AdminMainScreenState extends ConsumerState<AdminMainScreen> {
                   icon: Icons.dashboard_rounded,
                   index: 0,
                   currentIndex: adminState.navIndex,
-                  onTap: () => ref.read(adminNotifierProvider.notifier).setNavIndex(0)),
+                  onTap: () => ref.read(adminProvider.notifier).setNavIndex(0)),
               _buildRailItem(context,
                   icon: Icons.analytics_rounded,
                   index: 1,
                   currentIndex: adminState.navIndex,
-                  onTap: () => ref.read(adminNotifierProvider.notifier).setNavIndex(1)),
+                  onTap: () => ref.read(adminProvider.notifier).setNavIndex(1)),
               _buildRailItem(context,
                   icon: Icons.people_rounded,
                   index: 2,
                   currentIndex: adminState.navIndex,
-                  onTap: () => ref.read(adminNotifierProvider.notifier).setNavIndex(2)),
+                  onTap: () => ref.read(adminProvider.notifier).setNavIndex(2)),
               _buildRailItem(context,
                   icon: Icons.forum_rounded,
                   index: 3,
                   currentIndex: adminState.navIndex,
-                  onTap: () => ref.read(adminNotifierProvider.notifier).setNavIndex(3)),
+                  onTap: () => ref.read(adminProvider.notifier).setNavIndex(3)),
               _buildRailItem(context,
                   icon: Icons.notifications_active_rounded,
                   index: 4,
                   currentIndex: adminState.navIndex,
-                  onTap: () => ref.read(adminNotifierProvider.notifier).setNavIndex(4)),
+                  onTap: () => ref.read(adminProvider.notifier).setNavIndex(4)),
               _buildRailItem(context,
                   icon: Icons.settings_applications_rounded,
                   index: 5,
                   currentIndex: adminState.navIndex,
-                  onTap: () => ref.read(adminNotifierProvider.notifier).setNavIndex(5)),
+                  onTap: () => ref.read(adminProvider.notifier).setNavIndex(5)),
             ],
           ),
         ),
         IconButton(
           onPressed: () async {
-            final auth = ref.read(authNotifierProvider.notifier);
+            final auth = ref.read(authProvider.notifier);
             await auth.signOut();
           },
           icon: Icon(Icons.logout_rounded, color: colorScheme.error),
@@ -437,7 +437,7 @@ class _AdminMainScreenState extends ConsumerState<AdminMainScreen> {
         _initializedScreens[index] = true;
       });
     }
-    ref.read(adminNotifierProvider.notifier).setNavIndex(index);
+    ref.read(adminProvider.notifier).setNavIndex(index);
     if (!isPersistent) {
       Navigator.pop(context); // Close drawer
     }

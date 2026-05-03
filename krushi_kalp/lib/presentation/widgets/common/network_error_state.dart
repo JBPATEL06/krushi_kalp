@@ -104,7 +104,7 @@ class _NetworkErrorStateState extends ConsumerState<NetworkErrorState>
     if (_isRetrying || widget.onRetry == null) return;
     setState(() => _isRetrying = true);
 
-    final isConnected = await ref.read(networkNotifierProvider.notifier).checkConnectivity();
+    final isConnected = await ref.read(networkProvider.notifier).checkConnectivity();
     if (isConnected && widget.onRetry != null) {
       widget.onRetry!();
     }
@@ -118,7 +118,7 @@ class _NetworkErrorStateState extends ConsumerState<NetworkErrorState>
     return _buildFull(context);
   }
 
-  // ── Compact variant ─────────────────────────────────────────────────────────
+  // â”€â”€ Compact variant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildCompact(BuildContext context) {
     final theme = Theme.of(context);
@@ -191,7 +191,7 @@ class _NetworkErrorStateState extends ConsumerState<NetworkErrorState>
     );
   }
 
-  // ── Full-page variant ───────────────────────────────────────────────────────
+  // â”€â”€ Full-page variant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _buildFull(BuildContext context) {
     return FadeTransition(

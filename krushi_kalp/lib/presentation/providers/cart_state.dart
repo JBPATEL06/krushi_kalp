@@ -4,7 +4,7 @@ import '../../domain/models/order_item.dart';
 part 'cart_state.freezed.dart';
 
 @freezed
-class CartState with _$CartState {
+abstract class CartState with _$CartState {
   const factory CartState({
     @Default([]) List<OrderItem> cartItems,
     @Default(false) bool isLoading,

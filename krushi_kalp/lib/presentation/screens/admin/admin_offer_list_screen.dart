@@ -32,7 +32,7 @@ class _AdminOfferListScreenState extends ConsumerState<AdminOfferListScreen> {
   }
 
   void _refreshOffers() {
-    ref.read(offerNotifierProvider.notifier).fetchActiveOffers();
+    ref.read(offerProvider.notifier).fetchActiveOffers();
   }
 
   @override
@@ -92,7 +92,7 @@ class _AdminOfferListScreenState extends ConsumerState<AdminOfferListScreen> {
     setState(() => _updatingOfferId = offer.id);
     try {
       await OfferService.instance.updateOffer(offer.copyWith(isActive: active));
-      ref.read(offerNotifierProvider.notifier).fetchActiveOffers(forceRefresh: true);
+      ref.read(offerProvider.notifier).fetchActiveOffers(forceRefresh: true);
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'admin_offer_list_toggle');
       if (mounted) ErrorUtils.showError(context, e.toString());
@@ -105,7 +105,7 @@ class _AdminOfferListScreenState extends ConsumerState<AdminOfferListScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final offerState = ref.watch(offerNotifierProvider);
+    final offerState = ref.watch(offerProvider);
 
     if (offerState.isLoading && offerState.activeOffers.isEmpty) {
       return const Scaffold(

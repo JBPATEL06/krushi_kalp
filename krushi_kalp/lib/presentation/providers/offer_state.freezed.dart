@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,84 +9,66 @@ part of 'offer_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
 mixin _$OfferState {
-  List<Offer> get activeOffers => throw _privateConstructorUsedError;
-  bool get isLoading => throw _privateConstructorUsedError;
-  String get errorMessage => throw _privateConstructorUsedError;
+  List<Offer> get activeOffers;
+  bool get isLoading;
+  String get errorMessage;
 
-  @JsonKey(ignore: true)
-  $OfferStateCopyWith<OfferState> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $OfferStateCopyWith<$Res> {
-  factory $OfferStateCopyWith(
-          OfferState value, $Res Function(OfferState) then) =
-      _$OfferStateCopyWithImpl<$Res, OfferState>;
-  @useResult
-  $Res call({List<Offer> activeOffers, bool isLoading, String errorMessage});
-}
-
-/// @nodoc
-class _$OfferStateCopyWithImpl<$Res, $Val extends OfferState>
-    implements $OfferStateCopyWith<$Res> {
-  _$OfferStateCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
+  /// Create a copy of OfferState
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
   @pragma('vm:prefer-inline')
+  $OfferStateCopyWith<OfferState> get copyWith =>
+      _$OfferStateCopyWithImpl<OfferState>(this as OfferState, _$identity);
+
   @override
-  $Res call({
-    Object? activeOffers = null,
-    Object? isLoading = null,
-    Object? errorMessage = null,
-  }) {
-    return _then(_value.copyWith(
-      activeOffers: null == activeOffers
-          ? _value.activeOffers
-          : activeOffers // ignore: cast_nullable_to_non_nullable
-              as List<Offer>,
-      isLoading: null == isLoading
-          ? _value.isLoading
-          : isLoading // ignore: cast_nullable_to_non_nullable
-              as bool,
-      errorMessage: null == errorMessage
-          ? _value.errorMessage
-          : errorMessage // ignore: cast_nullable_to_non_nullable
-              as String,
-    ) as $Val);
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is OfferState &&
+            const DeepCollectionEquality()
+                .equals(other.activeOffers, activeOffers) &&
+            (identical(other.isLoading, isLoading) ||
+                other.isLoading == isLoading) &&
+            (identical(other.errorMessage, errorMessage) ||
+                other.errorMessage == errorMessage));
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      const DeepCollectionEquality().hash(activeOffers),
+      isLoading,
+      errorMessage);
+
+  @override
+  String toString() {
+    return 'OfferState(activeOffers: $activeOffers, isLoading: $isLoading, errorMessage: $errorMessage)';
   }
 }
 
 /// @nodoc
-abstract class _$$OfferStateImplCopyWith<$Res>
-    implements $OfferStateCopyWith<$Res> {
-  factory _$$OfferStateImplCopyWith(
-          _$OfferStateImpl value, $Res Function(_$OfferStateImpl) then) =
-      __$$OfferStateImplCopyWithImpl<$Res>;
-  @override
+abstract mixin class $OfferStateCopyWith<$Res> {
+  factory $OfferStateCopyWith(
+          OfferState value, $Res Function(OfferState) _then) =
+      _$OfferStateCopyWithImpl;
   @useResult
   $Res call({List<Offer> activeOffers, bool isLoading, String errorMessage});
 }
 
 /// @nodoc
-class __$$OfferStateImplCopyWithImpl<$Res>
-    extends _$OfferStateCopyWithImpl<$Res, _$OfferStateImpl>
-    implements _$$OfferStateImplCopyWith<$Res> {
-  __$$OfferStateImplCopyWithImpl(
-      _$OfferStateImpl _value, $Res Function(_$OfferStateImpl) _then)
-      : super(_value, _then);
+class _$OfferStateCopyWithImpl<$Res> implements $OfferStateCopyWith<$Res> {
+  _$OfferStateCopyWithImpl(this._self, this._then);
 
+  final OfferState _self;
+  final $Res Function(OfferState) _then;
+
+  /// Create a copy of OfferState
+  /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
   $Res call({
@@ -94,27 +76,193 @@ class __$$OfferStateImplCopyWithImpl<$Res>
     Object? isLoading = null,
     Object? errorMessage = null,
   }) {
-    return _then(_$OfferStateImpl(
+    return _then(_self.copyWith(
       activeOffers: null == activeOffers
-          ? _value._activeOffers
+          ? _self.activeOffers
           : activeOffers // ignore: cast_nullable_to_non_nullable
               as List<Offer>,
       isLoading: null == isLoading
-          ? _value.isLoading
+          ? _self.isLoading
           : isLoading // ignore: cast_nullable_to_non_nullable
               as bool,
       errorMessage: null == errorMessage
-          ? _value.errorMessage
+          ? _self.errorMessage
           : errorMessage // ignore: cast_nullable_to_non_nullable
               as String,
     ));
   }
 }
 
+/// Adds pattern-matching-related methods to [OfferState].
+extension OfferStatePatterns on OfferState {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_OfferState value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _OfferState() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_OfferState value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _OfferState():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_OfferState value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _OfferState() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            List<Offer> activeOffers, bool isLoading, String errorMessage)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _OfferState() when $default != null:
+        return $default(
+            _that.activeOffers, _that.isLoading, _that.errorMessage);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            List<Offer> activeOffers, bool isLoading, String errorMessage)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _OfferState():
+        return $default(
+            _that.activeOffers, _that.isLoading, _that.errorMessage);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            List<Offer> activeOffers, bool isLoading, String errorMessage)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _OfferState() when $default != null:
+        return $default(
+            _that.activeOffers, _that.isLoading, _that.errorMessage);
+      case _:
+        return null;
+    }
+  }
+}
+
 /// @nodoc
 
-class _$OfferStateImpl implements _OfferState {
-  const _$OfferStateImpl(
+class _OfferState implements OfferState {
+  const _OfferState(
       {final List<Offer> activeOffers = const [],
       this.isLoading = false,
       this.errorMessage = ''})
@@ -136,16 +284,19 @@ class _$OfferStateImpl implements _OfferState {
   @JsonKey()
   final String errorMessage;
 
+  /// Create a copy of OfferState
+  /// with the given fields replaced by the non-null parameter values.
   @override
-  String toString() {
-    return 'OfferState(activeOffers: $activeOffers, isLoading: $isLoading, errorMessage: $errorMessage)';
-  }
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$OfferStateCopyWith<_OfferState> get copyWith =>
+      __$OfferStateCopyWithImpl<_OfferState>(this, _$identity);
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$OfferStateImpl &&
+            other is _OfferState &&
             const DeepCollectionEquality()
                 .equals(other._activeOffers, _activeOffers) &&
             (identical(other.isLoading, isLoading) ||
@@ -161,27 +312,54 @@ class _$OfferStateImpl implements _OfferState {
       isLoading,
       errorMessage);
 
-  @JsonKey(ignore: true)
+  @override
+  String toString() {
+    return 'OfferState(activeOffers: $activeOffers, isLoading: $isLoading, errorMessage: $errorMessage)';
+  }
+}
+
+/// @nodoc
+abstract mixin class _$OfferStateCopyWith<$Res>
+    implements $OfferStateCopyWith<$Res> {
+  factory _$OfferStateCopyWith(
+          _OfferState value, $Res Function(_OfferState) _then) =
+      __$OfferStateCopyWithImpl;
+  @override
+  @useResult
+  $Res call({List<Offer> activeOffers, bool isLoading, String errorMessage});
+}
+
+/// @nodoc
+class __$OfferStateCopyWithImpl<$Res> implements _$OfferStateCopyWith<$Res> {
+  __$OfferStateCopyWithImpl(this._self, this._then);
+
+  final _OfferState _self;
+  final $Res Function(_OfferState) _then;
+
+  /// Create a copy of OfferState
+  /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  _$$OfferStateImplCopyWith<_$OfferStateImpl> get copyWith =>
-      __$$OfferStateImplCopyWithImpl<_$OfferStateImpl>(this, _$identity);
+  $Res call({
+    Object? activeOffers = null,
+    Object? isLoading = null,
+    Object? errorMessage = null,
+  }) {
+    return _then(_OfferState(
+      activeOffers: null == activeOffers
+          ? _self._activeOffers
+          : activeOffers // ignore: cast_nullable_to_non_nullable
+              as List<Offer>,
+      isLoading: null == isLoading
+          ? _self.isLoading
+          : isLoading // ignore: cast_nullable_to_non_nullable
+              as bool,
+      errorMessage: null == errorMessage
+          ? _self.errorMessage
+          : errorMessage // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
 }
 
-abstract class _OfferState implements OfferState {
-  const factory _OfferState(
-      {final List<Offer> activeOffers,
-      final bool isLoading,
-      final String errorMessage}) = _$OfferStateImpl;
-
-  @override
-  List<Offer> get activeOffers;
-  @override
-  bool get isLoading;
-  @override
-  String get errorMessage;
-  @override
-  @JsonKey(ignore: true)
-  _$$OfferStateImplCopyWith<_$OfferStateImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
+// dart format on

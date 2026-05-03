@@ -91,7 +91,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
   }
 
   Future<void> _checkConnectivity() async {
-    final isConnected = ref.read(networkNotifierProvider);
+    final isConnected = ref.read(networkProvider);
     if (!isConnected) {
       setState(() => _isOffline = true);
       if (mounted) {
@@ -141,7 +141,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
     });
 
     try {
-      final authState = ref.read(authNotifierProvider);
+      final authState = ref.read(authProvider);
       final user = authState.user;
       final userId = user?.id ?? 'guest_user';
       final userName = authState.username ?? 'User';
@@ -423,7 +423,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  _scoreAnimation.value.toStringAsFixed(1),
+                                  _formatScore(_scoreAnimation.value),
                                   style: Theme.of(context)
                                       .textTheme
                                       .displayLarge
@@ -434,7 +434,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                                       ),
                                 ),
                                 Text(
-                                  'OUT OF ${widget.totalMarks.toStringAsFixed(1)}',
+                                  'OUT OF ${_formatScore(widget.totalMarks)}',
                                   style: Theme.of(context)
                                       .textTheme
                                       .labelLarge
@@ -782,6 +782,17 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
 
 
 
+  /// Formats a score value: shows up to 2 decimal places, trimming trailing zeros.
+  /// e.g. 39.0 â†’ "39", 38.5 â†’ "38.5", 38.75 â†’ "38.75"
+  String _formatScore(double value) {
+    if (value == value.truncateToDouble()) {
+      return value.toInt().toString();
+    }
+    // Use 2 decimal places and strip trailing zero
+    final s = value.toStringAsFixed(2);
+    return s.endsWith('0') ? s.substring(0, s.length - 1) : s;
+  }
+
   Widget _buildStatCard(
       {required String label, required String value, required Color color}) {
     return Container(
@@ -820,7 +831,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
 
   Future<void> _checkExistingRating() async {
     if (!_isLoadingRating) return;
-    final authState = ref.read(authNotifierProvider);
+    final authState = ref.read(authProvider);
     final user = authState.user;
     if (user == null) {
       if (mounted) setState(() => _isLoadingRating = false);
@@ -894,7 +905,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
   }
 
   void _showRatingDialog() {
-    final authState = ref.read(authNotifierProvider);
+    final authState = ref.read(authProvider);
     final user = authState.user;
     if (user == null) return;
     int? tId = int.tryParse(widget.testId);
