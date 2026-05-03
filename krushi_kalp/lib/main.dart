@@ -120,17 +120,6 @@ void main() {
       ),
     );
   }, (error, stack) {
-supabaseUrl,
-      anonKey: Env.supabaseAnonKey,
-    );
-
-    // 6. Run App
-    runApp(
-      const ProviderScope(
-        child: MyApp(),
-      ),
-    );
-  }, (error, stack) {
     debugPrint('──────────────────────────────────────────────────────────');
     debugPrint('CRITICAL STARTUP ERROR: $error');
     debugPrint('STACK TRACE: $stack');

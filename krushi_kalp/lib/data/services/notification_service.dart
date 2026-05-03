@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import '../../utils/crashlytics_service.dart';
+import 'transfer_notification_service.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
