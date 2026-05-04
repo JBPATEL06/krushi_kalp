@@ -112,6 +112,7 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
             PagedSliverList<int, MockTest>(
               pagingController: _pagingController,
               builderDelegate: PagedChildBuilderDelegate<MockTest>(
+                itemBuilder: (context, item, index) {
                   final bottomPadding = index == _pagingController.itemList!.length - 1
                       ? AppSpacing.md + MediaQuery.of(context).padding.bottom
                       : AppSpacing.md;
