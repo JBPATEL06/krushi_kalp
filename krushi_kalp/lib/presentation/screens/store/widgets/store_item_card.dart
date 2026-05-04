@@ -331,7 +331,7 @@ class StoreItemCard extends StatelessWidget {
     if (coverUrl != null && coverUrl!.isNotEmpty) {
       return CachedNetworkImage(
         imageUrl: coverUrl!,
-        fit: BoxFit.contain, // Fit fully within the container dimensions
+        fit: BoxFit.cover, // Fill the container completely for consistency
         placeholder: (_, __) => _placeholder(context, theme, loading: true),
         errorWidget: (_, __, ___) => _placeholder(context, theme),
       );

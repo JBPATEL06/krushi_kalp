@@ -16,7 +16,9 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
-- **Phase 38**: Search Bar Rendering Fix (In Progress)
+- **Phase 39**: Image Consistency & Responsiveness Fix (In Progress)
+- [Phase 39] Standardizing BoxFit.cover across all item cards and detail headers.
+- **Phase 38**: Search Bar Rendering Fix (Completed)
 - [Phase 38] Resolving white artifact glitch in Downloads screen search bar.
 - **Phase 37**: Background Logic Restoration & Startup Stability (Completed)
 - [Phase 37] Reverted to UI-isolate based upload logic for stability.

@@ -132,8 +132,8 @@ class DownloadItemCard extends StatelessWidget {
       child: (coverUrl != null && coverUrl!.isNotEmpty)
           ? CachedNetworkImage(
               imageUrl: coverUrl!,
-              // BoxFit.contain: show whole image, background blends with card
-              fit: BoxFit.contain,
+              // BoxFit.cover: fills container completely for consistency
+              fit: BoxFit.cover,
               placeholder: (_, __) =>
                   _placeholder(context, theme, loading: true),
               errorWidget: (_, __, ___) => _placeholder(context, theme),

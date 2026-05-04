@@ -509,7 +509,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
         ),
         child: CachedNetworkImage(
           imageUrl: widget.resource.thumbnailUrl!,
-          fit: BoxFit.contain,
+          fit: BoxFit.cover, // Immersive header
         ),
       ),
     );

@@ -470,3 +470,27 @@ Resolve the UI rendering glitch in the `DownloadsScreen` search bar where white 
 - Search bar renders with smooth rounded corners.
 - No white artifacts visible on the edges.
 - Theme consistency maintained.
+
+---
+
+## [Phase 39: Image Consistency & Responsiveness Fix]
+### Goal
+Standardize image rendering across the app to ensure all list items and detail headers have a uniform, premium, and responsive appearance. Eliminate "letterboxing" and inconsistent widths in item cards.
+
+### Proposed Changes
+- **File**: `lib/presentation/screens/store/widgets/store_item_card.dart`
+  - **Action**: Change `BoxFit.contain` to `BoxFit.cover` in `_buildImage`.
+- **File**: `lib/presentation/widgets/common/download_item_card.dart`
+  - **Action**: Change `BoxFit.contain` to `BoxFit.cover` in `_buildImage`.
+  - **Action**: Update docstring to correctly describe the implementation.
+- **File**: `lib/presentation/screens/resource_detail_screen.dart`
+  - **Action**: Change `BoxFit.contain` to `BoxFit.cover` in `_buildImageHeader` for an immersive header feel.
+
+### Risks / Side Effects
+- Minor cropping of edges for images that don't match the fixed aspect ratios. This is acceptable for UI consistency.
+
+### Test Criteria
+- All store item cards have uniform image widths.
+- No empty spaces or letterboxing in card images.
+- Resource detail header fills the entire width of the device.
+- Images remain sharp and properly centered.
