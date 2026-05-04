@@ -494,3 +494,26 @@ Standardize image rendering across the app to ensure all list items and detail h
 - No empty spaces or letterboxing in card images.
 - Resource detail header fills the entire width of the device.
 - Images remain sharp and properly centered.
+
+---
+
+## [Phase 40: Performance Streak Logic Fix]
+### Goal
+Refactor the `update_user_streak` database function to align with industry standards and fix logic errors in weekly history tracking.
+
+### Proposed Changes
+- **Database Function**: `update_user_streak`
+  - **Change 1**: Use IST Timezone (`Asia/Kolkata`) for all date comparisons to ensure streak accuracy for Indian users.
+  - **Change 2**: Implement dynamic "Weekly Shifting" logic. If a user is absent for $N$ days, the weekly minutes array shifts by $N$ positions instead of being wiped out.
+  - **Change 3**: Ensure the "Add" logic correctly handles same-day activity by accumulating minutes.
+  - **Change 4**: Standardize trigger threshold (5 minutes for reading, any for tests).
+
+### Risks / Side Effects
+- Users might see their weekly heatmap change slightly as the "wiping" behavior is replaced by a "shifting" behavior. This is an improvement, not a loss of data.
+- Transitioning to IST might cause a one-time "double-day" or "missed-day" for users currently in a different DB timezone, but stabilizes the experience moving forward.
+
+### Test Criteria
+- Activity on the same day updates minutes but doesn't increment streak count.
+- Activity on the next day increments streak and shifts the weekly array by 1.
+- Activity after 3 days resets streak to 1 and shifts the weekly array by 3.
+- Heatmap values correctly represent the last 7 days.
