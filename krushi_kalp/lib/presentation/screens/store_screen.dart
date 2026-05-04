@@ -288,11 +288,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
           ),
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: theme.colorScheme.primary),
-            onPressed: _refreshAll,
-            tooltip: 'Refresh Store',
-          ),
+
           IconButton(
             icon: Icon(Icons.search, color: theme.colorScheme.primary),
             onPressed: () {
@@ -328,6 +324,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
                 return RefreshIndicator(
                   onRefresh: () async => controller.refresh(),
                   child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     slivers: [
                       const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
                       if (category == 'Mock Tests')

@@ -165,18 +165,7 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
           SliverAppBar(
             expandedHeight: context.h(300),
             pinned: true,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded),
-                onPressed: () {
-                  _loadData();
-                  _fetchDisplayPrice();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Refreshing test details...')),
-                  );
-                },
-              ),
-            ],
+            actions: [],
             flexibleSpace: FlexibleSpaceBar(
               background: widget.heroTag != null
                   ? Hero(

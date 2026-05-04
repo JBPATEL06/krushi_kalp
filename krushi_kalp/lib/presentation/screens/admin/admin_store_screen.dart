@@ -12,13 +12,6 @@ class AdminStoreScreen extends StatelessWidget {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Manage Store'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => _listKey.currentState?.refresh(),
-            tooltip: 'Refresh',
-          ),
-        ],
       ),
       body: AdminMockTestList(key: _listKey),
     );

@@ -180,14 +180,6 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         foregroundColor: theme.colorScheme.onSurface,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: theme.colorScheme.primary),
-            onPressed: () => _pagingController.refresh(),
-            tooltip: 'Refresh Content',
-          ),
-          const SizedBox(width: AppSpacing.md),
-        ],
       ),
       body: Column(
         children: [

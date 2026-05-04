@@ -147,16 +147,6 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
             style: TextStyle(fontSize: context.sp(20))), // FIXED
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Refresh',
-            onPressed: () {
-              _loadStats();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Refreshing details...')),
-              );
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.card_giftcard),
             onPressed: () {
               Navigator.push(
@@ -185,8 +175,11 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+      body: RefreshIndicator(
+        onRefresh: () async => _loadStats(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -437,6 +430,7 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
             const SizedBox(height: AppSpacing.xxxl),
           ],
         ),
+      ),
       ),
     );
   }

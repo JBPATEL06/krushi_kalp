@@ -66,7 +66,6 @@ class _AdminChatListScreenState extends ConsumerState<AdminChatListScreen> {
             padding: const EdgeInsets.fromLTRB(
                 AppSpacing.md, AppSpacing.md, AppSpacing.md, 0),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   'CONVERSATIONS',
@@ -74,17 +73,6 @@ class _AdminChatListScreenState extends ConsumerState<AdminChatListScreen> {
                     fontWeight: FontWeight.w800,
                     color: colorScheme.onSurfaceVariant,
                     letterSpacing: 1.2,
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: () => _pagingController.refresh(),
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text('Refresh'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: colorScheme.primary,
-                    textStyle: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
                   ),
                 ),
               ],

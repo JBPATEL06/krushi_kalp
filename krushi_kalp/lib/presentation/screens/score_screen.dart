@@ -152,12 +152,6 @@ class _ScoreScreenState extends ConsumerState<ScoreScreen> {
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: theme.colorScheme.onSurface),
-            onPressed: () => _pagingController.refresh(),
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: () async => _pagingController.refresh(),

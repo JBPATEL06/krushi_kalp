@@ -127,22 +127,22 @@ class _AdminOfferListScreenState extends ConsumerState<AdminOfferListScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Manage Offers'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _refreshOffers,
-          ),
-        ],
       ),
-      body: offers.isEmpty ? _buildEmptyState() : ListView.builder(
-        padding: EdgeInsets.only(bottom: 80 + MediaQuery.of(context).padding.bottom),
-        itemCount: offers.length,
-        itemBuilder: (context, index) {
-          final offer = offers[index];
-          final isSelected = _selectedIds.contains(offer.id);
-          return _buildOfferItem(context, theme, colorScheme, offer, isSelected);
-        },
-      ),
+      body: offers.isEmpty
+          ? _buildEmptyState()
+          : RefreshIndicator(
+              onRefresh: () async => _refreshOffers(),
+              child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.only(bottom: 80 + MediaQuery.of(context).padding.bottom),
+                itemCount: offers.length,
+                itemBuilder: (context, index) {
+                  final offer = offers[index];
+                  final isSelected = _selectedIds.contains(offer.id);
+                  return _buildOfferItem(context, theme, colorScheme, offer, isSelected);
+                },
+              ),
+            ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.push(
           context,
