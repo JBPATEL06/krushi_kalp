@@ -691,3 +691,74 @@ Standardize user-facing error feedback and ensure comprehensive developer observ
 - Walkthrough documentation created in artifacts.
 
 ---
+
+## [Phase 46: System UI Padding Standardization]
+### Goal
+Ensure all scrollable screens and list views respect the Android 15 gesture navigation bar insets, preventing content from being clipped behind the system navigation bar.
+
+### Files Modified
+- `lib/presentation/screens/admin/admin_user_details_screen.dart`
+- `lib/presentation/screens/admin/admin_grant_access_screen.dart`
+- `lib/presentation/screens/admin/admin_user_list_screen.dart`
+- `lib/presentation/screens/admin/admin_reviews_screen.dart`
+- `lib/presentation/screens/admin/admin_order_list_screen.dart`
+- `lib/presentation/screens/admin/admin_offer_list_screen.dart`
+- `lib/presentation/screens/pdf_viewer_screen.dart`
+- `lib/presentation/screens/purchased_tests_screen.dart` (critical syntax fix)
+
+### Decision
+Use `EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + AppSpacing.md)` as the standard bottom padding for all `PagedListView`, `ListView`, and `CustomScrollView` instances. This is the project-wide standard going forward.
+
+### Risks Identified
+- A syntax error was introduced in `purchased_tests_screen.dart` during the padding refactor — the `itemBuilder` closure in `PagedChildBuilderDelegate` was missing. This was fixed and verified with `dart analyze` (no issues found).
+
+### Test Criteria
+- On a device with gesture navigation enabled, the last list item should not be hidden behind the navigation bar.
+- `dart analyze` returns zero issues on all modified files.
+
+**Status: Resolved**
+- All identified screens updated. `purchased_tests_screen.dart` syntax error patched and committed.
+- Committed to `bugfxing` branch.
+
+---
+
+## [Phase 47: Pull-to-Refresh Standardization]
+### Goal
+Remove all manual refresh buttons (AppBar `IconButton`, inline `TextButton`) from every screen in the app and replace them with standard pull-to-refresh (`RefreshIndicator`) patterns.
+
+### Rule Established
+> **Manual refresh buttons in AppBar or inline headers are forbidden.** All list and detail screens must use `RefreshIndicator`. Screens using `SingleChildScrollView` must also be wrapped with `RefreshIndicator` + `AlwaysScrollableScrollPhysics`.
+
+### Audit Results
+
+| Screen | Had Manual Button | Had PTR | Action Taken |
+|---|---|---|---|
+| `score_screen.dart` | ✅ AppBar icon | ✅ | Removed AppBar icon |
+| `my_library_screen.dart` | ✅ AppBar icon | ✅ | Removed AppBar icon |
+| `free_content_screen.dart` | ✅ AppBar icon | ✅ | Removed AppBar icon |
+| `mock_test_detail_screen.dart` | ✅ SliverAppBar icon | ✅ | Removed SliverAppBar icon |
+| `admin_mock_test_detail_screen.dart` | ✅ AppBar icon | ❌ | Removed icon + Added PTR |
+| `admin_resource_detail_screen.dart` | ✅ AppBar icon | ❌ | Removed icon + Added PTR |
+| `admin_store_screen.dart` | ✅ AppBar icon | ✅ (child) | Removed AppBar icon |
+| `admin_offer_list_screen.dart` | ✅ AppBar icon | ❌ | Removed icon + Added PTR |
+| `admin_chat_list_screen.dart` | ✅ Inline TextButton | ✅ | Removed inline button |
+| `store_screen.dart` | ✅ AppBar icon | partial | Removed icon + Added physics |
+
+### Intentionally Skipped
+- `maintenance_screen.dart` — standalone CTA button for app restart, not a list.
+- `banner_management_tab.dart` — refresh button re-fetches remote app config (not the stream).
+- `store_resource_grid.dart` — retry button in error/empty state, not a top-level header.
+
+### Risks Identified
+- None. All changes are purely UI-layer with no logic changes.
+
+### Test Criteria
+- No `Icons.refresh` in AppBar `actions` on any screen.
+- Pull-down gesture triggers reload on all list and detail screens.
+- `dart analyze` returns zero issues.
+
+**Status: Resolved**
+- All 10 screens updated. `dart analyze` confirmed zero issues.
+- Committed to `bugfxing` branch as `[Phase 47] Replace all manual refresh buttons with pull-to-refresh across all screens`.
+
+---
