@@ -222,7 +222,8 @@ class ChatService {
   Future<void> deleteMessage(String messageId) async {
     try {
       await deleteMessages([messageId]);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'chat_service: deleteMessage');
       rethrow;
     }
   }
@@ -285,6 +286,64 @@ class ChatService {
   // ==========================================
   //         HELPER: GET CONVERSATIONS
   // ==========================================
+
+  /// Fetch conversations with pagination (for Admin list)
+  Future<List<Map<String, dynamic>>> getPaginatedConversations({
+    int offset = 0,
+    int limit = 20,
+  }) async {
+    try {
+      // 1. Fetch unique user_ids from recent messages
+      // This is a simplified approach. In a high-scale app, a 'conversations' table is better.
+      final messagesResponse = await _supabase
+          .from('messages')
+          .select('user_id, created_at')
+          .order('created_at', ascending: false)
+          .range(offset, offset + limit - 1);
+
+      final List<Map<String, dynamic>> tempConversations = [];
+      final Set<String> userIds = {};
+
+      for (final record in (messagesResponse as List)) {
+        final userId = record['user_id'] as String;
+        if (!userIds.contains(userId)) {
+          userIds.add(userId);
+          tempConversations.add({
+            'user_id': userId,
+            'last_active': record['created_at'],
+            'email': 'Loading...',
+            'username': 'User',
+          });
+        }
+      }
+
+      if (userIds.isEmpty) return [];
+
+      // 2. Fetch User Details for these IDs
+      final usersResponse = await _supabase
+          .from('users')
+          .select('id, email, username')
+          .inFilter('id', userIds.toList());
+
+      final Map<String, Map<String, dynamic>> userMap = {
+        for (var u in (usersResponse as List)) u['id'] as String: u
+      };
+
+      return tempConversations.map((conv) {
+        final userId = conv['user_id'] as String;
+        final userDetails = userMap[userId];
+        return {
+          ...conv,
+          'email': userDetails?['email'] ?? 'Unknown Email',
+          'username': userDetails?['username'] ?? 'User',
+        };
+      }).toList();
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'chat_service: getPaginatedConversations');
+      return [];
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getConversations() async {
     try {
       final messagesResponse = await _supabase
@@ -331,9 +390,7 @@ class ChatService {
         };
       }).toList();
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'chat_service');
-      if (NetworkUtils.isNetworkError(e)) return [];
-
+      CrashlyticsService.instance.recordError(e, stack, reason: 'chat_service: getConversations');
       return [];
     }
   }

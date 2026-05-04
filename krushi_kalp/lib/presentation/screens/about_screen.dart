@@ -23,7 +23,7 @@ class AboutScreen extends StatelessWidget {
             return Scaffold(
               appBar: AppBar(title: const Text('About Krushi Kalp')),
               body: NetworkErrorState(
-                message: 'Unable to load info. Please check your connection.',
+                error: snapshot.error,
                 onRetry: () {
                   Navigator.pushReplacementNamed(context, '/about');
                 },

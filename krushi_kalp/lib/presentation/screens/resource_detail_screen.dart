@@ -287,7 +287,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
                                   const SizedBox(width: AppSpacing.sm),
                                 ],
                                 Text(
-                                  'â‚¹${finalPrice.toStringAsFixed(0)}',
+                                  '₹${finalPrice.toStringAsFixed(0)}',
                                   style: Theme.of(context)
                                       .textTheme
                                       .headlineSmall

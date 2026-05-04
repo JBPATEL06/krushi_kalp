@@ -496,7 +496,7 @@ class _AdminOrderListScreenState extends State<AdminOrderListScreen> {
                   onRefresh: () async => _pagingController.refresh(),
                   child: PagedListView<int, Map<String, dynamic>>(
                     pagingController: _pagingController,
-                    padding: EdgeInsets.zero,
+                    padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
                     builderDelegate: PagedChildBuilderDelegate<Map<String, dynamic>>(
                       itemBuilder: (context, order, index) {
                         return _buildOrderRow(context, order, theme, colorScheme, emerald);

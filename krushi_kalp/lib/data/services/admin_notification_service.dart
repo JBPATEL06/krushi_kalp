@@ -19,7 +19,7 @@ class AdminNotificationService {
             'message': body,
             'type': 'broadcast',
             'is_read': false,
-            'created_at': DateTime.now().toUtc().toIso8601String(),
+            'created_at': DateTime.now().toIso8601String(),
           })
           .select()
           .single();
@@ -64,7 +64,7 @@ class AdminNotificationService {
             'message': body,
             'type': 'personal',
             'is_read': false,
-            'created_at': DateTime.now().toUtc().toIso8601String(),
+            'created_at': DateTime.now().toIso8601String(),
           })
           .select()
           .single();
@@ -104,7 +104,7 @@ class AdminNotificationService {
             'message': body,
             'type': 'chat', // <- distinguishable from general 'personal'
             'is_read': false,
-            'created_at': DateTime.now().toUtc().toIso8601String(),
+            'created_at': DateTime.now().toIso8601String(),
           })
           .select()
           .single();

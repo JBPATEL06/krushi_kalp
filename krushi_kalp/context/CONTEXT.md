@@ -16,9 +16,15 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
-- **Phase 41**: Profile UI Cleanup (In Progress)
+- **Phase 45**: Global Error Handling and Observability (Completed)
+- [Phase 45] Standardizing error feedback with `NetworkErrorState` and integrating Firebase Crashlytics across all services.
+- **Phase 44**: Global Pagination Standardization (Completed)
+- [Phase 44] Implementing `infinite_scroll_pagination` across all list-heavy screens (Store, Library, Scores, Admin Reviews/Chats, Free Content).
+- **Phase 43**: Global Local Time Standardization (Completed)
+- [Phase 43] Removing `.toUtc()` across all services and screens to ensure the app uses Local Time (IST) for all logic and database submissions.
+- **Phase 42**: Global Encoding & Typography Fix (Completed)
+- **Phase 41**: Profile UI Cleanup (Completed)
 - [Phase 41] Removing "Link Google Account" option from Profile Screen as per user request.
-- **Phase 40**: Performance Streak Logic Fix (Completed)
 - [Phase 40] Refactoring Supabase `update_user_streak` function to handle IST timezone and correct weekly history shifting.
 - [Phase 39] Standardizing BoxFit.cover across all item cards and detail headers.
 - **Phase 38**: Search Bar Rendering Fix (Completed)

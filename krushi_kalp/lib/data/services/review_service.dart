@@ -20,7 +20,7 @@ class ReviewService {
         'item_type': itemType,
         'rating': rating,
         'review_text': reviewText,
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
       };
 
       // Upsert: Insert or Update if (user_id, item_id, item_type) conflicts

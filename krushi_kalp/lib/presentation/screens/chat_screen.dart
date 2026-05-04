@@ -189,7 +189,7 @@ class _ChatScreenState extends State<ChatScreen> {
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return NetworkErrorState(
-              message: 'Error loading messages',
+              error: snapshot.error,
               onRetry: () => setState(() {
                 _messagesStream = _chatService.getMessagesStream();
               }),

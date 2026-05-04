@@ -330,7 +330,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Purchase Complete! ðŸ¥³"),
+            content: Text("Purchase Complete! 🥳"),
             backgroundColor: Colors.green,
           ),
         );
@@ -427,9 +427,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           }
           if (snapshot.hasError) {
             return NetworkErrorState(
-              message: NetworkUtils.isNetworkError(snapshot.error)
-                  ? 'Unable to load cart. Check your connection.'
-                  : 'Something went wrong.',
+              error: snapshot.error,
               onRetry: _refreshCart,
             );
           }
@@ -639,7 +637,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                                       .w(AppSpacing.xs), // FIXED: AppSpacing.xs
                                 ),
                                 child: Text(
-                                  "âœ¨ Store sale discounts are already active on items in your cart.",
+                                  "✨ Store sale discounts are already active on items in your cart.",
                                   style: TextStyle(
                                     color: const Color(
                                         0xFF10B981), // Success Emerald

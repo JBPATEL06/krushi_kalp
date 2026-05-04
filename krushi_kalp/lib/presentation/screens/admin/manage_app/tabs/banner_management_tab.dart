@@ -12,6 +12,7 @@ import '../../../../utils/ui_helpers.dart';
 import '../../../../../utils/error_utils.dart';
 import '../../../../../utils/crashlytics_service.dart';
 import '../../../../utils/picker_lifecycle_mixin.dart';
+import '../../../../widgets/common/network_error_state.dart';
 
 class BannerManagementTab extends StatefulWidget {
   const BannerManagementTab({super.key});
@@ -399,15 +400,9 @@ class _BannerManagementTabState extends State<BannerManagementTab> with PickerLi
                       return Center(
                         child: SingleChildScrollView(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.error_outline_rounded,
-                                  color: colorScheme.error, size: 48),
-                              const SizedBox(height: AppSpacing.md),
-                              Text("Error: ${snapshot.error}",
-                                  style: theme.textTheme.bodySmall),
-                            ],
+                          child: NetworkErrorState(
+                            error: snapshot.error,
+                            onRetry: () => setState(() {}),
                           ),
                         ),
                       );

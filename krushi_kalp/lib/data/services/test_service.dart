@@ -310,7 +310,7 @@ class TestService {
             'test_id': testId,
             'score_obtained': score,
             'is_passed': totalMarks > 0 ? (score / totalMarks) >= 0.40 : false,
-            'attempt_date': DateTime.now().toUtc().toIso8601String(),
+            'attempt_date': DateTime.now().toIso8601String(),
             'language': language,
           })
           .select('result_id')
@@ -335,6 +335,27 @@ class TestService {
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: fetchUserResults failed');
       throw Exception('Failed to load history: $e');
+    }
+  }
+
+  /// Fetches paginated test results for a user.
+  Future<List<TestResult>> fetchPaginatedUserResults({
+    required String authUserId,
+    required int offset,
+    required int limit,
+  }) async {
+    try {
+      final response = await _supabase
+          .from('results')
+          .select('*, mock_tests(title, total_marks)')
+          .eq('user_id', authUserId)
+          .order('attempt_date', ascending: false)
+          .range(offset, offset + limit - 1);
+
+      return (response as List).map((json) => TestResult.fromJson(json)).toList();
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: fetchPaginatedUserResults');
+      return [];
     }
   }
 
@@ -399,6 +420,64 @@ class TestService {
       return await _populateSignedUrls(purchasedTests);
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: fetchUserTests');
+      return [];
+    }
+  }
+
+  /// Fetches paginated purchased tests for a user.
+  Future<List<MockTest>> fetchPaginatedUserTests({
+    required String authUserId,
+    required int offset,
+    required int limit,
+    String? searchQuery,
+  }) async {
+    try {
+      var query = _supabase
+          .from('access')
+          .select('item_id, item_snapshot')
+          .eq('user_id', authUserId)
+          .eq('item_type', 'test')
+          .eq('is_active', true);
+
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        query = query.ilike('item_snapshot->>title', '%$searchQuery%');
+      }
+
+      final response = await query
+          .order('access_id', ascending: false) // Order by latest access
+          .range(offset, offset + limit - 1);
+
+      if ((response as List).isEmpty) return [];
+
+      final List accessList = response;
+      final testIds = accessList.map((i) => i['item_id'] as int).toList();
+
+      final testsResponse = await _supabase
+          .from('mock_tests')
+          .select()
+          .inFilter('test_id', testIds);
+
+      final liveTestsMap = {
+        for (var t in (testsResponse as List)) t['test_id']: t
+      };
+
+      final List<dynamic> finalJsonList = [];
+      for (var access in accessList) {
+        final itemId = access['item_id'];
+        final liveData = liveTestsMap[itemId];
+        if (liveData != null) {
+          finalJsonList.add(liveData);
+        } else if (access['item_snapshot'] != null) {
+          finalJsonList.add(access['item_snapshot']);
+        }
+      }
+
+      final List<MockTest> purchasedTests =
+          await compute(_parseMockTests, finalJsonList);
+
+      return await _populateSignedUrls(purchasedTests);
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: fetchPaginatedUserTests');
       return [];
     }
   }
@@ -531,7 +610,7 @@ class TestService {
             'status': 'PENDING',
             'amount': price,
             'gateway': 'razorpay',
-            'created_at': DateTime.now().toUtc().toIso8601String(),
+            'created_at': DateTime.now().toIso8601String(),
             'metadata': {
               'item_type': 'test',
               'item_id': testId,

@@ -135,6 +135,7 @@ class _AdminOfferListScreenState extends ConsumerState<AdminOfferListScreen> {
         ],
       ),
       body: offers.isEmpty ? _buildEmptyState() : ListView.builder(
+        padding: EdgeInsets.only(bottom: 80 + MediaQuery.of(context).padding.bottom),
         itemCount: offers.length,
         itemBuilder: (context, index) {
           final offer = offers[index];

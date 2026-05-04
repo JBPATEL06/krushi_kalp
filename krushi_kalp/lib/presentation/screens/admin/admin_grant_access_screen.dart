@@ -540,7 +540,10 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
     final theme = Theme.of(context);
     return PagedListView<int, Map<String, dynamic>>.separated(
       pagingController: controller,
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      padding: EdgeInsets.only(
+        top: AppSpacing.sm,
+        bottom: AppSpacing.sm + MediaQuery.of(context).padding.bottom,
+      ),
       separatorBuilder: (_, __) => Divider(height: 1, indent: 70, color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
       builderDelegate: PagedChildBuilderDelegate<Map<String, dynamic>>(
         itemBuilder: (context, item, index) {
@@ -595,7 +598,10 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
     final theme = Theme.of(context);
     return PagedListView<int, Map<String, dynamic>>.separated(
       pagingController: controller,
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      padding: EdgeInsets.only(
+        top: AppSpacing.sm,
+        bottom: AppSpacing.sm + MediaQuery.of(context).padding.bottom,
+      ),
       separatorBuilder: (_, __) => Divider(height: 1, indent: 70, color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
       builderDelegate: PagedChildBuilderDelegate<Map<String, dynamic>>(
         itemBuilder: (context, item, index) {
@@ -696,7 +702,10 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
         Expanded(
           child: PagedListView<int, Map<String, dynamic>>.separated(
             pagingController: _pagingController,
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            padding: EdgeInsets.only(
+              top: AppSpacing.sm,
+              bottom: AppSpacing.sm + MediaQuery.of(context).padding.bottom,
+            ),
             separatorBuilder: (_, __) => Divider(height: 1, indent: 70, color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
             builderDelegate: PagedChildBuilderDelegate<Map<String, dynamic>>(
               itemBuilder: (context, user, index) {

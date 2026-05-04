@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import '../../../../data/services/review_service.dart';
 import '../../../../domain/models/review.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
@@ -15,47 +16,63 @@ class AdminReviewsScreen extends StatefulWidget {
 }
 
 class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
-  bool _isLoading = true;
-  List<Review> _reviews = [];
+  static const _pageSize = 20;
+  final PagingController<int, Review> _pagingController =
+      PagingController(firstPageKey: 0);
+
   String _filter = 'all'; // 'all', 'test', 'resource'
 
   @override
   void initState() {
     super.initState();
-    _loadReviews();
+    _pagingController.addPageRequestListener((pageKey) {
+      _fetchPage(pageKey);
+    });
   }
 
-  Future<void> _loadReviews() async {
-    setState(() => _isLoading = true);
+  @override
+  void dispose() {
+    _pagingController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchPage(int pageKey) async {
     try {
       final itemType = _filter == 'all' ? null : _filter;
-      final reviews =
-          await ReviewService.getAllReviews(limit: 50, itemType: itemType);
-      if (mounted) {
-        setState(() {
-          _reviews = reviews;
-          _isLoading = false;
-        });
+      final newItems = await ReviewService.getAllReviews(
+        offset: pageKey,
+        limit: _pageSize,
+        itemType: itemType,
+      );
+
+      final isLastPage = newItems.length < _pageSize;
+      if (isLastPage) {
+        _pagingController.appendLastPage(newItems);
+      } else {
+        final nextPageKey = pageKey + newItems.length;
+        _pagingController.appendPage(newItems, nextPageKey);
       }
-    } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_reviews_screen');
-      if (mounted) setState(() => _isLoading = false);
+    } catch (error, stack) {
+      CrashlyticsService.instance.recordError(error, stack, reason: 'admin_reviews_fetch');
+      _pagingController.error = error;
     }
   }
 
   Future<void> _deleteReview(int reviewId) async {
     try {
       await ReviewService.deleteReview(reviewId);
-      setState(() {
-        _reviews.removeWhere((r) => r.id == reviewId);
-      });
+      // Remove from current list without full refresh
+      final currentItems = _pagingController.itemList ?? [];
+      _pagingController.itemList = 
+          currentItems.where((r) => r.id != reviewId).toList();
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Review deleted successfully')),
         );
       }
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_reviews_screen');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_reviews_delete');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
@@ -95,7 +112,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("Manage Reviews"),
       ),
@@ -147,22 +164,36 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: () async {
-                    await _loadReviews();
+                    _pagingController.refresh();
                   },
-                  child: _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : _reviews.isEmpty
-                          ? _buildEmptyState()
-                          : ListView.builder(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding:
-                                  const EdgeInsets.only(top: AppSpacing.sm),
-                              itemCount: _reviews.length,
-                              itemBuilder: (context, index) {
-                                final review = _reviews[index];
-                                return _buildReviewRow(context, review);
-                              },
+                  child: PagedListView<int, Review>(
+                    pagingController: _pagingController,
+                    padding: EdgeInsets.only(
+                      top: AppSpacing.sm,
+                      bottom: MediaQuery.of(context).padding.bottom,
+                    ),
+                    builderDelegate: PagedChildBuilderDelegate<Review>(
+                      itemBuilder: (context, review, index) => 
+                          _buildReviewRow(context, review),
+                      firstPageProgressIndicatorBuilder: (_) =>
+                          const Center(child: CircularProgressIndicator()),
+                      newPageProgressIndicatorBuilder: (_) =>
+                          const Center(child: CircularProgressIndicator()),
+                      noItemsFoundIndicatorBuilder: (_) => _buildEmptyState(),
+                      firstPageErrorIndicatorBuilder: (context) => Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text("Failed to load reviews"),
+                            TextButton(
+                              onPressed: () => _pagingController.refresh(),
+                              child: const Text("Retry"),
                             ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -312,7 +343,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
       onSelected: (selected) {
         if (isSelected) return;
         setState(() => _filter = value);
-        _loadReviews();
+        _pagingController.refresh();
       },
       selectedColor: colorScheme.primary.withValues(alpha: 0.1),
       checkmarkColor: colorScheme.primary,

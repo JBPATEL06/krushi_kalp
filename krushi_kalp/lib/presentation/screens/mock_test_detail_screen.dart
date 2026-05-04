@@ -550,7 +550,12 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
     final theme = Theme.of(context);
     if (isPurchased) {
       return Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg + MediaQuery.of(context).padding.bottom,
+        ),
         child: ElevatedButton.icon(
           onPressed: () => ExamHelper.startExam(context, widget.test),
           style: ElevatedButton.styleFrom(

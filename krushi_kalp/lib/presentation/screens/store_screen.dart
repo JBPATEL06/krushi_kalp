@@ -1,33 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:krushi_kalp/presentation/providers/offer_state.dart';
-import 'package:krushi_kalp/presentation/providers/test_state.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import '../../domain/models/mock_test.dart';
+import '../../domain/models/resource.dart';
 import '../../data/services/test_service.dart';
-import 'mock_test_detail_screen.dart';
-
+import '../../data/services/resource_service.dart';
 import '../providers/test_notifier.dart';
 import '../providers/offer_notifier.dart';
-import '../providers/network_notifier.dart';
 import '../providers/cart_notifier.dart';
-import '../providers/navigation_notifier.dart';
 import '../providers/resource_notifier.dart';
 import '../providers/auth_notifier.dart';
-import '../providers/resource_state.dart';
-import 'dart:async';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_radius.dart';
 import 'store/widgets/store_grid.dart';
-import '../widgets/direct_checkout_sheet.dart';
-
-// Replaced local legacy providers with Notifiers
-import '../../domain/models/resource.dart';
 import 'store/widgets/store_resource_grid.dart';
+import '../widgets/direct_checkout_sheet.dart';
+import 'mock_test_detail_screen.dart';
 import 'resource_detail_screen.dart';
-import '../widgets/common/responsive_wrapper.dart';
-import '../../data/services/download_service.dart';
-import 'pdf_viewer_screen.dart';
-import 'dart:io';
 import '../../utils/error_utils.dart';
 import '../../utils/crashlytics_service.dart';
 
@@ -40,6 +29,7 @@ class StoreScreen extends ConsumerStatefulWidget {
 
 class _StoreScreenState extends ConsumerState<StoreScreen>
     with SingleTickerProviderStateMixin {
+  static const _pageSize = 20;
   String _searchQuery = '';
   bool _isSearching = false;
 
@@ -52,199 +42,114 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
   };
 
   late TabController _tabController;
+  final List<PagingController<int, dynamic>> _pagingControllers = [];
 
   List<String> get _keys => _categoryMap.keys.toList();
   List<String> get _labels => _categoryMap.values.toList();
-
-  bool _hadNetworkError = false;
-  bool _isProcessing = false;
-  DateTime? _lastSyncTime;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: _categoryMap.length, vsync: this);
-    Future.microtask(() => _loadData());
-    // listen to network changes via ref.listen in build or use a provider
+    
+    for (int i = 0; i < _categoryMap.length; i++) {
+      final controller = PagingController<int, dynamic>(firstPageKey: 0);
+      controller.addPageRequestListener((pageKey) => _fetchPage(i, pageKey));
+      _pagingControllers.add(controller);
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    for (var controller in _pagingControllers) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
-  void _onNetworkChange() {
-    final isConnected = ref.read(networkProvider);
-    if (isConnected && _hadNetworkError && mounted) {
-      _hadNetworkError = false;
-      _loadData();
-    }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _checkCategorySelection();
-  }
-
-  void _checkCategorySelection() {
-    final navState = ref.watch(navigationProvider);
-    if (navState.selectedStoreCategory != 'All') {
-      final index = _keys.indexOf(navState.selectedStoreCategory);
-      if (index != -1 && _tabController.index != index) {
-        _tabController.animateTo(index);
-      }
-    }
-  }
-
-  Future<void> _loadData(
-      {bool forceRefresh = true, bool bypassThrottle = false}) async {
-    if (_isProcessing) return;
-    if (!mounted) return;
-
-    // Smart Refresh Logic: Throttling Supabase hits to 15s
-    bool shouldHitSupabase = forceRefresh;
-    if (forceRefresh && !bypassThrottle && _lastSyncTime != null) {
-      final diff = DateTime.now().difference(_lastSyncTime!);
-      if (diff < const Duration(seconds: 15)) {
-        shouldHitSupabase = false; // Load from Isar instead
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Refreshing from local cache...'),
-              duration: Duration(seconds: 1),
-            ),
-          );
-        }
-      }
-    }
-
-    setState(() => _isProcessing = true);
-
+  Future<void> _fetchPage(int tabIndex, int pageKey) async {
     try {
-      await Future.wait([
-        ref
-            .read(testProvider.notifier)
-            .fetchTests(forceRefresh: shouldHitSupabase),
-        ref
-            .read(resourceProvider.notifier)
-            .fetchAll(forceRefresh: shouldHitSupabase),
-        ref
-            .read(offerProvider.notifier)
-            .fetchActiveOffers(forceRefresh: shouldHitSupabase),
-      ]);
+      final category = _keys[tabIndex];
+      List<dynamic> newItems = [];
+      bool isLastPage = false;
 
-      if (shouldHitSupabase) {
-        _lastSyncTime = DateTime.now();
-      }
-
-      if (!mounted) return;
-
-      final user = ref.read(authProvider).user;
-      if (user != null) {
-        await ref.read(cartProvider.notifier).fetchCart();
-      }
-    } catch (e, stack) {
-      CrashlyticsService.instance
-          .recordError(e, stack, reason: 'store_screen_load');
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
-    }
-  }
-
-  Future<void> _refreshAll() async {
-    // Manual refresh bypasses the 15s throttle policy
-    await _loadData(forceRefresh: true, bypassThrottle: true);
-  }
-
-  Future<void> _addToCart({
-    int? testId,
-    int? resourceId,
-    required double price,
-    required String title,
-  }) async {
-    try {
-      final user = ref.read(authProvider).user;
-      if (user == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please login to add to cart')),
-          );
-        }
-        return;
-      }
-
-      await ref.read(cartProvider.notifier).addToCart(
-            testId: testId,
-            resourceId: resourceId,
-            price: price,
-            authUserId: user.id,
-          );
-
-      if (mounted) {
-        final theme = Theme.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Added $title to Cart'),
-            backgroundColor: theme.colorScheme.tertiary,
-          ),
+      if (category == 'Mock Tests') {
+        final tests = await TestService.instance.fetchPaginatedMockTests(
+          offset: pageKey,
+          limit: _pageSize,
+          searchQuery: _searchQuery.isEmpty ? null : _searchQuery,
         );
+        newItems = tests;
+        isLastPage = tests.length < _pageSize;
+      } else {
+        ResourceType? type;
+        switch (category) {
+          case 'E-Books': type = ResourceType.eBook; break;
+          case 'Study Material': type = ResourceType.studyMaterial; break;
+          case 'PYQs': type = ResourceType.pyq; break;
+          case 'Daily CA': type = ResourceType.currentAffair; break;
+        }
+
+        final resources = await ResourceService.instance.fetchPaginatedResources(
+          offset: pageKey,
+          limit: _pageSize,
+          type: type ?? ResourceType.eBook, // Default if null
+          searchQuery: _searchQuery.isEmpty ? null : _searchQuery,
+        );
+        newItems = resources;
+        isLastPage = resources.length < _pageSize;
       }
-    } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'store_screen');
-      if (mounted) {
-        ErrorUtils.showError(context, e);
+
+      if (isLastPage) {
+        _pagingControllers[tabIndex].appendLastPage(newItems);
+      } else {
+        final nextPageKey = pageKey + newItems.length;
+        _pagingControllers[tabIndex].appendPage(newItems, nextPageKey);
       }
+    } catch (error, stack) {
+      CrashlyticsService.instance.recordError(error, stack, reason: 'store_fetch_page');
+      _pagingControllers[tabIndex].error = error;
     }
   }
 
-  Future<void> _claimItem({
-    MockTest? test,
-    Resource? resource,
-  }) async {
+  void _refreshAll() {
+    for (var controller in _pagingControllers) {
+      controller.refresh();
+    }
+    ref.read(offerProvider.notifier).fetchActiveOffers(forceRefresh: true);
+  }
+
+
+  Future<void> _claimItem({MockTest? test, Resource? resource}) async {
     try {
       final user = ref.read(authProvider).user;
       if (user == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please login to claim')),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please login to claim')),
+        );
         return;
       }
 
       if (test != null) {
-        await TestService.instance.claimFreeTest(
-          testId: test.id,
-          authUserId: user.id,
-        );
-        if (mounted) {
-          ref.read(testProvider.notifier).fetchTests(forceRefresh: true);
-        }
+        await TestService.instance.claimFreeTest(testId: test.id, authUserId: user.id);
+        ref.read(testProvider.notifier).fetchUserTests(user.id);
       } else if (resource != null) {
-        await ref
-            .read(resourceProvider.notifier)
-            .claimResource(resource.id, user.id);
+        await ref.read(resourceProvider.notifier).claimResource(resource.id, user.id);
       }
 
       if (mounted) {
         final theme = Theme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                'Free Claimed ${test?.title ?? resource?.title} successfully!'),
+            content: Text('Free Claimed ${test?.title ?? resource?.title} successfully!'),
             backgroundColor: theme.colorScheme.tertiary,
           ),
         );
       }
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'store_screen');
-      if (mounted) {
-        ErrorUtils.showError(context, e);
-      }
+      if (mounted) ErrorUtils.showError(context, e);
     }
   }
 
@@ -271,79 +176,9 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
     );
   }
 
-  Future<void> _openOrDownloadResource(Resource resource) async {
-    final filename = 'resource_${resource.id}.pdf';
-    final user = ref.read(authProvider).user;
-    final userId = user?.id;
-
-    final isDownloaded =
-        await DownloadService().isFileDownloaded(filename, userId: userId);
-
-    if (isDownloaded) {
-      final path =
-          await DownloadService().getLocalPath(filename, userId: userId);
-      if (mounted) {
-        _openPdf(File(path), resource.title);
-      }
-    } else {
-      if (resource.fileUrl == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("File URL not found")));
-        }
-        return;
-      }
-
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => const Center(child: CircularProgressIndicator()),
-      );
-
-      try {
-        final path = await DownloadService()
-            .downloadFile(resource.fileUrl!, filename, userId: userId);
-        if (mounted) {
-          Navigator.pop(context); // Close loading dialog
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Download complete: ${resource.title}'),
-              action: SnackBarAction(
-                label: 'OPEN',
-                onPressed: () => _openPdf(File(path), resource.title),
-              ),
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
-      } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack,
-            reason: 'store_screen: resource download failed');
-        if (mounted) {
-          Navigator.maybePop(context);
-          ErrorUtils.showError(context, e);
-        }
-      }
-    }
-  }
-
-  void _openPdf(File file, String title) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PdfViewerScreen(
-          file: file,
-          title: title,
-        ),
-      ),
-    );
-  }
-
   void _openTestDetail(MockTest test) {
     final activeOffers = ref.read(offerProvider).activeOffers;
-    final isPurchased =
-        ref.read(testProvider).purchasedTestIds.contains(test.id);
+    final isPurchased = ref.read(testProvider).purchasedTestIds.contains(test.id);
 
     Navigator.push(
       context,
@@ -367,36 +202,34 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
     );
   }
 
-  Future<void> _handleCartAction(MockTest test, String? userId) async {
+  Future<void> _handleCartAction(dynamic item, String? userId) async {
     if (userId == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please login to add to cart')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login to add to cart')),
+      );
       return;
     }
 
     final cartState = ref.read(cartProvider);
-    if (cartState.isLoading) return; // Prevent multiple taps during sync
+    if (cartState.isLoading) return;
 
+    final isTest = item is MockTest;
+    final itemId = item.id;
+    
     final cartItemIds = cartState.cartItems
-        .map((item) => item.testId ?? item.resourceId)
+        .map((i) => i.testId ?? i.resourceId)
         .whereType<int>()
         .toSet();
 
     try {
-      if (cartItemIds.contains(test.id)) {
-        final cartItem =
-            cartState.cartItems.firstWhere((item) => item.testId == test.id);
-        await ref
-            .read(cartProvider.notifier)
-            .removeFromCart(itemId: cartItem.itemId);
-
+      if (cartItemIds.contains(itemId)) {
+        final cartItem = cartState.cartItems.firstWhere(
+            (i) => (isTest ? i.testId : i.resourceId) == itemId);
+        await ref.read(cartProvider.notifier).removeFromCart(itemId: cartItem.itemId);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Removed ${test.title} from Cart'),
+              content: Text('Removed ${item.title} from Cart'),
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
@@ -405,8 +238,9 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
       }
 
       await ref.read(cartProvider.notifier).addToCart(
-            testId: test.id,
-            price: test.price,
+            testId: isTest ? item.id : null,
+            resourceId: isTest ? null : item.id,
+            price: item.price,
             authUserId: userId,
           );
 
@@ -414,204 +248,24 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
         final theme = Theme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Added ${test.title} to Cart'),
+            content: Text('Added ${item.title} to Cart'),
             backgroundColor: theme.colorScheme.tertiary,
           ),
         );
       }
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'store_screen');
-      if (mounted) {
-        ErrorUtils.showError(context, e);
-      }
+      if (mounted) ErrorUtils.showError(context, e);
     }
-  }
-
-  Future<void> _handleResourceCartAction(
-      Resource resource, String? userId) async {
-    if (userId == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please login to add to cart')),
-        );
-      }
-      return;
-    }
-
-    final cartState = ref.read(cartProvider);
-    if (cartState.isLoading) return; // Prevent multiple taps during sync
-
-    final cartItemIds = cartState.cartItems
-        .map((item) => item.testId ?? item.resourceId)
-        .whereType<int>()
-        .toSet();
-
-    try {
-      if (cartItemIds.contains(resource.id)) {
-        final cartItem = cartState.cartItems
-            .firstWhere((item) => item.resourceId == resource.id);
-        await ref
-            .read(cartProvider.notifier)
-            .removeFromCart(itemId: cartItem.itemId);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Removed ${resource.title} from Cart'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
-        }
-        return;
-      }
-
-      await ref.read(cartProvider.notifier).addToCart(
-            resourceId: resource.id,
-            price: resource.price,
-            authUserId: userId,
-          );
-
-      if (mounted) {
-        final theme = Theme.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Added ${resource.title} to Cart'),
-            backgroundColor: theme.colorScheme.tertiary,
-          ),
-        );
-      }
-    } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'store_screen');
-      if (mounted) {
-        ErrorUtils.showError(context, e);
-      }
-    }
-  }
-
-  void _handleBuyMockTest(MockTest test, String? userId) {
-    if (userId == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please login to purchase')),
-        );
-      }
-      return;
-    }
-    _buyNow(test: test);
-  }
-
-  void _handleBuyResource(Resource resource, String? userId) {
-    if (userId == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please login to purchase')),
-        );
-      }
-      return;
-    }
-    final resourceState = ref.read(resourceProvider);
-    if (resourceState.purchasedResourceIds.contains(resource.id)) {
-      _openOrDownloadResource(resource);
-    } else {
-      _buyNow(resource: resource);
-    }
-  }
-
-  Widget _buildMockTestsTab(
-      TestState testState, OfferState offerState, Set<int> cartItemIds,
-      {bool isFree = false}) {
-    List<MockTest> tests = List.from(testState.allTests);
-
-    // Showing all tests (free and paid) in store for demo transparency
-    // if (isFree) {
-    //   tests = tests.where((t) => t.price == 0).toList();
-    // } else {
-    //   tests = tests.where((t) => t.price > 0).toList();
-    // }
-
-    if (_searchQuery.isNotEmpty) {
-      tests = tests
-          .where(
-              (t) => t.title.toLowerCase().contains(_searchQuery.toLowerCase()))
-          .toList();
-    }
-
-    tests.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-    final purchasedTestIds = testState.purchasedTestIds;
-    tests = tests.where((t) => !purchasedTestIds.contains(t.id)).toList();
-
-    final user = ref.read(authProvider).user;
-
-    return StoreGrid(
-      allTests: tests,
-      isWide: ResponsiveWrapper.isWide(context),
-      activeOffers: offerState.activeOffers,
-      cartItemIds: cartItemIds,
-      purchasedTestIds: purchasedTestIds,
-      onBuyTap: (test) => _handleBuyMockTest(test, user?.id),
-      onCartTap: (test) => _handleCartAction(test, user?.id),
-      onTap: (test) => _openTestDetail(test),
-    );
-  }
-
-  Widget _buildResourcesTab(
-      ResourceState resourceState, Set<int> cartItemIds, String category) {
-    List<Resource> resources;
-    if (category == 'E-Books') {
-      resources = resourceState.ebooks;
-    } else if (category == 'Study Material') {
-      resources = resourceState.studyMaterials;
-    } else if (category == 'PYQs') {
-      resources = resourceState.pyqs;
-    } else if (category == 'Daily CA') {
-      resources = resourceState.currentAffairs;
-    } else {
-      resources = [];
-    }
-
-    if (_searchQuery.isNotEmpty) {
-      resources = resources
-          .where(
-              (r) => r.title.toLowerCase().contains(_searchQuery.toLowerCase()))
-          .toList();
-    }
-
-    resources = resources
-        .where((r) => !resourceState.purchasedResourceIds.contains(r.id))
-        .toList();
-
-    resources.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-    final user = ref.read(authProvider).user;
-
-    return StoreResourceGrid(
-      resources: resources,
-      activeOffers: ref.read(offerProvider).activeOffers,
-      purchasedIds: resourceState.purchasedResourceIds,
-      cartItemIds: cartItemIds,
-      onBuyTap: (r) => _handleBuyResource(r, user?.id),
-      onCartTap: (r) => _handleResourceCartAction(r, user?.id),
-      onTap: _openResourceDetail,
-      isWide: ResponsiveWrapper.isWide(context),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Listen for network changes to retry loading
-    ref.listen<bool>(networkProvider.select((value) => value),
-        (previous, next) {
-      if (next && !(previous ?? true)) {
-        _loadData();
-      }
-    });
-
     final testState = ref.watch(testProvider);
     final resourceState = ref.watch(resourceProvider);
     final cartState = ref.watch(cartProvider);
     final offerState = ref.watch(offerProvider);
-    final authState = ref.watch(authProvider);
+    final user = ref.watch(authProvider).user;
 
     final cartItemIds = cartState.cartItems
         .map((item) => item.testId ?? item.resourceId)
@@ -626,12 +280,6 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         centerTitle: true,
-        leading: Navigator.canPop(context)
-            ? IconButton(
-                icon: Icon(Icons.arrow_back, color: theme.colorScheme.primary),
-                onPressed: () => Navigator.maybePop(context),
-              )
-            : null,
         title: Text(
           "Store",
           style: theme.textTheme.titleLarge?.copyWith(
@@ -650,159 +298,68 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
             onPressed: () {
               setState(() {
                 _isSearching = !_isSearching;
-                if (!_isSearching) _searchQuery = '';
+                if (!_isSearching) {
+                  _searchQuery = '';
+                  _refreshAll();
+                }
               });
             },
           ),
-          const SizedBox(width: AppSpacing.md),
         ],
       ),
       body: Column(
         children: [
-          if (_isSearching) ...[
+          if (_isSearching)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: _buildSearchBar(),
             ),
-            const SizedBox(height: AppSpacing.md),
-          ],
-          Container(
-            height: context.h(40),
-            width: double.infinity,
-            padding: const EdgeInsets.only(left: AppSpacing.lg),
-            child: AnimatedBuilder(
-                animation: _tabController,
-                builder: (context, _) {
-                  return TabBar(
-                    controller: _tabController,
-                    isScrollable: true,
-                    labelColor: theme.colorScheme.onPrimary,
-                    unselectedLabelColor: theme.colorScheme.primary,
-                    indicatorSize: TabBarIndicatorSize.label,
-                    dividerColor: Colors.transparent,
-                    indicator: const BoxDecoration(color: Colors.transparent),
-                    labelPadding: const EdgeInsets.only(right: AppSpacing.sm),
-                    tabAlignment: TabAlignment.start,
-                    tabs: _labels.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final label = entry.value;
-                      final isSelected = _tabController.index == index;
-
-                      return Tab(
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.lg),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(AppRadius.full),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            label,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: isSelected
-                                  ? theme.colorScheme.onPrimary
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  );
-                }),
-          ),
+          const SizedBox(height: AppSpacing.md),
+          _buildTabBar(theme),
           const SizedBox(height: AppSpacing.md),
           Expanded(
-            child: (testState.isLoading || resourceState.isLoading) &&
-                    (testState.allTests.isEmpty &&
-                        resourceState.ebooks.isEmpty &&
-                        resourceState.studyMaterials.isEmpty)
-                ? const Center(child: CircularProgressIndicator())
-                : TabBarView(
-                    controller: _tabController,
-                    children: [
-                      RefreshIndicator(
-                        onRefresh: _refreshAll,
-                        child: CustomScrollView(
-                          slivers: [
-                            const SliverToBoxAdapter(
-                                child: SizedBox(height: AppSpacing.sm)),
-                            _buildMockTestsTab(
-                                testState, offerState, cartItemIds,
-                                isFree: false),
-                            SliverToBoxAdapter(
-                                child: SizedBox(
-                                    height: AppSpacing.xl +
-                                        MediaQuery.of(context).padding.bottom)),
-                          ],
+            child: TabBarView(
+              controller: _tabController,
+              children: _pagingControllers.asMap().entries.map((entry) {
+                final index = entry.key;
+                final controller = entry.value;
+                final category = _keys[index];
+
+                return RefreshIndicator(
+                  onRefresh: () async => controller.refresh(),
+                  child: CustomScrollView(
+                    slivers: [
+                      const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
+                      if (category == 'Mock Tests')
+                        StoreGrid(
+                          pagingController: controller as PagingController<int, MockTest>,
+                          activeOffers: offerState.activeOffers,
+                          cartItemIds: cartItemIds,
+                          purchasedTestIds: testState.purchasedTestIds,
+                          onBuyTap: (test) => _buyNow(test: test),
+                          onCartTap: (test) => _handleCartAction(test, user?.id),
+                          onTap: (test) => _openTestDetail(test),
+                        )
+                      else
+                        StoreResourceGrid(
+                          pagingController: controller as PagingController<int, Resource>,
+                          activeOffers: offerState.activeOffers,
+                          purchasedIds: resourceState.purchasedResourceIds.toSet(),
+                          cartItemIds: cartItemIds,
+                          onBuyTap: (res) => _buyNow(resource: res),
+                          onCartTap: (res) => _handleCartAction(res, user?.id),
+                          onTap: (res) => _openResourceDetail(res),
                         ),
-                      ),
-                      RefreshIndicator(
-                        onRefresh: _refreshAll,
-                        child: CustomScrollView(
-                          slivers: [
-                            const SliverToBoxAdapter(
-                                child: SizedBox(height: AppSpacing.sm)),
-                            _buildResourcesTab(
-                                resourceState, cartItemIds, 'E-Books'),
-                            SliverToBoxAdapter(
-                                child: SizedBox(
-                                    height: AppSpacing.xl +
-                                        MediaQuery.of(context).padding.bottom)),
-                          ],
-                        ),
-                      ),
-                      RefreshIndicator(
-                        onRefresh: _refreshAll,
-                        child: CustomScrollView(
-                          slivers: [
-                            const SliverToBoxAdapter(
-                                child: SizedBox(height: AppSpacing.sm)),
-                            _buildResourcesTab(
-                                resourceState, cartItemIds, 'Study Material'),
-                            SliverToBoxAdapter(
-                                child: SizedBox(
-                                    height: AppSpacing.xl +
-                                        MediaQuery.of(context).padding.bottom)),
-                          ],
-                        ),
-                      ),
-                      RefreshIndicator(
-                        onRefresh: _refreshAll,
-                        child: CustomScrollView(
-                          slivers: [
-                            const SliverToBoxAdapter(
-                                child: SizedBox(height: AppSpacing.sm)),
-                            _buildResourcesTab(
-                                resourceState, cartItemIds, 'Daily CA'),
-                            SliverToBoxAdapter(
-                                child: SizedBox(
-                                    height: AppSpacing.xl +
-                                        MediaQuery.of(context).padding.bottom)),
-                          ],
-                        ),
-                      ),
-                      RefreshIndicator(
-                        onRefresh: _refreshAll,
-                        child: CustomScrollView(
-                          slivers: [
-                            const SliverToBoxAdapter(
-                                child: SizedBox(height: AppSpacing.sm)),
-                            _buildResourcesTab(
-                                resourceState, cartItemIds, 'PYQs'),
-                            SliverToBoxAdapter(
-                                child: SizedBox(
-                                    height: AppSpacing.xl +
-                                        MediaQuery.of(context).padding.bottom)),
-                          ],
+                      SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: AppSpacing.xl + MediaQuery.of(context).padding.bottom,
                         ),
                       ),
                     ],
                   ),
+                );
+              }).toList(),
+            ),
           ),
         ],
       ),
@@ -811,40 +368,74 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
 
   Widget _buildSearchBar() {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      height: context.h(48),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: theme.colorScheme.shadow.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-        ],
-        border:
-            Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
-      ),
-      child: TextField(
-        onChanged: (val) {
-          setState(() {
-            _searchQuery = val;
-          });
-        },
-        style: TextStyle(color: theme.colorScheme.onSurface),
-        decoration: InputDecoration(
-          hintText: 'Search for tests, books...',
-          hintStyle: TextStyle(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontSize: context.sp(14)),
-          prefixIcon: Icon(Icons.search, color: theme.colorScheme.primary),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: context.h(14)),
+    return TextField(
+      onSubmitted: (val) {
+        setState(() {
+          _searchQuery = val.trim();
+          _refreshAll();
+        });
+      },
+      decoration: InputDecoration(
+        hintText: 'Search products...',
+        prefixIcon: const Icon(Icons.search),
+        filled: true,
+        fillColor: theme.colorScheme.surfaceContainerHighest,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.full),
+          borderSide: BorderSide.none,
         ),
+      ),
+    );
+  }
+
+  Widget _buildTabBar(ThemeData theme) {
+    return Container(
+      height: 40,
+      width: double.infinity,
+      padding: const EdgeInsets.only(left: AppSpacing.lg),
+      child: AnimatedBuilder(
+        animation: _tabController,
+        builder: (context, _) {
+          return TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            labelColor: theme.colorScheme.onPrimary,
+            unselectedLabelColor: theme.colorScheme.primary,
+            indicatorSize: TabBarIndicatorSize.label,
+            dividerColor: Colors.transparent,
+            indicator: const BoxDecoration(color: Colors.transparent),
+            labelPadding: const EdgeInsets.only(right: AppSpacing.sm),
+            tabAlignment: TabAlignment.start,
+            tabs: _labels.asMap().entries.map((entry) {
+              final index = entry.key;
+              final label = entry.value;
+              final isSelected = _tabController.index == index;
+
+              return Tab(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: isSelected
+                          ? theme.colorScheme.onPrimary
+                          : theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          );
+        },
       ),
     );
   }

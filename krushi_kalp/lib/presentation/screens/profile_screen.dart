@@ -175,7 +175,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
           if (snapshot.hasError) {
             return NetworkErrorState(
-              message: 'Unable to load profile.',
+              error: snapshot.error,
               onRetry: _loadProfile,
             );
           }

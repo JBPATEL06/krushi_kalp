@@ -6,6 +6,7 @@ import 'package:krushi_kalp/core/theme/app_radius.dart';
 import 'package:krushi_kalp/presentation/widgets/common/modern_card.dart';
 import 'package:krushi_kalp/data/services/performance_service.dart';
 import 'package:krushi_kalp/presentation/widgets/admin_performance_card.dart';
+import 'package:krushi_kalp/presentation/widgets/common/network_error_state.dart';
 
 import 'admin_offer_list_screen.dart';
 import 'resources/admin_resources_dashboard.dart';
@@ -120,9 +121,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           return SingleChildScrollView(
             key: _refreshKey,
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.lg,
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg + MediaQuery.of(context).padding.bottom,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,7 +218,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       return const _LoadingState();
                     }
                     if (snapshot.hasError) {
-                      return _buildErrorState(context, "Something went wrong.");
+                      return _buildErrorState(context, snapshot.error);
                     }
                     final tests = snapshot.data ?? [];
                     return _buildTopTestsList(context, tests, width);
@@ -231,7 +234,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       return const _LoadingState();
                     }
                     if (snapshot.hasError) {
-                      return _buildErrorState(context, "Something went wrong.");
+                      return _buildErrorState(context, snapshot.error);
                     }
                     final users = snapshot.data ?? [];
                     return _buildTopUsersList(users, width);
@@ -264,20 +267,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  Widget _buildErrorState(BuildContext context, String message) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return ModernCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Center(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline_rounded, color: colorScheme.error),
-            const SizedBox(width: AppSpacing.sm),
-            Text(message, style: TextStyle(color: colorScheme.error)),
-          ],
-        ),
-      ),
+  Widget _buildErrorState(BuildContext context, Object? error) {
+    return NetworkErrorState(
+      compact: true,
+      error: error,
+      onRetry: _onRefresh,
     );
   }
 

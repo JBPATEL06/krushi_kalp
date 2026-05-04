@@ -83,7 +83,7 @@ class OfferService {
   // Fetch active global offers (Store Display)
   Future<List<Offer>> getActiveGlobalOffers() async {
     try {
-      final now = DateTime.now().toUtc().toIso8601String();
+      final now = DateTime.now().toIso8601String();
       final response = await RetryHelper.run(() => _supabase.from('offers').select().eq('is_active', true).eq('target_type', 'ALL').lte('start_date', now).gte('end_date', now));
 
       final List<dynamic> data = response;
@@ -97,7 +97,7 @@ class OfferService {
 
   Future<List<Offer>> fetchActiveSaleOffers() async {
     try {
-      final now = DateTime.now().toUtc();
+      final now = DateTime.now();
       final adjustedNow = now.add(const Duration(minutes: 5)).toIso8601String();
 
       final response = await _supabase
@@ -216,7 +216,7 @@ class OfferService {
 
   Future<Offer?> verifyCoupon(String code) async {
     try {
-      final now = DateTime.now().toUtc().toIso8601String();
+      final now = DateTime.now().toIso8601String();
       final response = await RetryHelper.run(() => _supabase.from('offers').select().eq('code', code.toUpperCase()).eq('is_active', true).lte('start_date', now).gte('end_date', now).maybeSingle());
 
       if (response == null) return null;
@@ -243,7 +243,7 @@ class OfferService {
 
       await _supabase.from('payment').update({
         'offer_code': offerCode,
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', orderId);
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service: applyCouponToOrder');
@@ -255,7 +255,7 @@ class OfferService {
     try {
       await _supabase.from('payment').update({
         'offer_code': null,
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', orderId);
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'offer_service: removeCouponFromOrder');

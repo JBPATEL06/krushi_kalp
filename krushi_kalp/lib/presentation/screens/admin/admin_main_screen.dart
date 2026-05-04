@@ -334,6 +334,7 @@ class _AdminMainScreenState extends ConsumerState<AdminMainScreen> {
             ],
           ),
         ),
+        SizedBox(height: MediaQuery.of(context).padding.bottom),
       ],
     );
 
@@ -400,6 +401,7 @@ class _AdminMainScreenState extends ConsumerState<AdminMainScreen> {
           icon: Icon(Icons.logout_rounded, color: colorScheme.error),
         ),
         const SizedBox(height: AppSpacing.lg),
+        SizedBox(height: MediaQuery.of(context).padding.bottom),
       ],
     );
   }

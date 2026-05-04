@@ -536,3 +536,158 @@ Remove the "Link Google Account" option from the Profile Screen to simplify the 
 ### Test Criteria
 - Navigate to the Profile screen.
 - Verify that the "Link Google Account" option is no longer visible, regardless of the login method used.
+
+---
+
+## [Phase 42: Global Encoding & Typography Fix]
+### Goal
+Identify and correct mis-encoded characters (mojibake) across the codebase. These often appear as `âœ¨` instead of emojis or `â†’` instead of arrows, which detracts from the premium feel of the application.
+
+### Proposed Changes
+- **Identify Patterns**:
+  - `âœ¨` -> ✨ (Sparkles)
+  - `ðŸ¥³` -> 🥳 (Partying Face)
+  - `ðŸŽ‰` -> 🎉 (Party Popper)
+  - `â†’` -> → (Right Arrow)
+  - `â€”` -> — (Em Dash)
+  - `â”€` -> ─ (Box Drawing Light Horizontal)
+- **Files to Fix**:
+  - `lib/presentation/screens/cart_screen.dart`
+  - `lib/presentation/widgets/direct_checkout_sheet.dart`
+  - `lib/presentation/screens/test_result_screen.dart`
+  - `lib/presentation/screens/home_screen.dart`
+  - And others identified via grep.
+
+### Risks / Side Effects
+- Minor: If a character is replaced incorrectly, it might change the intended symbol. Double-checking with common Latin-1 to UTF-8 mojibake patterns is essential.
+
+### Test Criteria
+- Verify the "Store sale discounts" message in the Cart shows the ✨ emoji.
+- Verify the "Purchase Complete" message shows the 🥳 emoji.
+- Verify that separator lines in comments/docs are readable (or replaced with standard dashes).
+
+**Status: Resolved**
+- Fixed major UI artifacts in `cart_screen.dart` and `direct_checkout_sheet.dart`.
+- Cleaned up typography artifacts in `test_result_screen.dart`, `resource_detail_screen.dart`, and `pdf_viewer_screen.dart`.
+- Fixed comment separators in `home_screen.dart`.
+
+---
+
+## Phase 43: Global Local Time Standardization
+
+### Goal
+Standardize the use of Local Time (IST) throughout the application to match the user's regional context (India/Gujarat) and simplify database reporting.
+
+### Scope
+- Remove `.toUtc()` from all data submission logic in `TestService`, `CartService`, `OfferService`, `AdminNotificationService`, etc.
+- Standardize on `DateTime.now()` (local) for all timestamps.
+- Audit admin screens to ensure date picking and saving respects local time.
+
+### Risks
+- Dependency on device clock accuracy.
+- Database records will store timestamps with local hours (if offset is handled correctly) or the DB will store as UTC but we will treat as local.
+
+### Files to Modify
+- `lib/data/services/test_service.dart`
+- `lib/data/services/cart_service.dart`
+- `lib/data/services/offer_service.dart`
+- `lib/data/services/admin_notification_service.dart`
+- `lib/data/services/review_service.dart`
+- `lib/data/services/resource_service.dart`
+- `lib/presentation/screens/admin/admin_offer_manage_screen.dart`
+- `lib/presentation/screens/admin/resources/admin_resource_form.dart`
+
+---
+
+## [Phase 44: Global Pagination Standardization]
+### Goal
+Optimize application performance and Supabase bandwidth usage by implementing infinite scroll pagination across all list-heavy screens.
+
+### Proposed Changes
+- **Services Update (Infrastructure)**:
+  - `lib/data/services/review_service.dart`: Update `getAllReviews` to support `offset` and `limit`.
+  - `lib/data/services/chat_service.dart`: Add paginated fetching for conversations.
+  - `lib/data/services/test_service.dart`: Verify/Add pagination support for all list methods.
+  - `lib/data/services/resource_service.dart`: Verify/Add pagination support for all list methods.
+- **UI Refactoring**:
+  - Transition `StoreScreen`, `FreeContentScreen`, `MyLibraryScreen`, `ScoreScreen`, `AdminReviewsScreen`, and `AdminChatListScreen` from `ListView` to `PagedListView`.
+  - Use `PagingController<int, dynamic>` for state management in each screen.
+
+### Risks / Side Effects
+- **State Fragmentation**: Since we are moving away from full-list providers in some areas, we must ensure search and filter logic remains reactive.
+- **UX Consistency**: Standardize loading and error indicators using `PagedChildBuilderDelegate`.
+
+### Test Criteria
+- Scroll to bottom triggers next page load.
+- Pull-to-refresh correctly resets the paging controller.
+- Search queries correctly reset and paginate the filtered results.
+- No memory spikes or UI lag when scrolling through large lists.
+
+**Status: Resolved**
+- Migrated `StoreScreen` to use 5 distinct `PagingController` objects for categories.
+- Refactored `StoreGrid` and `StoreResourceGrid` to use `PagedSliverList` with metadata caching.
+- Migrated `FreeContentScreen`, `MyLibraryScreen`, `ScoreScreen`, `AdminReviewsScreen`, `AdminChatListScreen`, `PurchasedTestsScreen`, and `MyResourcesScreen` to `PagedListView` or `PagedSliverList`.
+- Standardized `fetchPaginated...` pattern in `TestService`, `ResourceService`, `ReviewService`, and `AdminService`.
+- Integrated search debouncing and refresh logic with all paginated controllers.
+- Fixed typography artifacts in `AllTestsScreen`.
+
+---
+
+## [Phase 46: System UI Integrity & Device Compatibility]
+### Goal
+Audit and implement `MediaQuery` bottom padding across all screens to prevent system navigation bar overlap and ensure consistent UI spacing on devices with gesture navigation.
+
+### Proposed Changes
+- **File**: `lib/presentation/widgets/common/safe_bottom_padding.dart`
+  - **Action**: Create a utility widget that wraps content in `Padding(padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom))`.
+- **Files to Update**:
+  - `lib/presentation/screens/cart_screen.dart`
+  - `lib/presentation/screens/profile_screen.dart`
+  - `lib/presentation/screens/downloads_screen.dart`
+  - `lib/presentation/screens/home_screen.dart`
+  - Any screen utilizing fixed-position bottom action bars or floating buttons.
+
+### Risks / Side Effects
+- Minor: Potential double-padding if not carefully integrated with existing `Scaffold` `bottomNavigationBar` slots.
+
+### Test Criteria
+- Verify that content at the bottom of the screen is not obscured by the system navigation bar.
+- Ensure smooth scrolling continues to show the last items without interference.
+
+**Status: Resolved**
+- Audited and updated bottom paddings using `MediaQuery.of(context).padding.bottom` across all core screens.
+- Added padding to dynamic lists in `AdminUserDetailsScreen`, `AdminGrantAccessScreen`, `AdminUserListScreen`, `AdminReviewsScreen`, `AdminOrderListScreen`, and `AdminOfferListScreen`.
+- Ensured bottom navigation bar padding in `PdfViewerScreen` accurately accommodates Android 15 gestures.
+- Validated existing padding configurations across action buttons and detail views.
+
+---
+
+## [Phase 45: Global Error Handling and Observability]
+### Goal
+Standardize user-facing error feedback and ensure comprehensive developer observability by integrating Firebase Crashlytics and a centralized error UI widget.
+
+### Proposed Changes
+- **Core Improvements**:
+  - `lib/data/services/error_service.dart`: Enhanced error translation logic for human-readable messages.
+  - `lib/presentation/widgets/common/network_error_state.dart`: Refactored to support generic errors, pass-through error objects, and dynamic iconography.
+- **Service-Level Audit**:
+  - Integrated `CrashlyticsService.instance.recordError` in `AdminService`, `BannerService`, `CartService`, `ChatService`, and `NotificationService`.
+- **UI Standardization**:
+  - Replaced raw error displays in `CartScreen`, `NotificationsScreen`, `AdminAnalysisScreen`, `AdminUserDetailsScreen`, and `BannerManagementTab` with `NetworkErrorState`.
+  - Ensured `onRetry` callbacks correctly refresh state/data.
+
+### Risks / Side Effects
+- **Error Silencing**: Risk of over-simplifying error messages. Mitigated by ensuring Crashlytics captures the full raw exception for debugging.
+- **State Stale-ness**: Ensured that "Retry" actions properly re-trigger the necessary service calls or stream refreshes.
+
+### Test Criteria
+- Force a network failure: Verify "No Internet" screen appears with troubleshooting tips.
+- Force a logic error: Verify "Something went wrong" appears without technical details.
+- Verify Crashlytics: Ensure stack traces and custom 'reason' strings are correctly reported to the Firebase Console.
+
+**Status: Resolved**
+- Centralized error UI is consistent across all main modules.
+- Services are fully instrumented for error reporting.
+- Walkthrough documentation created in artifacts.
+
+---

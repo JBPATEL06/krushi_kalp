@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../domain/models/mock_test.dart';
 import '../../../../domain/models/offer.dart';
-import 'store_item_card.dart';
-import '../../../../core/theme/app_spacing.dart';
 import '../../../../data/services/offer_service.dart';
 import '../../../../data/services/review_service.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../utils/responsive.dart';
 import '../../../widgets/common/download_action_button.dart';
-import '../../../widgets/common/responsive_wrapper.dart';
-import '../../../utils/exam_helper.dart';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'store_item_card.dart';
 import '../../../providers/auth_notifier.dart';
+import '../../../../presentation/utils/exam_helper.dart';
 
 class StoreGrid extends ConsumerStatefulWidget {
-  final List<MockTest> allTests;
+  final PagingController<int, MockTest> pagingController;
   final List<Offer>? activeOffers;
   final Set<int>? cartItemIds;
   final Set<int>? purchasedTestIds;
@@ -23,11 +23,9 @@ class StoreGrid extends ConsumerStatefulWidget {
   final Function(MockTest) onTap;
   final bool isWide;
 
-  static const double kPremiumPriceThreshold = 199.0;
-
   const StoreGrid({
     super.key,
-    required this.allTests,
+    required this.pagingController,
     this.activeOffers,
     this.cartItemIds,
     this.purchasedTestIds,
@@ -42,29 +40,28 @@ class StoreGrid extends ConsumerStatefulWidget {
 }
 
 class _StoreGridState extends ConsumerState<StoreGrid> {
-  // Cache: testId -> {average: double, count: int}
   final Map<int, Map<String, dynamic>> _ratingsCache = {};
-  // Cache: testId -> {final_price, mrp_display, discount_label, has_discount}
   final Map<int, Map<String, dynamic>> _pricesCache = {};
 
   @override
   void initState() {
     super.initState();
-    _fetchAllRatings();
-    _fetchAllPrices();
+    widget.pagingController.addStatusListener((status) {
+      if (status == PagingStatus.completed || status == PagingStatus.noItemsFound) {
+        _fetchMetadataForNewItems();
+      }
+    });
   }
 
-  @override
-  void didUpdateWidget(StoreGrid oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.allTests != widget.allTests) {
-      _fetchAllRatings();
-      _fetchAllPrices();
-    }
+  void _fetchMetadataForNewItems() {
+    final items = widget.pagingController.itemList ?? [];
+    if (items.isEmpty) return;
+    _fetchAllRatings(items);
+    _fetchAllPrices(items);
   }
 
-  Future<void> _fetchAllRatings() async {
-    final uncachedIds = widget.allTests
+  Future<void> _fetchAllRatings(List<MockTest> items) async {
+    final uncachedIds = items
         .map((t) => t.id)
         .where((id) => !_ratingsCache.containsKey(id))
         .toList();
@@ -72,25 +69,20 @@ class _StoreGridState extends ConsumerState<StoreGrid> {
     try {
       final bulk = await ReviewService.getBulkRatingStats(uncachedIds, 'test');
       if (mounted) setState(() => _ratingsCache.addAll(bulk));
-    } catch (_) {
-      // Silently skip â€” cards will render without ratings
-    }
+    } catch (_) {}
   }
 
-  Future<void> _fetchAllPrices() async {
-    final uncached = widget.allTests
+  Future<void> _fetchAllPrices(List<MockTest> items) async {
+    final uncached = items
         .where((t) => !_pricesCache.containsKey(t.id))
         .toList();
     if (uncached.isEmpty) return;
 
-    // Process in batches of 5 to avoid overwhelming the network and Supabase
     const int batchSize = 5;
     for (int i = 0; i < uncached.length; i += batchSize) {
       if (!mounted) break;
-
       final end = (i + batchSize < uncached.length) ? i + batchSize : uncached.length;
       final batch = uncached.sublist(i, end);
-
       try {
         final results = await Future.wait(
           batch.map((t) => OfferService.instance.getDisplayPrice(
@@ -98,7 +90,6 @@ class _StoreGridState extends ConsumerState<StoreGrid> {
             itemId: t.id,
           )),
         );
-
         if (mounted) {
           setState(() {
             for (int j = 0; j < batch.length; j++) {
@@ -108,54 +99,45 @@ class _StoreGridState extends ConsumerState<StoreGrid> {
         }
       } catch (e) {
         debugPrint('StoreGrid: Batch price fetch failed at index $i - $e');
-        // Continue to next batch
       }
-      
-      // Optional: Small delay between batches if needed
-      // await Future.delayed(const Duration(milliseconds: 100));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.allTests.isEmpty) {
-      return const SliverFillRemaining(
-        child: Center(
-          child: Text(
-            "No tests found",
-            style: TextStyle(color: Colors.grey),
-          ),
-        ),
-      );
-    }
-
     return SliverPadding(
       padding: EdgeInsets.symmetric(horizontal: context.w(AppSpacing.lg)),
-      sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            return Padding(
-              padding: EdgeInsets.only(bottom: context.h(AppSpacing.lg)),
-              child: _buildCard(context, widget.allTests[index]),
-            ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+      sliver: PagedSliverList<int, MockTest>.separated(
+        pagingController: widget.pagingController,
+        separatorBuilder: (_, __) => SizedBox(height: context.h(AppSpacing.lg)),
+        builderDelegate: PagedChildBuilderDelegate<MockTest>(
+          itemBuilder: (context, test, index) {
+            return _buildCard(context, test)
+                .animate()
+                .fadeIn(duration: 400.ms)
+                .slideY(begin: 0.1, end: 0);
           },
-          childCount: widget.allTests.length,
+          firstPageProgressIndicatorBuilder: (_) =>
+              const Center(child: CircularProgressIndicator()),
+          newPageProgressIndicatorBuilder: (_) =>
+              const Center(child: CircularProgressIndicator()),
+          noItemsFoundIndicatorBuilder: (_) => const Center(
+            child: Text("No tests found", style: TextStyle(color: Colors.grey)),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildCard(BuildContext context, MockTest test) {
-    // Use DB-cached price data; fall back to base price until RPC returns
     final priceData = _pricesCache[test.id];
     final double displayPrice = (priceData?['final_price'] as double?) ?? test.price;
-    final double mrp         = (priceData?['mrp_display'] as double?) ?? test.price;
+    final double mrp = (priceData?['mrp_display'] as double?) ?? test.price;
     final String? discountTag = priceData?['discount_label'] as String?;
 
     final isInCart = widget.cartItemIds?.contains(test.id) ?? false;
     final isPurchased = widget.purchasedTestIds?.contains(test.id) ?? false;
 
-    // Use cached ratings instead of FutureBuilder
     final cachedRating = _ratingsCache[test.id];
     double? rating;
     int? count;
@@ -183,9 +165,9 @@ class _StoreGridState extends ConsumerState<StoreGrid> {
               filename: 'mock_test_${test.id}.json',
               url: test.contentUrl,
               startLabel: "Start",
-              isFullWidth: true, // Needs to be full width in the vertical card
+              isFullWidth: true,
               userId: ref.read(authProvider).user?.id,
-              displayName: test.title, // CHANGED
+              displayName: test.title,
               onAction: () async {
                 await ExamHelper.startExam(context, test);
               },
@@ -196,17 +178,9 @@ class _StoreGridState extends ConsumerState<StoreGrid> {
       isPurchased: isPurchased,
       rating: rating,
       reviewCount: count,
-      onActionTap: () {
-        if (displayPrice == 0) {
-          onBuyTap(test);
-        } else {
-          onBuyTap(test);
-        }
-      },
+      onActionTap: () => widget.onBuyTap(test),
       onCartTap: () => widget.onCartTap(test),
       onTap: () => widget.onTap(test),
     );
   }
-
-  void onBuyTap(MockTest test) => widget.onBuyTap(test);
 }

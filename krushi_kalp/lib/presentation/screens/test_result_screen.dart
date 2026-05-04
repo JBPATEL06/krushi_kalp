@@ -783,7 +783,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
 
 
   /// Formats a score value: shows up to 2 decimal places, trimming trailing zeros.
-  /// e.g. 39.0 â†’ "39", 38.5 â†’ "38.5", 38.75 â†’ "38.75"
+  /// e.g. 39.0 → "39", 38.5 → "38.5", 38.75 → "38.75"
   String _formatScore(double value) {
     if (value == value.truncateToDouble()) {
       return value.toInt().toString();

@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import '../../core/theme/app_spacing.dart';
 import '../providers/test_notifier.dart';
 import '../providers/resource_notifier.dart';
 import '../providers/auth_notifier.dart';
-import '../providers/test_state.dart';
-import '../providers/resource_state.dart';
 import '../widgets/free_content/free_item_card.dart';
 import '../../domain/models/mock_test.dart';
 import '../../domain/models/resource.dart';
 import '../screens/mock_test_detail_screen.dart';
 import '../screens/resource_detail_screen.dart';
 import '../../data/services/test_service.dart';
+import '../../data/services/resource_service.dart';
 import '../../utils/error_utils.dart';
 import '../../core/theme/app_radius.dart';
 import '../../utils/crashlytics_service.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../widgets/common/network_error_state.dart';
 
 class FreeContentScreen extends ConsumerStatefulWidget {
   const FreeContentScreen({super.key});
@@ -24,33 +26,93 @@ class FreeContentScreen extends ConsumerStatefulWidget {
 }
 
 class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
+  static const _pageSize = 20;
+  final PagingController<int, dynamic> _pagingController =
+      PagingController(firstPageKey: 0);
+
   String _selectedFilter = 'All';
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  bool _isLoading = true;
   bool _isProcessing = false;
-  String? _errorMessage;
-  DateTime? _lastSyncTime;
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_onSearchChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchData();
+    _pagingController.addPageRequestListener((pageKey) {
+      _fetchPage(pageKey);
     });
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
+    _pagingController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  void _onSearchChanged() {
+  Future<void> _fetchPage(int pageKey) async {
+    try {
+      List<dynamic> newItems = [];
+      bool isLastPage = false;
+
+      if (_selectedFilter == 'All') {
+        // Fetch both tests and resources, then combine
+        // For "All", we divide the page size between the two to keep it balanced
+        final halfSize = _pageSize ~/ 2;
+        final results = await Future.wait([
+          TestService.instance.fetchPaginatedMockTests(
+            offset: pageKey ~/ 2,
+            limit: halfSize,
+            isFree: true,
+            searchQuery: _searchQuery.isEmpty ? null : _searchQuery,
+          ),
+          ResourceService.instance.fetchPaginatedFreeResources(
+            offset: pageKey ~/ 2,
+            limit: halfSize,
+            searchQuery: _searchQuery.isEmpty ? null : _searchQuery,
+          ),
+        ]);
+        
+        final tests = results[0] as List<MockTest>;
+        final resources = results[1] as List<Resource>;
+        newItems = [...tests, ...resources];
+        isLastPage = tests.length < halfSize && resources.length < halfSize;
+      } else if (_selectedFilter == 'Tests') {
+        final tests = await TestService.instance.fetchPaginatedMockTests(
+          offset: pageKey,
+          limit: _pageSize,
+          isFree: true,
+          searchQuery: _searchQuery.isEmpty ? null : _searchQuery,
+        );
+        newItems = tests;
+        isLastPage = tests.length < _pageSize;
+      } else {
+        final resources = await ResourceService.instance.fetchPaginatedFreeResources(
+          offset: pageKey,
+          limit: _pageSize,
+          searchQuery: _searchQuery.isEmpty ? null : _searchQuery,
+        );
+        newItems = resources;
+        isLastPage = resources.length < _pageSize;
+      }
+
+      if (isLastPage) {
+        _pagingController.appendLastPage(newItems);
+      } else {
+        final nextPageKey = pageKey + newItems.length;
+        _pagingController.appendPage(newItems, nextPageKey);
+      }
+    } catch (error, stack) {
+      CrashlyticsService.instance.recordError(error, stack, reason: 'free_content_fetch');
+      _pagingController.error = error;
+    }
+  }
+
+  void _updateFilter(String filter) {
+    if (_selectedFilter == filter) return;
     setState(() {
-      _searchQuery = _searchController.text.trim().toLowerCase();
+      _selectedFilter = filter;
+      _pagingController.refresh();
     });
   }
 
@@ -79,14 +141,13 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
           testId: test.id,
           authUserId: user.id,
         );
-        if (mounted) {
-          await ref.read(testProvider.notifier).fetchUserTests(user.id);
-          await ref.read(testProvider.notifier).fetchTests(forceRefresh: true);
-        }
+        // Refresh states to reflect purchase
+        await ref.read(testProvider.notifier).fetchUserTests(user.id);
       } else if (resource != null) {
         await ref
             .read(resourceProvider.notifier)
             .claimResource(resource.id, user.id);
+        await ref.read(resourceProvider.notifier).fetchPurchasedResources(user.id);
       }
 
       if (mounted) {
@@ -96,149 +157,16 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
             backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
-        await _fetchData();
+        _pagingController.refresh();
       }
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'free_content_screen');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'free_content_claim');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
-  }
-
-  Future<void> _fetchData({bool forceRefresh = true, bool bypassThrottle = false}) async {
-    if (_isProcessing) return;
-
-    // Smart Refresh Logic: Throttling Supabase hits to 15s
-    bool shouldHitSupabase = forceRefresh;
-    if (forceRefresh && !bypassThrottle && _lastSyncTime != null) {
-      final diff = DateTime.now().difference(_lastSyncTime!);
-      if (diff < const Duration(seconds: 15)) {
-        shouldHitSupabase = false;
-        if (mounted && forceRefresh) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Refreshing from local cache...'),
-              duration: Duration(seconds: 1),
-            ),
-          );
-        }
-      }
-    }
-
-    setState(() {
-      _isLoading = _lastSyncTime == null; // Only show full loader if first load
-      _isProcessing = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final user = ref.read(authProvider).user;
-      
-      // Use silent catches for each future to prevent one timeout from killing the whole UI
-      await Future.wait<void>([
-        ref.read(testProvider.notifier).fetchTests(forceRefresh: shouldHitSupabase).catchError((e) {
-          CrashlyticsService.instance.log('FreeContent: fetchTests failed: $e');
-        }),
-        ref.read(resourceProvider.notifier).fetchAll(forceRefresh: shouldHitSupabase).catchError((e) {
-          CrashlyticsService.instance.log('FreeContent: fetchAll resources failed: $e');
-        }),
-        if (user != null) 
-          ref.read(testProvider.notifier).fetchUserTests(user.id).catchError((e) {}),
-        if (user != null) 
-          ref.read(resourceProvider.notifier).fetchPurchasedResources(user.id).catchError((e) {}),
-      ]);
-
-      if (shouldHitSupabase) {
-        _lastSyncTime = DateTime.now();
-      }
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isProcessing = false;
-        });
-      }
-    } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'free_content_screen_fetch');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isProcessing = false;
-          // Only show error if we have no data at all
-          final testState = ref.read(testProvider);
-          final resourceState = ref.read(resourceProvider);
-          if (testState.allTests.isEmpty && resourceState.ebooks.isEmpty) {
-            _errorMessage = 'Failed to load content. Please check your connection.';
-          }
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isProcessing = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _refreshAll() async {
-    // Manual refresh always bypasses throttle
-    await _fetchData(forceRefresh: true, bypassThrottle: true);
-  }
-
-  List<dynamic> _getFilteredItems(
-    TestState testState,
-    ResourceState resourceState,
-  ) {
-    List<dynamic> items = [];
-
-    if (_selectedFilter == 'All' || _selectedFilter == 'Tests') {
-      final purchasedTestIds = testState.purchasedTestIds;
-      items.addAll(testState.allTests.where(
-          (test) => test.price == 0 && !purchasedTestIds.contains(test.id)));
-    }
-
-    if (_selectedFilter == 'All' || _selectedFilter == 'Resources') {
-      final purchasedIds = resourceState.purchasedResourceIds;
-      items.addAll(resourceState.ebooks
-          .where((r) => r.price == 0 && !purchasedIds.contains(r.id)));
-      items.addAll(resourceState.studyMaterials
-          .where((r) => r.price == 0 && !purchasedIds.contains(r.id)));
-      items.addAll(resourceState.pyqs
-          .where((r) => r.price == 0 && !purchasedIds.contains(r.id)));
-      items.addAll(resourceState.currentAffairs
-          .where((r) => r.price == 0 && !purchasedIds.contains(r.id)));
-    }
-
-    if (_searchQuery.isNotEmpty) {
-      items = items.where((item) {
-        final String title;
-        final String description;
-        final String category;
-
-        if (item is MockTest) {
-          title = item.title.toLowerCase();
-          description = item.description.toLowerCase();
-          category = item.category.toLowerCase();
-        } else if (item is Resource) {
-          title = item.title.toLowerCase();
-          description = (item.description ?? '').toLowerCase();
-          category = (item.category ?? '').toLowerCase();
-        } else {
-          return false;
-        }
-
-        return title.contains(_searchQuery) ||
-            description.contains(_searchQuery) ||
-            category.contains(_searchQuery);
-      }).toList();
-    }
-
-    return items;
   }
 
   @override
@@ -255,7 +183,7 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.refresh, color: theme.colorScheme.primary),
-            onPressed: _refreshAll,
+            onPressed: () => _pagingController.refresh(),
             tooltip: 'Refresh Content',
           ),
           const SizedBox(width: AppSpacing.md),
@@ -279,6 +207,10 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
                   padding: const EdgeInsets.all(AppSpacing.md),
                   child: TextField(
                     controller: _searchController,
+                    onSubmitted: (val) {
+                      _searchQuery = val.trim();
+                      _pagingController.refresh();
+                    },
                     decoration: InputDecoration(
                       hintText: 'Search free content...',
                       prefixIcon: const Icon(Icons.search_rounded),
@@ -287,6 +219,13 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                         borderSide: BorderSide.none,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.send_rounded),
+                        onPressed: () {
+                          _searchQuery = _searchController.text.trim();
+                          _pagingController.refresh();
+                        },
                       ),
                     ),
                   ),
@@ -303,7 +242,7 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
                           child: FilterChip(
                             label: Text(filter),
                             selected: isSelected,
-                            onSelected: (val) => setState(() => _selectedFilter = filter),
+                            onSelected: (val) => _updateFilter(filter),
                           ),
                         );
                       }).toList(),
@@ -314,12 +253,41 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
             ),
           ),
           Expanded(
-            child: Consumer(
-              builder: (context, ref, _) {
-                final testState = ref.watch(testProvider);
-                final resourceState = ref.watch(resourceProvider);
-                return _buildContent(testState, resourceState);
-              },
+            child: RefreshIndicator(
+              onRefresh: () async => _pagingController.refresh(),
+                child: PagedListView<int, dynamic>.separated(
+                pagingController: _pagingController,
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.md + MediaQuery.of(context).padding.bottom,
+                ),
+                separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.md),
+                builderDelegate: PagedChildBuilderDelegate<dynamic>(
+                  itemBuilder: (context, item, index) {
+                    if (item is MockTest) {
+                      return _buildTestCard(item, index);
+                    } else if (item is Resource) {
+                      return _buildResourceCard(item, index);
+                    }
+                    return const SizedBox.shrink();
+                  },
+                  firstPageProgressIndicatorBuilder: (_) =>
+                      const Center(child: CircularProgressIndicator()),
+                  newPageProgressIndicatorBuilder: (_) =>
+                      const Center(child: CircularProgressIndicator()),
+                  noItemsFoundIndicatorBuilder: (_) => const Center(child: Text("No items found.")),
+                  firstPageErrorIndicatorBuilder: (_) => NetworkErrorState(
+                    error: _pagingController.error,
+                    onRetry: () => _pagingController.refresh(),
+                  ),
+                  newPageErrorIndicatorBuilder: (_) => NetworkErrorState(
+                    error: _pagingController.error,
+                    onRetry: () => _pagingController.retryLastFailedRequest(),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -327,50 +295,11 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
     );
   }
 
-  Widget _buildContent(TestState testState, ResourceState resourceState) {
-    final items = _getFilteredItems(testState, resourceState);
+  Widget _buildTestCard(MockTest test, int index) {
+    final testState = ref.watch(testProvider);
+    final uniqueTag = 'free_test_${test.id}_$index';
+    final isPurchased = testState.purchasedTestIds.contains(test.id);
     
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
-    
-    if (_errorMessage != null && items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-            const SizedBox(height: AppSpacing.md),
-            Text(_errorMessage!),
-            const SizedBox(height: AppSpacing.lg),
-            ElevatedButton(onPressed: () => _fetchData(), child: const Text('Retry')),
-          ],
-        ),
-      );
-    }
-
-    if (items.isEmpty) return const Center(child: Text("No items found."));
-
-    return RefreshIndicator(
-      onRefresh: _refreshAll,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        itemCount: items.length,
-        separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.md),
-        itemBuilder: (context, index) {
-          final item = items[index];
-          if (item is MockTest) {
-            return _buildTestCard(item, index, testState);
-          } else if (item is Resource) {
-            return _buildResourceCard(item, index, resourceState);
-          }
-          return const SizedBox.shrink();
-        },
-      ),
-    );
-  }
-
-  Widget _buildTestCard(MockTest test, int index, TestState state) {
-    final uniqueTag = 'test_${test.id}_$index';
-    final isPurchased = state.purchasedTestIds.contains(test.id);
     return FreeItemCard(
       title: test.title,
       subtitle: '${test.totalQuestions} Questions',
@@ -392,12 +321,14 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
       },
       onActionTap: () => _claimItem(test: test),
       heroTag: uniqueTag,
-    );
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
   }
 
-  Widget _buildResourceCard(Resource resource, int index, ResourceState state) {
-    final uniqueTag = 'resource_${resource.id}_$index';
-    final isPurchased = state.purchasedResourceIds.contains(resource.id);
+  Widget _buildResourceCard(Resource resource, int index) {
+    final resourceState = ref.watch(resourceProvider);
+    final uniqueTag = 'free_res_${resource.id}_$index';
+    final isPurchased = resourceState.purchasedResourceIds.contains(resource.id);
+    
     return FreeItemCard(
       title: resource.title,
       subtitle: resource.category ?? 'Free Material',
@@ -418,6 +349,6 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
       },
       onActionTap: () => _claimItem(resource: resource),
       heroTag: uniqueTag,
-    );
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
   }
 }

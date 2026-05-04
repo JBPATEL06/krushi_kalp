@@ -119,7 +119,10 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
                   onRefresh: () async => _pagingController.refresh(),
                   child: PagedListView<int, Map<String, dynamic>>(
                     pagingController: _pagingController,
-                    padding: const EdgeInsets.only(top: AppSpacing.sm),
+                    padding: EdgeInsets.only(
+                      top: AppSpacing.sm,
+                      bottom: MediaQuery.of(context).padding.bottom,
+                    ),
                     builderDelegate: PagedChildBuilderDelegate<Map<String, dynamic>>(
                       itemBuilder: (context, user, index) => _buildUserRow(context, user),
                       firstPageErrorIndicatorBuilder: (context) => NetworkErrorState(

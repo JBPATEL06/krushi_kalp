@@ -35,9 +35,7 @@ class _AdminAnalysisScreenState extends ConsumerState<AdminAnalysisScreen> {
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return NetworkErrorState(
-              message: isNetworkError(snapshot.error)
-                  ? 'Unable to load analytics. Check your connection.'
-                  : 'Something went wrong. Please try again.',
+              error: snapshot.error,
               onRetry: () => setState(() {
                 _statsStream = AdminService.streamDashboardStats();
               }),

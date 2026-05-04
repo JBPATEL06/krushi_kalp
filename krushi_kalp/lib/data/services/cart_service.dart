@@ -266,7 +266,7 @@ class CartService {
               'status': 'PENDING',
               'amount': 0, // Will be calculated by triggers or on checkout
               'gateway': 'razorpay',
-              'created_at': DateTime.now().toUtc().toIso8601String(),
+              'created_at': DateTime.now().toIso8601String(),
             })
             .select('id')
             .single();
@@ -300,7 +300,7 @@ class CartService {
         'item_snapshot': itemSnapshot,
         'price_paid': price,
         'is_active': false,
-        'granted_at': DateTime.now().toUtc().toIso8601String(),
+        'granted_at': DateTime.now().toIso8601String(),
       });
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service: addToCart');

@@ -70,9 +70,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           }
           if (snapshot.hasError) {
             return NetworkErrorState(
-              message: isNetworkError(snapshot.error)
-                  ? 'Unable to load notifications.'
-                  : 'Something went wrong.',
+              error: snapshot.error,
               onRetry: () {
                 setState(() {
                   _setupStream();

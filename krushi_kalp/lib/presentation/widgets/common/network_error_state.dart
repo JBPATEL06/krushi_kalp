@@ -3,18 +3,21 @@ import 'package:flutter/material.dart';
 import '../../providers/network_notifier.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../data/services/error_service.dart';
 
-/// A premium, animated network error state widget.
-/// Supports both full-page and compact inline variants.
+/// A premium, animated error state widget.
+/// Supports both network and generic application errors.
 class NetworkErrorState extends ConsumerStatefulWidget {
   final VoidCallback? onRetry;
   final String? message;
+  final dynamic error;
   final bool compact;
 
   const NetworkErrorState({
     super.key,
     this.onRetry,
     this.message,
+    this.error,
     this.compact = false,
   });
 
@@ -112,13 +115,25 @@ class _NetworkErrorStateState extends ConsumerState<NetworkErrorState>
     if (mounted) setState(() => _isRetrying = false);
   }
 
+  String get _displayMessage {
+    if (widget.message != null) return widget.message!;
+    if (widget.error != null) {
+      return ErrorService.instance.getBeautifulError(widget.error);
+    }
+    return isNetworkError(widget.error) 
+      ? 'No internet connection' 
+      : 'Something went wrong';
+  }
+
+  bool get _isNetwork => isNetworkError(widget.error) || (widget.message?.toLowerCase().contains('internet') ?? false);
+
   @override
   Widget build(BuildContext context) {
     if (widget.compact) return _buildCompact(context);
     return _buildFull(context);
   }
 
-  // â”€â”€ Compact variant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Compact variant ───────────────────────────────────────────────────────
 
   Widget _buildCompact(BuildContext context) {
     final theme = Theme.of(context);
@@ -141,13 +156,14 @@ class _NetworkErrorStateState extends ConsumerState<NetworkErrorState>
               color: theme.colorScheme.error.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.wifi_off_rounded,
+            child: Icon(
+                _isNetwork ? Icons.wifi_off_rounded : Icons.error_outline_rounded,
                 size: 18, color: theme.colorScheme.error),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
-              widget.message ?? 'No internet connection',
+              _displayMessage,
               style: TextStyle(
                 fontSize: 13,
                 color: theme.colorScheme.onSurface,
@@ -191,7 +207,7 @@ class _NetworkErrorStateState extends ConsumerState<NetworkErrorState>
     );
   }
 
-  // â”€â”€ Full-page variant â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Full-page variant ─────────────────────────────────────────────────────
 
   Widget _buildFull(BuildContext context) {
     return FadeTransition(
@@ -210,7 +226,7 @@ class _NetworkErrorStateState extends ConsumerState<NetworkErrorState>
                 const SizedBox(height: AppSpacing.xl),
                 if (widget.onRetry != null) _buildRetryButton(),
                 const SizedBox(height: AppSpacing.lg),
-                _buildTips(),
+                if (_isNetwork) _buildTips(),
               ],
             ),
           ),
@@ -278,7 +294,8 @@ class _NetworkErrorStateState extends ConsumerState<NetworkErrorState>
                     end: Alignment.bottomRight,
                   ),
                 ),
-                child: Icon(Icons.wifi_off_rounded,
+                child: Icon(
+                    _isNetwork ? Icons.wifi_off_rounded : Icons.error_outline_rounded,
                     size: 34, color: theme.colorScheme.error),
               ),
             ),
@@ -293,7 +310,7 @@ class _NetworkErrorStateState extends ConsumerState<NetworkErrorState>
     return Column(
       children: [
         Text(
-          'No Internet',
+          _isNetwork ? 'No Internet' : 'Oops!',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w700,
@@ -304,7 +321,7 @@ class _NetworkErrorStateState extends ConsumerState<NetworkErrorState>
         ),
         const SizedBox(height: 10),
         Text(
-          widget.message ?? 'Check your Wi-Fi or mobile data\nand try again.',
+          _displayMessage,
           style: TextStyle(
             fontSize: 14.5,
             color: theme.colorScheme.onSurfaceVariant,
@@ -461,3 +478,4 @@ bool isNetworkError(dynamic error) {
       s.contains('network error') ||
       s.contains('unable to load');
 }
+

@@ -299,7 +299,7 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
 
         Navigator.pop(context); // Close sheet
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text("Purchase Successful! ðŸŽ‰",
+            content: Text("Purchase Successful! 🎉",
                 style: TextStyle(
                     color: Theme.of(context).colorScheme.onPrimaryContainer)),
             backgroundColor: Theme.of(context).colorScheme.primaryContainer));
@@ -443,7 +443,7 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
-                      "âœ¨ Store sale discounts are already active.",
+                      "✨ Store sale discounts are already active.",
                       style: TextStyle(
                         color: const Color(0xFF10B981), // Success Emerald
                         fontSize: 12,

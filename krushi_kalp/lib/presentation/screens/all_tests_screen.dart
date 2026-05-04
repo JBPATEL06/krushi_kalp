@@ -193,7 +193,7 @@ class _AllTestsScreenState extends ConsumerState<AllTestsScreen> {
               return ActiveTestCard(
                 category: test.category,
                 title: test.title,
-                subtitle: '${test.language} â€¢ ${test.durationMinutes} mins',
+                subtitle: '${test.language} • ${test.durationMinutes} mins',
                 status:
                     isCompleted ? TestStatus.evaluated : TestStatus.newTest,
                 time: '${test.durationMinutes}m',

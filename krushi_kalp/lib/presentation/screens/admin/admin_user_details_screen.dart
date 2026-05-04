@@ -286,9 +286,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
             padding: const EdgeInsets.all(AppSpacing.md),
             child: NetworkErrorState(
               compact: true,
-              message: isNetworkError(snapshot.error)
-                  ? 'Unable to load user details.'
-                  : 'Something went wrong.',
+              error: snapshot.error,
               onRetry: () => setState(() {}),
             ),
           );
@@ -524,7 +522,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
         }
         if (snapshot.hasError) {
           return NetworkErrorState(
-            message: 'Something went wrong. Please try again.',
+            error: snapshot.error,
             onRetry: () => setState(() {}),
           );
         }
@@ -542,7 +540,12 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+              padding: EdgeInsets.only(
+                left: AppSpacing.md,
+                right: AppSpacing.md,
+                top: AppSpacing.xs,
+                bottom: hasMore ? 0 : MediaQuery.of(context).padding.bottom + AppSpacing.md,
+              ),
               itemCount: items.length,
                       separatorBuilder: (_, __) =>
                           const SizedBox(height: AppSpacing.md),
@@ -670,7 +673,12 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                     ),
                   if (hasMore)
                     Padding(
-                      padding: const EdgeInsets.all(AppSpacing.md),
+                      padding: EdgeInsets.only(
+                        left: AppSpacing.md,
+                        right: AppSpacing.md,
+                        top: AppSpacing.md,
+                        bottom: AppSpacing.md + MediaQuery.of(context).padding.bottom,
+                      ),
                       child: Center(
                         child: TextButton.icon(
                           onPressed: () {
@@ -717,7 +725,7 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
         }
         if (snapshot.hasError) {
           return NetworkErrorState(
-            message: 'Something went wrong. Please try again.',
+            error: snapshot.error,
             onRetry: () => setState(() {}),
           );
         }
@@ -733,7 +741,12 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                   ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+                    padding: EdgeInsets.only(
+                      left: AppSpacing.md,
+                      right: AppSpacing.md,
+                      top: AppSpacing.xs,
+                      bottom: hasMore ? 0 : MediaQuery.of(context).padding.bottom + AppSpacing.md,
+                    ),
                     itemCount: results.length,
                       separatorBuilder: (_, __) =>
                           const SizedBox(height: AppSpacing.md),
@@ -788,7 +801,12 @@ class _AdminUserDetailsScreenState extends State<AdminUserDetailsScreen>
                     ),
                   if (hasMore)
                     Padding(
-                      padding: const EdgeInsets.all(AppSpacing.md),
+                      padding: EdgeInsets.only(
+                        left: AppSpacing.md,
+                        right: AppSpacing.md,
+                        top: AppSpacing.md,
+                        bottom: AppSpacing.md + MediaQuery.of(context).padding.bottom,
+                      ),
                       child: Center(
                         child: TextButton.icon(
                           onPressed: () {

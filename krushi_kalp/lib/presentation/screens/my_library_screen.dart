@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart'; // NEW
-import '../../core/theme/app_spacing.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../../domain/models/mock_test.dart';
+import '../../domain/models/resource.dart';
+import '../../data/services/test_service.dart';
+import '../../data/services/resource_service.dart';
+import '../../utils/crashlytics_service.dart';
 import '../providers/auth_notifier.dart';
-import '../providers/test_notifier.dart';
-import '../providers/resource_notifier.dart';
+import '../../core/theme/app_spacing.dart';
 import '../widgets/common/universal_item_card.dart';
 import '../utils/exam_helper.dart';
 import 'mock_test_detail_screen.dart';
 import 'resource_detail_screen.dart';
-import '../../domain/models/mock_test.dart';
-import '../../domain/models/resource.dart';
 
 class MyLibraryScreen extends ConsumerStatefulWidget {
   const MyLibraryScreen({super.key});
@@ -20,9 +22,11 @@ class MyLibraryScreen extends ConsumerStatefulWidget {
 }
 
 class _MyLibraryScreenState extends ConsumerState<MyLibraryScreen> {
-  bool _isLoading = true;
+  static const _pageSize = 20;
+  final PagingController<int, dynamic> _pagingController =
+      PagingController(firstPageKey: 0);
+
   String _searchQuery = '';
-  String _selectedSort = 'Newest';
   String _selectedFilter = 'All';
 
   final TextEditingController _searchController = TextEditingController();
@@ -39,37 +43,97 @@ class _MyLibraryScreenState extends ConsumerState<MyLibraryScreen> {
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text;
-      });
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadData();
+    _pagingController.addPageRequestListener((pageKey) {
+      _fetchPage(pageKey);
     });
   }
 
   @override
   void dispose() {
+    _pagingController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadData() async {
-    if (!mounted) return;
-    setState(() => _isLoading = true);
-
+  Future<void> _fetchPage(int pageKey) async {
     final user = ref.read(authProvider).user;
-    if (user != null) {
-      await Future.wait([
-        ref.read(testProvider.notifier).fetchUserTests(user.id),
-        ref.read(resourceProvider.notifier).fetchPurchasedResources(user.id),
-      ]);
+    if (user == null) {
+      _pagingController.appendLastPage([]);
+      return;
     }
 
-    if (mounted) {
-      setState(() => _isLoading = false);
+    try {
+      List<dynamic> newItems = [];
+      bool isLastPage = false;
+
+      if (_selectedFilter == 'All') {
+        final halfSize = _pageSize ~/ 2;
+        final results = await Future.wait([
+          TestService.instance.fetchPaginatedUserTests(
+            authUserId: user.id,
+            offset: pageKey ~/ 2,
+            limit: halfSize,
+            searchQuery: _searchQuery.isEmpty ? null : _searchQuery,
+          ),
+          ResourceService.instance.fetchPaginatedPurchasedResources(
+            userId: user.id,
+            offset: pageKey ~/ 2,
+            limit: halfSize,
+            searchQuery: _searchQuery.isEmpty ? null : _searchQuery,
+          ),
+        ]);
+        
+        final tests = results[0] as List<MockTest>;
+        final resources = results[1] as List<Resource>;
+        newItems = [...tests, ...resources];
+        isLastPage = tests.length < halfSize && resources.length < halfSize;
+      } else if (_selectedFilter == 'Tests') {
+        final tests = await TestService.instance.fetchPaginatedUserTests(
+          authUserId: user.id,
+          offset: pageKey,
+          limit: _pageSize,
+          searchQuery: _searchQuery.isEmpty ? null : _searchQuery,
+        );
+        newItems = tests;
+        isLastPage = tests.length < _pageSize;
+      } else {
+        ResourceType? type;
+        switch (_selectedFilter) {
+          case 'E-Books': type = ResourceType.eBook; break;
+          case 'Study Material': type = ResourceType.studyMaterial; break;
+          case 'PYQs': type = ResourceType.pyq; break;
+          case 'Daily CA': type = ResourceType.currentAffair; break;
+        }
+
+        final resources = await ResourceService.instance.fetchPaginatedPurchasedResources(
+          userId: user.id,
+          offset: pageKey,
+          limit: _pageSize,
+          type: type,
+          searchQuery: _searchQuery.isEmpty ? null : _searchQuery,
+        );
+        newItems = resources;
+        isLastPage = resources.length < _pageSize;
+      }
+
+      if (isLastPage) {
+        _pagingController.appendLastPage(newItems);
+      } else {
+        final nextPageKey = pageKey + newItems.length;
+        _pagingController.appendPage(newItems, nextPageKey);
+      }
+    } catch (error, stack) {
+      CrashlyticsService.instance.recordError(error, stack, reason: 'library_fetch');
+      _pagingController.error = error;
     }
+  }
+
+  void _updateFilter(String filter) {
+    if (_selectedFilter == filter) return;
+    setState(() {
+      _selectedFilter = filter;
+      _pagingController.refresh();
+    });
   }
 
   @override
@@ -91,20 +155,48 @@ class _MyLibraryScreenState extends ConsumerState<MyLibraryScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.refresh, color: theme.colorScheme.onSurface),
-            onPressed: _loadData,
+            onPressed: () => _pagingController.refresh(),
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                _buildSearchAndFilterBar(theme),
-                const SizedBox(height: AppSpacing.sm),
-                _buildFilterChips(theme),
-                Expanded(child: _buildContentList()),
-              ],
+      body: Column(
+        children: [
+          _buildSearchAndFilterBar(theme),
+          const SizedBox(height: AppSpacing.sm),
+          _buildFilterChips(theme),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async => _pagingController.refresh(),
+              child: PagedListView<int, dynamic>.separated(
+                pagingController: _pagingController,
+                padding: EdgeInsets.only(
+                  left: AppSpacing.lg,
+                  right: AppSpacing.lg,
+                  top: AppSpacing.lg,
+                  bottom: AppSpacing.lg + MediaQuery.of(context).padding.bottom,
+                ),
+                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+                builderDelegate: PagedChildBuilderDelegate<dynamic>(
+                  itemBuilder: (context, item, index) {
+                    if (item is MockTest) {
+                      return _buildTestCard(item, index);
+                    } else if (item is Resource) {
+                      return _buildResourceCard(item, index);
+                    }
+                    return const SizedBox.shrink();
+                  },
+                  firstPageProgressIndicatorBuilder: (_) =>
+                      const Center(child: CircularProgressIndicator()),
+                  newPageProgressIndicatorBuilder: (_) =>
+                      const Center(child: CircularProgressIndicator()),
+                  noItemsFoundIndicatorBuilder: (_) =>
+                      _buildEmptyState(theme, "No items found."),
+                ),
+              ),
             ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -112,43 +204,31 @@ class _MyLibraryScreenState extends ConsumerState<MyLibraryScreen> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       color: theme.colorScheme.surface,
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search my library...',
-                prefixIcon: Icon(Icons.search,
-                    color: theme.colorScheme.onSurfaceVariant),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor:
-                    theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                isDense: true,
-              ),
-            ),
+      child: TextField(
+        controller: _searchController,
+        onSubmitted: (val) {
+          _searchQuery = val.trim();
+          _pagingController.refresh();
+        },
+        decoration: InputDecoration(
+          hintText: 'Search my library...',
+          prefixIcon: Icon(Icons.search, color: theme.colorScheme.onSurfaceVariant),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30),
+            borderSide: BorderSide.none,
           ),
-          const SizedBox(width: AppSpacing.md),
-          PopupMenuButton<String>(
-            icon: Icon(Icons.sort, color: theme.colorScheme.onSurface),
-            onSelected: (value) {
-              setState(() {
-                _selectedSort = value;
-              });
+          filled: true,
+          fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+          isDense: true,
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.send_rounded),
+            onPressed: () {
+              _searchQuery = _searchController.text.trim();
+              _pagingController.refresh();
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'Newest', child: Text('Newest First')),
-              const PopupMenuItem(value: 'Oldest', child: Text('Oldest First')),
-              const PopupMenuItem(value: 'A-Z', child: Text('Title A-Z')),
-              const PopupMenuItem(value: 'Z-A', child: Text('Title Z-A')),
-            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -169,7 +249,7 @@ class _MyLibraryScreenState extends ConsumerState<MyLibraryScreen> {
             selected: isSelected,
             onSelected: (selected) {
               if (selected) {
-                setState(() => _selectedFilter = filter);
+                _updateFilter(filter);
               }
             },
             selectedColor: theme.colorScheme.primary.withValues(alpha: 0.1),
@@ -195,161 +275,55 @@ class _MyLibraryScreenState extends ConsumerState<MyLibraryScreen> {
     );
   }
 
-  Widget _buildContentList() {
-    final theme = Theme.of(context);
-    final testState = ref.watch(testProvider);
-    final resourceState = ref.watch(resourceProvider);
+  Widget _buildTestCard(MockTest item, int index) {
+    return UniversalItemCard(
+      title: item.title,
+      subtitle: 'Mock Test • ${item.totalQuestions} Qs',
+      time: item.time,
+      price: -1,
+      coverUrl: item.signedUrl,
+      actionLabel: 'Start',
+      onActionTap: () => ExamHelper.startExam(context, item),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MockTestDetailScreen(
+              test: item,
+              isPurchased: true,
+              activeOffers: const [],
+              heroTag: 'test_image_${item.id}_lib_$index',
+            ),
+          ),
+        );
+      },
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+  }
 
-    final tests = testState.userTests;
-    final resources = resourceState.purchasedResources;
-
-    List<dynamic> items = [];
-
-    switch (_selectedFilter) {
-      case 'All':
-        items = [...tests, ...resources];
-        break;
-      case 'Tests':
-        items = [...tests];
-        break;
-      case 'E-Books':
-        items = resources.where((r) => r.type == ResourceType.eBook).toList();
-        break;
-      case 'Study Material':
-        items = resources
-            .where((r) => r.type == ResourceType.studyMaterial)
-            .toList();
-        break;
-      case 'PYQs':
-        items = resources.where((r) => r.type == ResourceType.pyq).toList();
-        break;
-      case 'Daily CA':
-        items = resources
-            .where((r) => r.type == ResourceType.currentAffair)
-            .toList();
-        break;
-    }
-
-    if (_searchQuery.isNotEmpty) {
-      items = items.where((item) {
-        final title = (item is MockTest
-                ? item.title
-                : (item is Resource ? item.title : ''))
-            .toLowerCase();
-        return title.contains(_searchQuery.toLowerCase());
-      }).toList();
-    }
-
-    items.sort((a, b) {
-      String titleA = '';
-      String titleB = '';
-      int idA = 0;
-      int idB = 0;
-
-      if (a is MockTest) {
-        titleA = a.title;
-        idA = a.id;
-      } else if (a is Resource) {
-        titleA = a.title;
-        idA = a.id;
-      }
-
-      if (b is MockTest) {
-        titleB = b.title;
-        idB = b.id;
-      } else if (b is Resource) {
-        titleB = b.title;
-        idB = b.id;
-      }
-
-      switch (_selectedSort) {
-        case 'Newest':
-          return idB.compareTo(idA);
-        case 'Oldest':
-          return idA.compareTo(idB);
-        case 'A-Z':
-          return titleA.compareTo(titleB);
-        case 'Z-A':
-          return titleB.compareTo(titleA);
-        default:
-          return 0;
-      }
-    });
-
-    if (items.isEmpty) {
-      return _buildEmptyState(theme, "No items found.");
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      child: ListView.separated(
-        padding: EdgeInsets.only(
-          left: AppSpacing.lg,
-          right: AppSpacing.lg,
-          top: AppSpacing.lg,
-          bottom: AppSpacing.lg + MediaQuery.of(context).padding.bottom,
-        ),
-        itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-        itemBuilder: (context, index) {
-          final item = items[index];
-          Widget card = const SizedBox();
-
-          if (item is MockTest) {
-            card = UniversalItemCard(
-              title: item.title,
-              subtitle: 'Mock Test â€¢ ${item.totalQuestions} Qs',
-              time: item.time,
-              price: -1,
-              coverUrl: item.signedUrl,
-              actionLabel: 'Start',
-              onActionTap: () => ExamHelper.startExam(context, item),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MockTestDetailScreen(
-                      test: item,
-                      isPurchased: true,
-                      activeOffers: const [],
-                      heroTag: 'test_image_${item.id}_lib',
-                    ),
-                  ),
-                );
-              },
-            );
-          } else if (item is Resource) {
-            card = UniversalItemCard(
-              title: item.title,
-              subtitle: item.type.name.toUpperCase(),
-              price: -1,
-              coverUrl: item.thumbnailUrl,
-              actionLabel: 'View',
-              onActionTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ResourceDetailScreen(resource: item),
-                  ),
-                );
-              },
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ResourceDetailScreen(resource: item),
-                  ),
-                );
-              },
-            );
-          }
-          return card
-              .animate(delay: (index < 5 ? index * 100 : 0).ms)
-              .fadeIn(duration: 400.ms)
-              .slideY(begin: 0.1, end: 0);
-        },
-      ),
-    );
+  Widget _buildResourceCard(Resource item, int index) {
+    return UniversalItemCard(
+      title: item.title,
+      subtitle: item.type.name.toUpperCase(),
+      price: -1,
+      coverUrl: item.thumbnailUrl,
+      actionLabel: 'View',
+      onActionTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ResourceDetailScreen(resource: item),
+          ),
+        );
+      },
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ResourceDetailScreen(resource: item),
+          ),
+        );
+      },
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
   }
 
   Widget _buildEmptyState(ThemeData theme, String message) {
@@ -374,3 +348,4 @@ class _MyLibraryScreenState extends ConsumerState<MyLibraryScreen> {
     );
   }
 }
+

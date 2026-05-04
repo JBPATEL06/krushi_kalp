@@ -44,7 +44,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _controller = AnimationController(
       vsync: this,
       duration: AppMotion
-          .slow, // MODIFIED: was Duration(milliseconds: 1200) â†’ now AppMotion.slow (500ms)
+          .slow, // MODIFIED: was Duration(milliseconds: 1200) → now AppMotion.slow (500ms)
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),

@@ -212,6 +212,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
               ),
             ),
+            const SizedBox(height: AppSpacing.lg),
+            SizedBox(height: MediaQuery.of(context).padding.bottom),
           ],
         ),
       ),

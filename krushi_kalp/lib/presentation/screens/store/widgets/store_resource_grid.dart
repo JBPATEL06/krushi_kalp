@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../domain/models/resource.dart';
 import '../../../../domain/models/offer.dart';
-import '../../../../core/theme/app_spacing.dart';
-import 'store_item_card.dart';
 import '../../../../data/services/offer_service.dart';
 import '../../../../data/services/review_service.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../utils/responsive.dart';
 import '../../../widgets/common/download_action_button.dart';
-import '../../../widgets/common/responsive_wrapper.dart';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'store_item_card.dart';
 import '../../../providers/auth_notifier.dart';
-import '../../../providers/resource_notifier.dart';
-import '../../../providers/test_notifier.dart';
 
 class StoreResourceGrid extends ConsumerStatefulWidget {
-  final List<Resource> resources;
+  final PagingController<int, Resource> pagingController;
   final List<Offer>? activeOffers;
   final Set<int> purchasedIds;
   final Set<int> cartItemIds;
@@ -26,7 +24,7 @@ class StoreResourceGrid extends ConsumerStatefulWidget {
 
   const StoreResourceGrid({
     super.key,
-    required this.resources,
+    required this.pagingController,
     this.activeOffers,
     required this.purchasedIds,
     required this.cartItemIds,
@@ -47,48 +45,43 @@ class _StoreResourceGridState extends ConsumerState<StoreResourceGrid> {
   @override
   void initState() {
     super.initState();
-    _fetchAllRatings();
-    _fetchAllPrices();
+    widget.pagingController.addStatusListener((status) {
+      if (status == PagingStatus.completed || status == PagingStatus.noItemsFound) {
+        _fetchMetadataForNewItems();
+      }
+    });
   }
 
-  @override
-  void didUpdateWidget(StoreResourceGrid oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.resources != widget.resources) {
-      _fetchAllRatings();
-      _fetchAllPrices();
-    }
+  void _fetchMetadataForNewItems() {
+    final items = widget.pagingController.itemList ?? [];
+    if (items.isEmpty) return;
+    _fetchAllRatings(items);
+    _fetchAllPrices(items);
   }
 
-  Future<void> _fetchAllRatings() async {
-    final uncachedIds = widget.resources
+  Future<void> _fetchAllRatings(List<Resource> items) async {
+    final uncachedIds = items
         .map((r) => r.id)
         .where((id) => !_ratingsCache.containsKey(id))
         .toList();
     if (uncachedIds.isEmpty) return;
     try {
-      final bulk =
-          await ReviewService.getBulkRatingStats(uncachedIds, 'resource');
+      final bulk = await ReviewService.getBulkRatingStats(uncachedIds, 'resource');
       if (mounted) setState(() => _ratingsCache.addAll(bulk));
-    } catch (_) {
-      // Silently skip â€” cards will render without ratings
-    }
+    } catch (_) {}
   }
 
-  Future<void> _fetchAllPrices() async {
-    final uncached = widget.resources
+  Future<void> _fetchAllPrices(List<Resource> items) async {
+    final uncached = items
         .where((r) => !_pricesCache.containsKey(r.id))
         .toList();
     if (uncached.isEmpty) return;
 
-    // Process in batches of 5 to avoid overwhelming the network and Supabase
     const int batchSize = 5;
     for (int i = 0; i < uncached.length; i += batchSize) {
       if (!mounted) break;
-
       final end = (i + batchSize < uncached.length) ? i + batchSize : uncached.length;
       final batch = uncached.sublist(i, end);
-
       try {
         final results = await Future.wait(
           batch.map((r) => OfferService.instance.getDisplayPrice(
@@ -96,7 +89,6 @@ class _StoreResourceGridState extends ConsumerState<StoreResourceGrid> {
             itemId: r.id,
           )),
         );
-
         if (mounted) {
           setState(() {
             for (int j = 0; j < batch.length; j++) {
@@ -106,61 +98,54 @@ class _StoreResourceGridState extends ConsumerState<StoreResourceGrid> {
         }
       } catch (e) {
         debugPrint('StoreResourceGrid: Batch price fetch failed at index $i - $e');
-        // Continue to next batch
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.resources.isEmpty) {
-      return SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text("No items found in this category."),
-              const SizedBox(height: AppSpacing.md),
-              ElevatedButton.icon(
-                onPressed: () {
-                  ref.read(resourceProvider.notifier).fetchAll(forceRefresh: true);
-                  ref.read(testProvider.notifier).fetchTests(forceRefresh: true);
-                },
-                icon: const Icon(Icons.refresh),
-                label: const Text("Refresh Content"),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return SliverPadding(
       padding: EdgeInsets.symmetric(horizontal: context.w(AppSpacing.lg)),
-      sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final resource = widget.resources[index];
-            return Padding(
-              padding: EdgeInsets.only(bottom: context.h(AppSpacing.md)),
-              child: _buildCard(context, resource),
-            ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+      sliver: PagedSliverList<int, Resource>.separated(
+        pagingController: widget.pagingController,
+        separatorBuilder: (_, __) => SizedBox(height: context.h(AppSpacing.md)),
+        builderDelegate: PagedChildBuilderDelegate<Resource>(
+          itemBuilder: (context, resource, index) {
+            return _buildCard(context, resource)
+                .animate()
+                .fadeIn(duration: 400.ms)
+                .slideY(begin: 0.1, end: 0);
           },
-          childCount: widget.resources.length,
+          firstPageProgressIndicatorBuilder: (_) =>
+              const Center(child: CircularProgressIndicator()),
+          newPageProgressIndicatorBuilder: (_) =>
+              const Center(child: CircularProgressIndicator()),
+          noItemsFoundIndicatorBuilder: (_) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text("No items found in this category."),
+                const SizedBox(height: AppSpacing.md),
+                ElevatedButton.icon(
+                  onPressed: () => widget.pagingController.refresh(),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text("Refresh Content"),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildCard(BuildContext context, Resource resource) {
-    final isInCart    = widget.cartItemIds.contains(resource.id);
+    final isInCart = widget.cartItemIds.contains(resource.id);
     final isPurchased = widget.purchasedIds.contains(resource.id);
 
-    // Use DB-cached price data; fall back to base price until RPC returns
-    final priceData    = _pricesCache[resource.id];
+    final priceData = _pricesCache[resource.id];
     final displayPrice = (priceData?['final_price'] as double?) ?? resource.price;
-    final double? mrp  = (priceData?['has_discount'] == true)
+    final double? mrp = (priceData?['has_discount'] == true)
         ? (priceData!['mrp_display'] as double?)
         : null;
     final String? discountTag = priceData?['discount_label'] as String?;
@@ -170,7 +155,6 @@ class _StoreResourceGridState extends ConsumerState<StoreResourceGrid> {
       subtitle += ' • ${resource.category}';
     }
 
-    // Use cached ratings instead of FutureBuilder
     final cachedRating = _ratingsCache[resource.id];
     double? rating;
     int? count;
@@ -200,7 +184,7 @@ class _StoreResourceGridState extends ConsumerState<StoreResourceGrid> {
               startLabel: "Open",
               isFullWidth: false,
               userId: ref.read(authProvider).user?.id,
-              displayName: resource.title, // CHANGED
+              displayName: resource.title,
               onAction: () async {
                 widget.onBuyTap(resource);
               },
@@ -212,15 +196,7 @@ class _StoreResourceGridState extends ConsumerState<StoreResourceGrid> {
       hideTags: isPurchased,
       rating: rating,
       reviewCount: count,
-      onActionTap: () {
-        if (isPurchased) {
-          widget.onBuyTap(resource);
-        } else if (displayPrice == 0) {
-          widget.onBuyTap(resource);
-        } else {
-          widget.onBuyTap(resource);
-        }
-      },
+      onActionTap: () => widget.onBuyTap(resource),
       onCartTap: () => widget.onCartTap(resource),
       onTap: () => widget.onTap(resource),
       heroTag: 'store_resource_${resource.id}',

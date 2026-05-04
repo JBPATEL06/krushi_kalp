@@ -43,6 +43,7 @@ class ResourceService {
     required int offset,
     required int limit,
     String? category,
+    String? searchQuery,
     bool isAdmin = false,
     List<int>? excludedIds,
   }) async {
@@ -61,6 +62,9 @@ class ResourceService {
       if (category != null && category.isNotEmpty) {
         query = query.eq('category', category);
       }
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        query = query.ilike('title', '%$searchQuery%');
+      }
 
       final response = await query
           .order('created_at', ascending: false)
@@ -72,6 +76,37 @@ class ResourceService {
     } catch (e, stack) {
       CrashlyticsService.instance
           .recordError(e, stack, reason: 'resource_service: fetchPaginatedResources');
+      return [];
+    }
+  }
+
+  /// Fetches a precise page of free resources across all types.
+  Future<List<Resource>> fetchPaginatedFreeResources({
+    required int offset,
+    required int limit,
+    String? searchQuery,
+    ResourceType? type,
+  }) async {
+    try {
+      var query = _client.from('resources').select().eq('price', 0).eq('is_active', true);
+
+      if (type != null) {
+        query = query.eq('type', _typeToString(type));
+      }
+
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        query = query.ilike('title', '%$searchQuery%');
+      }
+
+      final response = await query
+          .order('created_at', ascending: false)
+          .range(offset, offset + limit - 1);
+
+      final resources = await compute(_parseResources, response as List<dynamic>);
+      return await _signResources(resources);
+    } catch (e, stack) {
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'resource_service: fetchPaginatedFreeResources');
       return [];
     }
   }
@@ -128,6 +163,67 @@ class ResourceService {
       return await _signResources(resources);
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service: fetchPurchasedResources');
+      return [];
+    }
+  }
+
+  /// Fetches paginated purchased resources for a user.
+  Future<List<Resource>> fetchPaginatedPurchasedResources({
+    required String userId,
+    required int offset,
+    required int limit,
+    ResourceType? type,
+    String? searchQuery,
+  }) async {
+    try {
+      var query = _client
+          .from('access')
+          .select('item_id, item_snapshot')
+          .eq('user_id', userId)
+          .eq('item_type', 'resource')
+          .eq('is_active', true);
+
+      if (type != null) {
+        query = query.eq('item_snapshot->>type', _typeToString(type));
+      }
+
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        query = query.ilike('item_snapshot->>title', '%$searchQuery%');
+      }
+
+      final response = await query
+          .order('access_id', ascending: false)
+          .range(offset, offset + limit - 1);
+
+      if ((response as List).isEmpty) return [];
+
+      final List accessList = response;
+      final resourceIds = accessList.map((e) => e['item_id'] as int).toList();
+
+      final resourcesRes = await _client
+          .from('resources')
+          .select()
+          .inFilter('id', resourceIds);
+
+      final liveResourcesMap = {
+        for (var r in (resourcesRes as List)) r['id']: r
+      };
+
+      final List<dynamic> finalJsonList = [];
+      for (var access in accessList) {
+        final itemId = access['item_id'];
+        final liveData = liveResourcesMap[itemId];
+        if (liveData != null) {
+          finalJsonList.add(liveData);
+        } else if (access['item_snapshot'] != null) {
+          finalJsonList.add(access['item_snapshot']);
+        }
+      }
+
+      final List<Resource> resources = finalJsonList.map((json) => Resource.fromJson(json)).toList();
+      return await _signResources(resources);
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service: fetchPaginatedPurchasedResources');
       return [];
     }
   }
@@ -370,7 +466,7 @@ class ResourceService {
             'status': 'PENDING',
             'amount': price,
             'gateway': 'razorpay',
-            'created_at': DateTime.now().toUtc().toIso8601String(),
+            'created_at': DateTime.now().toIso8601String(),
             'metadata': {
               'item_type': 'resource',
               'item_id': resourceId,

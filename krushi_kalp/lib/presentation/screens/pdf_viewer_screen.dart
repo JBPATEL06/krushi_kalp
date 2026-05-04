@@ -42,7 +42,7 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
     _searcher = PdfTextSearcher(_controller);
     _loadInitialNightMode();
     _searcher.addListener(() => setState(() {}));
-    // Capture userId now â€” ref is NOT safe to use in dispose()
+    // Capture userId now — ref is NOT safe to use in dispose()
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _userId = ref.read(authProvider).user?.id;
@@ -215,7 +215,12 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
       bottomNavigationBar: _totalPages > 0
           ? Container(
               color: chromeGrey,
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                8,
+                16,
+                8 + MediaQuery.of(context).padding.bottom,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

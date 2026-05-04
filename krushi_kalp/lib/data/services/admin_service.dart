@@ -235,7 +235,10 @@ class AdminService {
         'order_id': p['id'],
         'total_amount': p['amount'],
       }).toList();
-    } catch (e) { return []; }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: getUserOrders');
+      return [];
+    }
   }
 
   static Future<List<Map<String, dynamic>>> getUserResults(String userId) async {
@@ -246,7 +249,8 @@ class AdminService {
           .eq('user_id', userId)
           .order('attempt_date', ascending: false);
       return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: getUserResults');
       return [];
     }
   }
@@ -277,7 +281,10 @@ class AdminService {
         }
 
         return users.map((user) => { ...user, 'last_active': lastActiveMap[user['id']] }).toList();
-      } catch (e) { return []; }
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: streamUsers');
+        return [];
+      }
     });
   }
 
@@ -318,7 +325,10 @@ class AdminService {
         }).toList();
       }
       return resultList;
-    } catch (e) { return []; }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: getPaginatedUsers');
+      return [];
+    }
   }
 
   static Stream<Map<String, dynamic>> streamUserDetails(String userId) {
@@ -429,7 +439,8 @@ class AdminService {
           'payment_details': payment,
         };
       }).toList();
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: getUserOrdersPaginated');
       return [];
     }
   }
@@ -450,7 +461,8 @@ class AdminService {
           .range(from, to);
 
       return results.map((r) => Map<String, dynamic>.from(r)).toList();
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: getUserResultsPaginated');
       return [];
     }
   }
@@ -486,8 +498,9 @@ class AdminService {
         'totalCount': totalCount, 
         'salesCount': salesCount 
       };
-    } catch (e) { 
-      return {'totalCount': 0, 'salesCount': 0}; 
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: getResourceTypeStats');
+      return {'totalCount': 0, 'salesCount': 0};
     }
   }
 
@@ -503,7 +516,10 @@ class AdminService {
         'price': (itemRes['price'] as num?)?.toDouble() ?? 0.0, 
         'salesCount': salesCount 
       };
-    } catch (e) { return {'price': 0.0, 'salesCount': 0}; }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: getResourceItemStats');
+      return {'price': 0.0, 'salesCount': 0};
+    }
   }
 
   static Future<Map<String, dynamic>> getMockTestItemStats(int testId) async {
@@ -518,7 +534,10 @@ class AdminService {
         'price': (itemRes['price'] as num?)?.toDouble() ?? 0.0, 
         'salesCount': salesCount 
       };
-    } catch (e) { return {'price': 0.0, 'salesCount': 0}; }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: getMockTestItemStats');
+      return {'price': 0.0, 'salesCount': 0};
+    }
   }
 
   static Future<Map<String, dynamic>?> fetchOrderById(String orderId) async {
@@ -542,7 +561,10 @@ class AdminService {
           'resources': a['item_type'] == 'resource' ? a['item_snapshot'] : null,
         }).toList(),
       };
-    } catch (e) { return null; }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: fetchOrderById');
+      return null;
+    }
   }
 
   static Future<List<Map<String, dynamic>>> fetchPaginatedOrders({ required int offset, required int limit, String? searchQuery }) async {
@@ -595,7 +617,10 @@ class AdminService {
           }).toList(),
         };
       }).toList();
-    } catch (e) { return []; }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: fetchPaginatedOrders');
+      return [];
+    }
   }
 
   static Future<List<Map<String, dynamic>>> fetchAllOrdersWithDetails() async {
@@ -644,7 +669,10 @@ class AdminService {
           }).toList(),
         };
       }).toList();
-    } catch (e) { return []; }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: fetchAllOrdersWithDetails');
+      return [];
+    }
   }
 
   /// Manually grants access to a user for a specific item (test or resource).
@@ -707,7 +735,8 @@ class AdminService {
     try {
       final response = await _supabase.from('mock_tests').select('*').order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: fetchAllMockTests');
       return [];
     }
   }
@@ -717,7 +746,8 @@ class AdminService {
     try {
       final response = await _supabase.from('resources').select('*').order('created_at', ascending: false);
       return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: fetchAllResources');
       return [];
     }
   }
@@ -740,7 +770,8 @@ class AdminService {
           .range(offset, offset + limit - 1);
           
       return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: getPaginatedMockTests');
       return [];
     }
   }
@@ -768,7 +799,8 @@ class AdminService {
           .range(offset, offset + limit - 1);
           
       return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: getPaginatedResources');
       return [];
     }
   }
@@ -788,7 +820,8 @@ class AdminService {
         }
       }
       return {'test': testIds, 'resource': resourceIds};
-    } catch (e) {
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: getUserAccessItemIds');
       return {'test': {}, 'resource': {}};
     }
   }

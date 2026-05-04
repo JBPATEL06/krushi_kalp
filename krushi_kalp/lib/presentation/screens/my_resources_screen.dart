@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/services/auth_service.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../domain/models/resource.dart';
-import '../providers/resource_notifier.dart';
+import '../../data/services/resource_service.dart';
+import '../../data/services/auth_service.dart';
 import '../providers/auth_notifier.dart';
-import '../providers/resource_state.dart';
-import '../widgets/common/download_item_card.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../utils/resource_helper.dart';
+import '../widgets/common/download_item_card.dart';
 import '../widgets/common/download_action_button.dart';
 import 'resource_detail_screen.dart';
+import '../../utils/resource_helper.dart';
+import '../widgets/common/network_error_state.dart';
 
 class MyResourcesScreen extends ConsumerStatefulWidget {
   final String title;
@@ -27,7 +28,10 @@ class MyResourcesScreen extends ConsumerStatefulWidget {
 }
 
 class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
-  bool _isLoading = true;
+  static const _pageSize = 20;
+  final PagingController<int, Resource> _pagingController =
+      PagingController(firstPageKey: 0);
+
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _sortOption = 'Newest';
@@ -35,76 +39,82 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _pagingController.addPageRequestListener((pageKey) {
+      _fetchPage(pageKey);
+    });
     _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.toLowerCase();
-      });
+      final query = _searchController.text.toLowerCase();
+      if (_searchQuery != query) {
+        _searchQuery = query;
+        _pagingController.refresh();
+      }
     });
   }
 
   @override
   void dispose() {
+    _pagingController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    final user = ref.read(authProvider).user;
-    if (user != null) {
-      await ref.read(resourceProvider.notifier).fetchPurchasedResources(user.id);
-    }
-    if (mounted) {
-      setState(() => _isLoading = false);
-    }
-  }
+  Future<void> _fetchPage(int pageKey) async {
+    try {
+      final user = ref.read(authProvider).user;
+      if (user == null) {
+        _pagingController.appendLastPage([]);
+        return;
+      }
 
-  List<Resource> _getFilteredResources(ResourceState state) {
-    List<Resource> allResources;
-    if (widget.category == 'E-Books') {
-      allResources = state.ebooks;
-    } else if (widget.category == 'Study Material') {
-      allResources = state.studyMaterials;
-    } else if (widget.category == 'PYQs') {
-      allResources = state.pyqs;
-    } else if (widget.category == 'Daily CA') {
-      allResources = state.currentAffairs;
-    } else {
-      allResources = [];
+      final newItems = await ResourceService.instance.fetchPaginatedPurchasedResources(
+        userId: user.id,
+        offset: pageKey,
+        limit: _pageSize,
+      );
+
+      // Filter by current category and search query
+      ResourceType? targetType;
+      switch (widget.category) {
+        case 'E-Books': targetType = ResourceType.eBook; break;
+        case 'Study Material': targetType = ResourceType.studyMaterial; break;
+        case 'PYQs': targetType = ResourceType.pyq; break;
+        case 'Daily CA': targetType = ResourceType.currentAffair; break;
+      }
+
+      var filtered = newItems.where((r) {
+        final matchesCategory = targetType == null || r.type == targetType;
+        final matchesSearch = _searchQuery.isEmpty || r.title.toLowerCase().contains(_searchQuery);
+        return matchesCategory && matchesSearch;
+      }).toList();
+
+      if (_sortOption == 'Newest') {
+        filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      } else if (_sortOption == 'Oldest') {
+        filtered.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      } else if (_sortOption == 'A-Z') {
+        filtered.sort((a, b) => a.title.compareTo(b.title));
+      }
+
+      final isLastPage = newItems.length < _pageSize;
+      if (isLastPage) {
+        _pagingController.appendLastPage(filtered);
+      } else {
+        final nextPageKey = pageKey + newItems.length;
+        _pagingController.appendPage(filtered, nextPageKey);
+      }
+    } catch (error) {
+      _pagingController.error = error;
     }
-
-    var filtered = allResources
-        .where((r) => state.purchasedResourceIds.contains(r.id))
-        .toList();
-
-    if (_searchQuery.isNotEmpty) {
-      filtered = filtered
-          .where((r) => r.title.toLowerCase().contains(_searchQuery))
-          .toList();
-    }
-
-    if (_sortOption == 'Newest') {
-      filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    } else if (_sortOption == 'Oldest') {
-      filtered.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    } else if (_sortOption == 'A-Z') {
-      filtered.sort((a, b) => a.title.compareTo(b.title));
-    }
-
-    return filtered;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final resourceState = ref.watch(resourceProvider);
-    final resources = _getFilteredResources(resourceState);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: RefreshIndicator(
-        onRefresh: _loadData,
+        onRefresh: () async => _pagingController.refresh(),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
@@ -112,60 +122,58 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
             SliverToBoxAdapter(
               child: _buildSearchAndFilterBar(theme),
             ),
-            if (_isLoading)
-              const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (resources.isEmpty)
-              SliverFillRemaining(
-                child: _buildEmptyState(),
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final resource = resources[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                        child: DownloadItemCard(
-                          title: resource.title,
-                          subtitle: resource.description,
-                          coverUrl: resource.thumbnailUrl,
-                          heroTag: 'resource_image_${resource.id}',
-                          customAction: DownloadActionButton(
-                            testId: resource.id.toString(),
-                            filename: 'resource_${resource.id}.pdf',
-                            url: resource.fileUrl,
-                            startLabel: "Open",
-                            isFullWidth: false,
-                            userId: AuthService.instance.currentUser?.id,
-                            displayName: resource.title,
-                            onAction: () => _openResource(resource),
+            PagedSliverList<int, Resource>(
+              pagingController: _pagingController,
+              builderDelegate: PagedChildBuilderDelegate<Resource>(
+                itemBuilder: (context, resource, index) {
+                  final bottomPadding = index == _pagingController.itemList!.length - 1
+                      ? AppSpacing.md + MediaQuery.of(context).padding.bottom
+                      : AppSpacing.md;
+                  return Padding(
+                    padding: EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, bottomPadding),
+                    child: DownloadItemCard(
+                      title: resource.title,
+                      subtitle: resource.description,
+                      coverUrl: resource.thumbnailUrl,
+                      heroTag: 'resource_image_${resource.id}',
+                      customAction: DownloadActionButton(
+                        testId: resource.id.toString(),
+                        filename: 'resource_${resource.id}.pdf',
+                        url: resource.fileUrl,
+                        startLabel: "Open",
+                        isFullWidth: false,
+                        userId: AuthService.instance.currentUser?.id,
+                        displayName: resource.title,
+                        onAction: () => _openResource(resource),
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ResourceDetailScreen(
+                              resource: resource,
+                              isPurchased: true,
+                              heroTag: 'resource_image_${resource.id}',
+                            ),
                           ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ResourceDetailScreen(
-                                  resource: resource,
-                                  isPurchased: true,
-                                  heroTag: 'resource_image_${resource.id}',
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                          .animate(delay: (index < 5 ? index * 100 : 0).ms)
-                          .fadeIn(duration: 400.ms)
-                          .slideY(begin: 0.1, end: 0);
-                    },
-                    childCount: resources.length,
-                  ),
+                        );
+                      },
+                    ),
+                  ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+                },
+                firstPageProgressIndicatorBuilder: (_) => const Center(child: CircularProgressIndicator()),
+                newPageProgressIndicatorBuilder: (_) => const Center(child: CircularProgressIndicator()),
+                noItemsFoundIndicatorBuilder: (_) => _buildEmptyState(),
+                firstPageErrorIndicatorBuilder: (_) => NetworkErrorState(
+                  error: _pagingController.error,
+                  onRetry: () => _pagingController.refresh(),
+                ),
+                newPageErrorIndicatorBuilder: (_) => NetworkErrorState(
+                  error: _pagingController.error,
+                  onRetry: () => _pagingController.retryLastFailedRequest(),
                 ),
               ),
+            ),
           ],
         ),
       ),
@@ -187,8 +195,8 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
       ),
       title: Text(
         widget.title,
-        style: TextStyle(
-          color: theme.colorScheme.onSurface,
+        style: const TextStyle(
+          color: Colors.black, // Explicitly black as per user's previous preference in other screens if theme is light
           fontWeight: FontWeight.bold,
           fontSize: 20,
         ),
@@ -198,12 +206,10 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
 
   Widget _buildSearchAndFilterBar(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Search Bar
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
@@ -221,8 +227,6 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-
-          // Sort Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -248,6 +252,7 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
       onSelected: (bool selected) {
         setState(() {
           _sortOption = label;
+          _pagingController.refresh();
         });
       },
       selectedColor: theme.colorScheme.primary.withValues(alpha: 0.1),
@@ -297,8 +302,6 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
 
   Future<void> _openResource(Resource resource) async {
     final user = ref.read(authProvider).user;
-    
-    // Use the unified ResourceHelper (strictly in-app)
     await ResourceHelper.openResource(
       context: context,
       resource: resource,

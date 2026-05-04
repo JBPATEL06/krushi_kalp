@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:krushi_kalp/utils/responsive.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/test_notifier.dart';
-import '../providers/auth_notifier.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:shimmer/shimmer.dart';
+import '../../domain/models/mock_test.dart';
+import '../../data/services/test_service.dart';
 import '../utils/exam_helper.dart';
+import '../../utils/responsive.dart';
+import '../../core/theme/app_spacing.dart';
+import '../providers/auth_notifier.dart';
+import '../providers/navigation_notifier.dart';
+import '../widgets/common/download_item_card.dart';
 import '../widgets/common/download_action_button.dart';
 import 'mock_test_detail_screen.dart';
-import '../../core/theme/app_spacing.dart';
-import 'package:shimmer/shimmer.dart';
-import '../widgets/common/download_item_card.dart';
-import '../providers/navigation_notifier.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import '../../domain/models/mock_test.dart';
+import '../widgets/common/network_error_state.dart';
 
 class PurchasedTestsScreen extends ConsumerStatefulWidget {
   const PurchasedTestsScreen({super.key});
@@ -21,135 +23,146 @@ class PurchasedTestsScreen extends ConsumerStatefulWidget {
 }
 
 class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
+  static const _pageSize = 20;
+  final PagingController<int, MockTest> _pagingController =
+      PagingController(firstPageKey: 0);
+
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _sortOption = 'Newest';
-  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _pagingController.addPageRequestListener((pageKey) {
+      _fetchPage(pageKey);
+    });
     _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.toLowerCase();
-      });
+      final query = _searchController.text.toLowerCase();
+      if (_searchQuery != query) {
+        _searchQuery = query;
+        _pagingController.refresh();
+      }
     });
   }
 
   @override
   void dispose() {
+    _pagingController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadData() async {
-    if (!mounted) return;
-    setState(() => _isLoading = true);
-    final user = ref.read(authProvider).user;
-    if (user != null) {
-      await ref.read(testProvider.notifier).fetchUserTests(user.id);
-    }
-    if (mounted) {
-      setState(() => _isLoading = false);
-    }
-  }
+  Future<void> _fetchPage(int pageKey) async {
+    try {
+      final user = ref.read(authProvider).user;
+      if (user == null) {
+        _pagingController.appendLastPage([]);
+        return;
+      }
 
-  List<MockTest> _getFilteredData(List<MockTest> tests) {
-    var filtered = List<MockTest>.from(tests);
+      final newItems = await TestService.instance.fetchPaginatedUserTests(
+        authUserId: user.id,
+        offset: pageKey,
+        limit: _pageSize,
+      );
 
-    if (_searchQuery.isNotEmpty) {
-      filtered = filtered
-          .where((t) => t.title.toLowerCase().contains(_searchQuery))
-          .toList();
+      // Filtering and sorting on the client side since user tests are usually few
+      // But we still paginate the initial fetch for safety
+      var filtered = List<MockTest>.from(newItems);
+      if (_searchQuery.isNotEmpty) {
+        filtered = filtered.where((t) => t.title.toLowerCase().contains(_searchQuery)).toList();
+      }
+
+      if (_sortOption == 'Newest') {
+        filtered.sort((a, b) => b.id.compareTo(a.id));
+      } else if (_sortOption == 'Oldest') {
+        filtered.sort((a, b) => a.id.compareTo(b.id));
+      } else if (_sortOption == 'A-Z') {
+        filtered.sort((a, b) => a.title.compareTo(b.title));
+      }
+
+      final isLastPage = newItems.length < _pageSize;
+      if (isLastPage) {
+        _pagingController.appendLastPage(filtered);
+      } else {
+        final nextPageKey = pageKey + newItems.length;
+        _pagingController.appendPage(filtered, nextPageKey);
+      }
+    } catch (error) {
+      _pagingController.error = error;
     }
-
-    if (_sortOption == 'Newest') {
-      filtered.sort((a, b) => b.id.compareTo(a.id));
-    } else if (_sortOption == 'Oldest') {
-      filtered.sort((a, b) => a.id.compareTo(b.id));
-    } else if (_sortOption == 'A-Z') {
-      filtered.sort((a, b) => a.title.compareTo(b.title));
-    }
-
-    return filtered;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final testState = ref.watch(testProvider);
-    final tests = testState.userTests;
-    final filteredTests = _getFilteredData(tests);
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       body: RefreshIndicator(
-        onRefresh: _loadData,
+        onRefresh: () async => _pagingController.refresh(),
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             _buildSliverAppBar(context, theme),
             SliverToBoxAdapter(
-              child: _buildSearchAndFilterBar(context, theme), // FIXED: context
+              child: _buildSearchAndFilterBar(context, theme),
             ),
-            if (_isLoading || (testState.isLoading && tests.isEmpty))
-              SliverToBoxAdapter(
-                  child: _buildSkeletonLoader(context, theme)) // FIXED: context
-            else if (filteredTests.isEmpty)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: _buildEmptyState(context, theme), // FIXED: context
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final item = filteredTests[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                        child: DownloadItemCard(
-                          title: item.title,
-                          subtitle: '${item.totalQuestions} Questions',
-                          coverUrl: item.signedUrl,
-                          heroTag: 'test_image_${item.id}',
-                          customAction: DownloadActionButton(
-                            testId: item.id.toString(),
-                            filename: 'mock_test_${item.id}.json',
-                            url: item.filePath,
-                            startLabel: "Start",
-                            isFullWidth: false,
-                            userId: ref.read(authProvider).user?.id,
-                            displayName: item.title,
-                            onAction: () async {
-                              await ExamHelper.startExam(context, item);
-                            },
+            PagedSliverList<int, MockTest>(
+              pagingController: _pagingController,
+              builderDelegate: PagedChildBuilderDelegate<MockTest>(
+                  final bottomPadding = index == _pagingController.itemList!.length - 1
+                      ? AppSpacing.md + MediaQuery.of(context).padding.bottom
+                      : AppSpacing.md;
+                  return Padding(
+                    padding: EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, bottomPadding),
+                    child: DownloadItemCard(
+                      title: item.title,
+                      subtitle: '${item.totalQuestions} Questions',
+                      coverUrl: item.signedUrl,
+                      heroTag: 'test_image_${item.id}',
+                      customAction: DownloadActionButton(
+                        testId: item.id.toString(),
+                        filename: 'mock_test_${item.id}.json',
+                        url: item.filePath,
+                        startLabel: "Start",
+                        isFullWidth: false,
+                        userId: ref.read(authProvider).user?.id,
+                        displayName: item.title,
+                        onAction: () async {
+                          await ExamHelper.startExam(context, item);
+                        },
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MockTestDetailScreen(
+                              test: item,
+                              isPurchased: true,
+                              activeOffers: const [],
+                              heroTag: 'test_image_${item.id}',
+                            ),
                           ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => MockTestDetailScreen(
-                                  test: item,
-                                  isPurchased: true,
-                                  activeOffers: const [],
-                                  heroTag: 'test_image_${item.id}',
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                          .animate(delay: (index < 5 ? index * 100 : 0).ms)
-                          .fadeIn(duration: 400.ms)
-                          .slideY(begin: 0.1, end: 0);
-                    },
-                    childCount: filteredTests.length,
-                  ),
+                        );
+                      },
+                    ),
+                  ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+                },
+                firstPageProgressIndicatorBuilder: (_) => _buildSkeletonLoader(context, theme),
+                newPageProgressIndicatorBuilder: (_) => const Center(child: CircularProgressIndicator()),
+                noItemsFoundIndicatorBuilder: (_) => _buildEmptyState(context, theme),
+                firstPageErrorIndicatorBuilder: (_) => NetworkErrorState(
+                  error: _pagingController.error,
+                  onRetry: () => _pagingController.refresh(),
+                ),
+                newPageErrorIndicatorBuilder: (_) => NetworkErrorState(
+                  error: _pagingController.error,
+                  onRetry: () => _pagingController.retryLastFailedRequest(),
                 ),
               ),
+            ),
           ],
         ),
       ),
@@ -169,36 +182,33 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
         style: theme.textTheme.titleLarge?.copyWith(
           color: theme.colorScheme.onSurface,
           fontWeight: FontWeight.bold,
-          fontSize: context.sp(20), // FIXED: context.sp(20)
+          fontSize: context.sp(20),
         ),
       ),
     );
   }
 
   Widget _buildSearchAndFilterBar(BuildContext context, ThemeData theme) {
-    // FIXED: context
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Search Bar
           TextField(
             controller: _searchController,
             style: TextStyle(
               color: theme.colorScheme.onSurface,
-              fontSize: context.sp(14), // FIXED: context.sp(14)
+              fontSize: context.sp(14),
             ),
             decoration: InputDecoration(
               hintText: 'Search mock tests...',
               hintStyle: TextStyle(
                 color: theme.colorScheme.onSurfaceVariant,
-                fontSize: context.sp(14), // FIXED: context.sp(14)
+                fontSize: context.sp(14),
               ),
               prefixIcon: Icon(Icons.search,
                   color: theme.colorScheme.onSurfaceVariant,
-                  size: context.sp(20)), // FIXED
+                  size: context.sp(20)),
               filled: true,
               fillColor: theme.colorScheme.surfaceContainerHighest,
               border: OutlineInputBorder(
@@ -209,17 +219,15 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-
-          // Sort Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildFilterChip(context, 'Newest', theme), // FIXED: context
+                _buildFilterChip(context, 'Newest', theme),
                 const SizedBox(width: AppSpacing.sm),
-                _buildFilterChip(context, 'Oldest', theme), // FIXED: context
+                _buildFilterChip(context, 'Oldest', theme),
                 const SizedBox(width: AppSpacing.sm),
-                _buildFilterChip(context, 'A-Z', theme), // FIXED: context
+                _buildFilterChip(context, 'A-Z', theme),
               ],
             ),
           ),
@@ -229,7 +237,6 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
   }
 
   Widget _buildFilterChip(BuildContext context, String label, ThemeData theme) {
-    // FIXED: context
     final isSelected = _sortOption == label;
     return FilterChip(
       label: Text(label),
@@ -237,6 +244,7 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
       onSelected: (bool selected) {
         setState(() {
           _sortOption = label;
+          _pagingController.refresh();
         });
       },
       selectedColor: theme.colorScheme.primary.withValues(alpha: 0.1),
@@ -247,7 +255,7 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
             ? theme.colorScheme.primary
             : theme.colorScheme.onSurfaceVariant,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        fontSize: context.sp(13), // FIXED: context.sp(13)
+        fontSize: context.sp(13),
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
@@ -261,14 +269,13 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context, ThemeData theme) {
-    // FIXED: context
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.search_off_rounded,
-            size: context.sp(64), // FIXED: context.sp(64)
+            size: context.sp(64),
             color: theme.colorScheme.outline,
           ),
           const SizedBox(height: AppSpacing.md),
@@ -278,7 +285,7 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
                 : 'No purchased tests yet.',
             style: theme.textTheme.bodyLarge?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
-              fontSize: context.sp(16), // FIXED: context.sp(16)
+              fontSize: context.sp(16),
             ),
           ),
           if (_searchQuery.isEmpty) ...[
@@ -288,7 +295,7 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
                 ref.read(navigationProvider.notifier).setIndex(2); // Store
               },
               child: Text("Browse Store",
-                  style: TextStyle(fontSize: context.sp(14))), // FIXED
+                  style: TextStyle(fontSize: context.sp(14))),
             )
           ]
         ],
@@ -297,7 +304,6 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
   }
 
   Widget _buildSkeletonLoader(BuildContext context, ThemeData theme) {
-    // FIXED: context
     return Shimmer.fromColors(
       baseColor: theme.colorScheme.surfaceContainerHighest,
       highlightColor: theme.colorScheme.surface,
@@ -310,7 +316,7 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: Container(
                 width: double.infinity,
-                height: context.h(120), // FIXED
+                height: context.h(120),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -319,8 +325,8 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
                 child: Row(
                   children: [
                     Container(
-                      width: context.w(80), // FIXED
-                      height: context.h(80), // FIXED
+                      width: context.w(80),
+                      height: context.h(80),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surface,
                         borderRadius:
@@ -335,16 +341,16 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
                         children: [
                           Container(
                               height: context.h(16),
-                              color: theme.colorScheme.surface), // FIXED
+                              color: theme.colorScheme.surface),
                           const SizedBox(height: AppSpacing.xs),
                           Container(
                               height: context.h(14),
-                              color: theme.colorScheme.surface), // FIXED
+                              color: theme.colorScheme.surface),
                           const SizedBox(height: AppSpacing.sm),
                           Container(
                               width: context.w(60),
                               height: context.h(12),
-                              color: theme.colorScheme.surface), // FIXED
+                              color: theme.colorScheme.surface),
                         ],
                       ),
                     ),
