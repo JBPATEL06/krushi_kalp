@@ -517,3 +517,22 @@ Refactor the `update_user_streak` database function to align with industry stand
 - Activity on the next day increments streak and shifts the weekly array by 1.
 - Activity after 3 days resets streak to 1 and shifts the weekly array by 3.
 - Heatmap values correctly represent the last 7 days.
+
+---
+
+## [Phase 41: Profile UI Cleanup]
+### Goal
+Remove the "Link Google Account" option from the Profile Screen to simplify the user experience and align with updated authentication requirements.
+
+### Proposed Changes
+- **File**: `lib/presentation/screens/profile_screen.dart`
+  - Remove the `isGoogleLinked` logic.
+  - Remove the `_buildProfileOption` widget for linking Google accounts.
+  - Clean up unused imports or variables if any (e.g., `providers`).
+
+### Risks / Side Effects
+- Users who signed up via Email will no longer see the option to link their Google account from within the profile screen. They can still use their primary login method.
+
+### Test Criteria
+- Navigate to the Profile screen.
+- Verify that the "Link Google Account" option is no longer visible, regardless of the login method used.

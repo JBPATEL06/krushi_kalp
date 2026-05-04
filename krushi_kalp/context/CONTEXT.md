@@ -16,9 +16,10 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
-- **Phase 40**: Performance Streak Logic Fix (In Progress)
+- **Phase 41**: Profile UI Cleanup (In Progress)
+- [Phase 41] Removing "Link Google Account" option from Profile Screen as per user request.
+- **Phase 40**: Performance Streak Logic Fix (Completed)
 - [Phase 40] Refactoring Supabase `update_user_streak` function to handle IST timezone and correct weekly history shifting.
-- **Phase 39**: Image Consistency & Responsiveness Fix (Completed)
 - [Phase 39] Standardizing BoxFit.cover across all item cards and detail headers.
 - **Phase 38**: Search Bar Rendering Fix (Completed)
 - [Phase 38] Resolving white artifact glitch in Downloads screen search bar.
