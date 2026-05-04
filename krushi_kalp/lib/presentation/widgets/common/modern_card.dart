@@ -13,6 +13,7 @@ class ModernCard extends StatelessWidget {
   final double? height;
   final VoidCallback? onTap;
   final bool animate;
+  final Clip clipBehavior;
 
   const ModernCard({
     super.key,
@@ -24,6 +25,7 @@ class ModernCard extends StatelessWidget {
     this.height,
     this.onTap,
     this.animate = true,
+    this.clipBehavior = Clip.none,
   });
 
   @override
@@ -36,6 +38,7 @@ class ModernCard extends StatelessWidget {
       height: height,
       margin: margin ?? EdgeInsets.only(bottom: AppSpacing.md),
       padding: padding ?? EdgeInsets.all(AppSpacing.lg),
+      clipBehavior: clipBehavior,
       decoration: BoxDecoration(
         color: backgroundColor ?? colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),

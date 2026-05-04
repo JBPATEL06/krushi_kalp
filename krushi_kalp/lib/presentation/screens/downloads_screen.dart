@@ -438,11 +438,12 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
                     ModernCard(
                       margin: EdgeInsets.zero,
                       padding: EdgeInsets.zero,
-                      backgroundColor: theme.colorScheme.surface,
+                      clipBehavior: Clip.antiAlias,
+                      backgroundColor: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.5),
                       child: Container(
                         height: context.h(50),
-                        padding: EdgeInsets.symmetric(
-                            horizontal: context.w(AppSpacing.md)),
+                        alignment: Alignment.center,
                         child: TextField(
                           controller: _searchController,
                           onChanged: (val) =>
@@ -465,7 +466,12 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
                               size: context.sp(22),
                             ),
                             border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            filled: false,
                             isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: context.w(AppSpacing.md)),
                           ),
                         ),
                       ),

@@ -448,3 +448,25 @@ Revert the background upload architecture from a separate isolate-based model to
 - No `NullPointerException` in logs during service start.
 - App startup is smooth and consistent.
 
+
+---
+
+## [Phase 38: Search Bar Rendering Fix]
+### Goal
+Resolve the UI rendering glitch in the `DownloadsScreen` search bar where white corners/edges were visible around the rounded purple input field.
+
+### Proposed Changes
+- **File**: `lib/presentation/widgets/common/modern_card.dart`
+  - **Action**: Add `clipBehavior` property to `ModernCard` and apply it to the internal `Container`.
+- **File**: `lib/presentation/screens/downloads_screen.dart`
+  - **Action**: Refactor search bar to use `ModernCard` background exclusively.
+  - **Action**: Set `filled: false` in `InputDecoration` to prevent redundant background rendering.
+  - **Action**: Use `theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)` for card background.
+
+### Risks / Side Effects
+- None. Improved visual integrity.
+
+### Test Criteria
+- Search bar renders with smooth rounded corners.
+- No white artifacts visible on the edges.
+- Theme consistency maintained.
