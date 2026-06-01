@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'download_service.dart';
+import '../../utils/crashlytics_service.dart';
 
 /// A single download request to be placed in the FIFO queue.
 class QueuedDownloadRequest {
@@ -182,32 +183,48 @@ class DownloadQueueService {
     // Use a Completer to await DownloadService's callback-based API
     final completer = Completer<void>();
 
-    await DownloadService().downloadFileInBackground(
-      testId: request.testId,
-      fileName: request.fileName,
-      itemName: request.itemName,
-      storagePath: request.storagePath,
-      bucketName: request.bucketName,
-      userId: request.userId,
-      updatedAt: request.updatedAt,
-      onProgress: (progress) {
-        _activeProgress = progress;
-        _emitSnapshot();
-        request.onProgress(progress);
-      },
-      onComplete: (localPath) {
-        debugPrint(
-            'DownloadQueueService: Completed "${request.itemName}" → $localPath');
-        request.onComplete(localPath);
-        if (!completer.isCompleted) completer.complete();
-      },
-      onError: (error) {
-        debugPrint(
-            'DownloadQueueService: Failed "${request.itemName}": $error');
-        request.onError(error);
-        if (!completer.isCompleted) completer.complete();
-      },
-    );
+    try {
+      await DownloadService().downloadFileInBackground(
+        testId: request.testId,
+        fileName: request.fileName,
+        itemName: request.itemName,
+        storagePath: request.storagePath,
+        bucketName: request.bucketName,
+        userId: request.userId,
+        updatedAt: request.updatedAt,
+        onProgress: (progress) {
+          _activeProgress = progress;
+          _emitSnapshot();
+          request.onProgress(progress);
+        },
+        onComplete: (localPath) {
+          debugPrint(
+              'DownloadQueueService: Completed "${request.itemName}" → $localPath');
+          request.onComplete(localPath);
+          if (!completer.isCompleted) completer.complete();
+        },
+        onError: (error) {
+          debugPrint(
+              'DownloadQueueService: Failed "${request.itemName}": $error');
+          CrashlyticsService.instance.recordError(
+            Exception(error),
+            StackTrace.current,
+            reason: 'DownloadQueueService failed to download ${request.itemName}: $error',
+          );
+          request.onError(error);
+          if (!completer.isCompleted) completer.complete();
+        },
+      );
+    } catch (e, stack) {
+      debugPrint('DownloadQueueService: Unexpected exception: $e');
+      CrashlyticsService.instance.recordError(
+        e,
+        stack,
+        reason: 'DownloadQueueService unexpected loop crash for ${request.itemName}',
+      );
+      request.onError(e.toString());
+      if (!completer.isCompleted) completer.complete();
+    }
 
     // Wait for download to finish before starting next
     await completer.future;
