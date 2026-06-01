@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../data/services/auth_service.dart';
 import '../../../data/services/download_service.dart';
+import '../../../data/services/download_queue_service.dart';
 import '../../widgets/common/responsive_wrapper.dart';
-import '../../../utils/crashlytics_service.dart';
 
 /// A professional download button that handles background transfers,
 /// progress notifications, and local file status automatically.
@@ -46,11 +47,30 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
   bool _isDownloading = false;
   bool _checking = true;
   double _progress = 0.0;
+  int _queuePosition = -1; // -1 = not queued, 0 = active, >0 = waiting
+  StreamSubscription<DownloadQueueSnapshot>? _queueSub;
 
   @override
   void initState() {
     super.initState();
     _checkStatus();
+    // Subscribe to queue changes to reflect queued/downloading state
+    _queueSub = DownloadQueueService().onQueueChanged.listen((snapshot) {
+      if (!mounted) return;
+      final pos = DownloadQueueService().queuePosition(widget.testId);
+      final isActive = snapshot.activeTaskId == widget.testId;
+      setState(() {
+        _queuePosition = pos;
+        _isDownloading = isActive || pos >= 0;
+        if (isActive) _progress = snapshot.activeProgress;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _queueSub?.cancel();
+    super.dispose();
   }
 
   /// Checks if the file exists locally to determine initial button state.
@@ -84,70 +104,62 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
 
   }
 
-  /// Initiates the background download process.
+  /// Initiates the background download process through the FIFO queue.
   Future<void> _handleDownload() async {
     final currentUserId = widget.userId ?? AuthService.instance.currentUser?.id;
     if (currentUserId == null || widget.url == null) return;
 
-    setState(() {
-      _isDownloading = true;
-      _progress = 0.0;
-    });
-
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Download started. You can safely leave the app in the background.'),
+          content: Text('Added to download queue. Downloads happen one at a time.'),
           duration: Duration(seconds: 3),
         ),
       );
     }
 
-    try {
-      await DownloadService().downloadFileInBackground(
-        testId: widget.testId,
-        fileName: widget.filename,
-        itemName: widget.displayName ?? widget.filename,
-        storagePath: widget.url!,
-        bucketName: widget.bucketName,
-        userId: currentUserId,
-        updatedAt: widget.updatedAt,
-        onProgress: (p) {
-          if (mounted) setState(() => _progress = p);
-          // Progress is now handled by DownloadService notification
-        },
-        onComplete: (localPath) {
-          if (mounted) {
-            setState(() {
-              _isDownloading = false;
-              _isDownloaded = true;
-              _progress = 1.0;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text(
-                      '${widget.displayName ?? widget.filename} downloaded successfully.')),
-            );
-          }
-          // Success notification is now handled by DownloadService
-        },
-        onError: (err) {
-          if (mounted) {
-            setState(() => _isDownloading = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(err.contains('404') ? 'Resource not found on server.' : 'Download failed: $err'),
-                backgroundColor: Colors.redAccent,
-              ),
-            );
-          }
-        },
-      );
-    } catch (e, stack) {
-      CrashlyticsService.instance
-          .recordError(e, stack, reason: 'Manual download trigger failed');
-      if (mounted) setState(() => _isDownloading = false);
-    }
+    DownloadQueueService().enqueue(QueuedDownloadRequest(
+      taskId: widget.testId,
+      testId: widget.testId,
+      fileName: widget.filename,
+      itemName: widget.displayName ?? widget.filename,
+      storagePath: widget.url!,
+      bucketName: widget.bucketName,
+      userId: currentUserId,
+      updatedAt: widget.updatedAt,
+      onProgress: (p) {
+        if (mounted) setState(() => _progress = p);
+      },
+      onComplete: (localPath) {
+        if (mounted) {
+          setState(() {
+            _isDownloading = false;
+            _isDownloaded = true;
+            _progress = 1.0;
+            _queuePosition = -1;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    '${widget.displayName ?? widget.filename} downloaded successfully.')),
+          );
+        }
+      },
+      onError: (err) {
+        if (mounted) {
+          setState(() {
+            _isDownloading = false;
+            _queuePosition = -1;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(err.contains('404') ? 'Resource not found on server.' : 'Download failed: $err'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      },
+    ));
   }
 
   @override
@@ -177,7 +189,9 @@ class _DownloadActionButtonState extends State<DownloadActionButton> {
 
     // UI Logic for button states
     final String label = _isDownloading
-        ? "${(_progress * 100).toInt()}%"
+        ? (_queuePosition > 0
+            ? "In Queue (#$_queuePosition)"
+            : "${(_progress * 100).toInt()}%")
         : (_isDownloaded ? widget.startLabel : "Download Content");
 
     final IconData icon = _isDownloading
