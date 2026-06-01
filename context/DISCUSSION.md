@@ -880,3 +880,39 @@ Remove all manual refresh buttons (AppBar `IconButton`, inline `TextButton`) fro
 - Committed to `bugfxing` branch as `[Phase 47] Replace all manual refresh buttons with pull-to-refresh across all screens`.
 
 ---
+
+## [Phase 52: Admin Multi-File Mock Test Upload UI]
+
+### Goal
+Implement optional multi-file supplementary resources picker, uploader, and interactive management actions (Rename, Replace, and Delete) inside mock test admin edit and detail screens.
+
+### Proposed Changes
+- **File**: `lib/presentation/screens/admin/mock_test_edit_screen.dart`
+  - Mixin `PickerLifecycleMixin` to use secure and standard `safePickFiles()` file pickers.
+  - Declare state array `_pendingFiles` to hold newly selected PlatformFile supplementary PDFs.
+  - Implement `_pickAdditionalFiles()` method to pick multiple PDFs.
+  - Integrate a premium looking "SUPPLEMENTARY FILES (OPTIONAL)" section using existing token styles showing list of pending files (with file size, clean formatting, and delete buttons).
+  - Modify `_updateMockTest` to enqueue supplementary uploads sequentially via FIFO `UploadQueueService` using bucket name `mock_test` and path `resources/{test_id}/file_{timestamp}_{cleanName}.pdf`.
+  - Inside the upload queue `onComplete` hook, invoke `MockTestFileService.instance.addMockTestFile` to safely record metadata and relative storage path to the `mock_test_files` table.
+- **File**: `lib/presentation/screens/admin/resources/admin_mock_test_detail_screen.dart`
+  - Mixin `PickerLifecycleMixin` to enable secure file replacements.
+  - Add state variables `_supplementaryFiles` and `_isLoadingFiles`.
+  - Call `_loadSupplementaryFiles()` during `initState()` and `onRefresh()` to dynamically load attached files.
+  - Add `_renameFile()`, `_deleteFile()`, and `_replaceFile()` helpers utilizing `MockTestFileService` endpoints and the background FIFO queue.
+  - Insert a premium "SUPPLEMENTARY FILES" section inside the detail page right below the Questions File card, displaying the file rows alongside a 3-dots actions menu to Rename, Replace, and Delete files instantly with real-time UI reloads.
+
+### Risks Identified
+- Background queue updates might occur asynchronously. This is mitigated by integrating proper Firebase Crashlytics error tracing in queue callbacks and showing clear snackbars.
+
+### Test Criteria
+- Admin can attach multiple supplementary files to a mock test inside the edit screen.
+- Background serial uploads are queued properly without blocking form exit.
+- Admin can rename, replace, and delete supplementary files with instant reactive updates.
+- `dart analyze` returns zero issues.
+
+**Status: Resolved**
+- Implemented and verified clean static analysis.
+- Staged and committed to `feature/phase-52-mock-test-supplementary-files` branch.
+
+---
+

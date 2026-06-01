@@ -12,6 +12,12 @@ import '../mock_test_edit_screen.dart';
 import '../../../../utils/crashlytics_service.dart';
 import '../../../../utils/error_utils.dart';
 import '../admin_grant_access_screen.dart' as admin_grant;
+import 'package:file_picker/file_picker.dart';
+import '../../../../domain/models/mock_test_file.dart';
+import '../../../../data/services/mock_test_file_service.dart';
+import '../../../../data/services/upload_queue_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../utils/picker_lifecycle_mixin.dart';
 
 
 class AdminMockTestDetailScreen extends StatefulWidget {
@@ -24,16 +30,176 @@ class AdminMockTestDetailScreen extends StatefulWidget {
       _AdminMockTestDetailScreenState();
 }
 
-class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
+class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> with PickerLifecycleMixin {
   late MockTest _test;
   Map<String, dynamic>? _stats;
   bool _isLoadingStats = true;
+  List<MockTestFile> _supplementaryFiles = [];
+  bool _isLoadingFiles = true;
 
   @override
   void initState() {
     super.initState();
     _test = widget.test;
     _loadStats();
+    _loadSupplementaryFiles();
+  }
+
+  Future<void> _loadSupplementaryFiles() async {
+    if (!mounted) return;
+    setState(() => _isLoadingFiles = true);
+    try {
+      final files = await MockTestFileService.instance.fetchMockTestFiles(_test.id);
+      if (mounted) {
+        setState(() {
+          _supplementaryFiles = files;
+          _isLoadingFiles = false;
+        });
+      }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_mock_test_detail_screen _loadSupplementaryFiles');
+      if (mounted) {
+        setState(() => _isLoadingFiles = false);
+      }
+    }
+  }
+
+  Future<void> _renameFile(MockTestFile file) async {
+    final controller = TextEditingController(text: file.displayName);
+    final formKey = GlobalKey<FormState>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rename File'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            decoration: const InputDecoration(labelText: 'Display Name'),
+            validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(ctx, true);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && controller.text.trim().isNotEmpty) {
+      try {
+        await MockTestFileService.instance.renameMockTestFile(file.id, controller.text.trim());
+        await _loadSupplementaryFiles();
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'Rename supplementary file failed');
+        if (mounted) ErrorUtils.showError(context, e);
+      }
+    }
+  }
+
+  Future<void> _deleteFile(MockTestFile file) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete File?'),
+        content: Text('Are you sure you want to delete "${file.displayName}"? This action cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await MockTestFileService.instance.deleteMockTestFile(file.id, file.storagePath);
+        await _loadSupplementaryFiles();
+      } catch (e, stack) {
+        CrashlyticsService.instance.recordError(e, stack, reason: 'Delete supplementary file failed');
+        if (mounted) ErrorUtils.showError(context, e);
+      }
+    }
+  }
+
+  Future<void> _replaceFile(MockTestFile file) async {
+    final result = await safePickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+    if (result != null && result.files.isNotEmpty) {
+      final platformFile = result.files.first;
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final cleanName = platformFile.name.replaceAll(RegExp(r'[^\w\.-]'), '_');
+      final newPath = 'resources/${_test.id}/file_${timestamp}_$cleanName';
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Starting replacement upload... You can safely leave the screen.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      UploadQueueService().enqueue(QueuedUploadRequest(
+        taskId: 'replace_mock_test_supplementary_${file.id}',
+        fileName: platformFile.name,
+        itemName: 'Replace File',
+        bucketName: 'mock_test',
+        storagePath: newPath,
+        filePath: platformFile.path,
+        fileType: 'mock_test_supplementary',
+        onProgress: (p) {},
+        onComplete: (completedPath) async {
+          try {
+            // Delete the old file in Storage
+            await MockTestFileService.instance.deleteFileFromStorage(file.storagePath).catchError((_) => null);
+            // Update table record
+            await Supabase.instance.client.from('mock_test_files').update({
+              'storage_path': completedPath,
+              'file_size_bytes': platformFile.size,
+              'updated_at': DateTime.now().toIso8601String(),
+            }).eq('id', file.id);
+
+            await _loadSupplementaryFiles();
+          } catch (e, stack) {
+            CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to update record on file replacement');
+          }
+        },
+        onError: (err) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('File replacement failed: $err'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+        },
+      ));
+    }
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes <= 0) return "0 B";
+    const suffixes = ["B", "KB", "MB", "GB", "TB"];
+    double size = bytes.toDouble();
+    int suffixIndex = 0;
+    while (size >= 1024 && suffixIndex < suffixes.length - 1) {
+      size /= 1024;
+      suffixIndex++;
+    }
+    return "${size.toStringAsFixed(2)} ${suffixes[suffixIndex]}";
   }
 
   Future<void> _loadStats() async {
@@ -176,7 +342,10 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async => _loadStats(),
+        onRefresh: () async {
+          await _loadStats();
+          await _loadSupplementaryFiles();
+        },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -406,6 +575,129 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Supplementary Files section
+            _buildSectionHeader(context, 'SUPPLEMENTARY FILES'),
+            const SizedBox(height: AppSpacing.sm),
+            if (_isLoadingFiles)
+              const Center(child: Padding(
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: CircularProgressIndicator(),
+              ))
+            else if (_supplementaryFiles.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                ),
+                child: Text(
+                  'No supplementary files attached. Edit this mock test to add files.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _supplementaryFiles.length,
+                separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.sm),
+                itemBuilder: (context, index) {
+                  final file = _supplementaryFiles[index];
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.picture_as_pdf_outlined, color: colorScheme.error, size: context.sp(22)),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                file.displayName,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: context.sp(14),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (file.fileSizeBytes != null)
+                                Text(
+                                  _formatBytes(file.fileSizeBytes!),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                    fontSize: context.sp(11),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          icon: Icon(Icons.more_vert_rounded, color: colorScheme.onSurfaceVariant, size: context.sp(20)),
+                          onSelected: (action) {
+                            if (action == 'rename') {
+                              _renameFile(file);
+                            } else if (action == 'replace') {
+                              _replaceFile(file);
+                            } else if (action == 'delete') {
+                              _deleteFile(file);
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'rename',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit_rounded, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Rename'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'replace',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.swap_horiz_rounded, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Replace File'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete_rounded, color: Colors.red, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Delete File', style: TextStyle(color: Colors.red)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             const SizedBox(height: AppSpacing.xl),
 
             // Description

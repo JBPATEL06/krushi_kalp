@@ -16,6 +16,12 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
+- **Phase 52**: Admin Multi-file Mock Test Upload UI (Completed)
+  - Added "SUPPLEMENTARY FILES (OPTIONAL)" section to MockTestEditScreen supporting multi-file PDF picking, displaying pending files, and background uploading via FIFO queue.
+  - Implemented supplementary files section in AdminMockTestDetailScreen with a premium 3-dots actions menu (Rename, Replace, and Delete) mirroring the premium flow for Resources.
+  - **Branch**: `feature/phase-52-mock-test-supplementary-files`
+
+## Completed Phases
 - **Phase 51**: Admin Multi-file Resource Upload UI (Completed)
   - Integrated supplementary files support inside the Admin Resource Form (`admin_resource_form.dart`).
   - Added an "Add Supplementary File" multi-file picker option that enqueues background uploads and inserts records into the `resource_files` table.
@@ -23,7 +29,6 @@ Clean Architecture:
   - Created a compact, high-trust 3-dots popup menu on supplementary file rows to instantly Rename, Replace (upload upsert), and Delete files with zero lag.
   - **Branch**: `feature/phase-51-admin-multi-file-resource-upload`
 
-## Completed Phases
 - **Phase 50**: Multi-file DB Schema + Models (Completed)
   - Created Supabase SQL migration for `resource_files` and `mock_test_files` supplementary tables.
   - Implemented domain models `ResourceFile` and `MockTestFile`.
@@ -88,4 +93,4 @@ Clean Architecture:
 - **Build Version**: Incremented to `1.0.3+17` for the Google Play Store submission.
 - **Experimental Versions**: Using pre-release versions of Riverpod and Freezed may introduce unexpected behavior; monitoring is required.
 - **16KB Alignment**: Final App Bundle must be verified with `check_align.py` before submission.
-- **Active Branch**: `feature/phase-51-admin-multi-file-resource-upload`
+- **Active Branch**: `feature/phase-52-mock-test-supplementary-files`
