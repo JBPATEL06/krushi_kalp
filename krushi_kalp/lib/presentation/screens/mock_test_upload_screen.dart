@@ -8,8 +8,7 @@ import 'package:krushi_kalp/utils/crashlytics_service.dart'
 import '../../utils/excel_to_json_converter.dart';
 import '../utils/ui_helpers.dart';
 import '../../data/services/test_service.dart';
-import '../../data/services/admin_notification_service.dart';
-import '../../data/services/background_upload_service.dart';
+import '../../data/services/upload_queue_service.dart';
 import '../../core/theme/app_spacing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path_provider/path_provider.dart';
@@ -202,7 +201,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
 
       // 3. Start background uploads
       // Upload Cover Image
-      BackgroundUploadService().uploadFile(
+      UploadQueueService().enqueue(QueuedUploadRequest(
         taskId: 'image_$testId',
         fileName: 'Cover: ${_titleController.text}',
         itemName: 'Test Cover Image',
@@ -214,10 +213,10 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
         onProgress: (p) {},
         onComplete: (path) {},
         onError: (err) {},
-      );
+      ));
 
       // Upload JSON Content
-      BackgroundUploadService().uploadFile(
+      UploadQueueService().enqueue(QueuedUploadRequest(
         taskId: 'json_$testId',
         fileName: 'Questions: ${_titleController.text}',
         itemName: 'Test Questions File',
@@ -228,7 +227,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
         onProgress: (p) {},
         onComplete: (path) {},
         onError: (err) {},
-      );
+      ));
 
       // Notifications are now handled by AdminService toggle
 

@@ -12,7 +12,7 @@ import '../../../utils/excel_to_json_converter.dart';
 import '../../utils/ui_helpers.dart';
 import '../../../domain/models/mock_test.dart';
 import '../../../data/services/test_service.dart';
-import '../../../data/services/background_upload_service.dart';
+import '../../../data/services/upload_queue_service.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../utils/supabase_url_helper.dart';
@@ -199,8 +199,6 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    final supabase = Supabase.instance.client;
-
     try {
       final updateData = {
         'title': _titleController.text.trim(),
@@ -223,7 +221,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
 
       if (_coverImage != null && _imageBytes != null) {
         final imagePath = 'mock_test_cover/${widget.test.id}.jpg';
-        BackgroundUploadService().uploadFile(
+        UploadQueueService().enqueue(QueuedUploadRequest(
           taskId: 'image_${widget.test.id}',
           fileName: 'Cover Edit: ${_titleController.text}',
           itemName: 'Test Cover Image',
@@ -240,7 +238,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
           onProgress: (p) {},
           onComplete: (path) {},
           onError: (err) {},
-        );
+        ));
       }
 
       if (_questionsFile != null && _questionsBytes != null) {
@@ -258,7 +256,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
         final jsonBytes = utf8.encode(jsonString);
         final jsonPath = 'mock_test_json_file/${widget.test.id}.json';
 
-        BackgroundUploadService().uploadFile(
+        UploadQueueService().enqueue(QueuedUploadRequest(
           taskId: 'json_${widget.test.id}',
           fileName: 'Questions Edit: ${_titleController.text}',
           itemName: 'Test Questions File',
@@ -275,7 +273,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
           onProgress: (p) {},
           onComplete: (path) {},
           onError: (err) {},
-        );
+        ));
       }
 
       if (mounted) {

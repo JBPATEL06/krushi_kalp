@@ -7,7 +7,7 @@ import '../../../../domain/models/resource.dart';
 import '../../../utils/ui_helpers.dart';
 import 'package:krushi_kalp/core/theme/app_spacing.dart';
 import '../../../../utils/supabase_url_helper.dart';
-import '../../../../data/services/background_upload_service.dart';
+import '../../../../data/services/upload_queue_service.dart';
 import '../../../../utils/error_utils.dart';
 import '../../../../utils/crashlytics_service.dart';
 import '../../../utils/picker_lifecycle_mixin.dart';
@@ -175,7 +175,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
         final cleanName = _fileName!.replaceAll(RegExp(r'[^\w\.-]'), '_');
         final path = 'Resources/$typeStrRaw/file/${timestamp}_$cleanName';
 
-        BackgroundUploadService().uploadFile(
+        UploadQueueService().enqueue(QueuedUploadRequest(
           taskId: 'resource_file_$resourceId',
           fileName: 'File: $title',
           itemName: 'Resource PDF',
@@ -197,7 +197,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
             }
           },
           onError: (err) {},
-        );
+        ));
       }
 
       if (_coverPath != null) {
@@ -205,7 +205,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
         final cleanCover = _coverName!.replaceAll(RegExp(r'[^\w\.-]'), '_');
         final path = 'Resources/$typeStrRaw/cover/${timestamp}_$cleanCover';
 
-        BackgroundUploadService().uploadFile(
+        UploadQueueService().enqueue(QueuedUploadRequest(
           taskId: 'resource_cover_$resourceId',
           fileName: 'Cover: $title',
           itemName: 'Resource Thumbnail',
@@ -227,7 +227,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
             }
           },
           onError: (err) {},
-        );
+        ));
       }
 
       if (mounted) {

@@ -4,6 +4,40 @@
 
 ---
 
+## [Phase 48: FIFO Upload Queue Service]
+### Goal
+Prevent multiple simultaneous file uploads. All admin upload operations (resource PDFs, covers, mock test covers, questions JSON) must be serialized through a single FIFO queue.
+
+### Branch
+`feature/phase-48-multi-file-upload-open` (new branch from `main`)
+
+### Supabase Storage Discovery (MCP Inspection)
+- **Buckets**: 3 total — `mock_test` (private), `app_banners` (public), `banners` (public)
+- **Single upload bucket**: `mock_test`
+- **Existing resource paths**: `Resources/{type}/file/{timestamp}_{name}.pdf` and `Resources/{type}/cover/{timestamp}_{name}.png`
+- **Confirmed new multi-file path convention**: `resources/{id}/file_{n}.pdf` inside `mock_test` bucket
+- **Mock test paths stay unchanged**: `mock_test_cover/{id}.jpg`, `mock_test_json_file/{id}.json`
+
+### Files Changed
+- **[NEW]** `lib/data/services/upload_queue_service.dart` — `UploadQueueService` singleton (FIFO Queue, Completer-based awaiting, stream snapshot for UI)
+- **[MODIFIED]** `lib/presentation/screens/admin/resources/admin_resource_form.dart` — Replaced `BackgroundUploadService().uploadFile(...)` with `UploadQueueService().enqueue(QueuedUploadRequest(...))`
+- **[MODIFIED]** `lib/presentation/screens/admin/mock_test_edit_screen.dart` — Same. Also removed unused `supabase` local variable.
+- **[MODIFIED]** `lib/presentation/screens/mock_test_upload_screen.dart` — Same. Also removed unused `admin_notification_service.dart` import.
+
+### Risks / Side Effects
+- `BackgroundUploadService` is still used internally by `UploadQueueService` — not deprecated.
+- Queue is in-memory only — if app dies mid-upload, next item in queue is lost (same behavior as before).
+
+### Test Criteria
+- Upload resource PDF + cover → only one uploads at a time (check notification).
+- Upload mock test cover + JSON → cover uploads first, then JSON.
+
+### Outcome
+✅ `dart analyze` 0 issues. Phase 48 complete and committed.
+
+---
+
+
 ## [Phase 21: Admin Resource Detail Fix]
 ### Goal
 Fix compiler errors in `AdminResourceDetailScreen` following the removal of `isPublic` from the `Resource` model.

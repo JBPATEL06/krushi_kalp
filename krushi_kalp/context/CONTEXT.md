@@ -16,10 +16,15 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
-- **Phase 47**: Pull-to-Refresh Standardization (Completed)
-  - Replaced all manual refresh `IconButton`/`TextButton` instances with `RefreshIndicator` (pull-to-refresh) across 10 screens.
-  - Added `RefreshIndicator` to screens that were missing it (`AdminMockTestDetailScreen`, `AdminResourceDetailScreen`, `AdminOfferListScreen`).
-  - Enforced `AlwaysScrollableScrollPhysics` on `CustomScrollView` instances inside `RefreshIndicator`.
+- **Phase 48**: FIFO Upload Queue Service (Completed)
+  - Created `UploadQueueService` singleton — FIFO queue serializes all file uploads one at a time.
+  - Routes all admin uploads through serial queue: `admin_resource_form.dart`, `mock_test_edit_screen.dart`, `mock_test_upload_screen.dart`.
+  - **Branch**: `feature/phase-48-multi-file-upload-open`
+  - **Storage structure confirmed** (Supabase MCP inspection):
+    - Single private bucket: `mock_test`
+    - Existing resource paths: `Resources/{type}/file/{timestamp}_{name}.pdf`
+    - New multi-file path convention: `resources/{id}/file_{n}.pdf` (inside `mock_test` bucket)
+    - Mock test paths: `mock_test_cover/{id}.jpg` / `mock_test_json_file/{id}.json` (unchanged)
 
 ## Completed Phases
 - **Phase 46**: System UI Padding Standardization (Completed)
