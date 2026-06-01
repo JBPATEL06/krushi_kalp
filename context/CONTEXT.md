@@ -16,12 +16,17 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
+- **Phase 53**: User-Side — Open Mock Test Screen (Completed)
+  - Created a new user screen `MockTestFilesScreen` displaying test covers, stats, a primary full-width attempt CTA, and background queued supplementary downloads using the FIFO download queue.
+  - Replaced the direct download buttons in `PurchasedTestsScreen` cards and Store grids with outlined "Open" CTAs that smoothly redirect to this files screen.
+  - **Branch**: `feature/phase-53-user-mock-test-files`
+
+## Completed Phases
 - **Phase 52**: Admin Multi-file Mock Test Upload UI (Completed)
   - Added "SUPPLEMENTARY FILES (OPTIONAL)" section to MockTestEditScreen supporting multi-file PDF picking, displaying pending files, and background uploading via FIFO queue.
   - Implemented supplementary files section in AdminMockTestDetailScreen with a premium 3-dots actions menu (Rename, Replace, and Delete) mirroring the premium flow for Resources.
   - **Branch**: `feature/phase-52-mock-test-supplementary-files`
 
-## Completed Phases
 - **Phase 51**: Admin Multi-file Resource Upload UI (Completed)
   - Integrated supplementary files support inside the Admin Resource Form (`admin_resource_form.dart`).
   - Added an "Add Supplementary File" multi-file picker option that enqueues background uploads and inserts records into the `resource_files` table.
@@ -93,4 +98,4 @@ Clean Architecture:
 - **Build Version**: Incremented to `1.0.3+17` for the Google Play Store submission.
 - **Experimental Versions**: Using pre-release versions of Riverpod and Freezed may introduce unexpected behavior; monitoring is required.
 - **16KB Alignment**: Final App Bundle must be verified with `check_align.py` before submission.
-- **Active Branch**: `feature/phase-52-mock-test-supplementary-files`
+- **Active Branch**: `feature/phase-53-user-mock-test-files`

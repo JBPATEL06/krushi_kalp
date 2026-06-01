@@ -5,14 +5,13 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../domain/models/mock_test.dart';
 import '../../data/services/test_service.dart';
-import '../utils/exam_helper.dart';
 import '../../utils/responsive.dart';
 import '../../core/theme/app_spacing.dart';
 import '../providers/auth_notifier.dart';
 import '../providers/navigation_notifier.dart';
 import '../widgets/common/download_item_card.dart';
-import '../widgets/common/download_action_button.dart';
 import 'mock_test_detail_screen.dart';
+import 'mock_test_files_screen.dart';
 import '../widgets/common/network_error_state.dart';
 
 class PurchasedTestsScreen extends ConsumerStatefulWidget {
@@ -83,6 +82,8 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
       }
 
       final isLastPage = newItems.length < _pageSize;
+      if (!mounted) return;
+
       if (isLastPage) {
         _pagingController.appendLastPage(filtered);
       } else {
@@ -90,6 +91,7 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
         _pagingController.appendPage(filtered, nextPageKey);
       }
     } catch (error) {
+      if (!mounted) return;
       _pagingController.error = error;
     }
   }
@@ -123,17 +125,29 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
                       subtitle: '${item.totalQuestions} Questions',
                       coverUrl: item.signedUrl,
                       heroTag: 'test_image_${item.id}',
-                      customAction: DownloadActionButton(
-                        testId: item.id.toString(),
-                        filename: 'mock_test_${item.id}.json',
-                        url: item.filePath,
-                        startLabel: "Start",
-                        isFullWidth: false,
-                        userId: ref.read(authProvider).user?.id,
-                        displayName: item.title,
-                        onAction: () async {
-                          await ExamHelper.startExam(context, item);
+                      customAction: OutlinedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MockTestFilesScreen(test: item),
+                            ),
+                          );
                         },
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: theme.colorScheme.primary),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                          ),
+                        ),
+                        child: Text(
+                          "Open",
+                          style: TextStyle(
+                            fontSize: context.sp(14),
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
                       ),
                       onTap: () {
                         Navigator.push(

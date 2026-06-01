@@ -916,3 +916,37 @@ Implement optional multi-file supplementary resources picker, uploader, and inte
 
 ---
 
+## [Phase 53: User-Side — Open Mock Test Screen]
+
+### Goal
+Replace direct mock test download buttons in PurchasedTestsScreen and Store items with an "Open" button leading to a dedicated mock test files repository screen. This screen displays cover images, key details, attempts the exam, and downloads supplementary files sequentially using the FIFO queue.
+
+### Proposed Changes
+- **File**: `lib/presentation/screens/mock_test_files_screen.dart` [NEW]
+  - Displays mock test cover, metadata, and description in a beautiful premium header card.
+  - Places a full-width ElevatedButton "ATTEMPT MOCK TEST" pointing to `ExamHelper.startExam(...)` as the primary user CTA.
+  - Lists supplementary files (PDFs) with a PDF icon, filename, and size.
+  - Reuses the robust `DownloadActionButton` to queue background FIFO downloads, handle "In Queue (#X)" visual state progress, and launch the local `PdfViewerScreen` when downloaded.
+- **File**: `lib/presentation/screens/purchased_tests_screen.dart` [MODIFY]
+  - Replaces `DownloadActionButton` with an Outlined "Open" button inside individual cards, which navigates directly to `MockTestFilesScreen`.
+  - Removes unused imports `exam_helper.dart` and `download_action_button.dart`.
+- **File**: `lib/presentation/screens/store/widgets/store_grid.dart` [MODIFY]
+  - Replaces custom action `DownloadActionButton` with an Outlined "Open" button inside cards for purchased/owned mock tests, which navigates directly to `MockTestFilesScreen`.
+  - Removes unused imports `auth_notifier.dart` and `exam_helper.dart`.
+
+### Risks Identified
+- None. Reusing `DownloadActionButton` handles all complex FIFO queuing, progress stream listeners, and cache status checks cleanly.
+
+### Test Criteria
+- Tap "Open" on any purchased test → new mock test files screen opens.
+- Tapping "Attempt Mock Test" starts the exam.
+- Tapping "Download" on supplementary files processes downloads sequentially through FIFO queue with correct visual feedback.
+- `dart analyze` returns zero issues.
+
+**Status: Resolved**
+- Implemented and verified clean static analysis.
+- Staged and committed to `feature/phase-53-user-mock-test-files` branch.
+
+---
+
+

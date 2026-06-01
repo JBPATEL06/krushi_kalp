@@ -8,10 +8,8 @@ import '../../../../data/services/offer_service.dart';
 import '../../../../data/services/review_service.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../utils/responsive.dart';
-import '../../../widgets/common/download_action_button.dart';
+import '../../mock_test_files_screen.dart';
 import 'store_item_card.dart';
-import '../../../providers/auth_notifier.dart';
-import '../../../../presentation/utils/exam_helper.dart';
 
 class StoreGrid extends ConsumerStatefulWidget {
   final PagingController<int, MockTest> pagingController;
@@ -160,17 +158,30 @@ class _StoreGridState extends ConsumerState<StoreGrid> {
       coverUrl: test.signedUrl,
       actionLabel: displayPrice == 0 ? 'Free Claim' : 'Buy Now',
       customAction: isPurchased
-          ? DownloadActionButton(
-              testId: test.id.toString(),
-              filename: 'mock_test_${test.id}.json',
-              url: test.contentUrl,
-              startLabel: "Start",
-              isFullWidth: true,
-              userId: ref.read(authProvider).user?.id,
-              displayName: test.title,
-              onAction: () async {
-                await ExamHelper.startExam(context, test);
+          ? OutlinedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MockTestFilesScreen(test: test),
+                  ),
+                );
               },
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Theme.of(context).colorScheme.primary),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                ),
+                minimumSize: const Size(double.infinity, 40),
+              ),
+              child: Text(
+                "Open",
+                style: TextStyle(
+                  fontSize: context.sp(14),
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
             )
           : null,
       isActionEnabled: true,
