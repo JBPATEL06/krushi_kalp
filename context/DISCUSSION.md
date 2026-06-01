@@ -985,7 +985,32 @@ Provide a premium files repository screen `ResourceFilesScreen` for users to vie
 
 ---
 
+## [Phase 56: Downloads Screen Files Navigation]
+### Goal
+Unified the local downloads manager (`downloads_screen.dart`) to navigate users to `ResourceFilesScreen` and `MockTestFilesScreen` respectively when tapping download list cards or actions. This resolves the single-file limitation by allowing users to view and access **all downloaded supplementary files** (PDFs, mock papers) for a purchased item in one unified repository view, even when offline.
+
+### Branch
+`feature/phase-56-downloads-files-navigation`
+
+### Files Changed
+- **[MODIFIED]** `lib/presentation/screens/downloads_screen.dart`:
+  - Imported `mock_test_files_screen.dart` and `resource_files_screen.dart`.
+  - Replaced legacy action-clicks on resource cards and "Open" action buttons to push navigation to `ResourceFilesScreen`.
+  - Replaced legacy action-clicks on mock test cards and "Attempt" action buttons to push navigation to `MockTestFilesScreen`.
+  - Deleted obsolete secure launch methods `_openResourceSecurely` and `_startTestSecurely` entirely, alongside their unused imports (`resource_helper.dart` and `exam_helper.dart`).
+  - Added missing closing brace on `_clearStorage` method to clean up syntax issues.
+
+### Risks / Side Effects
+- None. Offline capabilities of the target files repository screens cleanly display already downloaded sandbox assets.
+
+### Test Criteria
+- `dart analyze` reports zero errors or warnings inside the updated `downloads_screen.dart`.
+- Tapping any card in the downloads list correctly navigates to the files repository.
+
+### Outcome
+- ✅ Completed Phase 56 successfully with clean static analysis!
 
 ---
+
 
 

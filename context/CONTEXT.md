@@ -16,11 +16,19 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
-- **Phase 55**: Context & Global Rules Update + Commit All (In Progress)
+- **Phase 56**: Downloads Screen Files Navigation (Completed)
+  - Unified local downloads dashboard to navigate users directly to files repository screens rather than directly opening raw single files, allowing access to multi-file supplementary PDFs offline.
+  - **Branch**: `feature/phase-56-downloads-files-navigation`
+
+## Completed Phases
+- **Phase 56**: Downloads Screen Files Navigation (Completed)
+  - Unified local downloads dashboard to navigate users directly to files repository screens rather than directly opening raw single files, allowing access to multi-file supplementary PDFs offline.
+  - **Branch**: `feature/phase-56-downloads-files-navigation`
+
+- **Phase 55**: Context & Global Rules Update + Commit All (Completed)
   - Finalize documentation, update context files, and commit/push all Phase 54/55 changes cleanly.
   - **Branch**: `feature/phase-54-user-resource-files`
 
-## Completed Phases
 - **Phase 54**: User-Side — Open Resource Screen (Completed)
   - Created a new user screen `ResourceFilesScreen` showcasing all attached resource files with backward-compatibility falling back to legacy single PDF.
   - Replaced the direct PDF download buttons and actions in `MyResourcesScreen`, `ResourceDetailScreen`, and `StoreResourceGrid` with premium "Open" action buttons navigating to the files repository screen.

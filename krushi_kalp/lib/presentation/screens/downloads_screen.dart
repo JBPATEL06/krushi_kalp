@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../utils/resource_helper.dart';
 import '../../domain/models/resource.dart';
 import '../../domain/models/mock_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,9 +7,10 @@ import '../providers/test_notifier.dart';
 import '../providers/auth_notifier.dart';
 import '../../data/services/download_service.dart';
 import '../../core/theme/app_spacing.dart';
-import '../utils/exam_helper.dart';
 import '../widgets/common/responsive_wrapper.dart';
 import '../widgets/common/modern_card.dart';
+import 'mock_test_files_screen.dart';
+import 'resource_files_screen.dart';
 
 class DownloadsScreen extends ConsumerStatefulWidget {
   const DownloadsScreen({super.key});
@@ -236,90 +236,6 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
           const SnackBar(content: Text('All downloads cleared')),
         );
       }
-    }
-  }
-
-  /// Opens a resource PDF using internal viewer after verifying ownership.
-  Future<void> _openResourceSecurely(Resource resource) async {
-    final user = ref.read(authProvider).user;
-    if (user == null) return;
-
-    final filename = 'resource_${resource.id}.pdf';
-    final ds = DownloadService();
-
-    // 1. Ownership check â€” manifest must confirm this user downloaded the file
-    final owned = await ds.verifyOwnership(filename, userId: user.id);
-    if (!mounted) return;
-    if (!owned) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text('Access denied: this file belongs to another account.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // 2. Open using internal ResourceHelper (strictly in-app)
-    try {
-      if (mounted) {
-        await ResourceHelper.openResource(
-          context: context,
-          resource: resource,
-          userId: user.id,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not open resource: $e')),
-        );
-      }
-    }
-  }
-
-  /// Starts a mock test after verifying ownership and purchase status.
-  Future<void> _startTestSecurely(MockTest test) async {
-    final user = ref.read(authProvider).user;
-    if (user == null) return;
-
-    final filename = 'mock_test_${test.id}.json';
-    final ds = DownloadService();
-
-    // 1. Ownership check
-    final owned = await ds.verifyOwnership(filename, userId: user.id);
-    if (!mounted) return;
-    if (!owned) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text('Access denied: this file belongs to another account.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // 2. Purchase check Ã¢â‚¬â€ current user must have this test purchased
-    final testState = ref.read(testProvider);
-    final isPurchased = testState.userTests.any((t) => t.id == test.id);
-    if (!isPurchased) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Access denied: you have not purchased this test.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
-
-    // 3. Start exam
-    if (mounted) {
-      await ExamHelper.startExam(context, test);
-      _checkDownloads();
     }
   }
 
@@ -655,7 +571,12 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
           if (_isSelectionMode) {
             _toggleSelection(id);
           } else {
-            _openResourceSecurely(resource);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ResourceFilesScreen(resource: resource),
+              ),
+            );
           }
         },
         onLongPress: () => _toggleSelection(id),
@@ -703,7 +624,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
                   ),
                   SizedBox(height: context.h(2)),
                   Text(
-                    "${resource.category ?? 'PDF'} â€¢ PDF",
+                    "${resource.category ?? 'PDF'} • PDF",
                     style: TextStyle(
                       color: theme.colorScheme.onSurfaceVariant,
                       fontSize: context.sp(11),
@@ -714,7 +635,14 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
             ),
             if (!_isSelectionMode)
               ElevatedButton(
-                onPressed: () => _openResourceSecurely(resource),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ResourceFilesScreen(resource: resource),
+                    ),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.colorScheme.primary,
                   foregroundColor: theme.colorScheme.onPrimary,
@@ -752,7 +680,12 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
           if (_isSelectionMode) {
             _toggleSelection(id);
           } else {
-            _startTestSecurely(test);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MockTestFilesScreen(test: test),
+              ),
+            );
           }
         },
         onLongPress: () => _toggleSelection(id),
@@ -809,7 +742,14 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
             ),
             if (!_isSelectionMode)
               ElevatedButton(
-                onPressed: () => _startTestSecurely(test),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MockTestFilesScreen(test: test),
+                    ),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.colorScheme.tertiary,
                   foregroundColor: theme.colorScheme.onTertiary,
