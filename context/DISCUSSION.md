@@ -949,4 +949,43 @@ Replace direct mock test download buttons in PurchasedTestsScreen and Store item
 
 ---
 
+## [Phase 54: User-Side — Open Resource Screen]
+### Goal
+Provide a premium files repository screen `ResourceFilesScreen` for users to view all supplementary resources associated with a purchased resource (with seamless backward-compatibility falling back to legacy single PDF as "Main PDF"). Replaced the legacy download action buttons inside resource lists and details with a premium "Open" CTA button that navigates directly to the files repository.
+
+### Branch
+`feature/phase-54-user-resource-files`
+
+### Files Changed
+- **[NEW]** `lib/presentation/screens/resource_files_screen.dart`:
+  - Created screen using custom design tokens displaying resource thumbnail, type, and title in a beautiful premium container.
+  - Lists supplementary files (PDFs) with a standard layout, displaying name, size, and inline `DownloadActionButton` using the FIFO Queue.
+  - Features backward-compatibility fallback logic displaying the legacy single PDF as "Main PDF" if no supplementary files exist in the `resource_files` table.
+- **[MODIFIED]** `lib/presentation/screens/my_resources_screen.dart`:
+  - Replaced inline download icon actions on item cards with outlined "Open" buttons pointing to `ResourceFilesScreen`.
+  - Cleaned up unused `auth_service.dart` import.
+- **[MODIFIED]** `lib/presentation/screens/resource_detail_screen.dart`:
+  - Replaced the large full-width `DownloadActionButton` for purchased users with an `ElevatedButton.icon` navigating to `ResourceFilesScreen`.
+  - Deleted obsolete `_openResource` helper method completely.
+- **[MODIFIED]** `lib/presentation/screens/store/widgets/store_resource_grid.dart`:
+  - Replaced the custom action `DownloadActionButton` for purchased resources with an `OutlinedButton` redirecting to `ResourceFilesScreen`.
+  - Imported `resource_files_screen.dart` and removed unused `download_action_button.dart` and `resource_helper.dart` imports.
+  - Correctly defined the local `theme` variable in `_buildCard` card builder method.
+
+### Risks / Side Effects
+- None. Absolute backward-compatibility has been designed and implemented.
+
+### Test Criteria
+- `dart analyze` reports zero errors or warnings on all modified files.
+- Student library resource lists, detail screens, and store owned items display "Open" CTAs that smoothly redirect to the dedicated files screen.
+- Main PDF legacy download fallback functions perfectly if no additional files are attached.
+
+### Outcome
+- ✅ Completed Phase 54 successfully with clean analysis!
+
+---
+
+
+---
+
 

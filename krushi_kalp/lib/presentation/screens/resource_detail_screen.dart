@@ -18,8 +18,7 @@ import '../widgets/reviews/review_card.dart';
 import '../widgets/reviews/review_dialog.dart';
 import '../widgets/reviews/rate_stars.dart';
 import 'reviews/all_reviews_screen.dart';
-import '../widgets/common/download_action_button.dart';
-import '../../utils/resource_helper.dart';
+import 'resource_files_screen.dart';
 import '../../utils/crashlytics_service.dart';
 
 class ResourceDetailScreen extends ConsumerStatefulWidget {
@@ -182,16 +181,7 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
     );
   }
 
-  Future<void> _openResource(Resource resource) async {
-    final user = ref.read(authProvider).user;
-    
-    // Use the unified ResourceHelper (strictly in-app)
-    await ResourceHelper.openResource(
-      context: context,
-      resource: resource,
-      userId: user?.id,
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -358,18 +348,37 @@ class _ResourceDetailScreenState extends ConsumerState<ResourceDetailScreen> {
 
                           if (isPurchased) ...[
                             const SizedBox(height: AppSpacing.lg),
-                            DownloadActionButton(
-                              testId: resource.id.toString(),
-                              filename: 'resource_${resource.id}.pdf',
-                              url: resource.fileUrl,
-                              startLabel: 'Open PDF',
-                              isFullWidth: true,
-                              userId: ref.read(authProvider).user?.id,
-                              displayName: resource.title,
-                              updatedAt: resource.updatedAt, // CHANGED (Freshness)
-                              onAction: () => _openResource(resource),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ResourceFilesScreen(resource: resource),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.folder_open_rounded),
+                                label: Text(
+                                  'OPEN FILES',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                    letterSpacing: 1.1,
+                                    color: theme.colorScheme.onPrimary,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: theme.colorScheme.primary,
+                                  foregroundColor: theme.colorScheme.onPrimary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
                             ),
-
                           ],
 
                           const SizedBox(height: AppSpacing.sm),

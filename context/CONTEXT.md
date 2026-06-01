@@ -16,12 +16,22 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
+- **Phase 55**: Context & Global Rules Update + Commit All (In Progress)
+  - Finalize documentation, update context files, and commit/push all Phase 54/55 changes cleanly.
+  - **Branch**: `feature/phase-54-user-resource-files`
+
+## Completed Phases
+- **Phase 54**: User-Side — Open Resource Screen (Completed)
+  - Created a new user screen `ResourceFilesScreen` showcasing all attached resource files with backward-compatibility falling back to legacy single PDF.
+  - Replaced the direct PDF download buttons and actions in `MyResourcesScreen`, `ResourceDetailScreen`, and `StoreResourceGrid` with premium "Open" action buttons navigating to the files repository screen.
+  - Resolved all static analysis errors/warnings in modified screens to confirm 0 issues.
+  - **Branch**: `feature/phase-54-user-resource-files`
+
 - **Phase 53**: User-Side — Open Mock Test Screen (Completed)
   - Created a new user screen `MockTestFilesScreen` displaying test covers, stats, a primary full-width attempt CTA, and background queued supplementary downloads using the FIFO download queue.
   - Replaced the direct download buttons in `PurchasedTestsScreen` cards and Store grids with outlined "Open" CTAs that smoothly redirect to this files screen.
   - **Branch**: `feature/phase-53-user-mock-test-files`
 
-## Completed Phases
 - **Phase 52**: Admin Multi-file Mock Test Upload UI (Completed)
   - Added "SUPPLEMENTARY FILES (OPTIONAL)" section to MockTestEditScreen supporting multi-file PDF picking, displaying pending files, and background uploading via FIFO queue.
   - Implemented supplementary files section in AdminMockTestDetailScreen with a premium 3-dots actions menu (Rename, Replace, and Delete) mirroring the premium flow for Resources.

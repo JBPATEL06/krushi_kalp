@@ -4,13 +4,11 @@ import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../domain/models/resource.dart';
 import '../../data/services/resource_service.dart';
-import '../../data/services/auth_service.dart';
 import '../providers/auth_notifier.dart';
 import '../../core/theme/app_spacing.dart';
 import '../widgets/common/download_item_card.dart';
-import '../widgets/common/download_action_button.dart';
 import 'resource_detail_screen.dart';
-import '../../utils/resource_helper.dart';
+import 'resource_files_screen.dart';
 import '../widgets/common/network_error_state.dart';
 
 class MyResourcesScreen extends ConsumerStatefulWidget {
@@ -96,6 +94,8 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
       }
 
       final isLastPage = newItems.length < _pageSize;
+      if (!mounted) return;
+
       if (isLastPage) {
         _pagingController.appendLastPage(filtered);
       } else {
@@ -103,6 +103,7 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
         _pagingController.appendPage(filtered, nextPageKey);
       }
     } catch (error) {
+      if (!mounted) return;
       _pagingController.error = error;
     }
   }
@@ -136,15 +137,29 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
                       subtitle: resource.description,
                       coverUrl: resource.thumbnailUrl,
                       heroTag: 'resource_image_${resource.id}',
-                      customAction: DownloadActionButton(
-                        testId: resource.id.toString(),
-                        filename: 'resource_${resource.id}.pdf',
-                        url: resource.fileUrl,
-                        startLabel: "Open",
-                        isFullWidth: false,
-                        userId: AuthService.instance.currentUser?.id,
-                        displayName: resource.title,
-                        onAction: () => _openResource(resource),
+                      customAction: OutlinedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ResourceFilesScreen(resource: resource),
+                            ),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: theme.colorScheme.primary),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                          ),
+                        ),
+                        child: Text(
+                          "Open",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
                       ),
                       onTap: () {
                         Navigator.push(
@@ -300,12 +315,5 @@ class _MyResourcesScreenState extends ConsumerState<MyResourcesScreen> {
     );
   }
 
-  Future<void> _openResource(Resource resource) async {
-    final user = ref.read(authProvider).user;
-    await ResourceHelper.openResource(
-      context: context,
-      resource: resource,
-      userId: user?.id,
-    );
-  }
+
 }

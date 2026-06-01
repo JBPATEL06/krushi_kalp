@@ -8,9 +8,8 @@ import '../../../../data/services/offer_service.dart';
 import '../../../../data/services/review_service.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../utils/responsive.dart';
-import '../../../widgets/common/download_action_button.dart';
+import '../../resource_files_screen.dart';
 import 'store_item_card.dart';
-import '../../../providers/auth_notifier.dart';
 
 class StoreResourceGrid extends ConsumerStatefulWidget {
   final PagingController<int, Resource> pagingController;
@@ -140,6 +139,7 @@ class _StoreResourceGridState extends ConsumerState<StoreResourceGrid> {
   }
 
   Widget _buildCard(BuildContext context, Resource resource) {
+    final theme = Theme.of(context);
     final isInCart = widget.cartItemIds.contains(resource.id);
     final isPurchased = widget.purchasedIds.contains(resource.id);
 
@@ -177,17 +177,30 @@ class _StoreResourceGridState extends ConsumerState<StoreResourceGrid> {
       actionLabel:
           isPurchased ? 'Download' : (displayPrice == 0 ? 'Free Claim' : 'Buy Now'),
       customAction: isPurchased
-          ? DownloadActionButton(
-              testId: resource.id.toString(),
-              filename: 'resource_${resource.id}.pdf',
-              url: resource.fileUrl,
-              startLabel: "Open",
-              isFullWidth: false,
-              userId: ref.read(authProvider).user?.id,
-              displayName: resource.title,
-              onAction: () async {
-                widget.onBuyTap(resource);
+          ? OutlinedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ResourceFilesScreen(resource: resource),
+                  ),
+                );
               },
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: theme.colorScheme.primary),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+              child: Text(
+                "Open",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
             )
           : null,
       isActionEnabled: true,
