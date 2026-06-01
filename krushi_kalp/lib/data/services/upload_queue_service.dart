@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'background_upload_service.dart';
+import '../../utils/crashlytics_service.dart';
 
 /// A single upload request to be placed in the FIFO queue.
 class QueuedUploadRequest {
@@ -170,34 +171,50 @@ class UploadQueueService {
     // Use a Completer to await BackgroundUploadService's callback-based API
     final completer = Completer<void>();
 
-    await BackgroundUploadService().uploadFile(
-      taskId: request.taskId,
-      fileName: request.fileName,
-      itemName: request.itemName,
-      bucketName: request.bucketName,
-      storagePath: request.storagePath,
-      fileBytes: request.fileBytes,
-      filePath: request.filePath,
-      fileType: request.fileType,
-      dbUpdate: request.dbUpdate,
-      onProgress: (progress) {
-        _activeProgress = progress;
-        _emitSnapshot();
-        request.onProgress(progress);
-      },
-      onComplete: (path) {
-        debugPrint(
-            'UploadQueueService: Completed "${request.itemName}" → $path');
-        request.onComplete(path);
-        if (!completer.isCompleted) completer.complete();
-      },
-      onError: (error) {
-        debugPrint(
-            'UploadQueueService: Failed "${request.itemName}": $error');
-        request.onError(error);
-        if (!completer.isCompleted) completer.complete();
-      },
-    );
+    try {
+      await BackgroundUploadService().uploadFile(
+        taskId: request.taskId,
+        fileName: request.fileName,
+        itemName: request.itemName,
+        bucketName: request.bucketName,
+        storagePath: request.storagePath,
+        fileBytes: request.fileBytes,
+        filePath: request.filePath,
+        fileType: request.fileType,
+        dbUpdate: request.dbUpdate,
+        onProgress: (progress) {
+          _activeProgress = progress;
+          _emitSnapshot();
+          request.onProgress(progress);
+        },
+        onComplete: (path) {
+          debugPrint(
+              'UploadQueueService: Completed "${request.itemName}" → $path');
+          request.onComplete(path);
+          if (!completer.isCompleted) completer.complete();
+        },
+        onError: (error) {
+          debugPrint(
+              'UploadQueueService: Failed "${request.itemName}": $error');
+          CrashlyticsService.instance.recordError(
+            Exception(error),
+            StackTrace.current,
+            reason: 'UploadQueueService failed to upload ${request.itemName}: $error',
+          );
+          request.onError(error);
+          if (!completer.isCompleted) completer.complete();
+        },
+      );
+    } catch (e, stack) {
+      debugPrint('UploadQueueService: Unexpected exception: $e');
+      CrashlyticsService.instance.recordError(
+        e,
+        stack,
+        reason: 'UploadQueueService unexpected loop crash for ${request.itemName}',
+      );
+      request.onError(e.toString());
+      if (!completer.isCompleted) completer.complete();
+    }
 
     // Wait for upload to finish before starting next
     await completer.future;
