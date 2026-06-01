@@ -4,6 +4,35 @@
 
 ---
 
+## [Phase 50: Multi-file DB Schema + Models]
+### Goal
+Allow resources and mock tests to support multiple supplementary files/PDFs using atomic database relations. Define the SQL tables, create the standard Dart domain models, and implement the service CRUD operations.
+
+### Branch
+`feature/phase-50-multi-file-db-models` (new branch switched from `feature/phase-48-multi-file-upload-open`)
+
+### Decisions Made
+- Proceeded with the **Database Table approach** (Option B) instead of Storage Folder Listing. Database tables ensure atomic database updates (milliseconds instead of slow filesystem moves), granular user RLS select policies on a private bucket, arbitrary rich text display names, and reliable batch reordering.
+- The existing fields (`resources.file_url` / `mock_tests.file_path`) remain fully supported as backward-compatible fallbacks if the supplementary tables are empty.
+
+### Files Changed
+- **[NEW]** `supabase/20260601_add_multi_file_tables.sql` — SQL migration file containing schemas for `resource_files` and `mock_test_files` tables with cascade deletes and RLS policies.
+- **[NEW]** `lib/domain/models/resource_file.dart` — Standard Dart model `ResourceFile` with JSON serialization.
+- **[NEW]** `lib/domain/models/mock_test_file.dart` — Standard Dart model `MockTestFile` with JSON serialization.
+- **[MODIFIED]** `lib/data/services/resource_service.dart` — Added `fetchResourceFiles`, `addResourceFile`, `deleteResourceFile`, `renameResourceFile`, `reorderResourceFiles`, and dynamic fresh signed URL resolver `_signResourceFiles`.
+- **[NEW]** `lib/data/services/mock_test_file_service.dart` — `MockTestFileService` singleton providing mirrored CRUD/signing services for mock test supplementary files.
+
+### Risks / Side Effects
+- Requires applying the SQL migration in Supabase Dashboard manually before the next phases run.
+
+### Test Criteria
+- `dart analyze` passes with 0 issues on all new and modified files.
+
+### Outcome
+- ✅ `dart analyze` 0 issues. Phase 50 complete.
+
+---
+
 ## [Phase 49: FIFO Download Queue Service]
 ### Goal
 Prevent multiple simultaneous file downloads. All user background downloads (resource PDFs, mock test covers, questions JSON) must be serialized through a single FIFO queue.

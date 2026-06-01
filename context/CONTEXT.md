@@ -16,14 +16,19 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
+- **Phase 50**: Multi-file DB Schema + Models (Completed)
+  - Created Supabase SQL migration for `resource_files` and `mock_test_files` supplementary tables.
+  - Implemented domain models `ResourceFile` and `MockTestFile`.
+  - Added full supplementary files CRUD (fetch, add, delete, rename, reorder) to `ResourceService`.
+  - Created `MockTestFileService` to support supplementary test file CRUD operations.
+  - **Branch**: `feature/phase-50-multi-file-db-models`
+
+## Completed Phases
 - **Phase 49**: FIFO Download Queue Service (Completed)
   - Created `DownloadQueueService` singleton — FIFO queue serializes all file downloads one at a time.
   - Routed all user background downloads through serial queue in `download_action_button.dart`.
   - Added visual queue position information to `DownloadActionButton` to show users their current queue status (e.g. `In Queue (#1)`).
   - Resolved unused import warning in `download_action_button.dart`.
-  - **Branch**: `feature/phase-48-multi-file-upload-open`
-
-## Completed Phases
 - **Phase 48**: FIFO Upload Queue Service (Completed)
   - Created `UploadQueueService` singleton — FIFO queue serializes all file uploads one at a time.
   - Routes all admin uploads through serial queue: `admin_resource_form.dart`, `mock_test_edit_screen.dart`, `mock_test_upload_screen.dart`.
@@ -78,4 +83,4 @@ Clean Architecture:
 - **Build Version**: Incremented to `1.0.3+17` for the Google Play Store submission.
 - **Experimental Versions**: Using pre-release versions of Riverpod and Freezed may introduce unexpected behavior; monitoring is required.
 - **16KB Alignment**: Final App Bundle must be verified with `check_align.py` before submission.
-- **Active Branch**: All recent work is committed to the `bugfxing` branch.
+- **Active Branch**: `feature/phase-50-multi-file-db-models`

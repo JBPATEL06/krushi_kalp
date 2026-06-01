@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/resource.dart';
+import '../../domain/models/resource_file.dart';
 import '../../utils/supabase_url_helper.dart';
 import 'auth_service.dart';
 import 'cart_service.dart';
@@ -192,7 +193,7 @@ class ResourceService {
       }
 
       final response = await query
-          .order('access_id', ascending: false)
+          .order('granted_at', ascending: false)
           .range(offset, offset + limit - 1);
 
       if ((response as List).isEmpty) return [];
@@ -495,6 +496,119 @@ class ResourceService {
       case ResourceType.pyq:
         return 'pyq';
     }
+  }
+
+  // --- SUPPLEMENTARY FILES CRUD (Phase 50) ---
+
+  /// Fetches supplementary files for a resource.
+  Future<List<ResourceFile>> fetchResourceFiles(int resourceId) async {
+    try {
+      final response = await _client
+          .from('resource_files')
+          .select()
+          .eq('resource_id', resourceId)
+          .order('file_order', ascending: true);
+
+      final files = (response as List<dynamic>)
+          .map((json) => ResourceFile.fromJson(json))
+          .toList();
+
+      return await _signResourceFiles(files);
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service: fetchResourceFiles');
+      return [];
+    }
+  }
+
+  /// Adds a supplementary file to a resource.
+  Future<int> addResourceFile({
+    required int resourceId,
+    required String storagePath,
+    required String displayName,
+    int? fileSizeBytes,
+    int fileOrder = 0,
+  }) async {
+    try {
+      final sanitizedPath = SupabaseUrlHelper.extractPathFromUrl(storagePath, 'mock_test');
+      final response = await _client.from('resource_files').insert({
+        'resource_id': resourceId,
+        'storage_path': sanitizedPath,
+        'display_name': displayName,
+        'file_order': fileOrder,
+        'file_size_bytes': fileSizeBytes,
+        'created_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      }).select('id').single();
+
+      return response['id'] as int;
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service: addResourceFile');
+      throw Exception('Failed to add supplementary file: $e');
+    }
+  }
+
+  /// Deletes a supplementary file.
+  Future<void> deleteResourceFile(int fileId, String storagePath) async {
+    try {
+      await _client.from('resource_files').delete().eq('id', fileId);
+      try {
+        await deleteFileFromStorage(storagePath);
+      } catch (_) {}
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service: deleteResourceFile');
+      throw Exception('Failed to delete supplementary file: $e');
+    }
+  }
+
+  /// Renames a supplementary file.
+  Future<void> renameResourceFile(int fileId, String newDisplayName) async {
+    try {
+      await _client.from('resource_files').update({
+        'display_name': newDisplayName,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', fileId);
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service: renameResourceFile');
+      throw Exception('Failed to rename supplementary file: $e');
+    }
+  }
+
+  /// Reorders supplementary files.
+  Future<void> reorderResourceFiles(List<Map<String, dynamic>> fileOrders) async {
+    try {
+      for (final item in fileOrders) {
+        final id = item['id'];
+        final order = item['file_order'];
+        await _client.from('resource_files').update({
+          'file_order': order,
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', id);
+      }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_service: reorderResourceFiles');
+      throw Exception('Failed to reorder supplementary files: $e');
+    }
+  }
+
+  /// Helper to convert supplementary storage paths into fresh signed URLs.
+  Future<List<ResourceFile>> _signResourceFiles(List<ResourceFile> files) async {
+    return await Future.wait(files.map((f) async {
+      String? signedPath;
+      const bucket = 'mock_test';
+      if (f.storagePath.isNotEmpty) {
+        final path = SupabaseUrlHelper.extractPathFromUrl(f.storagePath, bucket);
+        if (!path.startsWith('http')) {
+          try {
+            signedPath = await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
+          } catch (e) {
+            debugPrint('Failed to load signed URL for resource file: $e');
+          }
+        } else {
+          signedPath = path;
+        }
+      }
+      return f.copyWith(storagePath: signedPath ?? f.storagePath);
+    }));
   }
 }
 
