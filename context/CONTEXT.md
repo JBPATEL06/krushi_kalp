@@ -16,14 +16,19 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
+- **Phase 51**: Admin Multi-file Resource Upload UI (Completed)
+  - Integrated supplementary files support inside the Admin Resource Form (`admin_resource_form.dart`).
+  - Added an "Add Supplementary File" multi-file picker option that enqueues background uploads and inserts records into the `resource_files` table.
+  - Implemented a premium management section in the Admin Resource Detail Screen (`admin_resource_detail_screen.dart`).
+  - Created a compact, high-trust 3-dots popup menu on supplementary file rows to instantly Rename, Replace (upload upsert), and Delete files with zero lag.
+  - **Branch**: `feature/phase-51-admin-multi-file-resource-upload`
+
+## Completed Phases
 - **Phase 50**: Multi-file DB Schema + Models (Completed)
   - Created Supabase SQL migration for `resource_files` and `mock_test_files` supplementary tables.
   - Implemented domain models `ResourceFile` and `MockTestFile`.
   - Added full supplementary files CRUD (fetch, add, delete, rename, reorder) to `ResourceService`.
   - Created `MockTestFileService` to support supplementary test file CRUD operations.
-  - **Branch**: `feature/phase-50-multi-file-db-models`
-
-## Completed Phases
 - **Phase 49**: FIFO Download Queue Service (Completed)
   - Created `DownloadQueueService` singleton — FIFO queue serializes all file downloads one at a time.
   - Routed all user background downloads through serial queue in `download_action_button.dart`.
@@ -83,4 +88,4 @@ Clean Architecture:
 - **Build Version**: Incremented to `1.0.3+17` for the Google Play Store submission.
 - **Experimental Versions**: Using pre-release versions of Riverpod and Freezed may introduce unexpected behavior; monitoring is required.
 - **16KB Alignment**: Final App Bundle must be verified with `check_align.py` before submission.
-- **Active Branch**: `feature/phase-50-multi-file-db-models`
+- **Active Branch**: `feature/phase-51-admin-multi-file-resource-upload`

@@ -4,6 +4,39 @@
 
 ---
 
+## [Phase 51: Admin Multi-file Resource Upload UI]
+### Goal
+Allow admins to upload multiple supplementary PDFs inside the Admin Resource Form and manage them (rename, replace, delete) cleanly inside the Admin Resource Detail Screen.
+
+### Branch
+`feature/phase-51-admin-multi-file-resource-upload` (new branch switched from `feature/phase-50-multi-file-db-models`)
+
+### Files Changed
+- **[MODIFIED]** `lib/presentation/screens/admin/resources/admin_resource_form.dart`:
+  - Mixed in `PickerLifecycleMixin` and imported `app_radius.dart`.
+  - Added list `_pendingFiles` state and button to pick multiple files.
+  - Added clean file listing UI to allow removing queued files before saving.
+  - Enqueues multiple uploads inside `_save` via `UploadQueueService` and executes the `resource_files` database insertion dynamically in `onComplete`.
+- **[MODIFIED]** `lib/presentation/screens/admin/resources/admin_resource_detail_screen.dart`:
+  - Mixed in `PickerLifecycleMixin` and imported `ResourceFile`, `upload_queue_service.dart`, `file_picker.dart` and `supabase_flutter.dart`.
+  - Added state `_supplementaryFiles` list and loading status.
+  - Fetched supplementary files in `initState()` and `onRefresh()`.
+  - Implemented the `SUPPLEMENTARY FILES` UI section with custom container styling.
+  - Added a premium 3-dots `PopupMenuButton` for each file supporting rename dialogs, file replacement (uploading new PDF to custom path and updating table record), and delete confirmations.
+
+### Risks / Side Effects
+- Overwriting/Replacing a file deletes the old file path in storage on completion.
+- Cascade deletes are handled by foreign key database constraints.
+
+### Test Criteria
+- `dart analyze` passes with 0 issues.
+- Admin can pick multiple supplementary files, see them in the queue list, save the resource, see the progress notifications, view them in the detail screen, and successfully rename, replace, or delete them without errors.
+
+### Outcome
+- ✅ `dart analyze` 0 issues. Phase 51 complete.
+
+---
+
 ## [Phase 50: Multi-file DB Schema + Models]
 ### Goal
 Allow resources and mock tests to support multiple supplementary files/PDFs using atomic database relations. Define the SQL tables, create the standard Dart domain models, and implement the service CRUD operations.
