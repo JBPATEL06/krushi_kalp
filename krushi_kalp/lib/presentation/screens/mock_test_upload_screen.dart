@@ -662,8 +662,6 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
                                   'Select Questions File (Excel or JSON)',
                               style: Theme.of(context).textTheme.bodyMedium,
                             ),
-                            subtitle: const Text(
-                                'Excel (.xlsx) or direct JSON (.json)'),
                             trailing: IconButton(
                               icon: const Icon(Icons.upload_file),
                               onPressed: _pickQuestionsFile,
@@ -748,17 +746,20 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
                             ),
 
                           const SizedBox(height: AppSpacing.md),
-                          OutlinedButton.icon(
-                            onPressed: _pickSupplementaryFile,
-                            icon: const Icon(Icons.add),
-                            label: const Text('Add PDF File(s)'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: theme.colorScheme.primary,
-                              side:
-                                  BorderSide(color: theme.colorScheme.primary),
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(AppSpacing.radiusMd),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _pickSupplementaryFile,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Add PDF File(s)'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: theme.colorScheme.primary,
+                                side: BorderSide(
+                                    color: theme.colorScheme.primary),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                      AppSpacing.radiusMd),
+                                ),
                               ),
                             ),
                           ),
