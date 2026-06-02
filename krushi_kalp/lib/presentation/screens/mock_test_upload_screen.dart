@@ -222,18 +222,35 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
       };
 
       if (_questionsFiles.isEmpty) throw 'Questions file not selected';
-      final firstQFile = _questionsFiles.first;
 
-      String jsonString;
-      if (firstQFile.file.extension?.toLowerCase() == 'json') {
-        jsonString = utf8.decode(firstQFile.bytes);
-      } else {
-        final jsonList = ExcelToJsonConverter.convert(firstQFile.bytes);
-        if (jsonList.isEmpty) {
-          throw 'Excel file contains no valid questions. Please check the Excel format.';
+      // Process all selected questions files (json + excel), merge into one list
+      final List<Map<String, dynamic>> allQuestions = [];
+      for (final entry in _questionsFiles) {
+        final ext = entry.file.extension?.toLowerCase();
+        if (ext == 'json') {
+          try {
+            final decoded = jsonDecode(utf8.decode(entry.bytes));
+            if (decoded is List) {
+              allQuestions.addAll(decoded.cast<Map<String, dynamic>>());
+            }
+          } catch (e) {
+            throw 'Invalid JSON in file "${entry.file.name}": $e';
+          }
+        } else {
+          // Excel: xlsx / xls
+          final jsonList = ExcelToJsonConverter.convert(entry.bytes);
+          if (jsonList.isEmpty) {
+            throw 'Excel file "${entry.file.name}" contains no valid questions. Please check the format.';
+          }
+          allQuestions.addAll(jsonList);
         }
-        jsonString = jsonEncode(jsonList);
       }
+
+      if (allQuestions.isEmpty) {
+        throw 'No valid questions found in the selected files.';
+      }
+
+      final String jsonString = jsonEncode(allQuestions);
 
       final supabase = Supabase.instance.client;
       final response = await supabase
