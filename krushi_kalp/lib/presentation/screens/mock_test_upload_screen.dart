@@ -16,6 +16,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../utils/picker_lifecycle_mixin.dart';
 
+// ─── Private data class for questions file entries ────────────────────────────
+class _QuestionsFileEntry {
+  final PlatformFile file;
+  final Uint8List bytes;
+
+  _QuestionsFileEntry({required this.file, required this.bytes});
+}
+
 // ─── Private data class for supplementary file entries ────────────────────────
 class _SupplementaryFileEntry {
   final PlatformFile file;
@@ -63,6 +71,9 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
   // Supplementary files
   final List<_SupplementaryFileEntry> _supplementaryFiles = [];
 
+  // Questions files (multi-pick json/xlsx)
+  final List<_QuestionsFileEntry> _questionsFiles = [];
+
   @override
   void initState() {
     super.initState();
@@ -105,10 +116,8 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
     }
   }
 
-  // Files
+  // Cover image
   PlatformFile? _coverImage;
-  PlatformFile? _questionsFile;
-  Uint8List? _questionsBytes;
   Uint8List? _imageBytes;
   String? _imagePath;
 
@@ -149,28 +158,6 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
     final result = await safePickFiles(
       type: FileType.custom,
       allowedExtensions: ['xlsx', 'xls', 'json'],
-    );
-    if (result != null &&
-        result.files.isNotEmpty &&
-        result.files.single.path != null) {
-      final file = result.files.first;
-      try {
-        final bytes = await File(file.path!).readAsBytes();
-        setState(() {
-          _questionsFile = file;
-          _questionsBytes = bytes;
-        });
-      } catch (e, stack) {
-        await CrashlyticsService.instance.recordError(e, stack,
-            reason: 'Failed to read questions file bytes');
-      }
-    }
-  }
-
-  Future<void> _pickSupplementaryFile() async {
-    final result = await safePickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
       allowMultiple: true,
     );
     if (result == null || result.files.isEmpty) return;
@@ -179,21 +166,18 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
       if (file.path == null) continue;
       try {
         final bytes = await File(file.path!).readAsBytes();
-        // Pre-fill display name from filename (without extension)
-        final baseName =
-            file.name.replaceAll(RegExp(r'\.pdf$', caseSensitive: false), '');
         setState(() {
-          _supplementaryFiles.add(_SupplementaryFileEntry(
-            file: file,
-            bytes: bytes,
-            displayNameController: TextEditingController(text: baseName),
-          ));
+          _questionsFiles.add(_QuestionsFileEntry(file: file, bytes: bytes));
         });
       } catch (e, stack) {
         await CrashlyticsService.instance.recordError(e, stack,
-            reason: 'Failed to read supplementary file bytes: ${file.name}');
+            reason: 'Failed to read questions file bytes: ${file.name}');
       }
     }
+  }
+
+  void _removeQuestionsFile(int index) {
+    setState(() => _questionsFiles.removeAt(index));
   }
 
   void _removeSupplementaryFile(int index) {
@@ -205,10 +189,11 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
 
   Future<void> _uploadMockTest() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_coverImage == null || _questionsFile == null) {
+    if (_coverImage == null || _questionsFiles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select both Cover Image and Questions File'),
+          content:
+              Text('Please select Cover Image and at least one Questions File'),
         ),
       );
       return;
@@ -236,13 +221,14 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
         'cover_image_path': '',
       };
 
-      if (_questionsBytes == null) throw 'Questions file not selected';
+      if (_questionsFiles.isEmpty) throw 'Questions file not selected';
+      final firstQFile = _questionsFiles.first;
 
       String jsonString;
-      if (_questionsFile!.extension?.toLowerCase() == 'json') {
-        jsonString = utf8.decode(_questionsBytes!);
+      if (firstQFile.file.extension?.toLowerCase() == 'json') {
+        jsonString = utf8.decode(firstQFile.bytes);
       } else {
-        final jsonList = ExcelToJsonConverter.convert(_questionsBytes!);
+        final jsonList = ExcelToJsonConverter.convert(firstQFile.bytes);
         if (jsonList.isEmpty) {
           throw 'Excel file contains no valid questions. Please check the Excel format.';
         }
@@ -653,29 +639,72 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
                           ),
                           const SizedBox(height: AppSpacing.md),
 
-                          // Questions File Picker (Excel or JSON)
-                          ListTile(
-                            leading: Icon(Icons.table_chart,
-                                color: theme.colorScheme.primary),
-                            title: Text(
-                              _questionsFile?.name ??
-                                  'Select Questions File (Excel or JSON)',
-                              style: Theme.of(context).textTheme.bodyMedium,
+                          // Questions Files (multi-pick json/xlsx)
+                          if (_questionsFiles.isNotEmpty)
+                            ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: _questionsFiles.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: AppSpacing.sm),
+                              itemBuilder: (context, index) {
+                                final entry = _questionsFiles[index];
+                                return Container(
+                                  padding: const EdgeInsets.all(AppSpacing.md),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primaryContainer
+                                        .withValues(alpha: 0.08),
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.md),
+                                    border: Border.all(
+                                        color:
+                                            theme.colorScheme.outlineVariant),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.table_chart_outlined,
+                                          color: theme.colorScheme.primary,
+                                          size: 24),
+                                      const SizedBox(width: AppSpacing.sm),
+                                      Expanded(
+                                        child: Text(
+                                          entry.file.name,
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                                  fontWeight: FontWeight.w600),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: AppSpacing.sm),
+                                      IconButton(
+                                        icon: Icon(Icons.close_rounded,
+                                            color: theme.colorScheme.error),
+                                        onPressed: () =>
+                                            _removeQuestionsFile(index),
+                                        tooltip: 'Remove',
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.upload_file),
+                          const SizedBox(height: AppSpacing.sm),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
                               onPressed: _pickQuestionsFile,
-                              color: theme.colorScheme.primary,
-                            ),
-                            tileColor: _questionsFile != null
-                                ? theme.colorScheme.primaryContainer
-                                    .withValues(alpha: 0.1)
-                                : null,
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppSpacing.radiusMd),
-                              side: BorderSide(
-                                  color: theme.colorScheme.outlineVariant),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Add Questions File(s)'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: theme.colorScheme.primary,
+                                side: BorderSide(
+                                    color: theme.colorScheme.primary),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                      AppSpacing.radiusMd),
+                                ),
+                              ),
                             ),
                           ),
 
@@ -744,25 +773,6 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
                                 );
                               },
                             ),
-
-                          const SizedBox(height: AppSpacing.md),
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: _pickSupplementaryFile,
-                              icon: const Icon(Icons.add),
-                              label: const Text('Add PDF File(s)'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: theme.colorScheme.primary,
-                                side: BorderSide(
-                                    color: theme.colorScheme.primary),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                      AppSpacing.radiusMd),
-                                ),
-                              ),
-                            ),
-                          ),
 
                           const SizedBox(height: AppSpacing.xxl),
                           SizedBox(
