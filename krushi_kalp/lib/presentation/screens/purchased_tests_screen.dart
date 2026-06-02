@@ -18,7 +18,8 @@ class PurchasedTestsScreen extends ConsumerStatefulWidget {
   const PurchasedTestsScreen({super.key});
 
   @override
-  ConsumerState<PurchasedTestsScreen> createState() => _PurchasedTestsScreenState();
+  ConsumerState<PurchasedTestsScreen> createState() =>
+      _PurchasedTestsScreenState();
 }
 
 class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
@@ -70,7 +71,9 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
       // But we still paginate the initial fetch for safety
       var filtered = List<MockTest>.from(newItems);
       if (_searchQuery.isNotEmpty) {
-        filtered = filtered.where((t) => t.title.toLowerCase().contains(_searchQuery)).toList();
+        filtered = filtered
+            .where((t) => t.title.toLowerCase().contains(_searchQuery))
+            .toList();
       }
 
       if (_sortOption == 'Newest') {
@@ -115,11 +118,13 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
               pagingController: _pagingController,
               builderDelegate: PagedChildBuilderDelegate<MockTest>(
                 itemBuilder: (context, item, index) {
-                  final bottomPadding = index == _pagingController.itemList!.length - 1
+                  final bottomPadding = index ==
+                          _pagingController.itemList!.length - 1
                       ? AppSpacing.md + MediaQuery.of(context).padding.bottom
                       : AppSpacing.md;
                   return Padding(
-                    padding: EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, bottomPadding),
+                    padding: EdgeInsets.fromLTRB(
+                        AppSpacing.lg, 0, AppSpacing.lg, bottomPadding),
                     child: DownloadItemCard(
                       title: item.title,
                       subtitle: '${item.totalQuestions} Questions',
@@ -130,14 +135,16 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => MockTestFilesScreen(test: item),
+                              builder: (context) =>
+                                  MockTestFilesScreen(test: item),
                             ),
                           );
                         },
                         style: OutlinedButton.styleFrom(
                           side: BorderSide(color: theme.colorScheme.primary),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.radiusSm),
                           ),
                         ),
                         child: Text(
@@ -163,11 +170,17 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
                         );
                       },
                     ),
-                  ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+                  )
+                      .animate()
+                      .fadeIn(duration: 400.ms)
+                      .slideY(begin: 0.1, end: 0);
                 },
-                firstPageProgressIndicatorBuilder: (_) => _buildSkeletonLoader(context, theme),
-                newPageProgressIndicatorBuilder: (_) => const Center(child: CircularProgressIndicator()),
-                noItemsFoundIndicatorBuilder: (_) => _buildEmptyState(context, theme),
+                firstPageProgressIndicatorBuilder: (_) =>
+                    _buildSkeletonLoader(context, theme),
+                newPageProgressIndicatorBuilder: (_) =>
+                    const Center(child: CircularProgressIndicator()),
+                noItemsFoundIndicatorBuilder: (_) =>
+                    _buildEmptyState(context, theme),
                 firstPageErrorIndicatorBuilder: (_) => NetworkErrorState(
                   error: _pagingController.error,
                   onRetry: () => _pagingController.refresh(),
@@ -189,6 +202,7 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
       floating: false,
       pinned: true,
       backgroundColor: theme.colorScheme.surface,
+      foregroundColor: theme.colorScheme.onSurface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       centerTitle: true,
@@ -205,7 +219,8 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
 
   Widget _buildSearchAndFilterBar(BuildContext context, ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
