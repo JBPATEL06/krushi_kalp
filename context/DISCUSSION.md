@@ -1268,5 +1268,35 @@ Unified the local downloads manager (`downloads_screen.dart`) to navigate users 
 
 ---
 
+## [Phase 63: Nested Mock Quiz Results Display & Attempt Tracking]
+
+### Goal
+Ensure that attempting individual nested mock quizzes correctly stores the attempt's target quiz ID (`mock_test_file_id`) in the database, and that the quiz display name is appended to the parent test title in the score history, result screen, and output PDFs.
+
+### Proposed Changes
+- **File**: `lib/domain/models/test_result.dart` [MODIFY]
+  - Added `final int? mockTestFileId` field.
+  - Parsed nested `mock_test_files` from JSON join payload in `TestResult.fromJson` to format the display title as `"$title - $displayName"`.
+- **File**: `lib/data/services/test_service.dart` [MODIFY]
+  - Modified select queries in `fetchUserResults` and `fetchPaginatedUserResults` to retrieve nested `mock_test_files(display_name)`.
+  - Rewrote `fetchLatestResult` as a single optimized query joining `mock_test_files(display_name)` directly.
+- **File**: `lib/presentation/utils/exam_helper.dart` [MODIFY]
+  - Updated `_navigateToExam` and caller `startExamFromFile` to pass `quizFile.displayName` to `ExamScreen`.
+- **File**: `lib/presentation/screens/exam_screen.dart` [MODIFY]
+  - Added `mockTestFileDisplayName` parameter to constructor.
+  - Constructed the effective title in `_navigateToResult()` and passed it down to `TestResultScreen` for PDF exports.
+
+### Risks Identified
+- None. Fully backwards-compatible with legacy mock test results (which fallback to the standard test title).
+
+### Test Criteria
+- `flutter analyze` returns zero warnings or errors on modified files.
+- Verified database joins are correct via Supabase SQL command inspection.
+- Score History, Result Screen, and PDF generator correctly render nested quiz titles.
+
+### Outcome
+- ✅ Completed Phase 63 successfully!
+- Committed and pushed to `feature/nested-quizzes-refinements`.
+
 
 

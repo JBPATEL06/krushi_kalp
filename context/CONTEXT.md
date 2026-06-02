@@ -20,6 +20,13 @@ Clean Architecture:
 
 ## Recently Completed Fixes (on `feature/nested-quizzes-refinements` branch)
 
+- **Phase 63**: Nested Mock Quiz Results Display & Attempt Tracking ✅
+  - Added optional `mockTestFileId` to `TestResult` domain model.
+  - Implemented dynamic title appending in `TestResult.fromJson` to automatically format `"Mock Test Title - Nested Quiz Name"`.
+  - Updated all test result queries (`fetchUserResults`, `fetchPaginatedUserResults`, `fetchLatestResult`) to perform joins fetching `mock_test_files(display_name)`.
+  - Passed `mockTestFileDisplayName` through `exam_helper.dart` flow to `ExamScreen`.
+  - Updated `ExamScreen` to construct the effective title on attempt completion and pass it to `TestResultScreen`.
+
 - **Phase 62**: Mock Test Nested Quizzes & Upload Queue Improvements ✅
   - Solved question file enqueuing bug in `MockTestUploadScreen` to run properly in the FIFO upload queue.
   - Integrated redirection to `AdminUploadQueueScreen` upon starting test creation uploads.
