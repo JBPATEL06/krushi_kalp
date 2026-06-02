@@ -20,7 +20,8 @@ class ResourceFilesScreen extends ConsumerStatefulWidget {
   const ResourceFilesScreen({super.key, required this.resource});
 
   @override
-  ConsumerState<ResourceFilesScreen> createState() => _ResourceFilesScreenState();
+  ConsumerState<ResourceFilesScreen> createState() =>
+      _ResourceFilesScreenState();
 }
 
 class _ResourceFilesScreenState extends ConsumerState<ResourceFilesScreen> {
@@ -35,7 +36,8 @@ class _ResourceFilesScreenState extends ConsumerState<ResourceFilesScreen> {
 
   Future<void> _loadFiles() async {
     try {
-      final files = await ResourceService.instance.fetchResourceFiles(widget.resource.id);
+      final files =
+          await ResourceService.instance.fetchResourceFiles(widget.resource.id);
       if (mounted) {
         setState(() {
           _supplementaryFiles = files;
@@ -43,7 +45,8 @@ class _ResourceFilesScreenState extends ConsumerState<ResourceFilesScreen> {
         });
       }
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'resource_files_screen: _loadFiles');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'resource_files_screen: _loadFiles');
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -75,8 +78,13 @@ class _ResourceFilesScreenState extends ConsumerState<ResourceFilesScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text('Resource Files',
-            style: TextStyle(fontSize: context.sp(20), fontWeight: FontWeight.bold)),
+        title: Text(
+          r.title,
+          style:
+              TextStyle(fontSize: context.sp(18), fontWeight: FontWeight.bold),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         centerTitle: true,
         backgroundColor: theme.scaffoldBackgroundColor,
         scrolledUnderElevation: 0,
@@ -117,10 +125,12 @@ class _ResourceFilesScreenState extends ConsumerState<ResourceFilesScreen> {
                       width: context.sp(80),
                       height: context.sp(80),
                       decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                        color: colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
-                      child: r.thumbnailUrl != null && r.thumbnailUrl!.startsWith('http')
+                      child: r.thumbnailUrl != null &&
+                              r.thumbnailUrl!.startsWith('http')
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(AppRadius.md),
                               child: Image.network(
@@ -130,7 +140,8 @@ class _ResourceFilesScreenState extends ConsumerState<ResourceFilesScreen> {
                             )
                           : Icon(Icons.picture_as_pdf_outlined,
                               size: context.sp(36),
-                              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+                              color: colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.5)),
                     ),
                     const SizedBox(width: AppSpacing.lg),
                     // Info Block
@@ -139,7 +150,8 @@ class _ResourceFilesScreenState extends ConsumerState<ResourceFilesScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: colorScheme.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
@@ -217,7 +229,9 @@ class _ResourceFilesScreenState extends ConsumerState<ResourceFilesScreen> {
                   decoration: BoxDecoration(
                     color: colorScheme.surface,
                     borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                    border: Border.all(
+                        color:
+                            colorScheme.outlineVariant.withValues(alpha: 0.5)),
                   ),
                   child: Text(
                     'No download files available for this resource.',
@@ -233,7 +247,8 @@ class _ResourceFilesScreenState extends ConsumerState<ResourceFilesScreen> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _supplementaryFiles.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.sm),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: AppSpacing.sm),
                   itemBuilder: (context, index) {
                     final file = _supplementaryFiles[index];
                     final localFilename = 'resource_file_${file.id}.pdf';
@@ -268,11 +283,13 @@ class _ResourceFilesScreenState extends ConsumerState<ResourceFilesScreen> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
-          Icon(Icons.picture_as_pdf_outlined, color: colorScheme.error, size: context.sp(26)),
+          Icon(Icons.picture_as_pdf_outlined,
+              color: colorScheme.error, size: context.sp(26)),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -312,7 +329,8 @@ class _ResourceFilesScreenState extends ConsumerState<ResourceFilesScreen> {
               try {
                 final currentUserId = ref.read(authProvider).user?.id;
                 if (currentUserId == null) return;
-                final localPath = await DownloadService().getLocalPath(localFilename, userId: currentUserId);
+                final localPath = await DownloadService()
+                    .getLocalPath(localFilename, userId: currentUserId);
                 final localFile = File(localPath);
                 if (await localFile.exists()) {
                   if (context.mounted) {
@@ -328,11 +346,13 @@ class _ResourceFilesScreenState extends ConsumerState<ResourceFilesScreen> {
                   }
                 } else {
                   if (context.mounted) {
-                    ErrorUtils.showError(context, 'Local file not found. Please download again.');
+                    ErrorUtils.showError(context,
+                        'Local file not found. Please download again.');
                   }
                 }
               } catch (e, stack) {
-                CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to open supplementary resource PDF');
+                CrashlyticsService.instance.recordError(e, stack,
+                    reason: 'Failed to open supplementary resource PDF');
                 if (context.mounted) {
                   ErrorUtils.showError(context, 'Failed to open file: $e');
                 }
