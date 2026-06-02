@@ -13,6 +13,7 @@ import '../../data/services/app_config_service.dart';
 import 'login_screen.dart';
 import 'my_resources_screen.dart';
 import '../providers/resource_notifier.dart';
+import '../../domain/models/resource.dart';
 import '../providers/auth_notifier.dart';
 import '../../utils/responsive.dart';
 import 'free_content_screen.dart';
@@ -469,8 +470,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             color: theme.colorScheme.primary,
             onTap: () {
               final resourceState = ref.read(resourceProvider);
-              final hasCurrentAffairs = resourceState.currentAffairs.any(
-                  (r) => resourceState.purchasedResourceIds.contains(r.id));
+              final hasCurrentAffairs = resourceState.purchasedResources
+                  .any((r) => r.type == ResourceType.currentAffair);
 
               if (hasCurrentAffairs) {
                 Navigator.push(
@@ -513,8 +514,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             color: theme.colorScheme.tertiary,
             onTap: () {
               final resourceState = ref.read(resourceProvider);
-              final hasPurchased = resourceState.ebooks.any(
-                  (r) => resourceState.purchasedResourceIds.contains(r.id));
+              final hasPurchased = resourceState.purchasedResources
+                  .any((r) => r.type == ResourceType.eBook);
 
               if (hasPurchased) {
                 Navigator.push(
@@ -540,8 +541,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             color: theme.colorScheme.primary,
             onTap: () {
               final resourceState = ref.read(resourceProvider);
-              final hasPurchased = resourceState.studyMaterials.any(
-                  (r) => resourceState.purchasedResourceIds.contains(r.id));
+              final hasPurchased = resourceState.purchasedResources
+                  .any((r) => r.type == ResourceType.studyMaterial);
 
               if (hasPurchased) {
                 Navigator.push(
@@ -580,8 +581,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             color: theme.colorScheme.error,
             onTap: () {
               final resourceState = ref.read(resourceProvider);
-              final hasPurchased = resourceState.pyqs.any(
-                  (r) => resourceState.purchasedResourceIds.contains(r.id));
+              final hasPurchased = resourceState.purchasedResources
+                  .any((r) => r.type == ResourceType.pyq);
 
               if (hasPurchased) {
                 Navigator.push(
