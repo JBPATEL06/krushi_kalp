@@ -147,6 +147,9 @@ class UploadQueueService {
     return removed;
   }
 
+  /// Returns a list of all currently pending upload requests.
+  List<QueuedUploadRequest> get pendingRequests => _queue.toList();
+
   // ── Internal Processing ───────────────────────────────────────────────────
 
   Future<void> _processNext() async {

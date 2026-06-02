@@ -49,6 +49,8 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
       );
 
       final isLastPage = newItems.length < _pageSize;
+      if (!mounted) return;
+
       if (isLastPage) {
         _pagingController.appendLastPage(newItems);
       } else {
@@ -56,6 +58,7 @@ class _AdminUserListScreenState extends State<AdminUserListScreen> {
         _pagingController.appendPage(newItems, nextPageKey);
       }
     } catch (error) {
+      if (!mounted) return;
       _pagingController.error = error;
     }
   }

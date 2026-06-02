@@ -19,12 +19,14 @@ class ExamScreen extends StatefulWidget {
   final MockTest test;
   final String examLanguage;
   final File? localFile;
+  final int? mockTestFileId;
 
   const ExamScreen({
     super.key,
     required this.test,
     this.examLanguage = 'en',
     this.localFile,
+    this.mockTestFileId,
   });
 
   @override
@@ -214,6 +216,7 @@ class _ExamScreenState extends State<ExamScreen> {
           totalMarks: widget.test.totalMarks,
           authUserId: user.id,
           language: widget.examLanguage,
+          mockTestFileId: widget.mockTestFileId,
         );
       }
 
@@ -288,6 +291,7 @@ class _ExamScreenState extends State<ExamScreen> {
           selectedAnswers: _selectedAnswers,
           examLanguage: widget.examLanguage,
           timeTakenSeconds: timeTakenSeconds,
+          mockTestFileId: widget.mockTestFileId,
         ),
       ),
     );

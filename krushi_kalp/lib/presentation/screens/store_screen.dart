@@ -53,7 +53,13 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
     _tabController = TabController(length: _categoryMap.length, vsync: this);
     
     for (int i = 0; i < _categoryMap.length; i++) {
-      final controller = PagingController<int, dynamic>(firstPageKey: 0);
+      final category = _keys[i];
+      final PagingController<int, dynamic> controller;
+      if (category == 'Mock Tests') {
+        controller = PagingController<int, MockTest>(firstPageKey: 0);
+      } else {
+        controller = PagingController<int, Resource>(firstPageKey: 0);
+      }
       controller.addPageRequestListener((pageKey) => _fetchPage(i, pageKey));
       _pagingControllers.add(controller);
     }
@@ -101,6 +107,8 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
         isLastPage = resources.length < _pageSize;
       }
 
+      if (!mounted) return;
+
       if (isLastPage) {
         _pagingControllers[tabIndex].appendLastPage(newItems);
       } else {
@@ -108,6 +116,7 @@ class _StoreScreenState extends ConsumerState<StoreScreen>
         _pagingControllers[tabIndex].appendPage(newItems, nextPageKey);
       }
     } catch (error, stack) {
+      if (!mounted) return;
       CrashlyticsService.instance.recordError(error, stack, reason: 'store_fetch_page');
       _pagingControllers[tabIndex].error = error;
     }

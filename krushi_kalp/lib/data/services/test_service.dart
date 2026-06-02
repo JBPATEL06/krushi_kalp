@@ -85,8 +85,8 @@ class TestService {
 
       return await _populateSignedUrls(tests);
     } catch (e, stack) {
-      CrashlyticsService.instance
-          .recordError(e, stack, reason: 'test_service: fetchPaginatedMockTests');
+      CrashlyticsService.instance.recordError(e, stack,
+          reason: 'test_service: fetchPaginatedMockTests');
       return [];
     }
   }
@@ -124,7 +124,8 @@ class TestService {
       final List<MockTest> withUrl = await _populateSignedUrls([test]);
       return withUrl.first;
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'fetchMockTestById failed for ID: $testId');
+      CrashlyticsService.instance.recordError(e, stack,
+          reason: 'fetchMockTestById failed for ID: $testId');
       return null;
     }
   }
@@ -200,7 +201,6 @@ class TestService {
 
       await _supabase.from('mock_tests').insert(payload);
 
-
       // Notifications moved to AdminService.toggleMockTestPublicStatus
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'test_service');
@@ -219,24 +219,30 @@ class TestService {
           .maybeSingle();
 
       // Call RPC — handles results, access, reviews, then mock_tests row
-      await _supabase.rpc('admin_delete_mock_test', params: {'p_test_id': testId});
+      await _supabase
+          .rpc('admin_delete_mock_test', params: {'p_test_id': testId});
 
       // Clean up storage files (best-effort, non-blocking)
       if (testRow != null) {
         final filePath = testRow['file_path'] as String?;
         final coverImagePath = testRow['cover_image_path'] as String?;
         if (filePath != null && filePath.isNotEmpty) {
-          try { await _supabase.storage.from('mock_test').remove([filePath]); } catch (_) {}
+          try {
+            await _supabase.storage.from('mock_test').remove([filePath]);
+          } catch (_) {}
         }
         if (coverImagePath != null && coverImagePath.isNotEmpty) {
           final cleanPath = coverImagePath.replaceAll('mock_test/', '');
-          try { await _supabase.storage.from('mock_test').remove([cleanPath]); } catch (_) {}
+          try {
+            await _supabase.storage.from('mock_test').remove([cleanPath]);
+          } catch (_) {}
         }
       }
     } on PostgrestException catch (e) {
       throw Exception('Failed to delete test: ${e.message}');
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service_delete_mock_test');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'test_service_delete_mock_test');
       throw Exception('Failed to delete test: $e');
     }
   }
@@ -271,18 +277,20 @@ class TestService {
         const bucket = 'mock_test';
 
         // NOTE: We intentionally DO NOT fetch `contentUrl` (JSON file) here
-        // to prevent the "Thundering Herd" ANR freeze on app launch. 
+        // to prevent the "Thundering Herd" ANR freeze on app launch.
         // It is fetched on-demand exactly when the user clicks 'Start Exam'.
 
         if (test.coverImagePath != null && test.coverImagePath!.isNotEmpty) {
           try {
             final path = SupabaseUrlHelper.extractPathFromUrl(
                 test.coverImagePath!, bucket);
-            imageUrl = await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
+            imageUrl =
+                await SupabaseUrlHelper().getFreshSignedUrl(bucket, path);
           } catch (e) {
             // If the cover image is missing (404), fail gracefully and return null.
             // This prevents a single missing image from crashing the entire test dashboard.
-            debugPrint('Failed to load signed URL for image ${test.coverImagePath}: $e');
+            debugPrint(
+                'Failed to load signed URL for image ${test.coverImagePath}: $e');
             imageUrl = null;
           }
         }
@@ -301,18 +309,25 @@ class TestService {
     required int totalMarks,
     required String authUserId,
     required String language,
+    int? mockTestFileId,
   }) async {
     try {
+      final Map<String, dynamic> insertData = {
+        'user_id': authUserId,
+        'test_id': testId,
+        'score_obtained': score,
+        'is_passed': totalMarks > 0 ? (score / totalMarks) >= 0.40 : false,
+        'attempt_date': DateTime.now().toIso8601String(),
+        'language': language,
+      };
+
+      if (mockTestFileId != null) {
+        insertData['mock_test_file_id'] = mockTestFileId;
+      }
+
       final response = await _supabase
           .from('results')
-          .insert({
-            'user_id': authUserId,
-            'test_id': testId,
-            'score_obtained': score,
-            'is_passed': totalMarks > 0 ? (score / totalMarks) >= 0.40 : false,
-            'attempt_date': DateTime.now().toIso8601String(),
-            'language': language,
-          })
+          .insert(insertData)
           .select('result_id')
           .single();
 
@@ -330,10 +345,13 @@ class TestService {
           .select('*, mock_tests(title, total_marks)')
           .eq('user_id', authUserId)
           .order('attempt_date', ascending: false);
-      
-      return (response as List).map((json) => TestResult.fromJson(json)).toList();
+
+      return (response as List)
+          .map((json) => TestResult.fromJson(json))
+          .toList();
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: fetchUserResults failed');
+      CrashlyticsService.instance.recordError(e, stack,
+          reason: 'test_service: fetchUserResults failed');
       throw Exception('Failed to load history: $e');
     }
   }
@@ -352,9 +370,12 @@ class TestService {
           .order('attempt_date', ascending: false)
           .range(offset, offset + limit - 1);
 
-      return (response as List).map((json) => TestResult.fromJson(json)).toList();
+      return (response as List)
+          .map((json) => TestResult.fromJson(json))
+          .toList();
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: fetchPaginatedUserResults');
+      CrashlyticsService.instance.recordError(e, stack,
+          reason: 'test_service: fetchPaginatedUserResults');
       return [];
     }
   }
@@ -406,10 +427,11 @@ class TestService {
       for (var access in accessList) {
         final itemId = access['item_id'];
         final liveData = liveTestsMap[itemId];
-        
+
         if (liveData != null) {
           finalJsonList.add(liveData);
-        } else if (access['item_snapshot'] != null && (access['item_snapshot'] as Map).isNotEmpty) {
+        } else if (access['item_snapshot'] != null &&
+            (access['item_snapshot'] as Map).isNotEmpty) {
           finalJsonList.add(access['item_snapshot']);
         }
       }
@@ -419,7 +441,8 @@ class TestService {
 
       return await _populateSignedUrls(purchasedTests);
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: fetchUserTests');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'test_service: fetchUserTests');
       return [];
     }
   }
@@ -444,7 +467,7 @@ class TestService {
       }
 
       final response = await query
-          .order('access_id', ascending: false) // Order by latest access
+          .order('granted_at', ascending: false) // Order by latest access
           .range(offset, offset + limit - 1);
 
       if ((response as List).isEmpty) return [];
@@ -477,7 +500,8 @@ class TestService {
 
       return await _populateSignedUrls(purchasedTests);
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: fetchPaginatedUserTests');
+      CrashlyticsService.instance.recordError(e, stack,
+          reason: 'test_service: fetchPaginatedUserTests');
       return [];
     }
   }
@@ -519,19 +543,21 @@ class TestService {
     if (authUserId == null) return Stream.value([]);
     return _supabase
         .from('access')
-        .stream(primaryKey: ['access_id'])
+        .stream(primaryKey: ['id'])
         .eq('user_id', authUserId)
-        .map((records) => records.where((r) => r['item_type'] == 'test').toList())
+        .map((records) =>
+            records.where((r) => r['item_type'] == 'test').toList())
         .asyncMap((accessRecords) async {
           try {
             if (accessRecords.isEmpty) return <MockTest>[];
-            final testIds = accessRecords.map((o) => o['item_id'] as int).toList();
-            
+            final testIds =
+                accessRecords.map((o) => o['item_id'] as int).toList();
+
             final testsResponse = await _supabase
                 .from('mock_tests')
                 .select()
                 .inFilter('test_id', testIds);
-                
+
             final List<MockTest> purchasedTests =
                 await compute(_parseMockTests, testsResponse as List<dynamic>);
             return await _populateSignedUrls(purchasedTests);
@@ -599,7 +625,8 @@ class TestService {
 
       // 3. Fetch User Profile for Snapshot
       final userProfile = await AuthService.instance.getUserProfile(authUserId);
-      final userSnapshot = userProfile ?? {'email': 'unknown', 'username': 'User'};
+      final userSnapshot =
+          userProfile ?? {'email': 'unknown', 'username': 'User'};
 
       // 4. Create PENDING payment
       final newPayment = await _supabase
@@ -623,7 +650,8 @@ class TestService {
 
       return newPayment['id'];
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: createDirectOrder');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'test_service: createDirectOrder');
       throw Exception('Failed to create order: $e');
     }
   }
@@ -687,18 +715,19 @@ class TestService {
           },
         );
       } catch (e, stack) {
-        CrashlyticsService.instance.recordError(e, stack, reason: 'Admin sale notification failed for payment: $orderId');
+        CrashlyticsService.instance.recordError(e, stack,
+            reason: 'Admin sale notification failed for payment: $orderId');
       }
     } catch (e, stack) {
       debugPrint('--- CHECKOUT ERROR ---');
       debugPrint('Error: $e');
       CrashlyticsService.instance
           .recordError(e, stack, reason: 'test_service: checkout failed');
-      
+
       // If the RPC fails due to signature mismatch, it throws a PostgrestException.
       // We handle it gracefully and rethrow with clarity.
       if (e is PostgrestException) {
-         throw Exception('Database Error: ${e.message} (Code: ${e.code})');
+        throw Exception('Database Error: ${e.message} (Code: ${e.code})');
       }
       rethrow;
     }
@@ -769,11 +798,12 @@ class TestService {
           .from('mock_tests')
           .select()
           .order('created_at', ascending: false);
-      
+
       final List<dynamic> data = response as List<dynamic>;
       return await compute(_parseMockTests, data);
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'test_service: fetchAllTestsRaw failed');
+      CrashlyticsService.instance.recordError(e, stack,
+          reason: 'test_service: fetchAllTestsRaw failed');
       rethrow;
     }
   }
@@ -783,12 +813,13 @@ class TestService {
     try {
       await RetryHelper.run(
         () => _supabase.storage.from('mock_test').upload(
-          path,
-          file,
-          fileOptions: const FileOptions(upsert: true),
-        ),
+              path,
+              file,
+              fileOptions: const FileOptions(upsert: true),
+            ),
         maxRetries: 3,
-        timeout: const Duration(seconds: 45), // PDFs can be up to ~1MB, give it time
+        timeout:
+            const Duration(seconds: 45), // PDFs can be up to ~1MB, give it time
       );
     } catch (e, stack) {
       CrashlyticsService.instance

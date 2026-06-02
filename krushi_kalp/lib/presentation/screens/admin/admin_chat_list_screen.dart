@@ -41,6 +41,8 @@ class _AdminChatListScreenState extends ConsumerState<AdminChatListScreen> {
       );
 
       final isLastPage = newItems.length < _pageSize;
+      if (!mounted) return;
+
       if (isLastPage) {
         _pagingController.appendLastPage(newItems);
       } else {
@@ -48,6 +50,7 @@ class _AdminChatListScreenState extends ConsumerState<AdminChatListScreen> {
         _pagingController.appendPage(newItems, nextPageKey);
       }
     } catch (error, stack) {
+      if (!mounted) return;
       CrashlyticsService.instance.recordError(error, stack, reason: 'admin_chat_list_fetch');
       _pagingController.error = error;
     }

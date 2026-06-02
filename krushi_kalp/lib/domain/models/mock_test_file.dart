@@ -5,6 +5,7 @@ class MockTestFile {
   final String displayName;
   final int fileOrder;
   final int? fileSizeBytes;
+  final String fileType;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -15,9 +16,12 @@ class MockTestFile {
     required this.displayName,
     this.fileOrder = 0,
     this.fileSizeBytes,
+    this.fileType = 'supplementary_pdf',
     required this.createdAt,
     required this.updatedAt,
   });
+
+  bool get isQuiz => fileType == 'quiz_json';
 
   factory MockTestFile.fromJson(Map<String, dynamic> json) {
     return MockTestFile(
@@ -27,6 +31,7 @@ class MockTestFile {
       displayName: json['display_name'] as String? ?? '',
       fileOrder: (json['file_order'] as num?)?.toInt() ?? 0,
       fileSizeBytes: (json['file_size_bytes'] as num?)?.toInt(),
+      fileType: json['file_type'] as String? ?? 'supplementary_pdf',
       createdAt: json['created_at'] != null 
           ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now() 
           : DateTime.now(),
@@ -44,6 +49,7 @@ class MockTestFile {
       'display_name': displayName,
       'file_order': fileOrder,
       'file_size_bytes': fileSizeBytes,
+      'file_type': fileType,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -56,6 +62,7 @@ class MockTestFile {
     String? displayName,
     int? fileOrder,
     int? fileSizeBytes,
+    String? fileType,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -66,6 +73,7 @@ class MockTestFile {
       displayName: displayName ?? this.displayName,
       fileOrder: fileOrder ?? this.fileOrder,
       fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
+      fileType: fileType ?? this.fileType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

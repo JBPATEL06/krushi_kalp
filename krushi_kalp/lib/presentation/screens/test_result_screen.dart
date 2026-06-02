@@ -33,6 +33,7 @@ class TestResultScreen extends ConsumerStatefulWidget {
   final Map<int, int>? selectedAnswers;
   final String examLanguage;
   final int timeTakenSeconds;
+  final int? mockTestFileId;
 
   const TestResultScreen({
     super.key,
@@ -49,6 +50,7 @@ class TestResultScreen extends ConsumerStatefulWidget {
     this.selectedAnswers,
     this.examLanguage = 'en',
     this.timeTakenSeconds = 0,
+    this.mockTestFileId,
   });
 
   @override

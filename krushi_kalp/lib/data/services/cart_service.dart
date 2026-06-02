@@ -176,10 +176,7 @@ class CartService {
     try {
       if (testId == null && resourceId == null) return false;
 
-      var query = _supabase
-          .from('access')
-          .select('id')
-          .eq('user_id', userId);
+      var query = _supabase.from('access').select('id').eq('user_id', userId);
 
       if (testId != null) {
         query = query.eq('item_id', testId).eq('item_type', 'test');
@@ -190,7 +187,8 @@ class CartService {
       final response = await query.limit(1).maybeSingle();
       return response != null;
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service: checkOwnership');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'cart_service: checkOwnership');
       return false;
     }
   }
@@ -252,11 +250,12 @@ class CartService {
             .select('*')
             .eq('id', authUserId)
             .maybeSingle();
-        
-        final userSnapshot = userProfileRes ?? {
-          'email': 'unknown',
-          'username': 'User',
-        };
+
+        final userSnapshot = userProfileRes ??
+            {
+              'email': 'unknown',
+              'username': 'User',
+            };
 
         final newPayment = await _supabase
             .from('payment')
@@ -303,7 +302,8 @@ class CartService {
         'granted_at': DateTime.now().toIso8601String(),
       });
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service: addToCart');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'cart_service: addToCart');
       throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }
@@ -311,9 +311,14 @@ class CartService {
   /// Removes a specific item from the cart (access table).
   Future<void> removeCartItem(int itemId) async {
     try {
-      await _supabase.from('access').delete().eq('id', itemId).eq('is_active', false);
+      await _supabase
+          .from('access')
+          .delete()
+          .eq('id', itemId)
+          .eq('is_active', false);
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'cart_service: removeCartItem');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'cart_service: removeCartItem');
       throw Exception('Failed to remove item: $e');
     }
   }

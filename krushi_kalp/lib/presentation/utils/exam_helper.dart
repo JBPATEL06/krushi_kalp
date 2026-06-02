@@ -6,6 +6,8 @@ import '../../domain/models/mock_test.dart';
 import '../screens/exam_screen.dart';
 import '../widgets/common/download_progress_dialog.dart'; // NEW
 import '../../utils/supabase_url_helper.dart';
+import '../../domain/models/mock_test_file.dart'; // NEW
+
 class ExamHelper {
   static Future<void> startExam(BuildContext context, MockTest test) async {
     final user = AuthService.instance.currentUser;
@@ -77,6 +79,64 @@ class ExamHelper {
     final path = await downloadService.getLocalPath(filename, userId: user.id);
     if (!context.mounted) return;
     _navigateToExam(context, test, lang, File(path));
+  }
+
+  static Future<void> startExamFromFile(
+      BuildContext context, MockTest test, MockTestFile quizFile) async {
+    final user = AuthService.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please login to start the exam")),
+      );
+      return;
+    }
+
+    final String filename = 'mock_test_quiz_${quizFile.id}.json';
+    final downloadService = DownloadService();
+    final bool isDownloaded =
+        await downloadService.isFileDownloaded(filename, userId: user.id);
+
+    if (!isDownloaded) {
+      String? effectiveContentUrl = quizFile.storagePath;
+      if (!effectiveContentUrl.startsWith('http')) {
+        final path = SupabaseUrlHelper.extractPathFromUrl(quizFile.storagePath, 'mock_test');
+        effectiveContentUrl = await SupabaseUrlHelper().getFreshSignedUrl('mock_test', path);
+      }
+
+      if (effectiveContentUrl.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Error: Download URL not found.")),
+          );
+        }
+        return;
+      }
+
+      if (!context.mounted) return;
+      final outerContext = context;
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => DownloadProgressDialog(
+          url: effectiveContentUrl!,
+          filename: filename,
+          displayName: quizFile.displayName,
+          userId: user.id,
+          onComplete: (path) async {
+            if (!outerContext.mounted) return;
+            final lang = test.language.toLowerCase().contains('guj') ? 'gu' : 'en';
+            _navigateToExam(outerContext, test, lang, File(path), mockTestFileId: quizFile.id);
+          },
+        ),
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+    final lang = test.language.toLowerCase().contains('guj') ? 'gu' : 'en';
+    final path = await downloadService.getLocalPath(filename, userId: user.id);
+    if (!context.mounted) return;
+    _navigateToExam(context, test, lang, File(path), mockTestFileId: quizFile.id);
   }
 
   /// Shows the language selection dialog. (Commented out as translation logic is removed)
@@ -189,7 +249,7 @@ class ExamHelper {
   // }
 
   static void _navigateToExam(
-      BuildContext context, MockTest test, String language, File localFile) {
+      BuildContext context, MockTest test, String language, File localFile, {int? mockTestFileId}) {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -197,6 +257,7 @@ class ExamHelper {
           test: test,
           examLanguage: language,
           localFile: localFile,
+          mockTestFileId: mockTestFileId,
         ),
       ),
     );

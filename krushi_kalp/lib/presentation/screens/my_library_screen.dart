@@ -116,6 +116,8 @@ class _MyLibraryScreenState extends ConsumerState<MyLibraryScreen> {
         isLastPage = resources.length < _pageSize;
       }
 
+      if (!mounted) return;
+
       if (isLastPage) {
         _pagingController.appendLastPage(newItems);
       } else {
@@ -123,6 +125,7 @@ class _MyLibraryScreenState extends ConsumerState<MyLibraryScreen> {
         _pagingController.appendPage(newItems, nextPageKey);
       }
     } catch (error, stack) {
+      if (!mounted) return;
       CrashlyticsService.instance.recordError(error, stack, reason: 'library_fetch');
       _pagingController.error = error;
     }

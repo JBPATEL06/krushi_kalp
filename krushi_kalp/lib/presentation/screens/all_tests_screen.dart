@@ -52,6 +52,8 @@ class _AllTestsScreenState extends ConsumerState<AllTestsScreen> {
       );
 
       final isLastPage = newItems.length < _pageSize;
+      if (!mounted) return;
+
       if (isLastPage) {
         _pagingController.appendLastPage(newItems);
       } else {
@@ -59,6 +61,7 @@ class _AllTestsScreenState extends ConsumerState<AllTestsScreen> {
         _pagingController.appendPage(newItems, nextPageKey);
       }
     } catch (error) {
+      if (!mounted) return;
       _pagingController.error = error;
     }
   }

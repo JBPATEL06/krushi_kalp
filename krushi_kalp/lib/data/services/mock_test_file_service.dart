@@ -32,13 +32,14 @@ class MockTestFileService {
     }
   }
 
-  /// Adds a supplementary file to a mock test.
+  /// Adds a supplementary/quiz file to a mock test.
   Future<int> addMockTestFile({
     required int testId,
     required String storagePath,
     required String displayName,
     int? fileSizeBytes,
     int fileOrder = 0,
+    String fileType = 'supplementary_pdf',
   }) async {
     try {
       final sanitizedPath = SupabaseUrlHelper.extractPathFromUrl(storagePath, 'mock_test');
@@ -48,6 +49,7 @@ class MockTestFileService {
         'display_name': displayName,
         'file_order': fileOrder,
         'file_size_bytes': fileSizeBytes,
+        'file_type': fileType,
         'created_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       }).select('id').single();
@@ -55,7 +57,7 @@ class MockTestFileService {
       return response['id'] as int;
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'mock_test_file_service: addMockTestFile');
-      throw Exception('Failed to add mock test supplementary file: $e');
+      throw Exception('Failed to add mock test file: $e');
     }
   }
 

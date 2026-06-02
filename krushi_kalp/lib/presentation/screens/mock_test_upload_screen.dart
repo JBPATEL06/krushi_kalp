@@ -15,13 +15,21 @@ import '../../core/theme/app_radius.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../utils/picker_lifecycle_mixin.dart';
+import 'admin/resources/admin_upload_queue_screen.dart';
 
 // ─── Private data class for questions file entries ────────────────────────────
 class _QuestionsFileEntry {
   final PlatformFile file;
   final Uint8List bytes;
+  final TextEditingController displayNameController;
 
-  _QuestionsFileEntry({required this.file, required this.bytes});
+  _QuestionsFileEntry({
+    required this.file,
+    required this.bytes,
+    required this.displayNameController,
+  });
+
+  void dispose() => displayNameController.dispose();
 }
 
 // ─── Private data class for supplementary file entries ────────────────────────
@@ -90,6 +98,9 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
     _totalMarksController.dispose();
     _negativeMarksController.dispose();
     _customCategoryController.dispose();
+    for (final entry in _questionsFiles) {
+      entry.dispose();
+    }
     for (final entry in _supplementaryFiles) {
       entry.dispose();
     }
@@ -166,8 +177,15 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
       if (file.path == null) continue;
       try {
         final bytes = await File(file.path!).readAsBytes();
+        final nameWithoutExt = file.name.contains('.')
+            ? file.name.substring(0, file.name.lastIndexOf('.'))
+            : file.name;
         setState(() {
-          _questionsFiles.add(_QuestionsFileEntry(file: file, bytes: bytes));
+          _questionsFiles.add(_QuestionsFileEntry(
+            file: file,
+            bytes: bytes,
+            displayNameController: TextEditingController(text: nameWithoutExt),
+          ));
         });
       } catch (e, stack) {
         await CrashlyticsService.instance.recordError(e, stack,
@@ -177,7 +195,10 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
   }
 
   void _removeQuestionsFile(int index) {
-    setState(() => _questionsFiles.removeAt(index));
+    setState(() {
+      _questionsFiles[index].dispose();
+      _questionsFiles.removeAt(index);
+    });
   }
 
   void _removeSupplementaryFile(int index) {
@@ -221,18 +242,25 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
         'cover_image_path': '',
       };
 
-      if (_questionsFiles.isEmpty) throw 'Questions file not selected';
+      // Validate and parse all questions files upfront to avoid insertion if a file is invalid
+      final List<String> jsonStrings = [];
+      final List<String> quizDisplayNames = [];
+      final List<int> quizFileSizes = [];
 
-      // Process all selected questions files (json + excel), merge into one list
-      final List<Map<String, dynamic>> allQuestions = [];
       for (final entry in _questionsFiles) {
         final ext = entry.file.extension?.toLowerCase();
+        final displayName = entry.displayNameController.text.trim().isNotEmpty
+            ? entry.displayNameController.text.trim()
+            : entry.file.name;
+        quizDisplayNames.add(displayName);
+
         if (ext == 'json') {
           try {
             final decoded = jsonDecode(utf8.decode(entry.bytes));
-            if (decoded is List) {
-              allQuestions.addAll(decoded.cast<Map<String, dynamic>>());
-            }
+            if (decoded is! List) throw 'JSON must be a list of questions';
+            final encoded = jsonEncode(decoded);
+            jsonStrings.add(encoded);
+            quizFileSizes.add(utf8.encode(encoded).length);
           } catch (e) {
             throw 'Invalid JSON in file "${entry.file.name}": $e';
           }
@@ -240,17 +268,13 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
           // Excel: xlsx / xls
           final jsonList = ExcelToJsonConverter.convert(entry.bytes);
           if (jsonList.isEmpty) {
-            throw 'Excel file "${entry.file.name}" contains no valid questions. Please check the format.';
+            throw 'Excel file "${entry.file.name}" contains no valid questions.';
           }
-          allQuestions.addAll(jsonList);
+          final encoded = jsonEncode(jsonList);
+          jsonStrings.add(encoded);
+          quizFileSizes.add(utf8.encode(encoded).length);
         }
       }
-
-      if (allQuestions.isEmpty) {
-        throw 'No valid questions found in the selected files.';
-      }
-
-      final String jsonString = jsonEncode(allQuestions);
 
       final supabase = Supabase.instance.client;
       final response = await supabase
@@ -260,21 +284,13 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
           .single();
       final int testId = response['test_id'];
 
-      // 2. Predict paths and update DB immediately so it's immune to background deaths.
+      // Predict cover image path and update mock test immediately
       final imagePath = 'mock_test_cover/$testId.jpg';
-      final jsonPath = 'mock_test_json_file/$testId.json';
-
       await supabase.from('mock_tests').update({
         'cover_image_path': imagePath,
-        'file_path': jsonPath,
       }).eq('test_id', testId);
 
-      // Write JSON string to a local temp file for background queue
-      final tempDir = await getTemporaryDirectory();
-      final jsonFile = File('${tempDir.path}/temp_json_$testId.json');
-      await jsonFile.writeAsString(jsonString);
-
-      // 3. Start background uploads for cover + questions
+      // 1. Enqueue Cover Image upload
       UploadQueueService().enqueue(QueuedUploadRequest(
         taskId: 'image_$testId',
         fileName: 'Cover: ${_titleController.text}',
@@ -289,20 +305,52 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
         onError: (err) {},
       ));
 
-      UploadQueueService().enqueue(QueuedUploadRequest(
-        taskId: 'json_$testId',
-        fileName: 'Questions: ${_titleController.text}',
-        itemName: 'Test Questions File',
-        bucketName: 'mock_test',
-        storagePath: jsonPath,
-        filePath: jsonFile.path,
-        fileType: 'mock_test_json',
-        onProgress: (p) {},
-        onComplete: (path) {},
-        onError: (err) {},
-      ));
+      // 2. Enqueue all Quiz JSON uploads
+      final tempDir = await getTemporaryDirectory();
+      for (int i = 0; i < jsonStrings.length; i++) {
+        final jsonStr = jsonStrings[i];
+        final displayName = quizDisplayNames[i];
+        final fileSize = quizFileSizes[i];
 
-      // 4. Upload supplementary files synchronously (need path before DB insert)
+        final tempFile = File('${tempDir.path}/temp_json_${testId}_$i.json');
+        await tempFile.writeAsString(jsonStr);
+
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final sanitizedName = displayName
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^\w\s\.\-]'), '')
+            .replaceAll(RegExp(r'\s+'), '_');
+        final jsonStoragePath = 'mock_test_json_file/$testId/${timestamp}_${i}_$sanitizedName.json';
+
+        UploadQueueService().enqueue(QueuedUploadRequest(
+          taskId: 'json_${testId}_$i',
+          fileName: 'Quiz: $displayName',
+          itemName: 'Quiz Questions File',
+          bucketName: 'mock_test',
+          storagePath: jsonStoragePath,
+          filePath: tempFile.path,
+          fileType: 'mock_test_json',
+          onProgress: (p) {},
+          onComplete: (path) async {
+            try {
+              await MockTestFileService.instance.addMockTestFile(
+                testId: testId,
+                storagePath: path,
+                displayName: displayName,
+                fileSizeBytes: fileSize,
+                fileOrder: i,
+                fileType: 'quiz_json',
+              );
+            } catch (e, stack) {
+              CrashlyticsService.instance.recordError(e, stack,
+                  reason: 'Failed to insert quiz DB record: $displayName');
+            }
+          },
+          onError: (err) {},
+        ));
+      }
+
+      // 3. Enqueue all Supplementary PDF uploads
       for (int i = 0; i < _supplementaryFiles.length; i++) {
         final entry = _supplementaryFiles[i];
         final displayName = entry.displayNameController.text.trim().isNotEmpty
@@ -313,53 +361,52 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
             .toLowerCase()
             .replaceAll(RegExp(r'[^\w\s\.\-]'), '')
             .replaceAll(RegExp(r'\s+'), '_');
-        final storagePath =
+        final pdfStoragePath =
             'mock_test_supplementary/$testId/${timestamp}_$sanitizedName.pdf';
 
-        try {
-          await supabase.storage.from('mock_test').uploadBinary(
-                storagePath,
-                entry.bytes,
-                fileOptions: const FileOptions(
-                  upsert: true,
-                  contentType: 'application/pdf',
-                ),
+        UploadQueueService().enqueue(QueuedUploadRequest(
+          taskId: 'pdf_${testId}_$i',
+          fileName: 'PDF: $displayName',
+          itemName: 'Supplementary PDF File',
+          bucketName: 'mock_test',
+          storagePath: pdfStoragePath,
+          fileBytes: entry.bytes,
+          filePath: entry.file.path,
+          fileType: 'mock_test_supplementary',
+          onProgress: (p) {},
+          onComplete: (path) async {
+            try {
+              await MockTestFileService.instance.addMockTestFile(
+                testId: testId,
+                storagePath: pdfStoragePath, // Wait, pdfStoragePath or path returned? path is same
+                displayName: displayName,
+                fileSizeBytes: entry.bytes.length,
+                fileOrder: i,
+                fileType: 'supplementary_pdf',
               );
-
-          await MockTestFileService.instance.addMockTestFile(
-            testId: testId,
-            storagePath: storagePath,
-            displayName: displayName,
-            fileSizeBytes: entry.bytes.length,
-            fileOrder: i,
-          );
-        } catch (e, stack) {
-          CrashlyticsService.instance.recordError(
-            e,
-            stack,
-            reason: 'Failed to upload supplementary file: $displayName',
-          );
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                    'Warning: "$displayName" upload failed. You can re-add it later.'),
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-            );
-          }
-        }
+            } catch (e, stack) {
+              CrashlyticsService.instance.recordError(e, stack,
+                  reason: 'Failed to insert supplementary DB record: $displayName');
+            }
+          },
+          onError: (err) {},
+        ));
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-                'Mock Test saved. You can safely leave the app in the background; files will continue uploading.'),
-            duration: Duration(seconds: 4),
+                'Saving Mock Test... Redirecting to upload queue monitor.'),
+            duration: Duration(seconds: 2),
           ),
         );
-        Navigator.pop(context);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AdminUploadQueueScreen(),
+          ),
+        );
       }
     } catch (e, stack) {
       CrashlyticsService.instance
@@ -684,13 +731,19 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
                                           size: 24),
                                       const SizedBox(width: AppSpacing.sm),
                                       Expanded(
-                                        child: Text(
-                                          entry.file.name,
-                                          style: theme.textTheme.bodyMedium
-                                              ?.copyWith(
-                                                  fontWeight: FontWeight.w600),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                        child: TextFormField(
+                                          controller:
+                                              entry.displayNameController,
+                                          decoration: getPremiumInputDecoration(
+                                            context,
+                                            labelText: 'Quiz Name',
+                                            prefixIcon: null,
+                                          ),
+                                          style: theme.textTheme.bodyMedium,
+                                          validator: (v) =>
+                                              v == null || v.trim().isEmpty
+                                                  ? 'Required'
+                                                  : null,
                                         ),
                                       ),
                                       const SizedBox(width: AppSpacing.sm),

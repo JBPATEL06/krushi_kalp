@@ -46,6 +46,8 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
       );
 
       final isLastPage = newItems.length < _pageSize;
+      if (!mounted) return;
+
       if (isLastPage) {
         _pagingController.appendLastPage(newItems);
       } else {
@@ -53,6 +55,7 @@ class _AdminReviewsScreenState extends State<AdminReviewsScreen> {
         _pagingController.appendPage(newItems, nextPageKey);
       }
     } catch (error, stack) {
+      if (!mounted) return;
       CrashlyticsService.instance.recordError(error, stack, reason: 'admin_reviews_fetch');
       _pagingController.error = error;
     }

@@ -58,6 +58,8 @@ class _AdminResourceListState extends State<AdminResourceList> {
       );
 
       final isLastPage = newItems.length < _pageSize;
+      if (!mounted) return;
+      
       if (isLastPage) {
         _pagingController.appendLastPage(newItems);
       } else {
@@ -65,6 +67,7 @@ class _AdminResourceListState extends State<AdminResourceList> {
         _pagingController.appendPage(newItems, nextPageKey);
       }
     } catch (error, stack) {
+      if (!mounted) return;
       CrashlyticsService.instance
           .recordError(error, stack, reason: 'admin_resource_list: _fetchPage');
       _pagingController.error = error;

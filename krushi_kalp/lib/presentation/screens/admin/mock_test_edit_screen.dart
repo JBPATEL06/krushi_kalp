@@ -574,15 +574,17 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
                                 'Current: ${extractFilename(widget.test.coverImagePath)}',
                             onPick: _pickCoverImage,
                           ),
-                          const SizedBox(height: AppSpacing.sm),
-                          _buildFilePicker(
-                            context,
-                            icon: Icons.table_chart_outlined,
-                            title: _questionsFile?.name ??
-                                'Current Questions File',
-                            onPick: _pickQuestionsFile,
-                            onDownload: _downloadCurrentJson,
-                          ),
+                          if (widget.test.filePath.isNotEmpty) ...[
+                            const SizedBox(height: AppSpacing.sm),
+                            _buildFilePicker(
+                              context,
+                              icon: Icons.table_chart_outlined,
+                              title: _questionsFile?.name ??
+                                  'Current Questions File',
+                              onPick: _pickQuestionsFile,
+                              onDownload: _downloadCurrentJson,
+                            ),
+                          ],
                           const SizedBox(height: AppSpacing.lg),
                           Text('Supplementary Files (Optional)',
                               style: theme.textTheme.titleSmall?.copyWith(

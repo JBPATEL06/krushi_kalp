@@ -16,7 +16,52 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
-- None. Plan fixes completed. Awaiting next phase.
+- **None** (All planned phases successfully completed)
+
+## Recently Completed Fixes (on `feature/nested-quizzes-refinements` branch)
+
+- **Phase 62**: Mock Test Nested Quizzes & Upload Queue Improvements ✅
+  - Solved question file enqueuing bug in `MockTestUploadScreen` to run properly in the FIFO upload queue.
+  - Integrated redirection to `AdminUploadQueueScreen` upon starting test creation uploads.
+  - Added columns `file_type` to `mock_test_files` and `mock_test_file_id` to `results` tables in database.
+  - Enabled attempting each nested quiz file individually on the user side.
+  - Added "ADD NEW QUIZ FILE" and "ADD SUPPLEMENTARY FILE" features directly inside `AdminMockTestDetailScreen` to manage files easily.
+  - Conditionally hid the legacy questions file picker in `MockTestEditScreen` if the test utilizes nested quizzes.
+  - Fixed missing `dart:io` import error in `AdminMockTestDetailScreen` to achieve 0 static analysis issues.
+
+- **Phase 61**: Home Screen Category Card Navigation Fix ✅
+  - Replaced all 4 broken category card `onTap` entitlement checks to use `purchasedResources.any((r) => r.type == ResourceType.X)`.
+  - Added `import '../../domain/models/resource.dart'` for `ResourceType` enum.
+
+- **Phase 62 (partial)**: ResourceFilesScreen AppBar title fix ✅
+  - Changed AppBar title from generic `'Resource Files'` → `r.title` (actual resource name).
+
+- **Downloads Screen Fix** ✅
+  - Rewrote `_checkDownloads()` to use `resource_file_<file.id>.pdf` (new naming convention).
+  - Added missing `fetchUserTests` guard.
+  - Legacy fallback to `resource_<id>.pdf` / `mock_test_<id>.json` preserved.
+
+- **Mock Test Upload Screen Overhaul** ✅
+  - Replaced single questions file `ListTile` with multi-file row UI (same style as supplementary).
+  - Questions picker now allows multiple `.json`/`.xlsx`/`.xls` files.
+  - All selected files processed and merged into a single JSON (Excel → JSON via `ExcelToJsonConverter`).
+  - Supplementary Files section: description text removed.
+  - Standalone `_pickSupplementaryFile` button removed.
+
+- **Admin Resource Form Overhaul** ✅
+  - ATTACHMENT section converted from single `_buildPickerTile` to multi-file row list.
+  - `_pickFile()` now allows multiple PDFs; each shown as styled row with × remove.
+  - `_removeAttachmentFile(int index)` added with primary file tracking.
+  - Removed SUPPLEMENTARY FILES (OPTIONAL) section (header + file list + Add button).
+  - Removed unused `_pickAdditionalFiles()` method and `app_radius.dart` import.
+
+- **PurchasedTestsScreen** ✅
+  - Added `foregroundColor: theme.colorScheme.onSurface` to `SliverAppBar` — fixes black title in dark mode.
+
+- **MockTestUploadScreen questions processing** ✅
+  - All selected questions files processed and merged (not just first file).
+  - JSON files decoded directly; Excel files converted via `ExcelToJsonConverter.convert()`.
+  - Error thrown per-file with filename for clear diagnostics.
 
 ## Previous Active Phase (Completed)
 - **Downloads & Upload Fixes** (Completed)
@@ -155,5 +200,5 @@ Clean Architecture:
 - **Build Version**: Incremented to `1.0.3+17` for the Google Play Store submission.
 - **Experimental Versions**: Using pre-release versions of Riverpod and Freezed may introduce unexpected behavior; monitoring is required.
 - **16KB Alignment**: Final App Bundle must be verified with `check_align.py` before submission.
-- **Active Branch**: `fix/home-library-navigation` ✅ Phase 61 complete
+- **Active Branch**: `feature/nested-quizzes-refinements`
 - **Entitlement Source of Truth**: Always use `purchasedResources` (from `access` table) for any check that determines whether a user has access to a category. Never use the public store lists (`ebooks`, `studyMaterials`, etc.) for entitlement checks — they exclude non-public items.

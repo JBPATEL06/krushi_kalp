@@ -25,6 +25,7 @@ class MockTestFilesScreen extends ConsumerStatefulWidget {
 }
 
 class _MockTestFilesScreenState extends ConsumerState<MockTestFilesScreen> {
+  List<MockTestFile> _quizzes = [];
   List<MockTestFile> _supplementaryFiles = [];
   bool _isLoading = true;
 
@@ -39,7 +40,8 @@ class _MockTestFilesScreenState extends ConsumerState<MockTestFilesScreen> {
       final files = await MockTestFileService.instance.fetchMockTestFiles(widget.test.id);
       if (mounted) {
         setState(() {
-          _supplementaryFiles = files;
+          _quizzes = files.where((f) => f.isQuiz).toList();
+          _supplementaryFiles = files.where((f) => !f.isQuiz).toList();
           _isLoading = false;
         });
       }
@@ -175,34 +177,101 @@ class _MockTestFilesScreenState extends ConsumerState<MockTestFilesScreen> {
               ),
               const SizedBox(height: AppSpacing.xl),
 
-              // ATTEMPT PRIMARY ACTION
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    await ExamHelper.startExam(context, t);
-                  },
-                  icon: Icon(Icons.play_arrow_rounded, color: colorScheme.onPrimary, size: context.sp(24)),
-                  label: Text(
-                    'ATTEMPT MOCK TEST',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: context.sp(16),
-                      letterSpacing: 1.1,
+              // Fallback single ATTEMPT Mock Test button if there are no new quiz files but there is a legacy filePath
+              if (_quizzes.isEmpty && t.filePath.isNotEmpty) ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      await ExamHelper.startExam(context, t);
+                    },
+                    icon: Icon(Icons.play_arrow_rounded, color: colorScheme.onPrimary, size: context.sp(24)),
+                    label: Text(
+                      'ATTEMPT MOCK TEST',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: context.sp(16),
+                        letterSpacing: 1.1,
+                      ),
                     ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: colorScheme.onPrimary,
-                    elevation: 1,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: AppSpacing.xl),
+              ],
+
+              // QUIZZES SECTION (if there are new quiz files)
+              if (_quizzes.isNotEmpty) ...[
+                Text(
+                  'QUIZZES',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurfaceVariant,
+                    letterSpacing: 1.2,
+                    fontSize: context.sp(12),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _quizzes.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.sm),
+                  itemBuilder: (context, index) {
+                    final file = _quizzes[index];
+                    return Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.quiz_outlined, color: colorScheme.primary, size: context.sp(26)),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Text(
+                              file.displayName,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: context.sp(14),
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          ElevatedButton(
+                            onPressed: () async {
+                              await ExamHelper.startExamFromFile(context, t, file);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: colorScheme.onPrimary,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(AppRadius.md),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            ),
+                            child: const Text('Attempt'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: AppSpacing.xl),
+              ],
 
               // SUPPLEMENTARY FILES
               Text(

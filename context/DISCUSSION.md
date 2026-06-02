@@ -2,6 +2,65 @@
 
 [... previous logs ...]
 
+## [Phase 62: Mock Test Nested Quizzes & Upload Refinements]
+
+### Goal
+1. Questions files selected in `mock_test_upload_screen.dart` are enqueued into `UploadQueueService` FIFO queue.
+2. The app redirects to `AdminUploadQueueScreen` to show progress after upload starts.
+3. Remove compilation errors and add details screen/edit screen improvements for nested quiz files.
+
+### Branch
+`feature/nested-quizzes-refinements` (new branch carrying over local state)
+
+### Status
+Completed ✅
+
+### Decisions & Changes Made
+- Deployed database table adjustments: added `file_type` to `mock_test_files` and `mock_test_file_id` to `results` with cascade constraints.
+- Integrated upload queue redirection and file-by-file upload flow.
+- Added `import 'dart:io';` to `admin_mock_test_detail_screen.dart` resolving undefined `File` class compile crash.
+- Added "ADD NEW QUIZ FILE" and "ADD SUPPLEMENTARY FILE" buttons directly inside `AdminMockTestDetailScreen` to manage quizzes and PDFs natively.
+- Modified `mock_test_edit_screen.dart` to hide legacy single-file questions picker for nested quizzes.
+- All compilation tasks resolved with zero warnings.
+
+---
+
+## [Recent Fixes — fix/home-library-navigation branch]
+
+### ResourceFilesScreen — AppBar Title Fix
+- Changed `title: Text('Resource Files', ...)` → `title: Text(r.title, ...)` with ellipsis overflow.
+- `dart analyze` → 0 issues ✅
+
+### Downloads Screen Fix
+- Rewrote `_checkDownloads()` to check `resource_file_<file.id>.pdf` (new multi-file naming).
+- Added missing `fetchUserTests` guard for mock tests.
+- Legacy fallback: `resource_<id>.pdf` and `mock_test_<id>.json` for items with no supplementary files.
+- Added `ResourceService` and `MockTestFileService` imports.
+- `dart analyze` → 0 issues ✅
+
+### Mock Test Upload Screen Overhaul
+- Replaced single questions `ListTile` with multi-file row list (icon + filename + × remove).
+- `_pickQuestionsFile()` now multi-select (json/xlsx/xls).
+- Added `_removeQuestionsFile(int index)`.
+- Added `_QuestionsFileEntry` class.
+- Questions processing: loops all files, merges JSON lists + converts Excel → JSON via `ExcelToJsonConverter`.
+- Removed description text from Supplementary Files section.
+- Removed standalone `_pickSupplementaryFile()` and "Add PDF File(s)" button.
+- `dart analyze` → 0 issues ✅
+
+### Admin Resource Form Overhaul
+- ATTACHMENT: converted from single `_buildPickerTile` → multi-file row list + "Add PDF File(s)" button.
+- `_pickFile()`: multi-select PDFs, adds to `_pendingFiles`, tracks primary for `file_url` DB field.
+- `_removeAttachmentFile(int index)`: removes file, updates primary if needed.
+- Removed SUPPLEMENTARY FILES (OPTIONAL) section (header + list + "ADD SUPPLEMENTARY FILE" button).
+- Removed `_pickAdditionalFiles()` method and unused `app_radius.dart` import.
+- `dart analyze` → 0 issues ✅
+
+### PurchasedTestsScreen — Dark Mode Title Fix
+- Added `foregroundColor: theme.colorScheme.onSurface` to `SliverAppBar`.
+- Fixes black title text in dark mode.
+- `dart analyze` → 0 issues ✅
+
 ---
 
 ## [Downloads Screen Fix + Mock Test Multi-File Upload]

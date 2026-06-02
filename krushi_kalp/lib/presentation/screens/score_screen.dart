@@ -55,6 +55,8 @@ class _ScoreScreenState extends ConsumerState<ScoreScreen> {
       );
 
       final isLastPage = newItems.length < _pageSize;
+      if (!mounted) return;
+
       if (isLastPage) {
         _pagingController.appendLastPage(newItems);
       } else {
@@ -62,6 +64,7 @@ class _ScoreScreenState extends ConsumerState<ScoreScreen> {
         _pagingController.appendPage(newItems, nextPageKey);
       }
     } catch (error, stack) {
+      if (!mounted) return;
       CrashlyticsService.instance.recordError(error, stack, reason: 'score_screen_fetch');
       _pagingController.error = error;
     }

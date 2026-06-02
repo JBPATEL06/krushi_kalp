@@ -28,8 +28,10 @@ Future<void> initializeService() async {
   await service.configure(
     androidConfiguration: AndroidConfiguration(
       onStart: onStart,
-      autoStart: false,         // Disable autoStart to prevent Android 14 Foreground crash!
-      isForegroundMode: false,  // Will be dynamically promoted when upload begins
+      autoStart:
+          false, // Disable autoStart to prevent Android 14 Foreground crash!
+      isForegroundMode:
+          false, // Will be dynamically promoted when upload begins
       notificationChannelId: 'krushi_background_service',
       initialNotificationTitle: 'Krushi Kalp',
       initialNotificationContent: 'Preparing file transfer...',
@@ -52,7 +54,7 @@ Future<bool> onIosBackground(ServiceInstance service) async {
 void onStart(ServiceInstance service) async {
   // 1. Minimum initialization for background life-cycle
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   if (service is AndroidServiceInstance) {
     service.on('setAsForeground').listen((event) {
       service.setAsForegroundService();
@@ -65,7 +67,8 @@ void onStart(ServiceInstance service) async {
     // ── REAL-TIME PROGRESS UPDATE ──────────────────────────────────────────
     service.on('updateProgress').listen((event) {
       if (event != null) {
-        final title = event['title'] as String? ?? 'Krushi Kalp Transfer Service';
+        final title =
+            event['title'] as String? ?? 'Krushi Kalp Transfer Service';
         final content = event['content'] as String? ?? 'Processing...';
         service.setForegroundNotificationInfo(
           title: title,
@@ -124,7 +127,7 @@ void main() {
     debugPrint('CRITICAL STARTUP ERROR: $error');
     debugPrint('STACK TRACE: $stack');
     debugPrint('──────────────────────────────────────────────────────────');
-    
+
     try {
       CrashlyticsService.instance.recordError(error, stack, fatal: true);
     } catch (e) {

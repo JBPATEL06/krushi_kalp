@@ -160,6 +160,8 @@ class _PurchasedItemsTabState extends State<_PurchasedItemsTab> with AutomaticKe
       );
 
       final isLastPage = newItems.length < _pageSize;
+      if (!mounted) return;
+
       if (isLastPage) {
         _pagingController.appendLastPage(newItems);
       } else {
@@ -167,6 +169,7 @@ class _PurchasedItemsTabState extends State<_PurchasedItemsTab> with AutomaticKe
         _pagingController.appendPage(newItems, nextPageKey);
       }
     } catch (error) {
+      if (!mounted) return;
       _pagingController.error = error;
     }
   }
@@ -387,6 +390,8 @@ class _AttemptsTabState extends State<_AttemptsTab> with AutomaticKeepAliveClien
       );
 
       final isLastPage = newResults.length < _pageSize;
+      if (!mounted) return;
+
       if (isLastPage) {
         _pagingController.appendLastPage(newResults);
       } else {
@@ -394,6 +399,7 @@ class _AttemptsTabState extends State<_AttemptsTab> with AutomaticKeepAliveClien
         _pagingController.appendPage(newResults, nextPageKey);
       }
     } catch (error) {
+      if (!mounted) return;
       _pagingController.error = error;
     }
   }

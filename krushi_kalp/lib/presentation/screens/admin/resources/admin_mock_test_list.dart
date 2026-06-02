@@ -86,6 +86,8 @@ class AdminMockTestListState extends State<AdminMockTestList> {
       );
 
       final isLastPage = newItems.length < _pageSize;
+      if (!mounted) return;
+
       if (isLastPage) {
         _pagingController.appendLastPage(newItems);
       } else {
@@ -93,6 +95,7 @@ class AdminMockTestListState extends State<AdminMockTestList> {
         _pagingController.appendPage(newItems, nextPageKey);
       }
     } catch (error, stack) {
+      if (!mounted) return;
       CrashlyticsService.instance
           .recordError(error, stack, reason: 'admin_mock_test_list: _fetchPage');
       _pagingController.error = error;
