@@ -219,6 +219,10 @@ class _ExamScreenState extends State<ExamScreen> {
           authUserId: user.id,
           language: widget.examLanguage,
           mockTestFileId: widget.mockTestFileId,
+          correctAnswers: correctCount,
+          incorrectAnswers: wrongCount,
+          skippedAnswers: _questions.length - (correctCount + wrongCount),
+          timeTakenSeconds: timeTaken,
         );
       }
 

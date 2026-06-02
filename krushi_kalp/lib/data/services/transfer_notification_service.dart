@@ -91,41 +91,8 @@ class TransferNotificationService {
     required String fileName,
     required double progress,
   }) async {
-    if (_plugin == null) return;
-    final id = _notifId(taskId);
-    final percent = (progress * 100).toInt();
-
-    await _plugin!.show(
-      id,
-      'Uploading $fileName',
-      '$percent% complete',
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _uploadChannelId,
-          _uploadChannelName,
-          channelDescription: _uploadChannelDesc,
-          importance: Importance.high,
-          priority: Priority.high,
-          showProgress: true,
-          maxProgress: 100,
-          progress: percent,
-          indeterminate: false,
-          ongoing: true,
-          autoCancel: false,
-          onlyAlertOnce: true, // Only alert (sound/vibrate) once per task
-          showWhen: true,
-          playSound: false,
-          enableVibration: false,
-          icon: 'ic_notification',
-          ticker: 'Uploading $fileName...',
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: false, // Silent during progress on iOS
-          presentBadge: false,
-          presentSound: false,
-        ),
-      ),
-    );
+    // Disabled as requested
+    return;
   }
 
   /// Shows a success notification for an upload, replacing the progress bar.
@@ -133,31 +100,8 @@ class TransferNotificationService {
     required String taskId,
     required String fileName,
   }) async {
-    if (_plugin == null) return;
-    final id = _notifId(taskId);
-    await _plugin!.cancel(id); // Cancel progress notification first
-
-    await _plugin!.show(
-      id,
-      'Upload Complete ✓',
-      '$fileName uploaded successfully',
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _uploadChannelId,
-          _uploadChannelName,
-          channelDescription: _uploadChannelDesc,
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
-          ongoing: false,
-          autoCancel: true,
-          icon: 'ic_notification',
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentSound: true,
-        ),
-      ),
-    );
+    // Disabled as requested
+    return;
   }
 
   /// Shows a failure notification for an upload.
@@ -166,32 +110,8 @@ class TransferNotificationService {
     required String fileName,
     required String error,
   }) async {
-    if (_plugin == null) return;
-    final id = _notifId(taskId);
-    await _plugin!.cancel(id);
-
-    await _plugin!.show(
-      id,
-      'Upload Failed ✗',
-      '$fileName could not be uploaded. Tap to retry.',
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          _uploadChannelId,
-          _uploadChannelName,
-          channelDescription: _uploadChannelDesc,
-          importance: Importance.high,
-          priority: Priority.high,
-          ongoing: false,
-          autoCancel: true,
-          icon: 'ic_notification',
-        ),
-        iOS: const DarwinNotificationDetails(
-          presentAlert: true,
-          presentSound: true,
-        ),
-      ),
-      payload: 'upload_retry__$taskId',
-    );
+    // Disabled as requested
+    return;
   }
 
   // ── DOWNLOAD NOTIFICATIONS (USER) ─────────────────────────────────────────

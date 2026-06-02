@@ -9,6 +9,10 @@ class TestResult {
   final DateTime attemptDate;
   final String language;
   final int? mockTestFileId;
+  final int? correctAnswers;
+  final int? incorrectAnswers;
+  final int? skippedAnswers;
+  final int? timeTakenSeconds;
 
   TestResult({
     required this.resultId,
@@ -21,6 +25,10 @@ class TestResult {
     required this.attemptDate,
     this.language = 'en',
     this.mockTestFileId,
+    this.correctAnswers,
+    this.incorrectAnswers,
+    this.skippedAnswers,
+    this.timeTakenSeconds,
   });
 
   factory TestResult.fromJson(Map<String, dynamic> json) {
@@ -62,6 +70,10 @@ class TestResult {
       attemptDate: DateTime.parse(json['attempt_date'] as String).toLocal(),
       language: json['language'] as String? ?? 'en',
       mockTestFileId: json['mock_test_file_id'] as int?,
+      correctAnswers: json['correct_answers'] as int?,
+      incorrectAnswers: json['incorrect_answers'] as int?,
+      skippedAnswers: json['skipped_answers'] as int?,
+      timeTakenSeconds: json['time_taken_seconds'] as int?,
     );
   }
 }

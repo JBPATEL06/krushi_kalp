@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,8 +10,6 @@ import 'pdf_viewer_screen.dart';
 import 'test_analysis_screen.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_radius.dart';
-import '../../data/services/review_service.dart';
-import '../widgets/reviews/review_dialog.dart';
 import 'main_screen.dart';
 import '../../data/services/test_service.dart';
 import '../../utils/error_utils.dart';
@@ -67,8 +66,11 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
   bool _isPdfSaved = false;
   bool _isCancelled = false;
   bool _isDiscarding = false;
-
   bool _isOffline = false;
+
+  File? _generatedFile;
+  bool _isPdfUploaded = false;
+  bool _isGeneratingInBackground = false;
 
   @override
   void initState() {
@@ -90,6 +92,125 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
     }
     _scoreAnimationController.forward();
     _checkConnectivity();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startBackgroundPdfGeneration();
+    });
+  }
+
+  Future<void> _startBackgroundPdfGeneration() async {
+    if (widget.resultId == null) return; // Cannot upload without result ID
+    if (mounted) {
+      setState(() {
+        _isGeneratingInBackground = true;
+      });
+    }
+
+    try {
+      final authState = ref.read(authProvider);
+      final user = authState.user;
+      final userId = user?.id ?? 'guest_user';
+      final userName = authState.username ?? 'User';
+
+      List<Question>? finalQuestions = widget.questions != null
+          ? (widget.questions as List).cast<Question>()
+          : null;
+
+      final file = await _pdfService.generateExamResultPdf(
+        testId: widget.testId,
+        testTitle: widget.testTitle,
+        score: widget.score,
+        totalMarks: widget.totalMarks,
+        correctAnswers: widget.correctAnswers ?? 0,
+        wrongAnswers: widget.wrongAnswers ?? 0,
+        skippedAnswers: widget.skippedAnswers ?? 0,
+        userId: userId,
+        userName: userName,
+        questions: finalQuestions,
+        selectedAnswers: widget.selectedAnswers,
+        languageCode: widget.examLanguage,
+      );
+
+      _generatedFile = file;
+
+      // Upload to database if online
+      if (!_isOffline) {
+        final String storagePath = 'exam_result/${widget.resultId}.pdf';
+        await TestService.instance.uploadResultPdf(storagePath, file);
+        _isPdfUploaded = true;
+        _isPdfSaved = true;
+      } else {
+        _isPdfSaved = true;
+      }
+
+      // Update user streak in the background
+      PerformanceService.instance
+          .updateUserStreak(
+            userId,
+            widget.timeTakenSeconds,
+            'test_attempt',
+          )
+          .ignore();
+    } catch (e, stack) {
+      debugPrint('Background PDF Generation failed: $e');
+      CrashlyticsService.instance.recordError(e, stack, reason: 'Background PDF Generation/Upload failure');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingInBackground = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleViewPdfClick() async {
+    // If it's already generating in the background, show generating progress in UI
+    if (_isGeneratingInBackground) {
+      setState(() {
+        _isGeneratingPdf = true;
+      });
+      // Wait for background generation to finish
+      while (_isGeneratingInBackground) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+      if (mounted) {
+        setState(() {
+          _isGeneratingPdf = false;
+        });
+      }
+    }
+
+    if (_generatedFile != null) {
+      final authState = ref.read(authProvider);
+      final user = authState.user;
+      final userId = user?.id ?? 'guest_user';
+
+      // Attempt upload if not uploaded yet and we are online
+      if (!_isPdfUploaded && !_isOffline && widget.resultId != null) {
+        try {
+          final String storagePath = 'exam_result/${widget.resultId}.pdf';
+          await TestService.instance.uploadResultPdf(storagePath, _generatedFile!);
+          _isPdfUploaded = true;
+          _isPdfSaved = true;
+        } catch (_) {}
+      }
+
+      if (!mounted) return;
+      final password = _pdfService.getSecurePassword(userId, widget.testTitle);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PdfViewerScreen(
+            file: _generatedFile!,
+            password: password,
+            title: 'Result PDF',
+          ),
+        ),
+      );
+    } else {
+      // Fallback: if background generation failed or did not run, generate on-demand
+      await _generateAndUploadPdf();
+    }
   }
 
   Future<void> _checkConnectivity() async {
@@ -513,7 +634,7 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                               ElevatedButton(
                                 onPressed: _isGeneratingPdf
                                     ? null
-                                    : _generateAndUploadPdf,
+                                    : _handleViewPdfClick,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: theme.colorScheme.primary,
                                   foregroundColor: theme.colorScheme.onPrimary,
@@ -593,12 +714,12 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                     ),
                   ),
                   SizedBox(height: context.h(AppSpacing.lg)),
-                  if (!_isOffline)
-                    Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                      child: _buildRatingSection(),
-                    ),
+                  // if (!_isOffline)
+                  //   Padding(
+                  //     padding:
+                  //         const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  //     child: _buildRatingSection(),
+                  //   ),
                   SizedBox(height: context.h(AppSpacing.lg)),
                   if (widget.questions != null &&
                       widget.selectedAnswers != null)
@@ -818,109 +939,6 @@ class _TestResultScreenState extends ConsumerState<TestResultScreen>
                   fontWeight: FontWeight.bold,
                   fontSize: context.sp(24))),
         ],
-      ),
-    );
-  }
-
-  bool _hasRated = false;
-  bool _isLoadingRating = true;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _checkExistingRating();
-  }
-
-  Future<void> _checkExistingRating() async {
-    if (!_isLoadingRating) return;
-    final authState = ref.read(authProvider);
-    final user = authState.user;
-    if (user == null) {
-      if (mounted) setState(() => _isLoadingRating = false);
-      return;
-    }
-    try {
-      int? tId = int.tryParse(widget.testId);
-      if (tId != null) {
-        final review = await ReviewService.getUserReview(user.id, tId, 'test');
-        if (mounted) {
-          setState(() {
-            _hasRated = review != null;
-            _isLoadingRating = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() => _isLoadingRating = false);
-      }
-    } catch (_) {
-      if (mounted) setState(() => _isLoadingRating = false);
-    }
-  }
-
-  Widget _buildRatingSection() {
-    if (_isLoadingRating) return const SizedBox.shrink();
-    if (_hasRated) {
-      final theme = Theme.of(context);
-      return Container(
-        width: double.infinity,
-        padding: EdgeInsets.all(context.w(AppSpacing.md)),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.secondary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(
-              color: theme.colorScheme.secondary.withValues(alpha: 0.2)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle_outline,
-                color: theme.colorScheme.secondary, size: context.sp(20)),
-            SizedBox(width: context.w(AppSpacing.sm)),
-            Text("Thanks for your feedback!",
-                style: TextStyle(
-                    color: theme.colorScheme.secondary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: context.sp(14))),
-          ],
-        ),
-      );
-    }
-    final theme = Theme.of(context);
-    return SizedBox(
-      width: double.infinity,
-      child: TextButton.icon(
-        onPressed: () => _showRatingDialog(),
-        icon: Icon(Icons.star_rate_rounded, color: theme.colorScheme.secondary),
-        label: Text('Rate this Test',
-            style: TextStyle(
-                fontSize: context.sp(16),
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface)),
-        style: TextButton.styleFrom(
-          padding: EdgeInsets.symmetric(vertical: context.h(16)),
-          backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.1),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.xl)),
-        ),
-      ),
-    );
-  }
-
-  void _showRatingDialog() {
-    final authState = ref.read(authProvider);
-    final user = authState.user;
-    if (user == null) return;
-    int? tId = int.tryParse(widget.testId);
-    if (tId == null) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => ReviewDialog(
-        title: widget.testTitle,
-        onSubmit: (rating, review) async {
-          // Actual submission logic if needed, or just callback
-          setState(() => _hasRated = true);
-        },
       ),
     );
   }

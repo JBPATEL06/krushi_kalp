@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../domain/models/resource.dart';
 import '../../domain/models/mock_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -120,9 +120,11 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
           final files = await MockTestFileService.instance.fetchMockTestFiles(t.id);
           if (files.isNotEmpty) {
             for (final file in files) {
-              final filename = 'mock_test_file_${file.id}.pdf';
-              final exists = await downloadService.isFileDownloaded(filename, userId: userId);
-              if (exists) return MapEntry<String, bool>('test_${t.id}', true);
+              final pdfFilename = 'mock_test_file_${file.id}.pdf';
+              final jsonFilename = 'mock_test_quiz_${file.id}.json';
+              final pdfExists = await downloadService.isFileDownloaded(pdfFilename, userId: userId);
+              final jsonExists = await downloadService.isFileDownloaded(jsonFilename, userId: userId);
+              if (pdfExists || jsonExists) return MapEntry<String, bool>('test_${t.id}', true);
             }
             return MapEntry<String, bool>('test_${t.id}', false);
           } else {
@@ -223,10 +225,30 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
       setState(() => _isLoading = true);
       final ds = DownloadService();
       for (final id in _selectedItems) {
-        final filename = id.startsWith('res_')
-            ? 'resource_${id.replaceFirst('res_', '')}.pdf'
-            : 'mock_test_${id.replaceFirst('test_', '')}.json';
-        await ds.deleteFile(filename, userId: user.id);
+        if (id.startsWith('res_')) {
+          final resId = int.tryParse(id.replaceFirst('res_', ''));
+          if (resId != null) {
+            await ds.deleteFile('resource_$resId.pdf', userId: user.id);
+            try {
+              final files = await ResourceService.instance.fetchResourceFiles(resId);
+              for (final file in files) {
+                await ds.deleteFile('resource_file_${file.id}.pdf', userId: user.id);
+              }
+            } catch (_) {}
+          }
+        } else if (id.startsWith('test_')) {
+          final testId = int.tryParse(id.replaceFirst('test_', ''));
+          if (testId != null) {
+            await ds.deleteFile('mock_test_$testId.json', userId: user.id);
+            try {
+              final files = await MockTestFileService.instance.fetchMockTestFiles(testId);
+              for (final file in files) {
+                await ds.deleteFile('mock_test_file_${file.id}.pdf', userId: user.id);
+                await ds.deleteFile('mock_test_quiz_${file.id}.json', userId: user.id);
+              }
+            } catch (_) {}
+          }
+        }
       }
       _selectedItems.clear();
       _isSelectionMode = false;

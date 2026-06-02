@@ -7,9 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../utils/crashlytics_service.dart';
 import '../../utils/retry_helper.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import '../../core/env/env.dart';
 import 'package:flutter/material.dart' show debugPrint;
-import 'transfer_notification_service.dart';
 
 /// Status of an upload task managed by [BackgroundUploadService].
 enum UploadTaskStatus { pending, uploading, completed, failed }
@@ -170,7 +168,7 @@ class BackgroundUploadService {
     _cancelIdleWatchdog();
     final id = taskId ?? const Uuid().v4();
     final sanitizedPath = _sanitizePath(storagePath);
-    final bgService = FlutterBackgroundService();
+    // final bgService = FlutterBackgroundService();
 
     String? finalFilePath = filePath;
 
@@ -204,32 +202,32 @@ class BackgroundUploadService {
     };
     
     // 1. Initial notification feedback
-    try {
-      TransferNotificationService().showUploadProgress(
-        taskId: id,
-        fileName: fileName,
-        progress: 0.05,
-      );
-    } catch (_) {}
+    // try {
+    //   TransferNotificationService().showUploadProgress(
+    //     taskId: id,
+    //     fileName: fileName,
+    //     progress: 0.05,
+    //   );
+    // } catch (_) {}
 
     // 2. Background Upload Execution (UI Isolate)
     unawaited(() async {
       Timer? progressTimer;
       double progress = 0.05;
-      double lastNotifiedProgress = 0.0;
+      // double lastNotifiedProgress = 0.0;
 
       try {
         // Ensure background service is running for foreground presence
-        bool isRunning = await bgService.isRunning();
-        if (!isRunning) {
-          await bgService.startService();
-          int retries = 0;
-          while (!(await bgService.isRunning()) && retries < 15) {
-            await Future.delayed(const Duration(milliseconds: 100));
-            retries++;
-          }
-        }
-        bgService.invoke('setAsForeground');
+        // bool isRunning = await bgService.isRunning();
+        // if (!isRunning) {
+        //   await bgService.startService();
+        //   int retries = 0;
+        //   while (!(await bgService.isRunning()) && retries < 15) {
+        //     await Future.delayed(const Duration(milliseconds: 100));
+        //     retries++;
+        //   }
+        // }
+        // bgService.invoke('setAsForeground');
 
         // Progress simulation
         progressTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
@@ -237,14 +235,14 @@ class BackgroundUploadService {
             final remaining = 1.0 - progress;
             progress += remaining * 0.05;
             
-            if (progress - lastNotifiedProgress >= 0.10 || progress >= 0.99) {
-              final percent = (progress * 100).toInt();
-              bgService.invoke('updateProgress', {
-                'title': 'Uploading... $percent%',
-                'content': itemName,
-              });
-              lastNotifiedProgress = progress;
-            }
+            // if (progress - lastNotifiedProgress >= 0.10 || progress >= 0.99) {
+            //   final percent = (progress * 100).toInt();
+            //   bgService.invoke('updateProgress', {
+            //     'title': 'Uploading... $percent%',
+            //     'content': itemName,
+            //   });
+            //   lastNotifiedProgress = progress;
+            // }
             
             task.progress = progress;
             onProgress(progress);
@@ -285,10 +283,10 @@ class BackgroundUploadService {
 
         // Cleanup and Success
         progressTimer.cancel();
-        bgService.invoke('clearProgress', {
-          'content': '✓ $itemName uploaded successfully',
-        });
-        TransferNotificationService().showUploadSuccess(taskId: id, fileName: fileName);
+        // bgService.invoke('clearProgress', {
+        //   'content': '✓ $itemName uploaded successfully',
+        // });
+        // TransferNotificationService().showUploadSuccess(taskId: id, fileName: fileName);
         
         task.status = UploadTaskStatus.completed;
         task.completedPath = sanitizedPath;
@@ -299,10 +297,10 @@ class BackgroundUploadService {
         progressTimer?.cancel();
         CrashlyticsService.instance.recordError(e, stack, reason: 'Upload failed: $itemName');
         
-        bgService.invoke('clearProgress', {
-          'content': '✗ $itemName upload failed',
-        });
-        TransferNotificationService().showUploadFailure(taskId: id, fileName: fileName, error: e.toString());
+        // bgService.invoke('clearProgress', {
+        //   'content': '✗ $itemName upload failed',
+        // });
+        // TransferNotificationService().showUploadFailure(taskId: id, fileName: fileName, error: e.toString());
         
         task.status = UploadTaskStatus.failed;
         task.errorMessage = e.toString();

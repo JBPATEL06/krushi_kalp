@@ -310,6 +310,10 @@ class TestService {
     required String authUserId,
     required String language,
     int? mockTestFileId,
+    int? correctAnswers,
+    int? incorrectAnswers,
+    int? skippedAnswers,
+    int? timeTakenSeconds,
   }) async {
     try {
       final Map<String, dynamic> insertData = {
@@ -323,6 +327,18 @@ class TestService {
 
       if (mockTestFileId != null) {
         insertData['mock_test_file_id'] = mockTestFileId;
+      }
+      if (correctAnswers != null) {
+        insertData['correct_answers'] = correctAnswers;
+      }
+      if (incorrectAnswers != null) {
+        insertData['incorrect_answers'] = incorrectAnswers;
+      }
+      if (skippedAnswers != null) {
+        insertData['skipped_answers'] = skippedAnswers;
+      }
+      if (timeTakenSeconds != null) {
+        insertData['time_taken_seconds'] = timeTakenSeconds;
       }
 
       final response = await _supabase
@@ -803,7 +819,7 @@ class TestService {
         () => _supabase.storage.from('mock_test').upload(
               path,
               file,
-              fileOptions: const FileOptions(upsert: true),
+              fileOptions: const FileOptions(upsert: true, contentType: 'application/pdf'),
             ),
         maxRetries: 3,
         timeout:
