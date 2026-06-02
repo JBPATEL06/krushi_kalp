@@ -16,7 +16,13 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
-- None. Phase 61 completed. Awaiting next phase.
+- None. Plan fixes completed. Awaiting next phase.
+
+## Previous Active Phase (Completed)
+- **Downloads & Upload Fixes** (Completed)
+  - **Bug 1 — Downloads Screen Empty List**: Rewrote `_checkDownloads()` in `downloads_screen.dart` to check `resource_file_<file.id>.pdf` (new naming) instead of `resource_<id>.pdf` (old naming). Added legacy fallback for resources with no supplementary files. Added missing `fetchUserTests` guard so mock tests load even when navigating to Downloads tab before they are fetched. All checks run in parallel.
+  - **Bug 2 — Mock Test Multi-File Upload**: Added `_SupplementaryFileEntry` class, `_supplementaryFiles` state, `_pickSupplementaryFile()`, `_removeSupplementaryFile()` methods, and supplementary file upload loop in `_uploadMockTest()` to `mock_test_upload_screen.dart`. Admins can now add multiple PDFs (answer keys, solutions, notes) during mock test creation.
+  - **Branch**: `fix/home-library-navigation` ✅ committed & pushed.
 
 ## Previous Active Phase (Completed)
 - **Phase 61**: Home Screen Category Card Navigation Fix (Completed)

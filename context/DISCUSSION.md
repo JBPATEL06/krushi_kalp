@@ -4,7 +4,41 @@
 
 ---
 
-## [Phase 61: Home Screen Category Card Navigation Fix]
+## [Downloads Screen Fix + Mock Test Multi-File Upload]
+### Goal
+Fix downloads screen always showing empty list, and add supplementary PDF upload support to mock test creation.
+
+### Branch
+`fix/home-library-navigation` (continuing on same branch)
+
+### Bug 1 — Downloads Screen Empty List
+**Root Cause**: `_checkDownloads()` was checking `resource_<id>.pdf` and `mock_test_<id>.json` (old filenames) but downloads now save as `resource_file_<file.id>.pdf` and `mock_test_file_<file.id>.pdf` (new multi-file naming). Also missing `fetchUserTests` guard — if navigated to Downloads before tests loaded, list was always empty.
+
+**Fix Applied**:
+- Added `import '../../data/services/resource_service.dart'` and `'../../data/services/mock_test_file_service.dart'` to `downloads_screen.dart`.
+- Rewrote `_checkDownloads()`: for each resource, calls `ResourceService.instance.fetchResourceFiles(r.id)` and checks `resource_file_<file.id>.pdf` for each. Legacy fallback to `resource_<id>.pdf` if no supplementary files exist.
+- For each test, calls `MockTestFileService.instance.fetchMockTestFiles(t.id)` and checks `mock_test_file_<file.id>.pdf`. Legacy fallback to `mock_test_<id>.json`.
+- Added `fetchUserTests` guard (mirrors existing `fetchPurchasedResources` guard).
+- All checks run in parallel via `Future.wait`.
+
+### Bug 2 — Mock Test Multi-File Upload
+**Root Cause**: `mock_test_upload_screen.dart` had no UI or logic for supplementary PDF uploads during test creation.
+
+**Fix Applied**:
+- Added `import '../../data/services/mock_test_file_service.dart'` and `'../../core/theme/app_radius.dart'`.
+- Added `_SupplementaryFileEntry` private class with `file`, `bytes`, `displayNameController`, and `dispose()`.
+- Added `_supplementaryFiles` list state variable.
+- Added `_pickSupplementaryFile()` — multi-select PDF picker, reads bytes, pre-fills display name from filename.
+- Added `_removeSupplementaryFile(int index)` — removes entry and disposes controller.
+- Updated `dispose()` — disposes all supplementary file controllers and all form controllers.
+- Updated `_uploadMockTest()` — after JSON enqueue, synchronously uploads each supplementary PDF to `mock_test_supplementary/<testId>/<timestamp>_<name>.pdf` and inserts `mock_test_files` DB record. Non-fatal: shows snackbar warning on per-file failure.
+- Added "Supplementary Files (Optional)" UI section in `build()` between questions picker and upload button.
+
+### Verification
+- `dart analyze downloads_screen.dart mock_test_upload_screen.dart` → 0 issues ✅
+- Both files committed to `fix/home-library-navigation` ✅
+
+---
 ### Goal
 Fix all Home Screen category card `onTap` callbacks so that users with manual access grants to non-public resources are correctly redirected to their Library (`MyResourcesScreen`) instead of the Store (`StoreScreen`).
 
