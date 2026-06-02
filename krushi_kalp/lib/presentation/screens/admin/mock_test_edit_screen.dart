@@ -298,10 +298,10 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
 
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final cleanName = pFile.name.replaceAll(RegExp(r'[^\w\.-]'), '_');
-        final storagePath = 'resources/${widget.test.id}/file_${timestamp}_$cleanName';
+        final storagePath = 'resources/${widget.test.id}/file_${timestamp}_${i}_$cleanName';
 
         UploadQueueService().enqueue(QueuedUploadRequest(
-          taskId: 'mock_test_supplementary_${widget.test.id}_$timestamp',
+          taskId: 'mock_test_supplementary_${widget.test.id}_${timestamp}_$i',
           fileName: pFile.name,
           itemName: 'Supplementary File',
           bucketName: 'mock_test',

@@ -16,11 +16,26 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
-- **Phase 58**: Cross-Drive Cache Compilation Fix (Completed)
-  - Resolved Kotlin compilation different-roots error (`IllegalArgumentException`) by creating `F:\gradleAppRun` on the `F:` drive, migrating `C:\Users\Jeel\.gradle` and `C:\Users\Jeel\AppData\Local\Pub\Cache` contents there, and setting user environment variables `GRADLE_USER_HOME` and `PUB_CACHE` to persist cache on the `F:` drive.
-  - **Branch**: `fix/android-jvm-ndk-compat`
+- **Phase 60**: eBook Multi-Uploads, Access Visibility, Admin PDF Downloads, and Sales Discrepancy Fixes (Completed)
+  - Resolved multi-file upload limit bug by appending the loop index `i` to the upload `taskId` in both `AdminResourceForm` and `MockTestEditScreen` to prevent FIFO queue deduplication.
+  - Fixed manual access library visibility bug for non-public eBooks/tests (where `resources.is_active = false` or `mock_tests.is_public = false` but user entitlement `access.is_active = true`) by fetching the live database snapshot dynamically in `AdminGrantAccessScreen` before storing the entitlement in the `access` table. This allows the student's Library screen to cleanly fall back on the snapshot when visibility is toggled off.
+  - Fixed admin PDF download failure in `ResourceHelper.openResource` by fetching a fresh signed URL from Supabase dynamically using `SupabaseUrlHelper` prior to download initialization.
+  - Aligned resource and test sales calculations in `AdminService` to check for `access_type = 'paid'` to filter out free claims and manual admin grants from the sales count.
+  - Built the new admin queue monitor screen `AdminUploadQueueScreen` displaying real-time upload progress with cancellation options, adding a quick access dashboard card in `AdminHomeScreen` and a status badge inside `AdminMainScreen` AppBar actions.
+  - **Branch**: `fix/android-jvm-ndk-compat` (existing branch)
 
 ## Completed Phases
+- **Phase 60**: eBook Multi-Uploads, Access Visibility, Admin PDF Downloads, and Sales Discrepancy Fixes (Completed)
+  - Resolved multi-file upload limit bug by appending the loop index `i` to the upload `taskId` in both `AdminResourceForm` and `MockTestEditScreen` to prevent FIFO queue deduplication.
+  - Fixed manual access library visibility bug for non-public eBooks/tests by fetching the live database snapshot dynamically in `AdminGrantAccessScreen` before storing the entitlement in the `access` table. This allows the student's Library screen to cleanly fall back on the snapshot when visibility is toggled off.
+  - Fixed admin PDF download failure in `ResourceHelper.openResource` by fetching a fresh signed URL from Supabase dynamically using `SupabaseUrlHelper` prior to download initialization.
+  - Aligned resource and test sales calculations in `AdminService` to check for `access_type = 'paid'` to filter out free claims and manual admin grants from the sales count.
+  - Built the new admin queue monitor screen `AdminUploadQueueScreen` displaying real-time upload progress with cancellation options, adding a quick access dashboard card in `AdminHomeScreen` and a status badge inside `AdminMainScreen` AppBar actions.
+  - **Branch**: `fix/android-jvm-ndk-compat` (existing branch)
+- **Phase 59**: Gradle Wrapper & Caches Synchronization (Completed)
+  - Resolved `NullPointerException` in Gradle wrapper by synchronizing the fully extracted gradle wrapper distribution files (`gradle-8.14`, `gradle-8.13`, etc.) and cache configurations from the `C:` drive (`C:\Users\Jeel\.gradle`) to the persistent `F:` cache directory (`F:\gradleAppRun\.gradle`) via `robocopy`.
+  - Switched off/stopped the Gradle daemon and synchronized the dependency caches completely, resolving secondary workspace metadata errors.
+  - Successfully verified compile via `flutter build apk --debug`.
 - **Phase 58**: Cross-Drive Cache Compilation Fix (Completed)
   - Resolved Kotlin compilation different-roots error (`IllegalArgumentException`) by creating `F:\gradleAppRun` on the `F:` drive, migrating `C:\Users\Jeel\.gradle` and `C:\Users\Jeel\AppData\Local\Pub\Cache` contents there, and setting user environment variables `GRADLE_USER_HOME` and `PUB_CACHE` to persist cache on the `F:` drive.
   - **Branch**: `fix/android-jvm-ndk-compat`

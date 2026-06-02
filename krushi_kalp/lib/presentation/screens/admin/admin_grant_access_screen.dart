@@ -165,6 +165,8 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
       final filteredItems = newItems.where((t) => !(_existingAccess['test']?.contains(t['test_id']) ?? false)).toList();
 
       final isLastPage = newItems.length < _pageSize;
+      if (!mounted) return;
+
       if (isLastPage) {
         _testsPagingController.appendLastPage(filteredItems);
       } else {
@@ -172,6 +174,7 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
         _testsPagingController.appendPage(filteredItems, nextPageKey);
       }
     } catch (error) {
+      if (!mounted) return;
       _testsPagingController.error = error;
     }
   }
@@ -189,6 +192,8 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
       final filteredItems = newItems.where((r) => !(_existingAccess['resource']?.contains(r['id']) ?? false)).toList();
 
       final isLastPage = newItems.length < _pageSize;
+      if (!mounted) return;
+
       if (isLastPage) {
         controller.appendLastPage(filteredItems);
       } else {
@@ -196,6 +201,7 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
         controller.appendPage(filteredItems, nextPageKey);
       }
     } catch (error) {
+      if (!mounted) return;
       controller.error = error;
     }
   }
@@ -224,6 +230,8 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
       final filteredItems = newItems.where((u) => !_existingUserAccess.contains(u['id'])).toList();
 
       final isLastPage = newItems.length < _pageSize;
+      if (!mounted) return;
+
       if (isLastPage) {
         _pagingController.appendLastPage(filteredItems);
       } else {
@@ -231,6 +239,7 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
         _pagingController.appendPage(filteredItems, nextPageKey);
       }
     } catch (error) {
+      if (!mounted) return;
       _pagingController.error = error;
     }
   }
@@ -247,6 +256,8 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
       );
 
       final isLastPage = newItems.length < _pageSize;
+      if (!mounted) return;
+
       if (isLastPage) {
         controller.appendLastPage(newItems);
       } else {
@@ -254,6 +265,7 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
         controller.appendPage(newItems, nextPageKey);
       }
     } catch (error) {
+      if (!mounted) return;
       controller.error = error;
     }
   }
@@ -327,16 +339,17 @@ class _AdminGrantAccessScreenState extends ConsumerState<AdminGrantAccessScreen>
           }
 
           if (itemData == null || itemData.isEmpty) {
-            // Fallback: If not found in memory (scrolled away), we'll need to fetch it or just use ID
-            // For now, assume it's in memory or fetch it if needed. 
-            // Given the batch size, it's safer to fetch the latest snapshot if missing.
-            // But usually, the items being granted were just seen by the user.
+            // Fallback: If not found in memory (scrolled away), fetch it from DB
+            final fetched = await AdminService.getItemSnapshot(type, id);
+            if (fetched != null) {
+              itemData = fetched;
+            }
           }
 
           toGrant.add({
             'id': id,
             'type': type,
-            'snapshot': itemData,
+            'snapshot': itemData ?? {},
           });
         }
 

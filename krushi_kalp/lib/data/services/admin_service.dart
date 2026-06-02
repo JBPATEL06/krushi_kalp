@@ -492,7 +492,8 @@ class AdminService {
           .from('access')
           .count(CountOption.exact)
           .eq('item_type', 'resource')
-          .inFilter('item_id', resourceIds);
+          .inFilter('item_id', resourceIds)
+          .eq('access_type', 'paid');
       
       return { 
         'totalCount': totalCount, 
@@ -511,7 +512,8 @@ class AdminService {
           .from('access')
           .count(CountOption.exact)
           .eq('item_type', 'resource')
-          .eq('item_id', resourceId);
+          .eq('item_id', resourceId)
+          .eq('access_type', 'paid');
       return { 
         'price': (itemRes['price'] as num?)?.toDouble() ?? 0.0, 
         'salesCount': salesCount 
@@ -529,7 +531,8 @@ class AdminService {
           .from('access')
           .count(CountOption.exact)
           .eq('item_type', 'test')
-          .eq('item_id', testId);
+          .eq('item_id', testId)
+          .eq('access_type', 'paid');
       return { 
         'price': (itemRes['price'] as num?)?.toDouble() ?? 0.0, 
         'salesCount': salesCount 
@@ -537,6 +540,20 @@ class AdminService {
     } catch (e, stack) {
       CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: getMockTestItemStats');
       return {'price': 0.0, 'salesCount': 0};
+    }
+  }
+
+  /// Fetches the raw row snapshot for a test or resource to store in access log.
+  static Future<Map<String, dynamic>?> getItemSnapshot(String type, int id) async {
+    try {
+      if (type == 'test') {
+        return await _supabase.from('mock_tests').select().eq('test_id', id).maybeSingle();
+      } else {
+        return await _supabase.from('resources').select().eq('id', id).maybeSingle();
+      }
+    } catch (e, stack) {
+      CrashlyticsService.instance.recordError(e, stack, reason: 'admin_service: getItemSnapshot');
+      return null;
     }
   }
 

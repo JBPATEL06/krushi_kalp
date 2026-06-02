@@ -249,10 +249,10 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
         final pFile = _pendingFiles[i];
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final cleanName = pFile.name.replaceAll(RegExp(r'[^\w\.-]'), '_');
-        final storagePath = 'resources/$resourceId/file_${timestamp}_$cleanName';
+        final storagePath = 'resources/$resourceId/file_${timestamp}_${i}_$cleanName';
 
         UploadQueueService().enqueue(QueuedUploadRequest(
-          taskId: 'resource_supplementary_${resourceId}_$timestamp',
+          taskId: 'resource_supplementary_${resourceId}_${timestamp}_$i',
           fileName: pFile.name,
           itemName: 'Supplementary File',
           bucketName: 'mock_test',

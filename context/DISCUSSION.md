@@ -4,6 +4,52 @@
 
 ---
 
+## [Phase 60: eBook Multi-Uploads, Access Visibility, Admin PDF Downloads, and Sales Discrepancy Fixes]
+### Goal
+Resolve multiple uploads being capped at 3 files, handle non-public items access visibility in student Library screen, correct admin-side PDF downloads, fix total sales count discrepancies, and create the background uploads queue status monitor screen.
+
+### Branch
+`fix/android-jvm-ndk-compat` (existing branch)
+
+### Actions Taken
+- **Upload Limit Bug**: Appended loop index `i` to the `taskId` inside both `AdminResourceForm._save` and `MockTestEditScreen._updateMockTest`. This ensures every supplementary file has a unique `taskId` and prevents `UploadQueueService` from skipping subsequent files.
+- **Manual Access Visibility Bug**: Resolved eBook library visibility bug for non-public eBooks (`is_active = false`) by updating `AdminGrantAccessScreen` to dynamically query Supabase for the live database row map using `AdminService.getItemSnapshot` if the item detail is not loaded in memory. This ensures `item_snapshot` is fully populated in the `access` table, so the student's Library screen can fall back on it cleanly when the live table is RLS-restricted.
+- **Admin PDF Download Bug**: Modified `ResourceHelper.openResource` to extract the path and get a fresh signed URL from Supabase dynamically using `SupabaseUrlHelper().getFreshSignedUrl` before starting the download. This handles raw paths and expired URLs gracefully.
+- **Total Sales Count Bug**: Updated `getResourceItemStats` and `getResourceTypeStats` in `AdminService` to append `.eq('access_type', 'paid')` to the queries, excluding manual grants and free claims to show true sales counts.
+- **Upload Status Screen**: Created `AdminUploadQueueScreen` subscribing to `UploadQueueService().onQueueChanged` and `pendingRequests`. Integrated "Uploads" quick access card in `AdminHomeScreen` and a cloud status badge icon inside `AdminMainScreen` AppBar actions.
+- Verified that all changes are completely compilation and warning free via `dart analyze`.
+- **Database Entitlement Clarification**: Clarified that when public status is turned off (`resources.is_active = false` or `mock_tests.is_public = false`), the manual access record in the `access` table must still preserve `is_active = true` (with `access_type = 'manual_granted'`). This ensures the entitlement is valid and active, enabling the student Library to render details correctly from the cached JSONB `item_snapshot` instead of the RLS-restricted table row.
+
+### Risks / Side Effects
+- None. Static analysis is completely clean.
+
+---
+
+## [Phase 59: Gradle Wrapper & Caches Synchronization]
+### Goal
+Resolve the Gradle compilation `NullPointerException` during wrapper bootup, restore lost emulator network connectivity, and fix VM service disconnects.
+
+### Branch
+None (User requested: "no brnach not git push do it normallu").
+
+### Actions Taken
+- Diagnosed that `F:\gradleAppRun\.gradle\wrapper\dists` contained empty Gradle distributions (directories like `gradle-8.14` and `gradle-8.13` were empty but had `.zip.ok` files).
+- Synchronized Gradle wrapper directories from `C:\Users\Jeel\.gradle\wrapper` to `F:\gradleAppRun\.gradle\wrapper` using `robocopy /E`.
+- Stopped active Gradle daemons (`.\gradlew --stop`).
+- Synchronized dependency and transform cache files from `C:\Users\Jeel\.gradle\caches` to `F:\gradleAppRun\.gradle\caches` using `robocopy /E` to populate missing workspace and transform metadata.
+- Re-ran the build via `flutter build apk --debug` and verified it compiles clean without errors.
+- Resolved **Emulator Connection Drops**: Diagnosed that the emulator network interface (`wlan0`/`eth0`) was completely down, failing all network requests (e.g. Firebase, remote configurations) and causing thread suspension pauses which triggered the VM service to disconnect.
+- Cold-booted the emulator with `-dns-server 8.8.8.8 -no-snapshot-load`, enabled WiFi/Data interfaces, and successfully connected to the simulated `AndroidWifi` network, establishing full DNS and routing access (verified with successful pings to `8.8.8.8` and `google.com`).
+
+### Risks / Side Effects
+- None.
+
+### Test Criteria
+- Successful compilation of the debug APK (`√ Built build\app\outputs\flutter-apk\app-debug.apk`).
+- Active and working internet connection inside the emulator.
+
+---
+
 ## [Phase 58: Cross-Drive Cache Compilation Fix]
 ### Goal
 Resolve the `IllegalArgumentException: this and base files have different roots` compiler error when building the app on Windows with the project on the F: drive and Gradle/Pub caches on the C: drive.

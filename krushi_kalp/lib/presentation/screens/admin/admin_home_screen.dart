@@ -12,6 +12,7 @@ import 'admin_offer_list_screen.dart';
 import 'resources/admin_resources_dashboard.dart';
 import 'admin_store_screen.dart';
 import 'admin_reviews_screen.dart';
+import 'resources/admin_upload_queue_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -204,6 +205,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         context,
                         MaterialPageRoute(
                             builder: (_) => const AdminReviewsScreen()),
+                      ),
+                    ),
+                    _buildDashboardCard(
+                      context,
+                      title: 'Uploads',
+                      icon: Icons.cloud_upload_rounded,
+                      color: const Color(0xFF10B981),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const AdminUploadQueueScreen()),
                       ),
                     ),
                   ],

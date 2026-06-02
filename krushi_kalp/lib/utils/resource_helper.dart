@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'supabase_url_helper.dart';
 import '../domain/models/resource.dart';
 import '../data/services/download_service.dart';
 import '../presentation/screens/pdf_viewer_screen.dart';
@@ -46,6 +47,23 @@ class ResourceHelper {
       return;
     }
 
+    String downloadUrl = resource.fileUrl!;
+    final path = SupabaseUrlHelper.extractPathFromUrl(downloadUrl, 'mock_test');
+    try {
+      downloadUrl = await SupabaseUrlHelper().getFreshSignedUrl('mock_test', path);
+    } catch (e) {
+      debugPrint('Failed to get fresh signed URL: $e');
+    }
+
+    if (downloadUrl.isEmpty || !downloadUrl.startsWith('http')) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Resource file link is invalid.')),
+        );
+      }
+      return;
+    }
+
     // 3. Show download dialog and then open
     if (!context.mounted) return;
 
@@ -53,7 +71,7 @@ class ResourceHelper {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => DownloadProgressDialog(
-        url: resource.fileUrl!,
+        url: downloadUrl,
         filename: filename,
         displayName: resource.title,
         userId: userId,

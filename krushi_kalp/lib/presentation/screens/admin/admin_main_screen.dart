@@ -12,6 +12,8 @@ import 'admin_user_list_screen.dart';
 import 'admin_notification_screen.dart';
 import 'manage_app/manage_app_screen.dart';
 import 'admin_chat_list_screen.dart';
+import 'resources/admin_upload_queue_screen.dart';
+import '../../../data/services/upload_queue_service.dart';
 
 
 class AdminMainScreen extends ConsumerStatefulWidget {
@@ -85,6 +87,44 @@ class _AdminMainScreenState extends ConsumerState<AdminMainScreen> {
             title: Text(_getAppBarTitle(adminState.navIndex),
                 style: TextStyle(fontSize: context.sp(20))), // FIXED
             actions: [
+              StreamBuilder<UploadQueueSnapshot>(
+                stream: UploadQueueService().onQueueChanged,
+                initialData: UploadQueueService().currentSnapshot,
+                builder: (context, snapshot) {
+                  final snap = snapshot.data;
+                  final pendingCount = UploadQueueService().pendingRequests.length;
+                  final isProcessing = snap != null && snap.status == QueueStatus.processing;
+
+                  if (!isProcessing && pendingCount == 0) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Badge(
+                          label: Text('$pendingCount'),
+                          child: Icon(
+                            isProcessing ? Icons.cloud_sync_rounded : Icons.cloud_done_rounded,
+                            color: isProcessing ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        tooltip: 'View Upload Queue',
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AdminUploadQueueScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                    ],
+                  );
+                },
+              ),
               _buildRoleBadge(context),
               const SizedBox(width: AppSpacing.md),
             ],
