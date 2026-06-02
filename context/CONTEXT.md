@@ -20,6 +20,14 @@ Clean Architecture:
 
 ## Recently Completed Fixes (on `feature/nested-quizzes-refinements` branch)
 
+- **Phase 64**: Downloads, Upload Notifications, Rating Section & PDF Results Refinements ✅
+  - Aligned result upload parameters (`correct_answers`, `incorrect_answers`, `skipped_answers`, `time_taken_seconds`, `mock_test_file_id`) to database schema.
+  - Automated PDF result generation and background upload upon test completion with explicit `application/pdf` contentType.
+  - Resolved compiler errors in `TestResultScreen` by cleaning up unused rating state code and undefined `_generationError` reference.
+  - Disabled background upload notifications and foreground status bar progress updates.
+  - Completely disabled the rating and review prompt on the test results summary page.
+  - Fixed local Downloads screen to list nested mock test files (.json and .pdf) and perform clean recursive file deletions.
+
 - **Phase 63**: Nested Mock Quiz Results Display & Attempt Tracking ✅
   - Added optional `mockTestFileId` to `TestResult` domain model.
   - Implemented dynamic title appending in `TestResult.fromJson` to automatically format `"Mock Test Title - Nested Quiz Name"`.

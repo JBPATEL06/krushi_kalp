@@ -1300,3 +1300,44 @@ Ensure that attempting individual nested mock quizzes correctly stores the attem
 
 
 
+
+---
+
+## [Phase 64: Downloads, Upload Notifications, Rating Section & PDF Results Refinements]
+
+### Goal
+Resolve compiler errors on `TestResultScreen`, disable background upload notifications and foreground promotion updates, remove the rating and review prompt, align test result database uploads with the updated schema, and ensure that PDF results are uploaded with `application/pdf` MIME type.
+
+### Proposed Changes
+- **File**: `lib/presentation/screens/test_result_screen.dart` [MODIFY]
+  - Removed state fields `_hasRated` and `_isLoadingRating`.
+  - Removed lifecycle method `didChangeDependencies` and helper method `_checkExistingRating`.
+  - Removed assignment of undefined variable `_generationError` in `_startBackgroundPdfGeneration`.
+  - Removed unused commented-out code for rating dialog.
+- **File**: `lib/data/services/test_service.dart` [MODIFY]
+  - Updated `uploadResultPdf` to specify `contentType: 'application/pdf'` in `FileOptions`.
+  - Updated `submitTestResult` to insert `mock_test_file_id`, `correct_answers`, `incorrect_answers`, `skipped_answers`, and `time_taken_seconds` columns.
+- **File**: `lib/presentation/screens/exam_screen.dart` [MODIFY]
+  - Passed correct answer metrics and time taken to `submitTestResult`.
+- **File**: `lib/data/services/transfer_notification_service.dart` [MODIFY]
+  - Disabled progress and status notifications for upload tasks.
+- **File**: `lib/data/services/background_upload_service.dart` [MODIFY]
+  - Commented out background service/notification calls, keeping only core Supabase file uploads.
+- **File**: `lib/presentation/screens/downloads_screen.dart` [MODIFY]
+  - Checked for both `.pdf` and `.json` nested files.
+  - Implemented recursive file deletions.
+
+### Risks Identified
+- None. Static analysis verified with zero issues in the modified files.
+
+### Test Criteria
+- `flutter analyze` returns zero issues.
+- Background result PDF uploads specify the correct MIME type.
+- Ratings block is completely disabled.
+
+### Outcome
+- ✅ Completed Phase 64 successfully!
+- Committed and pushed to `feature/nested-quizzes-refinements`.
+
+
+
