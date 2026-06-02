@@ -8,6 +8,7 @@ class TestResult {
   final bool isPassed;
   final DateTime attemptDate;
   final String language;
+  final int? mockTestFileId;
 
   TestResult({
     required this.resultId,
@@ -19,6 +20,7 @@ class TestResult {
     required this.isPassed,
     required this.attemptDate,
     this.language = 'en',
+    this.mockTestFileId,
   });
 
   factory TestResult.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,15 @@ class TestResult {
       // Try to get total_marks from nested object, fallback to top level if legacy
       if (mockTest['total_marks'] != null) {
         maxMarks = mockTest['total_marks'] as int;
+      }
+    }
+
+    // Append nested mock test file display name if present
+    final mockTestFile = json['mock_test_files'];
+    if (mockTestFile != null && mockTestFile is Map) {
+      final displayName = mockTestFile['display_name'] as String?;
+      if (displayName != null && displayName.isNotEmpty) {
+        title = '$title - $displayName';
       }
     }
 
@@ -50,6 +61,7 @@ class TestResult {
       isPassed: json['is_passed'] as bool? ?? false,
       attemptDate: DateTime.parse(json['attempt_date'] as String).toLocal(),
       language: json['language'] as String? ?? 'en',
+      mockTestFileId: json['mock_test_file_id'] as int?,
     );
   }
 }

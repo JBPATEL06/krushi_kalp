@@ -125,7 +125,7 @@ class ExamHelper {
           onComplete: (path) async {
             if (!outerContext.mounted) return;
             final lang = test.language.toLowerCase().contains('guj') ? 'gu' : 'en';
-            _navigateToExam(outerContext, test, lang, File(path), mockTestFileId: quizFile.id);
+            _navigateToExam(outerContext, test, lang, File(path), mockTestFileId: quizFile.id, mockTestFileDisplayName: quizFile.displayName);
           },
         ),
       );
@@ -136,7 +136,7 @@ class ExamHelper {
     final lang = test.language.toLowerCase().contains('guj') ? 'gu' : 'en';
     final path = await downloadService.getLocalPath(filename, userId: user.id);
     if (!context.mounted) return;
-    _navigateToExam(context, test, lang, File(path), mockTestFileId: quizFile.id);
+    _navigateToExam(context, test, lang, File(path), mockTestFileId: quizFile.id, mockTestFileDisplayName: quizFile.displayName);
   }
 
   /// Shows the language selection dialog. (Commented out as translation logic is removed)
@@ -249,7 +249,7 @@ class ExamHelper {
   // }
 
   static void _navigateToExam(
-      BuildContext context, MockTest test, String language, File localFile, {int? mockTestFileId}) {
+      BuildContext context, MockTest test, String language, File localFile, {int? mockTestFileId, String? mockTestFileDisplayName}) {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -258,6 +258,7 @@ class ExamHelper {
           examLanguage: language,
           localFile: localFile,
           mockTestFileId: mockTestFileId,
+          mockTestFileDisplayName: mockTestFileDisplayName,
         ),
       ),
     );

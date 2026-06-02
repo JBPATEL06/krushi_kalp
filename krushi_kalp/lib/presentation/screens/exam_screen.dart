@@ -20,6 +20,7 @@ class ExamScreen extends StatefulWidget {
   final String examLanguage;
   final File? localFile;
   final int? mockTestFileId;
+  final String? mockTestFileDisplayName;
 
   const ExamScreen({
     super.key,
@@ -27,6 +28,7 @@ class ExamScreen extends StatefulWidget {
     this.examLanguage = 'en',
     this.localFile,
     this.mockTestFileId,
+    this.mockTestFileDisplayName,
   });
 
   @override
@@ -274,13 +276,18 @@ class _ExamScreenState extends State<ExamScreen> {
     required int timeTakenSeconds,
   }) {
     if (!mounted) return;
+    final effectiveTitle = widget.mockTestFileDisplayName != null &&
+            widget.mockTestFileDisplayName!.isNotEmpty
+        ? "${widget.test.title} - ${widget.mockTestFileDisplayName}"
+        : widget.test.title;
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => TestResultScreen(
           resultId: resultId,
           testId: widget.test.id.toString(),
-          testTitle: widget.test.title,
+          testTitle: effectiveTitle,
           score: totalScore,
           totalQuestions: _questions.length,
           totalMarks: widget.test.totalMarks.toDouble(),

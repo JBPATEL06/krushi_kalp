@@ -342,7 +342,7 @@ class TestService {
     try {
       final response = await _supabase
           .from('results')
-          .select('*, mock_tests(title, total_marks)')
+          .select('*, mock_tests(title, total_marks), mock_test_files(display_name)')
           .eq('user_id', authUserId)
           .order('attempt_date', ascending: false);
 
@@ -365,7 +365,7 @@ class TestService {
     try {
       final response = await _supabase
           .from('results')
-          .select('*, mock_tests(title, total_marks)')
+          .select('*, mock_tests(title, total_marks), mock_test_files(display_name)')
           .eq('user_id', authUserId)
           .order('attempt_date', ascending: false)
           .range(offset, offset + limit - 1);
@@ -511,25 +511,13 @@ class TestService {
     try {
       final result = await _supabase
           .from('results')
-          .select('*')
+          .select('*, mock_tests(title), mock_test_files(display_name)')
           .eq('user_id', authUserId)
           .order('attempt_date', ascending: false)
           .limit(1)
           .maybeSingle();
 
-      if (result == null) return null;
-
-      final testId = result['test_id'];
-      final test = await _supabase
-          .from('mock_tests')
-          .select('title')
-          .eq('test_id', testId)
-          .maybeSingle();
-
-      return {
-        ...result,
-        'mock_tests': test,
-      };
+      return result;
     } catch (e, stack) {
       CrashlyticsService.instance
           .recordError(e, stack, reason: 'fetchLatestResult failed');
