@@ -16,6 +16,16 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
+- None. Phase 61 completed. Awaiting next phase.
+
+## Previous Active Phase (Completed)
+- **Phase 61**: Home Screen Category Card Navigation Fix (Completed)
+  - Replaced all 4 broken category card `onTap` entitlement checks in `home_screen.dart → _buildCategoryGrid()` to use `resourceState.purchasedResources.any((r) => r.type == ResourceType.X)` instead of cross-referencing public store lists.
+  - Added `import '../../domain/models/resource.dart';` to expose `ResourceType` enum inline.
+  - Applies to: Daily CA (`currentAffair`), E-Books (`eBook`), Study Material (`studyMaterial`), PYQs (`pyq`). Mocks and Free Material were already correct.
+  - **Branch**: `fix/home-library-navigation` ✅ committed & pushed.
+
+## Phase 60 (Completed)
 - **Phase 60**: eBook Multi-Uploads, Access Visibility, Admin PDF Downloads, and Sales Discrepancy Fixes (Completed)
   - Resolved multi-file upload limit bug by appending the loop index `i` to the upload `taskId` in both `AdminResourceForm` and `MockTestEditScreen` to prevent FIFO queue deduplication.
   - Fixed manual access library visibility bug for non-public eBooks/tests (where `resources.is_active = false` or `mock_tests.is_public = false` but user entitlement `access.is_active = true`) by fetching the live database snapshot dynamically in `AdminGrantAccessScreen` before storing the entitlement in the `access` table. This allows the student's Library screen to cleanly fall back on the snapshot when visibility is toggled off.
@@ -139,4 +149,5 @@ Clean Architecture:
 - **Build Version**: Incremented to `1.0.3+17` for the Google Play Store submission.
 - **Experimental Versions**: Using pre-release versions of Riverpod and Freezed may introduce unexpected behavior; monitoring is required.
 - **16KB Alignment**: Final App Bundle must be verified with `check_align.py` before submission.
-- **Active Branch**: `fix/android-jvm-ndk-compat`
+- **Active Branch**: `fix/home-library-navigation` ✅ Phase 61 complete
+- **Entitlement Source of Truth**: Always use `purchasedResources` (from `access` table) for any check that determines whether a user has access to a category. Never use the public store lists (`ebooks`, `studyMaterials`, etc.) for entitlement checks — they exclude non-public items.

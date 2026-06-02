@@ -4,6 +4,71 @@
 
 ---
 
+## [Phase 61: Home Screen Category Card Navigation Fix]
+### Goal
+Fix all Home Screen category card `onTap` callbacks so that users with manual access grants to non-public resources are correctly redirected to their Library (`MyResourcesScreen`) instead of the Store (`StoreScreen`).
+
+### Branch
+`fix/home-library-navigation` (new branch — pending execution approval)
+
+### Root Cause Analysis
+**File**: `lib/presentation/screens/home_screen.dart` → `_buildCategoryGrid()`
+
+Each category card's `onTap` was doing:
+```dart
+// OLD (BROKEN) — Daily CA example
+final hasCurrentAffairs = resourceState.currentAffairs.any(
+  (r) => resourceState.purchasedResourceIds.contains(r.id));
+```
+
+`resourceState.currentAffairs` (and `ebooks`, `studyMaterials`, `pyqs`) are populated from the **public store queries** — they only include items where `resources.is_active = true`. If an admin turns off public visibility on a resource (`is_active = false`) but has manually granted access to a user, that resource disappears from the public list. The cross-reference then returns `false` even though the user is entitled, and the user is sent to the Store instead of their Library.
+
+### Fix Plan
+Replace every category check with a direct lookup into `purchasedResources`, which is built from the `access` table entitlements:
+```dart
+// NEW (CORRECT) — Daily CA example
+final hasCurrentAffairs = resourceState.purchasedResources
+  .any((r) => r.category == 'Daily CA');
+```
+
+**Applies to all 5 resource categories:**
+| Card | Old check | New check |
+|------|-----------|-----------|
+| Daily CA | `resourceState.currentAffairs.any(...)` | `purchasedResources.any((r) => r.category == 'Daily CA')` |
+| E-Books | `resourceState.ebooks.any(...)` | `purchasedResources.any((r) => r.category == 'E-Books')` |
+| Study Material | `resourceState.studyMaterials.any(...)` | `purchasedResources.any((r) => r.category == 'Study Material')` |
+| PYQs | `resourceState.pyqs.any(...)` | `purchasedResources.any((r) => r.category == 'PYQs')` |
+| Mocks | `testState.purchasedTestIds.isNotEmpty` | ✅ Already correct — no change needed |
+
+### Files to Modify
+- **[MODIFY]** `lib/presentation/screens/home_screen.dart` — lines 466–601 (`_buildCategoryGrid` CategoryCard onTap callbacks)
+
+### Risks / Side Effects
+- No logic change for users who bought content normally (public items still appear in `purchasedResources`).
+- `purchasedResources` is already fetched/cached in `MainScreen` on startup — no new network calls.
+- `Resource.category` is a `String?` — the `.any()` call safely returns `false` if category is null.
+
+### Discussion Outcome
+- User confirmed fix approach.
+- User confirmed: apply to **all categories** (PYQs, E-Books, Daily CA, Study Material, Mocks).
+- User confirmed: use a **new branch** `fix/home-library-navigation`.
+- **Status**: ✅ COMPLETED.
+
+### Actions Taken
+- Added `import '../../domain/models/resource.dart';` to `home_screen.dart` to expose `ResourceType` inline.
+- Replaced `resourceState.currentAffairs.any((r) => purchasedResourceIds.contains(r.id))` → `resourceState.purchasedResources.any((r) => r.type == ResourceType.currentAffair)` (Daily CA).
+- Replaced `resourceState.ebooks.any(...)` → `purchasedResources.any((r) => r.type == ResourceType.eBook)` (E-Books).
+- Replaced `resourceState.studyMaterials.any(...)` → `purchasedResources.any((r) => r.type == ResourceType.studyMaterial)` (Study Material).
+- Replaced `resourceState.pyqs.any(...)` → `purchasedResources.any((r) => r.type == ResourceType.pyq)` (PYQs).
+- Mocks (`testState.purchasedTestIds.isNotEmpty`) and Free Material — no changes needed, already correct.
+
+### Verification
+- `dart analyze lib/presentation/screens/home_screen.dart` → 2 pre-existing warnings (unused `testState`/`authState` in `Consumer` builder — unrelated to Phase 61). Zero new issues introduced.
+- Committed: `[Phase 61] Fix Home Screen category cards to use purchasedResources for entitlement check`
+- Pushed to `origin/fix/home-library-navigation` ✅
+
+---
+
 ## [Phase 60: eBook Multi-Uploads, Access Visibility, Admin PDF Downloads, and Sales Discrepancy Fixes]
 ### Goal
 Resolve multiple uploads being capped at 3 files, handle non-public items access visibility in student Library screen, correct admin-side PDF downloads, fix total sales count discrepancies, and create the background uploads queue status monitor screen.
