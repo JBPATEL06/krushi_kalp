@@ -712,13 +712,6 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
                           const SizedBox(height: AppSpacing.xl),
                           _buildSectionTitle(
                               context, 'Supplementary Files (Optional)'),
-                          Text(
-                            'Add PDF files like answer keys, solutions, or study notes. '
-                            'Users will see these in the Mock Test Files screen.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
                           const SizedBox(height: AppSpacing.md),
 
                           // List of added supplementary files

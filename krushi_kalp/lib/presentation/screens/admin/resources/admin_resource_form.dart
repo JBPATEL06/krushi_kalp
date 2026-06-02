@@ -11,7 +11,6 @@ import '../../../../data/services/upload_queue_service.dart';
 import '../../../../utils/error_utils.dart';
 import '../../../../utils/crashlytics_service.dart';
 import '../../../utils/picker_lifecycle_mixin.dart';
-import '../../../../core/theme/app_radius.dart';
 
 class AdminResourceForm extends StatefulWidget {
   final ResourceType type;
@@ -29,7 +28,8 @@ class AdminResourceForm extends StatefulWidget {
   State<AdminResourceForm> createState() => _AdminResourceFormState();
 }
 
-class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecycleMixin {
+class _AdminResourceFormState extends State<AdminResourceForm>
+    with PickerLifecycleMixin {
   bool _isSaving = false;
   final _formKey = GlobalKey<FormState>();
   late final ResourceService _resourceService;
@@ -83,15 +83,41 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
     final result = await safePickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
+      allowMultiple: true,
     );
     if (result != null && result.files.isNotEmpty) {
-      final platformFile = result.files.first;
       setState(() {
-        _fileBytes = null; // always null on Android (withData: false)
-        _filePath = platformFile.path;
-        _fileName = platformFile.name;
+        for (final f in result.files) {
+          _pendingFiles.add(f);
+        }
+        // Keep first picked file as primary for backward-compat db field
+        if (_filePath == null) {
+          final first = result.files.first;
+          _fileBytes = null;
+          _filePath = first.path;
+          _fileName = first.name;
+        }
       });
     }
+  }
+
+  void _removeAttachmentFile(int index) {
+    setState(() {
+      final removed = _pendingFiles[index];
+      _pendingFiles.removeAt(index);
+      // If primary file was removed, update to next available
+      if (removed.path == _filePath) {
+        if (_pendingFiles.isNotEmpty) {
+          _filePath = _pendingFiles.first.path;
+          _fileName = _pendingFiles.first.name;
+          _fileBytes = null;
+        } else {
+          _filePath = null;
+          _fileName = null;
+          _fileBytes = null;
+        }
+      }
+    });
   }
 
   Future<void> _pickCover() async {
@@ -113,19 +139,6 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
         _coverBytes = null; // always null on Android (withData: false)
         _coverPath = platformFile.path;
         _coverName = platformFile.name;
-      });
-    }
-  }
-
-  Future<void> _pickAdditionalFiles() async {
-    final result = await safePickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-      allowMultiple: true,
-    );
-    if (result != null && result.files.isNotEmpty) {
-      setState(() {
-        _pendingFiles.addAll(result.files);
       });
     }
   }
@@ -208,7 +221,9 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
           onProgress: (p) {},
           onComplete: (completedPath) async {
             if (existingId != null && _existingFileUrl != null) {
-              await _resourceService.deleteFileFromStorage(_existingFileUrl!).catchError((_) => null);
+              await _resourceService
+                  .deleteFileFromStorage(_existingFileUrl!)
+                  .catchError((_) => null);
             }
           },
           onError: (err) {},
@@ -238,7 +253,9 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
           onProgress: (p) {},
           onComplete: (completedPath) async {
             if (existingId != null && _existingCoverUrl != null) {
-              await _resourceService.deleteFileFromStorage(_existingCoverUrl!).catchError((_) => null);
+              await _resourceService
+                  .deleteFileFromStorage(_existingCoverUrl!)
+                  .catchError((_) => null);
             }
           },
           onError: (err) {},
@@ -249,7 +266,8 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
         final pFile = _pendingFiles[i];
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final cleanName = pFile.name.replaceAll(RegExp(r'[^\w\.-]'), '_');
-        final storagePath = 'resources/$resourceId/file_${timestamp}_${i}_$cleanName';
+        final storagePath =
+            'resources/$resourceId/file_${timestamp}_${i}_$cleanName';
 
         UploadQueueService().enqueue(QueuedUploadRequest(
           taskId: 'resource_supplementary_${resourceId}_${timestamp}_$i',
@@ -265,12 +283,14 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
               await _resourceService.addResourceFile(
                 resourceId: resourceId,
                 storagePath: completedPath,
-                displayName: pFile.name.replaceAll('.pdf', '').replaceAll('_', ' '),
+                displayName:
+                    pFile.name.replaceAll('.pdf', '').replaceAll('_', ' '),
                 fileSizeBytes: pFile.size,
                 fileOrder: i,
               );
             } catch (e, stack) {
-              CrashlyticsService.instance.recordError(e, stack, reason: 'Failed to insert resource_file onComplete');
+              CrashlyticsService.instance.recordError(e, stack,
+                  reason: 'Failed to insert resource_file onComplete');
             }
           },
           onError: (err) {},
@@ -280,14 +300,16 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Resource saved. You can safely leave the app in the background; files will continue uploading.'),
+            content: Text(
+                'Resource saved. You can safely leave the app in the background; files will continue uploading.'),
             duration: Duration(seconds: 4),
           ),
         );
         Navigator.pop(context, true);
       }
     } catch (e, stack) {
-      CrashlyticsService.instance.recordError(e, stack, reason: 'AdminResourceForm save failed');
+      CrashlyticsService.instance
+          .recordError(e, stack, reason: 'AdminResourceForm save failed');
       if (mounted) {
         ErrorUtils.showError(context, e);
       }
@@ -408,22 +430,13 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
               const SizedBox(height: AppSpacing.lg),
               _buildSectionHeader(context, "ATTACHMENT"),
               const SizedBox(height: AppSpacing.sm),
-              _buildPickerTile(
-                context,
-                title: _fileName ?? extractFilename(_existingFileUrl),
-                icon: Icons.picture_as_pdf_outlined,
-                onPressed: _pickFile,
-                iconColor: colorScheme.error,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              _buildSectionHeader(context, "SUPPLEMENTARY FILES (OPTIONAL)"),
-              const SizedBox(height: AppSpacing.sm),
               if (_pendingFiles.isNotEmpty) ...[
                 ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _pendingFiles.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: AppSpacing.sm),
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(height: AppSpacing.sm),
                   itemBuilder: (context, index) {
                     final file = _pendingFiles[index];
                     return Container(
@@ -433,12 +446,16 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
                       ),
                       decoration: BoxDecoration(
                         color: colorScheme.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.radiusMd),
+                        border: Border.all(
+                            color: colorScheme.outlineVariant
+                                .withValues(alpha: 0.5)),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.picture_as_pdf_outlined, color: colorScheme.error, size: context.sp(22)),
+                          Icon(Icons.picture_as_pdf_outlined,
+                              color: colorScheme.error, size: context.sp(22)),
                           const SizedBox(width: AppSpacing.md),
                           Expanded(
                             child: Column(
@@ -464,26 +481,31 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
                             ),
                           ),
                           IconButton(
-                            icon: Icon(Icons.close_rounded, color: colorScheme.error, size: context.sp(20)),
-                            onPressed: () {
-                              setState(() {
-                                _pendingFiles.removeAt(index);
-                              });
-                            },
+                            icon: Icon(Icons.close_rounded,
+                                color: colorScheme.error, size: context.sp(20)),
+                            onPressed: () => _removeAttachmentFile(index),
                           ),
                         ],
                       ),
                     );
                   },
                 ),
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.sm),
               ],
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: _pickAdditionalFiles,
-                  icon: Icon(Icons.add_link_rounded, size: context.sp(18)),
-                  label: Text('ADD SUPPLEMENTARY FILE', style: TextStyle(fontSize: context.sp(14))),
+                  onPressed: _pickFile,
+                  icon: Icon(Icons.add, size: context.sp(18)),
+                  label: Text('Add PDF File(s)',
+                      style: TextStyle(fontSize: context.sp(14))),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: colorScheme.primary,
+                    side: BorderSide(color: colorScheme.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
@@ -504,10 +526,10 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: _isSaving ? null : _save,
-                  icon: _isSaving 
+                  icon: _isSaving
                       ? const SizedBox(
-                          width: 20, 
-                          height: 20, 
+                          width: 20,
+                          height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.save_rounded),
@@ -578,7 +600,7 @@ class _AdminResourceFormState extends State<AdminResourceForm> with PickerLifecy
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: subtitle != null 
+        subtitle: subtitle != null
             ? Text(subtitle, style: theme.textTheme.labelSmall)
             : null,
         trailing: FilledButton.tonal(
