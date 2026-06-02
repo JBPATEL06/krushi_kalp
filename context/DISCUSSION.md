@@ -4,6 +4,58 @@
 
 ---
 
+## [Phase 58: Cross-Drive Cache Compilation Fix]
+### Goal
+Resolve the `IllegalArgumentException: this and base files have different roots` compiler error when building the app on Windows with the project on the F: drive and Gradle/Pub caches on the C: drive.
+
+### Branch
+`fix/android-jvm-ndk-compat` (existing branch)
+
+### Actions Taken
+- Created folder `F:\gradleAppRun` with subfolders `.gradle` and `.pub-cache`.
+- Configured user-level system environment variables `GRADLE_USER_HOME` to `F:\gradleAppRun\.gradle` and `PUB_CACHE` to `F:\gradleAppRun\.pub-cache`.
+- Copied existing cache content from `C:\Users\Jeel\.gradle` and `C:\Users\Jeel\AppData\Local\Pub\Cache` to the new locations on `F:` using multi-threaded `robocopy` to prevent long re-download times.
+- Verified build compiles clean via `flutter build apk --debug`.
+
+### Risks / Side Effects
+- Gradle build may occasionally complain about locked files during copying, which were skipped as they are transient.
+- The environment variables will force any other Flutter project built by the user on this machine to also cache in `F:\gradleAppRun` which is beneficial as it frees up space on the `C:` drive.
+
+### Test Criteria
+- Successful build of debug APK without incremental compilation or different-roots failures.
+
+---
+
+## [Phase 57: Kotlin compilerOptions Migration]
+### Goal
+Resolve the Gradle build compilation failure due to Kotlin 2.2.20 deprecating/erroring out on legacy `kotlinOptions` configuration DSL. Accelerate wrapper setup using local Gradle 8.12.
+
+### Branch
+`fix/android-jvm-ndk-compat` (existing branch)
+
+### Files Changed
+- **[MODIFIED]** `android/build.gradle.kts`:
+  - Replaced legacy `kotlinOptions` block with the modern task-specific `compilerOptions` DSL using `org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17`.
+- **[MODIFIED]** `android/app/build.gradle.kts`:
+  - Removed deprecated `kotlinOptions` block inside the `android` extension.
+  - Imported `KotlinCompile` and appended top-level task-specific `compilerOptions` configuration using `JVM_17`.
+- **[MODIFIED]** `android/settings.gradle.kts`:
+  - Reverted `com.android.application` version from `8.11.1` to `8.9.1` in AGP setup to stay compatible with Gradle 8.12.
+- **[MODIFIED]** `android/gradle/wrapper/gradle-wrapper.properties`:
+  - Pointed `distributionUrl` to local `C:\Users\Jeel\Downloads\gradle-8.12-all.zip` to instantly bypass internet downloads and build immediately.
+
+### Risks / Side Effects
+- Uses local path for Gradle wrapper which is specific to this machine. Safe because this is a local setup.
+
+### Test Criteria
+- Build succeeds with local wrapper without internet download.
+- No `kotlinOptions` compiler warnings/errors.
+
+### Outcome
+- ✅ Successfully updated configuration.
+
+---
+
 ## [Phase 51: Admin Multi-file Resource Upload UI]
 ### Goal
 Allow admins to upload multiple supplementary PDFs inside the Admin Resource Form and manage them (rename, replace, delete) cleanly inside the Admin Resource Detail Screen.

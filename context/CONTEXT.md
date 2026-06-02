@@ -16,11 +16,19 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
-- **Phase 56**: Downloads Screen Files Navigation (Completed)
-  - Unified local downloads dashboard to navigate users directly to files repository screens rather than directly opening raw single files, allowing access to multi-file supplementary PDFs offline.
-  - **Branch**: `feature/phase-56-downloads-files-navigation`
+- **Phase 58**: Cross-Drive Cache Compilation Fix (Completed)
+  - Resolved Kotlin compilation different-roots error (`IllegalArgumentException`) by creating `F:\gradleAppRun` on the `F:` drive, migrating `C:\Users\Jeel\.gradle` and `C:\Users\Jeel\AppData\Local\Pub\Cache` contents there, and setting user environment variables `GRADLE_USER_HOME` and `PUB_CACHE` to persist cache on the `F:` drive.
+  - **Branch**: `fix/android-jvm-ndk-compat`
 
 ## Completed Phases
+- **Phase 58**: Cross-Drive Cache Compilation Fix (Completed)
+  - Resolved Kotlin compilation different-roots error (`IllegalArgumentException`) by creating `F:\gradleAppRun` on the `F:` drive, migrating `C:\Users\Jeel\.gradle` and `C:\Users\Jeel\AppData\Local\Pub\Cache` contents there, and setting user environment variables `GRADLE_USER_HOME` and `PUB_CACHE` to persist cache on the `F:` drive.
+  - **Branch**: `fix/android-jvm-ndk-compat`
+
+- **Phase 57**: Kotlin compilerOptions Migration (Completed)
+  - Migrated legacy `kotlinOptions` configuration to the modern `compilerOptions` DSL in both root and app-level Gradle build scripts to support Kotlin 2.2.20. Realigned Android Gradle Plugin to 8.9.1 and mapped the Gradle Wrapper to local Gradle 8.12 package to avoid slow internet downloads.
+  - **Branch**: `fix/android-jvm-ndk-compat`
+
 - **Phase 56**: Downloads Screen Files Navigation (Completed)
   - Unified local downloads dashboard to navigate users directly to files repository screens rather than directly opening raw single files, allowing access to multi-file supplementary PDFs offline.
   - **Branch**: `feature/phase-56-downloads-files-navigation`
@@ -116,4 +124,4 @@ Clean Architecture:
 - **Build Version**: Incremented to `1.0.3+17` for the Google Play Store submission.
 - **Experimental Versions**: Using pre-release versions of Riverpod and Freezed may introduce unexpected behavior; monitoring is required.
 - **16KB Alignment**: Final App Bundle must be verified with `check_align.py` before submission.
-- **Active Branch**: `feature/phase-53-user-mock-test-files`
+- **Active Branch**: `fix/android-jvm-ndk-compat`
