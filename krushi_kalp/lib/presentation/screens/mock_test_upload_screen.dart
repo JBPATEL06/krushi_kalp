@@ -9,10 +9,27 @@ import '../../utils/excel_to_json_converter.dart';
 import '../utils/ui_helpers.dart';
 import '../../data/services/test_service.dart';
 import '../../data/services/upload_queue_service.dart';
+import '../../data/services/mock_test_file_service.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_radius.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../utils/picker_lifecycle_mixin.dart';
+
+// ─── Private data class for supplementary file entries ────────────────────────
+class _SupplementaryFileEntry {
+  final PlatformFile file;
+  final Uint8List bytes;
+  final TextEditingController displayNameController;
+
+  _SupplementaryFileEntry({
+    required this.file,
+    required this.bytes,
+    required this.displayNameController,
+  });
+
+  void dispose() => displayNameController.dispose();
+}
 
 class MockTestUploadScreen extends StatefulWidget {
   const MockTestUploadScreen({super.key});
@@ -43,10 +60,29 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
   bool _isOtherCategory = false;
   bool _isNegativeMarking = true;
 
+  // Supplementary files
+  final List<_SupplementaryFileEntry> _supplementaryFiles = [];
+
   @override
   void initState() {
     super.initState();
     _loadCategories();
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _priceController.dispose();
+    _durationController.dispose();
+    _totalQuestionsController.dispose();
+    _totalMarksController.dispose();
+    _negativeMarksController.dispose();
+    _customCategoryController.dispose();
+    for (final entry in _supplementaryFiles) {
+      entry.dispose();
+    }
+    super.dispose();
   }
 
   Future<void> _loadCategories() async {
@@ -131,6 +167,42 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
     }
   }
 
+  Future<void> _pickSupplementaryFile() async {
+    final result = await safePickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+      allowMultiple: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    for (final file in result.files) {
+      if (file.path == null) continue;
+      try {
+        final bytes = await File(file.path!).readAsBytes();
+        // Pre-fill display name from filename (without extension)
+        final baseName =
+            file.name.replaceAll(RegExp(r'\.pdf$', caseSensitive: false), '');
+        setState(() {
+          _supplementaryFiles.add(_SupplementaryFileEntry(
+            file: file,
+            bytes: bytes,
+            displayNameController: TextEditingController(text: baseName),
+          ));
+        });
+      } catch (e, stack) {
+        await CrashlyticsService.instance.recordError(e, stack,
+            reason: 'Failed to read supplementary file bytes: ${file.name}');
+      }
+    }
+  }
+
+  void _removeSupplementaryFile(int index) {
+    setState(() {
+      _supplementaryFiles[index].dispose();
+      _supplementaryFiles.removeAt(index);
+    });
+  }
+
   Future<void> _uploadMockTest() async {
     if (!_formKey.currentState!.validate()) return;
     if (_coverImage == null || _questionsFile == null) {
@@ -194,13 +266,12 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
         'file_path': jsonPath,
       }).eq('test_id', testId);
 
-      // Write JSON string to a local temp file so we can pass the path across isolates efficiently
+      // Write JSON string to a local temp file for background queue
       final tempDir = await getTemporaryDirectory();
       final jsonFile = File('${tempDir.path}/temp_json_$testId.json');
       await jsonFile.writeAsString(jsonString);
 
-      // 3. Start background uploads
-      // Upload Cover Image
+      // 3. Start background uploads for cover + questions
       UploadQueueService().enqueue(QueuedUploadRequest(
         taskId: 'image_$testId',
         fileName: 'Cover: ${_titleController.text}',
@@ -215,7 +286,6 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
         onError: (err) {},
       ));
 
-      // Upload JSON Content
       UploadQueueService().enqueue(QueuedUploadRequest(
         taskId: 'json_$testId',
         fileName: 'Questions: ${_titleController.text}',
@@ -229,7 +299,54 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
         onError: (err) {},
       ));
 
-      // Notifications are now handled by AdminService toggle
+      // 4. Upload supplementary files synchronously (need path before DB insert)
+      for (int i = 0; i < _supplementaryFiles.length; i++) {
+        final entry = _supplementaryFiles[i];
+        final displayName = entry.displayNameController.text.trim().isNotEmpty
+            ? entry.displayNameController.text.trim()
+            : entry.file.name;
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final sanitizedName = displayName
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^\w\s\.\-]'), '')
+            .replaceAll(RegExp(r'\s+'), '_');
+        final storagePath =
+            'mock_test_supplementary/$testId/${timestamp}_$sanitizedName.pdf';
+
+        try {
+          await supabase.storage.from('mock_test').uploadBinary(
+                storagePath,
+                entry.bytes,
+                fileOptions: const FileOptions(
+                  upsert: true,
+                  contentType: 'application/pdf',
+                ),
+              );
+
+          await MockTestFileService.instance.addMockTestFile(
+            testId: testId,
+            storagePath: storagePath,
+            displayName: displayName,
+            fileSizeBytes: entry.bytes.length,
+            fileOrder: i,
+          );
+        } catch (e, stack) {
+          CrashlyticsService.instance.recordError(
+            e,
+            stack,
+            reason: 'Failed to upload supplementary file: $displayName',
+          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    'Warning: "$displayName" upload failed. You can re-add it later.'),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          }
+        }
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -561,6 +678,88 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
                                   BorderRadius.circular(AppSpacing.radiusMd),
                               side: BorderSide(
                                   color: theme.colorScheme.outlineVariant),
+                            ),
+                          ),
+
+                          // ── Supplementary Files Section ─────────────────
+                          const SizedBox(height: AppSpacing.xl),
+                          _buildSectionTitle(
+                              context, 'Supplementary Files (Optional)'),
+                          Text(
+                            'Add PDF files like answer keys, solutions, or study notes. '
+                            'Users will see these in the Mock Test Files screen.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+
+                          // List of added supplementary files
+                          if (_supplementaryFiles.isNotEmpty)
+                            ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: _supplementaryFiles.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: AppSpacing.sm),
+                              itemBuilder: (context, index) {
+                                final entry = _supplementaryFiles[index];
+                                return Container(
+                                  padding: const EdgeInsets.all(AppSpacing.md),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primaryContainer
+                                        .withValues(alpha: 0.08),
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.md),
+                                    border: Border.all(
+                                        color:
+                                            theme.colorScheme.outlineVariant),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.picture_as_pdf_outlined,
+                                          color: theme.colorScheme.error,
+                                          size: 24),
+                                      const SizedBox(width: AppSpacing.sm),
+                                      Expanded(
+                                        child: TextFormField(
+                                          controller:
+                                              entry.displayNameController,
+                                          decoration: getPremiumInputDecoration(
+                                            context,
+                                            labelText: 'Display Name',
+                                            prefixIcon: null,
+                                          ),
+                                          style: theme.textTheme.bodyMedium,
+                                        ),
+                                      ),
+                                      const SizedBox(width: AppSpacing.sm),
+                                      IconButton(
+                                        icon: Icon(Icons.close_rounded,
+                                            color: theme.colorScheme.error),
+                                        onPressed: () =>
+                                            _removeSupplementaryFile(index),
+                                        tooltip: 'Remove',
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+
+                          const SizedBox(height: AppSpacing.md),
+                          OutlinedButton.icon(
+                            onPressed: _pickSupplementaryFile,
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add PDF File(s)'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: theme.colorScheme.primary,
+                              side:
+                                  BorderSide(color: theme.colorScheme.primary),
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppSpacing.radiusMd),
+                              ),
                             ),
                           ),
 

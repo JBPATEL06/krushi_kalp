@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../domain/models/resource.dart';
 import '../../domain/models/mock_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +6,8 @@ import '../providers/resource_notifier.dart';
 import '../providers/test_notifier.dart';
 import '../providers/auth_notifier.dart';
 import '../../data/services/download_service.dart';
+import '../../data/services/resource_service.dart';
+import '../../data/services/mock_test_file_service.dart';
 import '../../core/theme/app_spacing.dart';
 import '../widgets/common/responsive_wrapper.dart';
 import '../widgets/common/modern_card.dart';
@@ -29,7 +31,6 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
   int _totalBytesUsed = 0;
   String _searchQuery = '';
   String _activeFilter = 'All Files';
-
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -63,60 +64,99 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
     setState(() => _isLoading = true);
 
     try {
-      final resourceState = ref.read(resourceProvider);
-      final testState = ref.read(testProvider);
-
-      // If purchased resources haven't been loaded yet, fetch them now
       final user = ref.read(authProvider).user;
+
+      // -- Guard: ensure purchased resources are loaded
+      final resourceState = ref.read(resourceProvider);
       if (resourceState.purchasedResources.isEmpty && user != null) {
         await ref
             .read(resourceProvider.notifier)
             .fetchPurchasedResources(user.id);
       }
 
-      final myResources = resourceState.purchasedResources;
-      final myTests = testState.userTests;
+      // -- Guard: ensure purchased mock tests are loaded
+      final testState = ref.read(testProvider);
+      if (testState.userTests.isEmpty && user != null) {
+        await ref.read(testProvider.notifier).fetchUserTests(user.id);
+      }
+
+      // Re-read state after potential fetches above
+      final myResources = ref.read(resourceProvider).purchasedResources;
+      final myTests = ref.read(testProvider).userTests;
 
       final downloadService = DownloadService();
+      final userId = user?.id;
 
-      // Check ALL purchased resources (regardless of fileUrl)
+      // -- Resource download checks --
+      // A resource is "downloaded" if ANY of its supplementary files exist locally.
+      // Legacy fallback: also check the old single-file format resource_<id>.pdf.
       final resourceChecks = myResources.map((r) async {
-        final filename = 'resource_${r.id}.pdf';
-        final exists =
-            await downloadService.isFileDownloaded(filename, userId: user?.id);
-        return MapEntry<String, bool>('res_${r.id}', exists);
+        try {
+          final files = await ResourceService.instance.fetchResourceFiles(r.id);
+          if (files.isNotEmpty) {
+            for (final file in files) {
+              final filename = 'resource_file_${file.id}.pdf';
+              final exists = await downloadService.isFileDownloaded(filename, userId: userId);
+              if (exists) return MapEntry<String, bool>('res_${r.id}', true);
+            }
+            return MapEntry<String, bool>('res_${r.id}', false);
+          } else {
+            final legacyFilename = 'resource_${r.id}.pdf';
+            final exists = await downloadService.isFileDownloaded(legacyFilename, userId: userId);
+            return MapEntry<String, bool>('res_${r.id}', exists);
+          }
+        } catch (_) {
+          final legacyFilename = 'resource_${r.id}.pdf';
+          final exists = await downloadService.isFileDownloaded(legacyFilename, userId: userId);
+          return MapEntry<String, bool>('res_${r.id}', exists);
+        }
       }).toList();
 
-      final testChecks =
-          myTests.where((t) => t.filePath.isNotEmpty).map((t) async {
-        final exists = await downloadService
-            .isFileDownloaded('mock_test_${t.id}.json', userId: user?.id);
-        return MapEntry<String, bool>('test_${t.id}', exists);
+      // -- Mock test download checks --
+      // A test is "downloaded" if ANY of its supplementary files exist locally.
+      // Legacy fallback: also check the old single JSON format mock_test_<id>.json.
+      final testChecks = myTests.map((t) async {
+        try {
+          final files = await MockTestFileService.instance.fetchMockTestFiles(t.id);
+          if (files.isNotEmpty) {
+            for (final file in files) {
+              final filename = 'mock_test_file_${file.id}.pdf';
+              final exists = await downloadService.isFileDownloaded(filename, userId: userId);
+              if (exists) return MapEntry<String, bool>('test_${t.id}', true);
+            }
+            return MapEntry<String, bool>('test_${t.id}', false);
+          } else {
+            final legacyFilename = 'mock_test_${t.id}.json';
+            final exists = await downloadService.isFileDownloaded(legacyFilename, userId: userId);
+            return MapEntry<String, bool>('test_${t.id}', exists);
+          }
+        } catch (_) {
+          final legacyFilename = 'mock_test_${t.id}.json';
+          final exists = await downloadService.isFileDownloaded(legacyFilename, userId: userId);
+          return MapEntry<String, bool>('test_${t.id}', exists);
+        }
       }).toList();
 
-      final results = await Future.wait<MapEntry<String, bool>>([...resourceChecks, ...testChecks]);
+      // -- Run all checks in parallel --
+      final results = await Future.wait<MapEntry<String, bool>>(
+        [...resourceChecks, ...testChecks],
+      );
       final newStatus = Map<String, bool>.fromEntries(results);
 
-      // --- Storage Calculation ---
-      if (user != null) {
-        final used = await downloadService.getTotalStorageUsed(user.id);
+      // -- Storage calculation --
+      int usedBytes = 0;
+      if (userId != null) {
+        usedBytes = await downloadService.getTotalStorageUsed(userId);
+      }
 
-        if (mounted) {
-          setState(() {
-            _localStatus = newStatus;
-            _totalBytesUsed = used; // Update storage in setState
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _localStatus = newStatus;
-          });
-        }
+      if (mounted) {
+        setState(() {
+          _localStatus = newStatus;
+          _totalBytesUsed = usedBytes;
+        });
       }
     } catch (e) {
-      debugPrint("Error checking downloads: $e");
-      // Optionally record to Crashlytics if needed
+      debugPrint('DownloadsScreen: Error checking downloads: $e');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -639,7 +679,8 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ResourceFilesScreen(resource: resource),
+                      builder: (context) =>
+                          ResourceFilesScreen(resource: resource),
                     ),
                   );
                 },
@@ -774,5 +815,4 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
       ),
     );
   }
-
 }
