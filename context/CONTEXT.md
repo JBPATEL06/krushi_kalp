@@ -16,10 +16,19 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
+- **Phase 66**: PDF Viewer — Fullscreen + Landscape Mode ✅ COMPLETED
 - **Phase 68**: Resource Details Category Tag Bug Fix ✅ COMPLETED
 - **Phase 67**: Negative Marking per Question & Scoring Improvements ✅ COMPLETED
 
 ## Recently Completed Fixes (on `feature/phase-67-negative-marking` branch)
+
+- **Phase 66**: PDF Viewer — Fullscreen + Landscape Mode ✅
+  - Replaced standalone actions inside `PdfViewerScreen` with a single options popup menu (`Icons.more_vert`).
+  - Added options to toggle theme, jump to page, enter/exit fullscreen read mode, and toggle horizontal/landscape orientation.
+  - Configured device orientation locking to horizontal view for the PDF screen, auto-restoring portrait mode upon disposal.
+  - Wrapped the viewer body in a raw pointer `Listener` to toggle fullscreen mode on simple tap gestures without interfering with the viewer's zoom and pan gestures.
+  - Integrated mobile device system back button interceptor via `PopScope` to return from fullscreen read mode to normal view before exiting the screen.
+  - Added sliding animation overrides for `AppBar` and `BottomNavigationBar` to enter/exit immersive reading mode smoothly.
 
 - **Phase 68**: Resource Details Category Tag Bug Fix ✅
   - Fixed empty category tags container bug in `ResourceFilesScreen`.

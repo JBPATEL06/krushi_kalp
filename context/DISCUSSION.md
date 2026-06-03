@@ -1571,3 +1571,39 @@ Completed ✅
 - `dart analyze` reports zero errors or warnings.
 - Verification that empty category inputs on resources don't display empty UI badge rectangles or bad list subtitles.
 
+
+---
+
+## [Phase 66: PDF Viewer — Fullscreen + Landscape Mode]
+
+### Goal
+Enhance `PdfViewerScreen` with:
+1. Immersive full screen reading (hide/show controls on tap).
+2. Orientation locking to horizontal (landscape) view for the PDF viewer only, restoring to portrait upon disposal.
+3. Replace discrete action buttons with a popup options menu.
+4. Intercept system back button to exit immersive fullscreen mode first.
+
+### Branch
+`feature/phase-67-negative-marking`
+
+### Status
+Completed ✅
+
+### Proposed Changes
+
+#### [MODIFY] [pdf_viewer_screen.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/pdf_viewer_screen.dart)
+- Replaced separate actions inside `PdfViewerScreen` AppBar with a single `PopupMenuButton` for theme toggle, jumping to page, full screen, and landscape view.
+- Added orientation state management and system UI mode toggles on initialization, toggle events, and screen disposal.
+- Embedded system back button handler using `PopScope` to return from fullscreen mode first.
+- Wrapped the viewer body in a raw pointer `Listener` to detect tap gestures without interrupting pdfrx's internal scroll and zoom gestures.
+- Added sliding transition animations to slide the AppBar and BottomBar out of sight when in fullscreen mode.
+
+### Risks Identified & Mitigated
+- **Risk:** Landscape mode or immersive mode leaking to other screens.
+  - **Mitigation:** Force-reverted preferred orientation to `DeviceOrientation.portraitUp` and system UI mode to `SystemUiMode.edgeToEdge` in `dispose()`.
+- **Risk:** Taps conflict with pdfrx pan/zoom.
+  - **Mitigation:** Used raw pointer `Listener` to compute distance and duration, ignoring scroll/pan/zoom actions.
+
+### Test Criteria
+- `dart analyze` returns 0 issues.
+
