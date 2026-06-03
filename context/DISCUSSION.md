@@ -1518,7 +1518,7 @@ Handle negative marking per question details rendering in the User-facing panels
 `feature/phase-67-negative-marking`
 
 ### Status
-In Progress 🚧
+Completed ✅
 
 ### Proposed Changes
 1. **mock_test_edit_screen.dart**: Rename label inputs, correct `TextEditingController` initialization for marks, calculate and save `total_marks` and `marks_per_question`.
@@ -1526,3 +1526,5 @@ In Progress 🚧
 3. **admin_mock_test_list.dart**: Rename labels.
 4. **mock_test_files_screen.dart**: Append negative marking detail in subtitle.
 5. **store_grid.dart**: Append negative marking detail in grid subtitle.
+6. **test_result.dart**: Resolved title parsing bug where nested quiz attempts printed `Test #ID` instead of actual parent Mock Test name due to conditional skipping in `fromJson`.
+
