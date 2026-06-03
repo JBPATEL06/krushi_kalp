@@ -151,7 +151,7 @@ class _StoreResourceGridState extends ConsumerState<StoreResourceGrid> {
     final String? discountTag = priceData?['discount_label'] as String?;
 
     String subtitle = resource.type.toString().split('.').last.toUpperCase();
-    if (resource.category != null) {
+    if (resource.category != null && resource.category!.trim().isNotEmpty) {
       subtitle += ' • ${resource.category}';
     }
 

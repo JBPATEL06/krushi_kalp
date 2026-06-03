@@ -552,7 +552,7 @@ class _AdminResourceDetailScreenState
                               fontWeight: FontWeight.bold,
                               fontSize: context.sp(24)),
                         ),
-                        if (_resource.category != null) ...[
+                        if (_resource.category != null && _resource.category!.trim().isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(
                             _resource.category!,

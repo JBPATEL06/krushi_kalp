@@ -1528,3 +1528,46 @@ Completed ✅
 5. **store_grid.dart**: Append negative marking detail in grid subtitle.
 6. **test_result.dart**: Resolved title parsing bug where nested quiz attempts printed `Test #ID` instead of actual parent Mock Test name due to conditional skipping in `fromJson`.
 
+---
+
+## [Phase 68: Resource Details Category Tag Bug Fix]
+
+### Goal
+Fix UI bug in the Resource Details screen (`resource_files_screen.dart`) where empty/whitespace category fields produce a tiny empty rectangular container badge. Also guard and format empty categories properly across store grids, direct checkout sheets, cart item lists, free content lists, and downloads screen.
+
+### Branch
+`feature/phase-67-negative-marking` (Same branch)
+
+### Status
+Completed ✅
+
+### Proposed Changes
+
+#### [MODIFY] [resource_files_screen.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/resource_files_screen.dart)
+- Hide the category container completely if the category string is null, empty, or whitespace only.
+
+#### [MODIFY] [admin_resource_detail_screen.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/admin/resources/admin_resource_detail_screen.dart)
+- Only show category text widget if the category is not null and not empty.
+
+#### [MODIFY] [store_resource_grid.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/store/widgets/store_resource_grid.dart)
+- Avoid appending empty category strings with dot separator (` • `) to the store card subtitle.
+
+#### [MODIFY] [free_content_screen.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/free_content_screen.dart)
+- Safe-guard empty category strings to fall back to 'Free Material' instead of empty subtitle.
+
+#### [MODIFY] [direct_checkout_sheet.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/widgets/direct_checkout_sheet.dart)
+- Safe-guard empty category strings to fall back to 'General' in sheet details.
+
+#### [MODIFY] [cart_screen.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/cart_screen.dart)
+- Safe-guard empty category strings to fall back to 'General' in cart item subtitles.
+
+#### [MODIFY] [downloads_screen.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/downloads_screen.dart)
+- Safe-guard empty category strings to fall back to 'PDF' in downloads list subtitles.
+
+### Risks Identified
+- None. Basic presentation checks using standard string utilities.
+
+### Test Criteria
+- `dart analyze` reports zero errors or warnings.
+- Verification that empty category inputs on resources don't display empty UI badge rectangles or bad list subtitles.
+

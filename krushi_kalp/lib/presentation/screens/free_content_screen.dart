@@ -326,7 +326,9 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
     
     return FreeItemCard(
       title: resource.title,
-      subtitle: resource.category ?? 'Free Material',
+      subtitle: (resource.category != null && resource.category!.trim().isNotEmpty)
+          ? resource.category!
+          : 'Free Material',
       typeLabel: 'Resource',
       coverUrl: resource.thumbnailUrl,
       actionLabel: 'Free Claim',

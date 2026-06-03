@@ -149,23 +149,25 @@ class _ResourceFilesScreenState extends ConsumerState<ResourceFilesScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              (r.category ?? 'Resource').toUpperCase(),
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 9,
+                          if (r.category != null && r.category!.trim().isNotEmpty) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                r.category!.trim().toUpperCase(),
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 9,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
+                            const SizedBox(height: AppSpacing.xs),
+                          ],
                           Text(
                             r.title,
                             style: theme.textTheme.titleMedium?.copyWith(

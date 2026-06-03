@@ -16,9 +16,15 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
+- **Phase 68**: Resource Details Category Tag Bug Fix ✅ COMPLETED
 - **Phase 67**: Negative Marking per Question & Scoring Improvements ✅ COMPLETED
 
-## Recently Completed Fixes (on `feature/nested-quizzes-refinements` branch)
+## Recently Completed Fixes (on `feature/phase-67-negative-marking` branch)
+
+- **Phase 68**: Resource Details Category Tag Bug Fix ✅
+  - Fixed empty category tags container bug in `ResourceFilesScreen`.
+  - Added empty/whitespace validation guards for category displays in `StoreResourceGrid`, `FreeContentScreen`, `DirectCheckoutSheet`, `CartScreen`, `DownloadsScreen`, and `AdminResourceDetailScreen`.
+  - Cleaned up rendering to ensure no trailing separators or placeholder items are shown.
 
 - **Phase 65**: Codebase Unused Code Cleanup ✅
   - Deleted 22 orphaned files: legacy models (Order, Notification, Transaction, User), dead screens (CheckoutScreen, MyLibraryScreen, NotificationsScreen, NetworkPdfViewerScreen, TestAttemptScreen, AdminProfileScreen), unused widgets (AnimatedScaleButton, AppCard, CustomTextField, GlassContainer, ShimmerLoading, ViewOptionsBottomSheet, ResourceDetailDialog), deprecated services (TranslationService, SecureFileService, DbErrorHelper), and dead utils (AnalyticsNavigatorObserver).
@@ -221,5 +227,5 @@ Clean Architecture:
 - **Build Version**: Incremented to `1.0.3+17` for the Google Play Store submission.
 - **Experimental Versions**: Using pre-release versions of Riverpod and Freezed may introduce unexpected behavior; monitoring is required.
 - **16KB Alignment**: Final App Bundle must be verified with `check_align.py` before submission.
-- **Active Branch**: `feature/nested-quizzes-refinements`
+- **Active Branch**: `feature/phase-67-negative-marking`
 - **Entitlement Source of Truth**: Always use `purchasedResources` (from `access` table) for any check that determines whether a user has access to a category. Never use the public store lists (`ebooks`, `studyMaterials`, etc.) for entitlement checks — they exclude non-public items.

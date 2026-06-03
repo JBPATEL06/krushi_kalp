@@ -107,7 +107,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 originalPrice = mockTest.price;
               } else if (resource != null) {
                 title = resource.title;
-                subtitle = resource.category ?? 'General';
+                subtitle = (resource.category != null && resource.category!.trim().isNotEmpty)
+                    ? resource.category!
+                    : 'General';
                 path = resource.thumbnailUrl;
                 originalPrice = resource.price;
               }

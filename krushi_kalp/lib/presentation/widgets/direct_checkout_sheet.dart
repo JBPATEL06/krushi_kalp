@@ -45,8 +45,13 @@ class _DirectCheckoutSheetState extends ConsumerState<DirectCheckoutSheet> {
   // Helpers
   double get _basePrice => widget.test?.price ?? widget.resource?.price ?? 0.0;
   String get _title => widget.test?.title ?? widget.resource?.title ?? 'Item';
-  String get _category =>
-      widget.test?.category ?? widget.resource?.category ?? 'General';
+  String get _category {
+    final tCat = widget.test?.category;
+    if (tCat != null && tCat.trim().isNotEmpty) return tCat;
+    final rCat = widget.resource?.category;
+    if (rCat != null && rCat.trim().isNotEmpty) return rCat;
+    return 'General';
+  }
   String? get _imageUrl =>
       widget.test?.signedUrl ?? widget.resource?.thumbnailUrl;
   int? get _testId => widget.test?.id;

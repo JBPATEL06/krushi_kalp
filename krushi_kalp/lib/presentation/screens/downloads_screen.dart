@@ -686,7 +686,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
                   ),
                   SizedBox(height: context.h(2)),
                   Text(
-                    "${resource.category ?? 'PDF'} • PDF",
+                    "${(resource.category != null && resource.category!.trim().isNotEmpty) ? resource.category! : 'PDF'} • PDF",
                     style: TextStyle(
                       color: theme.colorScheme.onSurfaceVariant,
                       fontSize: context.sp(11),
