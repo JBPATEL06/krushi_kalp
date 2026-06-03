@@ -49,10 +49,13 @@ class TestResult {
 
     int maxMarks = 100; // Default fallback
 
+    if (mockTest != null) {
+      title = mockTest['title'] as String? ?? title;
+    }
+
     if (json['mock_test_file_id'] != null && attemptedQuestions > 0) {
       maxMarks = (attemptedQuestions * marksPerQ).round();
     } else if (mockTest != null) {
-      title = mockTest['title'] as String? ?? title;
       if (mockTest['total_questions'] != null && (mockTest['total_questions'] as num).toInt() > 0) {
         final parentQs = (mockTest['total_questions'] as num).toInt();
         maxMarks = (parentQs * marksPerQ).round();
