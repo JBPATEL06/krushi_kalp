@@ -358,7 +358,7 @@ class TestService {
     try {
       final response = await _supabase
           .from('results')
-          .select('*, mock_tests(title, total_marks), mock_test_files(display_name)')
+          .select('*, mock_tests(title, total_marks, total_questions, marks_per_question), mock_test_files(display_name)')
           .eq('user_id', authUserId)
           .order('attempt_date', ascending: false);
 
@@ -381,7 +381,7 @@ class TestService {
     try {
       final response = await _supabase
           .from('results')
-          .select('*, mock_tests(title, total_marks), mock_test_files(display_name)')
+          .select('*, mock_tests(title, total_marks, total_questions, marks_per_question), mock_test_files(display_name)')
           .eq('user_id', authUserId)
           .order('attempt_date', ascending: false)
           .range(offset, offset + limit - 1);
@@ -527,7 +527,7 @@ class TestService {
     try {
       final result = await _supabase
           .from('results')
-          .select('*, mock_tests(title), mock_test_files(display_name)')
+          .select('*, mock_tests(title, total_marks, total_questions, marks_per_question), mock_test_files(display_name)')
           .eq('user_id', authUserId)
           .order('attempt_date', ascending: false)
           .limit(1)

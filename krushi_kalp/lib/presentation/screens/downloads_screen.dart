@@ -794,7 +794,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen>
                   ),
                   SizedBox(height: context.h(2)),
                   Text(
-                    "${test.totalQuestions} Questions",
+                    "${test.totalQuestions} Tests",
                     style: TextStyle(
                       color: theme.colorScheme.onSurfaceVariant,
                       fontSize: context.sp(11),

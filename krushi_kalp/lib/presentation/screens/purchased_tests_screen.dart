@@ -127,7 +127,7 @@ class _PurchasedTestsScreenState extends ConsumerState<PurchasedTestsScreen> {
                         AppSpacing.lg, 0, AppSpacing.lg, bottomPadding),
                     child: DownloadItemCard(
                       title: item.title,
-                      subtitle: '${item.totalQuestions} Questions',
+                      subtitle: '${item.totalQuestions} Tests',
                       coverUrl: item.signedUrl,
                       heroTag: 'test_image_${item.id}',
                       customAction: OutlinedButton(

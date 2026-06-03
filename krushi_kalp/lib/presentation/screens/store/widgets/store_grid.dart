@@ -150,7 +150,7 @@ class _StoreGridState extends ConsumerState<StoreGrid> {
 
     return StoreItemCard(
       title: test.title,
-      subtitle: '${test.totalQuestions} Qs • ${test.totalMarks} Marks',
+      subtitle: '${test.totalQuestions} Tests • ${test.marksPerQuestion.toString().replaceAll(RegExp(r'\.0$'), '')} Marks/Q${test.negativeMarking ? " • -${test.negativeMarksPerQ.toString().replaceAll(RegExp(r'\.0$'), '')} Neg" : ""}',
       time: test.time,
       price: displayPrice,
       originalPrice: mrp,

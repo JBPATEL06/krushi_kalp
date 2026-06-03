@@ -403,7 +403,7 @@ class AdminMockTestListState extends State<AdminMockTestList> {
                                 shape: BoxShape.circle)),
                         const SizedBox(width: 8),
                         Text(
-                          "${test.totalQuestions} Questions",
+                          "${test.totalQuestions} Tests",
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: colorScheme.onSurfaceVariant
                                 .withValues(alpha: 0.7),

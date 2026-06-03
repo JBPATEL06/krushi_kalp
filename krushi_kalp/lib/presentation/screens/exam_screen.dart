@@ -192,8 +192,7 @@ class _ExamScreenState extends State<ExamScreen> {
       }
     }
 
-    double marksPerQ = widget.test.totalMarks /
-        (_questions.isNotEmpty ? _questions.length : 1);
+    double marksPerQ = widget.test.marksPerQuestion;
 
     double totalScore = (correctCount * marksPerQ);
 
@@ -208,6 +207,8 @@ class _ExamScreenState extends State<ExamScreen> {
       timeTaken = (widget.test.durationMinutes! * 60) - _remainingSeconds;
     }
 
+    final int calculatedTotalMarks = (_questions.length * marksPerQ).round();
+
     if (mounted) {
       final user = AuthService.instance.currentUser;
       Future<int?>? submissionFuture;
@@ -215,7 +216,7 @@ class _ExamScreenState extends State<ExamScreen> {
         submissionFuture = TestService.instance.submitTestResult(
           testId: widget.test.id,
           score: totalScore,
-          totalMarks: widget.test.totalMarks,
+          totalMarks: calculatedTotalMarks,
           authUserId: user.id,
           language: widget.examLanguage,
           mockTestFileId: widget.mockTestFileId,
@@ -294,7 +295,7 @@ class _ExamScreenState extends State<ExamScreen> {
           testTitle: effectiveTitle,
           score: totalScore,
           totalQuestions: _questions.length,
-          totalMarks: widget.test.totalMarks.toDouble(),
+          totalMarks: _questions.length * widget.test.marksPerQuestion,
           correctAnswers: correctCount,
           wrongAnswers: wrongCount,
           skippedAnswers: _questions.length - (correctCount + wrongCount),

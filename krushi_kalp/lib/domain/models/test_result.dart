@@ -35,13 +35,29 @@ class TestResult {
     // Handle nested mock_test data
     final mockTest = json['mock_tests'];
     String title = 'Test #${json['test_id']}';
+    
+    double marksPerQ = 1.0;
+    if (mockTest != null && mockTest['marks_per_question'] != null) {
+      marksPerQ = (mockTest['marks_per_question'] as num).toDouble();
+    } else if (json['marks_per_question'] != null) {
+      marksPerQ = (json['marks_per_question'] as num).toDouble();
+    }
+
+    int attemptedQuestions = (json['correct_answers'] as num?)?.toInt() ?? 0;
+    attemptedQuestions += (json['incorrect_answers'] as num?)?.toInt() ?? 0;
+    attemptedQuestions += (json['skipped_answers'] as num?)?.toInt() ?? 0;
+
     int maxMarks = 100; // Default fallback
 
-    if (mockTest != null) {
+    if (json['mock_test_file_id'] != null && attemptedQuestions > 0) {
+      maxMarks = (attemptedQuestions * marksPerQ).round();
+    } else if (mockTest != null) {
       title = mockTest['title'] as String? ?? title;
-      // Try to get total_marks from nested object, fallback to top level if legacy
-      if (mockTest['total_marks'] != null) {
-        maxMarks = mockTest['total_marks'] as int;
+      if (mockTest['total_questions'] != null && (mockTest['total_questions'] as num).toInt() > 0) {
+        final parentQs = (mockTest['total_questions'] as num).toInt();
+        maxMarks = (parentQs * marksPerQ).round();
+      } else if (mockTest['total_marks'] != null) {
+        maxMarks = (mockTest['total_marks'] as num).toInt();
       }
     }
 
@@ -56,7 +72,7 @@ class TestResult {
 
     // Legacy fallback: sometimes total_marks might be at top level in older queries
     if (json.containsKey('total_marks') && json['total_marks'] != null) {
-      maxMarks = json['total_marks'] as int;
+      maxMarks = (json['total_marks'] as num).toInt();
     }
 
     return TestResult(

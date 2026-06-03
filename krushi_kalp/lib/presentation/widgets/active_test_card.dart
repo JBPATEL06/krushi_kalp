@@ -140,7 +140,7 @@ class ActiveTestCard extends StatelessWidget {
                             color: Theme.of(context).colorScheme.outlineVariant),
                         const SizedBox(width: 4),
                         Text(
-                          '${questionCount ?? 0} Questions',
+                          '${questionCount ?? 0} Tests',
                           style: TextStyle(
                               color: Theme.of(context).colorScheme.outlineVariant,
                               fontSize: context.sp(12)),

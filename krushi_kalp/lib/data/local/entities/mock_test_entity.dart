@@ -19,6 +19,7 @@ class MockTestEntity {
   int? totalMarks;
   bool? negativeMarking;
   double? negativeMarksPerQ;
+  double? marksPerQuestion;
   String? language;
 
   String? coverImagePath;
@@ -43,6 +44,7 @@ class MockTestEntity {
       ..totalMarks = test.totalMarks
       ..negativeMarking = test.negativeMarking
       ..negativeMarksPerQ = test.negativeMarksPerQ
+      ..marksPerQuestion = test.marksPerQuestion
       ..language = test.language
       ..coverImagePath = test.coverImagePath
       ..signedUrl = test.signedUrl
@@ -66,6 +68,7 @@ class MockTestEntity {
       totalMarks: totalMarks ?? 0,
       negativeMarking: negativeMarking ?? false,
       negativeMarksPerQ: negativeMarksPerQ ?? 0.0,
+      marksPerQuestion: marksPerQuestion ?? 1.0,
       language: language ?? 'English',
       coverImagePath: coverImagePath,
       signedUrl: signedUrl,

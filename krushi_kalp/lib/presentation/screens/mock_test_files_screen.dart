@@ -164,7 +164,7 @@ class _MockTestFilesScreenState extends ConsumerState<MockTestFilesScreen> {
                           ),
                           const SizedBox(height: AppSpacing.xs),
                           Text(
-                            '${t.totalQuestions} Qs | ${t.time} | Marks: ${t.totalMarks}',
+                            '${t.totalQuestions} Tests | ${t.time} | Marks/Q: ${t.marksPerQuestion.toString().replaceAll(RegExp(r'\.0$'), '')}${t.negativeMarking ? " | Neg: -${t.negativeMarksPerQ.toString().replaceAll(RegExp(r'\.0$'), '')}" : ""}',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),

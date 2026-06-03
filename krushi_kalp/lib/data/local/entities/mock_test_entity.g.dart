@@ -62,48 +62,53 @@ const MockTestEntitySchema = CollectionSchema(
       name: r'language',
       type: IsarType.string,
     ),
-    r'mrp': PropertySchema(
+    r'marksPerQuestion': PropertySchema(
       id: 9,
+      name: r'marksPerQuestion',
+      type: IsarType.double,
+    ),
+    r'mrp': PropertySchema(
+      id: 10,
       name: r'mrp',
       type: IsarType.double,
     ),
     r'negativeMarking': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'negativeMarking',
       type: IsarType.bool,
     ),
     r'negativeMarksPerQ': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'negativeMarksPerQ',
       type: IsarType.double,
     ),
     r'price': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'price',
       type: IsarType.double,
     ),
     r'signedUrl': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'signedUrl',
       type: IsarType.string,
     ),
     r'testId': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'testId',
       type: IsarType.long,
     ),
     r'title': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'title',
       type: IsarType.string,
     ),
     r'totalMarks': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'totalMarks',
       type: IsarType.long,
     ),
     r'totalQuestions': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'totalQuestions',
       type: IsarType.long,
     )
@@ -200,15 +205,16 @@ void _mockTestEntitySerialize(
   writer.writeLong(offsets[6], object.durationMinutes);
   writer.writeString(offsets[7], object.filePath);
   writer.writeString(offsets[8], object.language);
-  writer.writeDouble(offsets[9], object.mrp);
-  writer.writeBool(offsets[10], object.negativeMarking);
-  writer.writeDouble(offsets[11], object.negativeMarksPerQ);
-  writer.writeDouble(offsets[12], object.price);
-  writer.writeString(offsets[13], object.signedUrl);
-  writer.writeLong(offsets[14], object.testId);
-  writer.writeString(offsets[15], object.title);
-  writer.writeLong(offsets[16], object.totalMarks);
-  writer.writeLong(offsets[17], object.totalQuestions);
+  writer.writeDouble(offsets[9], object.marksPerQuestion);
+  writer.writeDouble(offsets[10], object.mrp);
+  writer.writeBool(offsets[11], object.negativeMarking);
+  writer.writeDouble(offsets[12], object.negativeMarksPerQ);
+  writer.writeDouble(offsets[13], object.price);
+  writer.writeString(offsets[14], object.signedUrl);
+  writer.writeLong(offsets[15], object.testId);
+  writer.writeString(offsets[16], object.title);
+  writer.writeLong(offsets[17], object.totalMarks);
+  writer.writeLong(offsets[18], object.totalQuestions);
 }
 
 MockTestEntity _mockTestEntityDeserialize(
@@ -228,15 +234,16 @@ MockTestEntity _mockTestEntityDeserialize(
   object.filePath = reader.readStringOrNull(offsets[7]);
   object.id = id;
   object.language = reader.readStringOrNull(offsets[8]);
-  object.mrp = reader.readDoubleOrNull(offsets[9]);
-  object.negativeMarking = reader.readBoolOrNull(offsets[10]);
-  object.negativeMarksPerQ = reader.readDoubleOrNull(offsets[11]);
-  object.price = reader.readDoubleOrNull(offsets[12]);
-  object.signedUrl = reader.readStringOrNull(offsets[13]);
-  object.testId = reader.readLongOrNull(offsets[14]);
-  object.title = reader.readStringOrNull(offsets[15]);
-  object.totalMarks = reader.readLongOrNull(offsets[16]);
-  object.totalQuestions = reader.readLongOrNull(offsets[17]);
+  object.marksPerQuestion = reader.readDoubleOrNull(offsets[9]);
+  object.mrp = reader.readDoubleOrNull(offsets[10]);
+  object.negativeMarking = reader.readBoolOrNull(offsets[11]);
+  object.negativeMarksPerQ = reader.readDoubleOrNull(offsets[12]);
+  object.price = reader.readDoubleOrNull(offsets[13]);
+  object.signedUrl = reader.readStringOrNull(offsets[14]);
+  object.testId = reader.readLongOrNull(offsets[15]);
+  object.title = reader.readStringOrNull(offsets[16]);
+  object.totalMarks = reader.readLongOrNull(offsets[17]);
+  object.totalQuestions = reader.readLongOrNull(offsets[18]);
   return object;
 }
 
@@ -268,20 +275,22 @@ P _mockTestEntityDeserializeProp<P>(
     case 9:
       return (reader.readDoubleOrNull(offset)) as P;
     case 10:
-      return (reader.readBoolOrNull(offset)) as P;
-    case 11:
       return (reader.readDoubleOrNull(offset)) as P;
+    case 11:
+      return (reader.readBoolOrNull(offset)) as P;
     case 12:
       return (reader.readDoubleOrNull(offset)) as P;
     case 13:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 14:
-      return (reader.readLongOrNull(offset)) as P;
-    case 15:
       return (reader.readStringOrNull(offset)) as P;
-    case 16:
+    case 15:
       return (reader.readLongOrNull(offset)) as P;
+    case 16:
+      return (reader.readStringOrNull(offset)) as P;
     case 17:
+      return (reader.readLongOrNull(offset)) as P;
+    case 18:
       return (reader.readLongOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1666,6 +1675,90 @@ extension MockTestEntityQueryFilter
   }
 
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      marksPerQuestionIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'marksPerQuestion',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      marksPerQuestionIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'marksPerQuestion',
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      marksPerQuestionEqualTo(
+    double? value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'marksPerQuestion',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      marksPerQuestionGreaterThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'marksPerQuestion',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      marksPerQuestionLessThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'marksPerQuestion',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
+      marksPerQuestionBetween(
+    double? lower,
+    double? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'marksPerQuestion',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterFilterCondition>
       mrpIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -2605,6 +2698,20 @@ extension MockTestEntityQuerySortBy
     });
   }
 
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterSortBy>
+      sortByMarksPerQuestion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'marksPerQuestion', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterSortBy>
+      sortByMarksPerQuestionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'marksPerQuestion', Sort.desc);
+    });
+  }
+
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterSortBy> sortByMrp() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mrp', Sort.asc);
@@ -2859,6 +2966,20 @@ extension MockTestEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterSortBy>
+      thenByMarksPerQuestion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'marksPerQuestion', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MockTestEntity, MockTestEntity, QAfterSortBy>
+      thenByMarksPerQuestionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'marksPerQuestion', Sort.desc);
+    });
+  }
+
   QueryBuilder<MockTestEntity, MockTestEntity, QAfterSortBy> thenByMrp() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mrp', Sort.asc);
@@ -3044,6 +3165,13 @@ extension MockTestEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<MockTestEntity, MockTestEntity, QDistinct>
+      distinctByMarksPerQuestion() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'marksPerQuestion');
+    });
+  }
+
   QueryBuilder<MockTestEntity, MockTestEntity, QDistinct> distinctByMrp() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'mrp');
@@ -3168,6 +3296,13 @@ extension MockTestEntityQueryProperty
   QueryBuilder<MockTestEntity, String?, QQueryOperations> languageProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'language');
+    });
+  }
+
+  QueryBuilder<MockTestEntity, double?, QQueryOperations>
+      marksPerQuestionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'marksPerQuestion');
     });
   }
 

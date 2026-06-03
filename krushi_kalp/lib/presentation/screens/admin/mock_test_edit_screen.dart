@@ -70,7 +70,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
     _totalQuestionsController =
         TextEditingController(text: t.totalQuestions.toString());
     _totalMarksController =
-        TextEditingController(text: t.totalMarks.toString());
+        TextEditingController(text: t.marksPerQuestion.toString());
     _negativeMarksController =
         TextEditingController(text: t.negativeMarksPerQ.toString());
 
@@ -95,7 +95,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
         _priceController.text = t.price.toString();
         _durationController.text = t.durationMinutes?.toString() ?? '';
         _totalQuestionsController.text = t.totalQuestions.toString();
-        _totalMarksController.text = t.totalMarks.toString();
+        _totalMarksController.text = t.marksPerQuestion.toString();
         _negativeMarksController.text = t.negativeMarksPerQ.toString();
         _isNegativeMarking = t.negativeMarking;
         _selectedLanguage = t.language;
@@ -224,7 +224,11 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
         'price': double.tryParse(_priceController.text) ?? 0.0,
         'duration_minutes': int.tryParse(_durationController.text) ?? 60,
         'total_questions': int.tryParse(_totalQuestionsController.text) ?? 0,
-        'total_marks': int.tryParse(_totalMarksController.text) ?? 0,
+        'total_marks': ((int.tryParse(_totalQuestionsController.text) ?? 1) *
+                (double.tryParse(_totalMarksController.text) ?? 1.0))
+            .round(),
+        'marks_per_question':
+            double.tryParse(_totalMarksController.text) ?? 1.0,
         'negative_marking': _isNegativeMarking,
         'negative_marks_per_q':
             double.tryParse(_negativeMarksController.text) ?? 0.0,
@@ -506,7 +510,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
                                         controller: _totalQuestionsController,
                                         decoration: getPremiumInputDecoration(
                                             context,
-                                            labelText: 'Total Questions',
+                                            labelText: 'Total Mock Tests',
                                             prefixIcon: const Icon(
                                                 Icons.quiz_outlined)),
                                         keyboardType: TextInputType.number)),
@@ -516,7 +520,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
                                         controller: _totalMarksController,
                                         decoration: getPremiumInputDecoration(
                                             context,
-                                            labelText: 'Total Marks',
+                                            labelText: 'Marks per Question',
                                             prefixIcon: const Icon(
                                                 Icons.grade_outlined)),
                                         keyboardType: TextInputType.number)),
@@ -526,7 +530,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
                             TextFormField(
                                 controller: _totalQuestionsController,
                                 decoration: getPremiumInputDecoration(context,
-                                    labelText: 'Total Questions',
+                                    labelText: 'Total Mock Tests',
                                     prefixIcon:
                                         const Icon(Icons.quiz_outlined)),
                                 keyboardType: TextInputType.number),
@@ -534,7 +538,7 @@ class _MockTestEditScreenState extends State<MockTestEditScreen> with PickerLife
                             TextFormField(
                                 controller: _totalMarksController,
                                 decoration: getPremiumInputDecoration(context,
-                                    labelText: 'Total Marks',
+                                    labelText: 'Marks per Question',
                                     prefixIcon:
                                         const Icon(Icons.grade_outlined)),
                                 keyboardType: TextInputType.number),

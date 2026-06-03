@@ -297,7 +297,7 @@ class _FreeContentScreenState extends ConsumerState<FreeContentScreen> {
     
     return FreeItemCard(
       title: test.title,
-      subtitle: '${test.totalQuestions} Questions',
+      subtitle: '${test.totalQuestions} Tests',
       typeLabel: 'Mock Test',
       coverUrl: test.signedUrl,
       actionLabel: 'Free Claim',

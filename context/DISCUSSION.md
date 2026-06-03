@@ -1507,7 +1507,22 @@ Audit and remove unused, legacy, or redundant files, widgets, models, screens, a
 - Run `dart analyze` to ensure compilation and lint checks are green.
 - Verify through manual testing: attempt quiz files, verify results marks/scores are calculated correctly on the result summary page and stored properly in database.
 
+---
 
+## [Phase 67: Negative Marking per Question & Scoring Improvements]
 
+### Goal
+Handle negative marking per question details rendering in the User-facing panels, finish remaining Phase 66 Admin UI updates, and configure correct scoring/pass percentage configurations.
 
+### Branch
+`feature/phase-67-negative-marking`
 
+### Status
+In Progress 🚧
+
+### Proposed Changes
+1. **mock_test_edit_screen.dart**: Rename label inputs, correct `TextEditingController` initialization for marks, calculate and save `total_marks` and `marks_per_question`.
+2. **admin_mock_test_detail_screen.dart**: Rename label metrics.
+3. **admin_mock_test_list.dart**: Rename labels.
+4. **mock_test_files_screen.dart**: Append negative marking detail in subtitle.
+5. **store_grid.dart**: Append negative marking detail in grid subtitle.

@@ -740,7 +740,7 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> w
                 Expanded(
                   child: _buildInfoBox(
                     context,
-                    label: 'QUESTIONS',
+                    label: 'MOCK TESTS',
                     value: '${_test.totalQuestions}',
                     icon: Icons.help_outline_rounded,
                   ),
@@ -758,8 +758,8 @@ class _AdminMockTestDetailScreenState extends State<AdminMockTestDetailScreen> w
                 Expanded(
                   child: _buildInfoBox(
                     context,
-                    label: 'TOTAL MARKS',
-                    value: '${_test.totalMarks}',
+                    label: 'MARKS / QUESTION',
+                    value: _test.marksPerQuestion.toString().replaceAll(RegExp(r'\.0$'), ''),
                     icon: Icons.emoji_events_outlined,
                   ),
                 ),

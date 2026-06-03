@@ -11,6 +11,7 @@ class MockTest {
   final int totalMarks; // NEW: Max marks possible
   final bool negativeMarking; // NEW: TRUE if enabled
   final double negativeMarksPerQ; // NEW: Deduction amount
+  final double marksPerQuestion; // NEW: Marks per question
   final String language; // NEW: Test language (e.g., 'English', 'Hindi')
 
   final String? coverImagePath;
@@ -33,6 +34,7 @@ class MockTest {
     required this.totalMarks,
     required this.negativeMarking,
     required this.negativeMarksPerQ,
+    required this.marksPerQuestion,
     required this.language,
     this.coverImagePath,
     this.discount,
@@ -69,6 +71,7 @@ class MockTest {
       totalMarks: totalMarks,
       negativeMarking: negativeMarking,
       negativeMarksPerQ: negativeMarksPerQ,
+      marksPerQuestion: marksPerQuestion,
       language: language,
       coverImagePath: coverImagePath,
       discount: discount,
@@ -105,6 +108,8 @@ class MockTest {
           : (json['negative_marking'].toString() == 'true'),
       negativeMarksPerQ:
           (json['negative_marks_per_q'] as num?)?.toDouble() ?? 0.0,
+      marksPerQuestion:
+          (json['marks_per_question'] as num?)?.toDouble() ?? 1.0,
       language: json['language']?.toString() ?? 'English',
       coverImagePath: json['cover_image_path'] as String?,
       discount: json['discount'] as String?,
@@ -132,6 +137,7 @@ class MockTest {
       'total_marks': totalMarks,
       'negative_marking': negativeMarking,
       'negative_marks_per_q': negativeMarksPerQ,
+      'marks_per_question': marksPerQuestion,
       'language': language,
       'cover_image_path': coverImagePath,
       'created_at': createdAt.toIso8601String(),

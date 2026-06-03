@@ -232,7 +232,8 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
         'price': double.tryParse(_priceController.text) ?? 0.0,
         'duration_minutes': int.tryParse(_durationController.text) ?? 60,
         'total_questions': int.tryParse(_totalQuestionsController.text) ?? 0,
-        'total_marks': int.tryParse(_totalMarksController.text) ?? 100,
+        'total_marks': ((int.tryParse(_totalQuestionsController.text) ?? 1) * (double.tryParse(_totalMarksController.text) ?? 1.0)).round(),
+        'marks_per_question': double.tryParse(_totalMarksController.text) ?? 1.0,
         'negative_marking': _isNegativeMarking,
         'negative_marks_per_q':
             double.tryParse(_negativeMarksController.text) ?? 0.0,
@@ -595,7 +596,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
                             ),
                           ],
                           const SizedBox(height: AppSpacing.md),
-                          if (isWide)
+                           if (isWide)
                             Row(
                               children: [
                                 Expanded(
@@ -603,7 +604,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
                                     controller: _totalQuestionsController,
                                     decoration: getPremiumInputDecoration(
                                       context,
-                                      labelText: 'Total Questions',
+                                      labelText: 'Total Mock Tests',
                                       prefixIcon: const Icon(Icons.quiz),
                                     ),
                                     keyboardType: TextInputType.number,
@@ -615,7 +616,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
                                     controller: _totalMarksController,
                                     decoration: getPremiumInputDecoration(
                                       context,
-                                      labelText: 'Total Marks',
+                                      labelText: 'Marks per Question',
                                       prefixIcon: const Icon(Icons.grade),
                                     ),
                                     keyboardType: TextInputType.number,
@@ -628,7 +629,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
                               controller: _totalQuestionsController,
                               decoration: getPremiumInputDecoration(
                                 context,
-                                labelText: 'Total Questions',
+                                labelText: 'Total Mock Tests',
                                 prefixIcon: const Icon(Icons.quiz),
                               ),
                               keyboardType: TextInputType.number,
@@ -638,7 +639,7 @@ class _MockTestUploadScreenState extends State<MockTestUploadScreen>
                               controller: _totalMarksController,
                               decoration: getPremiumInputDecoration(
                                 context,
-                                labelText: 'Total Marks',
+                                labelText: 'Marks per Question',
                                 prefixIcon: const Icon(Icons.grade),
                               ),
                               keyboardType: TextInputType.number,

@@ -18,8 +18,8 @@ import '../providers/auth_notifier.dart';
 import '../widgets/reviews/review_card.dart';
 import '../widgets/reviews/review_dialog.dart';
 import '../widgets/reviews/rate_stars.dart';
-import '../utils/exam_helper.dart';
 import 'reviews/all_reviews_screen.dart';
+import 'mock_test_files_screen.dart';
 
 
 class MockTestDetailScreen extends ConsumerStatefulWidget {
@@ -403,13 +403,13 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
           _divider(),
           _StatItem(
               icon: Icons.help_outline,
-              label: 'Questions',
+              label: 'Mock Tests',
               value: '${widget.test.totalQuestions}'),
           _divider(),
           _StatItem(
               icon: Icons.star_border,
-              label: 'Marks',
-              value: '${widget.test.totalMarks}'),
+              label: 'Marks/Q',
+              value: widget.test.marksPerQuestion.toString().replaceAll(RegExp(r'\.0$'), '')),
         ],
       ),
     );
@@ -546,7 +546,14 @@ class _MockTestDetailScreenState extends ConsumerState<MockTestDetailScreen> {
           AppSpacing.lg + MediaQuery.of(context).padding.bottom,
         ),
         child: ElevatedButton.icon(
-          onPressed: () => ExamHelper.startExam(context, widget.test),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MockTestFilesScreen(test: widget.test),
+              ),
+            );
+          },
           style: ElevatedButton.styleFrom(
             minimumSize: const Size(double.infinity, 54),
             backgroundColor: const Color(0xFF1A1C3D), // Premium dark navy
