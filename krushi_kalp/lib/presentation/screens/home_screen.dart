@@ -90,8 +90,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       drawer: _buildDrawer(),
       body: Consumer(
         builder: (context, ref, child) {
-          final testState = ref.watch(testProvider);
-          final authState = ref.watch(authProvider);
           return RefreshIndicator(
             onRefresh: () async {
               try {

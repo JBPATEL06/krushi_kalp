@@ -258,7 +258,7 @@ class BackgroundUploadService {
                   .from(bucketName)
                   .upload(
                     sanitizedPath,
-                    File(finalFilePath!),
+                    File(finalFilePath),
                     fileOptions: FileOptions(upsert: true, contentType: contentType),
                   );
             } else {

@@ -80,7 +80,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
             right: -50,
             child: CircleAvatar(
               radius: 120,
-              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.05),
+              backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.05),
             ),
           ),
           Positioned(
@@ -88,7 +88,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
             left: -50,
             child: CircleAvatar(
               radius: 100,
-              backgroundColor: Theme.of(context).colorScheme.secondary.withOpacity(0.05),
+              backgroundColor: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.05),
             ),
           ),
           

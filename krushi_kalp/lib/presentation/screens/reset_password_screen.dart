@@ -90,7 +90,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen>
             right: -50,
             child: CircleAvatar(
               radius: 120,
-              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.05),
+              backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.05),
             ),
           ),
           

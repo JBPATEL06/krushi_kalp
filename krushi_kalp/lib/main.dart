@@ -1,25 +1,19 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'presentation/widgets/common/network_aware_wrapper.dart';
 import 'data/services/local_caching_service.dart';
-import 'data/services/auth_service.dart';
 
 import 'core/env/env.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
 import 'utils/crashlytics_service.dart';
-import 'data/services/notification_service.dart';
-import 'data/services/transfer_notification_service.dart';
-import 'data/services/background_upload_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 
 Future<void> initializeService() async {

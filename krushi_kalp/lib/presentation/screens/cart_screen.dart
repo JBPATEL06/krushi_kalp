@@ -19,7 +19,6 @@ import '../providers/auth_notifier.dart';
 import '../providers/navigation_notifier.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // NEW: Expose Supabase RPC
 import '../../utils/supabase_url_helper.dart';
-import '../../utils/network_utils.dart'; // NEW: Expose NetworkUtils
 import '../../utils/error_utils.dart';
 import '../../utils/crashlytics_service.dart';
 
@@ -87,7 +86,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           OfferService.instance.fetchActiveSaleOffers(),
         ]).then((results) async {
           final items = results[0] as List<OrderItem>;
-          final saleOffers = results[1] as List<Offer>;
+          // Sale offers are applied per-item via OfferService.getDisplayPrice RPC
 
           // Map to UI model and Sign URLs
           final cartItems = await Future.wait(
