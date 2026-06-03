@@ -1339,5 +1339,49 @@ Resolve compiler errors on `TestResultScreen`, disable background upload notific
 - ✅ Completed Phase 64 successfully!
 - Committed and pushed to `feature/nested-quizzes-refinements`.
 
+---
+
+## [Phase 65: Codebase Unused Code Cleanup]
+
+### Goal
+Audit and remove unused, legacy, or redundant files, widgets, models, screens, and code blocks from the codebase to optimize maintenance, compilation times, and overall project size.
+
+### Proposed Changes
+- **Files to Delete**:
+  - `lib/core/utils/db_error_helper.dart` (Unused Technical Error Helper)
+  - `lib/data/services/secure_file_service.dart` (Legacy File Downloader)
+  - `lib/data/services/translation_service.dart` (Bypassed Translation Service)
+  - `lib/domain/models/notification.dart` (Unused Notification Model)
+  - `lib/domain/models/order.dart` (Legacy Order Model)
+  - `lib/domain/models/transaction.dart` (Legacy Transaction Model)
+  - `lib/domain/models/user.dart` (Legacy User Model - superseded by Supabase User model)
+  - `lib/presentation/screens/admin/admin_profile_screen.dart` (Unused Screen)
+  - `lib/presentation/screens/checkout_screen.dart` (Unused Screen)
+  - `lib/presentation/screens/my_library_screen.dart` (Unused Screen)
+  - `lib/presentation/screens/network_pdf_viewer_screen.dart` (Legacy Screen)
+  - `lib/presentation/screens/notifications_screen.dart` (Unused Screen)
+  - `lib/presentation/screens/store/widgets/store_current_affairs_list.dart` (Unused Widget)
+  - `lib/presentation/screens/test_attempt_screen.dart` (Legacy Screen)
+  - `lib/presentation/widgets/common/animated_scale_button.dart` (Unused Widget)
+  - `lib/presentation/widgets/common/app_card.dart` (Unused Widget)
+  - `lib/presentation/widgets/common/custom_text_field.dart` (Unused Widget)
+  - `lib/presentation/widgets/common/glass_container.dart` (Unused Widget)
+  - `lib/presentation/widgets/common/shimmer_loading.dart` (Unused Widget)
+  - `lib/presentation/widgets/common/view_options_bottom_sheet.dart` (Unused Widget)
+  - `lib/presentation/widgets/resource_detail_dialog.dart` (Unused Widget)
+  - `lib/utils/analytics_navigator_observer.dart` (Unused Observer)
+- **Files to Modify**:
+  - `lib/presentation/screens/exam_screen.dart`: Remove unused class `TranslationLoadingWidget`.
+  - `pubspec.yaml`: Remove unused dependency `translator: ^1.0.0`.
+
+### Risks Identified
+- Removing unused models or utility classes might trigger compilation errors if any hidden references exist. Checked by automated analysis.
+- Removing `translator` dependency reduces the bundle size but requires confirming that no other files use it (verified that only the deleted `translation_service.dart` imported it).
+
+### Verification
+- Run `dart analyze` to guarantee compilation integrity.
+- Run `flutter build apk --debug` to verify the build process is unaffected.
+
+
 
 

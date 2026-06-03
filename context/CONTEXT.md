@@ -16,7 +16,7 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
-- **None** (All planned phases successfully completed)
+- **Phase 65**: Codebase Unused Code Cleanup (Pending Approval)
 
 ## Recently Completed Fixes (on `feature/nested-quizzes-refinements` branch)
 
