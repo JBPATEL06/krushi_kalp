@@ -1424,13 +1424,89 @@ Audit and remove unused, legacy, or redundant files, widgets, models, screens, a
   - `lib/presentation/screens/exam_screen.dart`: Remove unused class `TranslationLoadingWidget`.
   - `pubspec.yaml`: Remove unused dependency `translator: ^1.0.0`.
 
-### Risks Identified
-- Removing unused models or utility classes might trigger compilation errors if any hidden references exist. Checked by automated analysis.
-- Removing `translator` dependency reduces the bundle size but requires confirming that no other files use it (verified that only the deleted `translation_service.dart` imported it).
-
 ### Verification
 - Run `dart analyze` to guarantee compilation integrity.
 - Run `flutter build apk --debug` to verify the build process is unaffected.
+
+---
+
+## 🚀 Phase 66: Nested Mock Quiz Results and Scoring Improvements
+
+### 1. Requirements Overview
+1. **START button in Mock Test Detail Screen:** Currently runs the old direct attempt flow. We will modify it to push `MockTestFilesScreen(test: test)` instead, providing the modern nested mock tests and supplementary files interface.
+2. **Total Questions vs Total Mock Tests:** Since mock tests are packages of multiple quizzes/files, display "Total Mock Tests" (value from `total_questions` column) instead of "Questions" everywhere in user and admin views.
+3. **Marks per Question:** We will transition from hardcoded total marks to a per-question marks system. We will add a database column `marks_per_question` to `mock_tests`.
+4. **Scoring Calculation in Result System:** Update the exam system to calculate both `totalScore` and attempt `totalMarks` dynamically based on the number of questions loaded during the attempt and the test's `marks_per_question`.
+5. **Exam Duration:** Ensure all nested tests attempt flows use the parent test's `durationMinutes` as the default time limit.
+
+### 2. DB Schema Migration
+- Add `marks_per_question` column to the `mock_tests` table.
+- Calculate and set default `marks_per_question` values for existing records using `total_marks / total_questions` (with a fallback to `1.0`).
+
+### 3. File Ownership & Plan
+#### [MODIFY] [mock_test.dart](file:///f:/krushi_kalp/krushi_kalp/lib/domain/models/mock_test.dart)
+- Add `marksPerQuestion` (double) to the `MockTest` domain model.
+- Parse from `marks_per_question` key in `fromJson` and output key in `toJson` and `copyWith`.
+
+#### [MODIFY] [test_result.dart](file:///f:/krushi_kalp/krushi_kalp/lib/domain/models/test_result.dart)
+- Calculate `totalMarks` dynamically in `TestResult.fromJson` if `mock_test_file_id` is present by multiplying the total questions in the attempt (`correctAnswers + incorrectAnswers + skippedAnswers`) by `marks_per_question`. Otherwise, fall back to `totalQuestions * marks_per_question` (or the legacy total marks).
+
+#### [MODIFY] [test_service.dart](file:///f:/krushi_kalp/krushi_kalp/lib/data/services/test_service.dart)
+- Modify `fetchUserResults`, `fetchPaginatedUserResults`, and `fetchLatestResult` select queries to select `marks_per_question` and `total_questions` from the `mock_tests` table.
+- Update `submitTestResult` to take `totalMarks` dynamically and insert correct records.
+
+#### [MODIFY] [exam_screen.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/exam_screen.dart)
+- Calculate `marksPerQ` as `widget.test.marksPerQuestion`.
+- Calculate `totalScore` as `correctCount * marksPerQ` (minus `wrongCount * negativeMarksPerQ` if negative marking is enabled).
+- Submit test result with the calculated dynamic `totalMarks` for the attempt (`_questions.length * marksPerQ`).
+
+#### [MODIFY] [mock_test_detail_screen.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/mock_test_detail_screen.dart)
+- Modify bottom bar START button to navigate to `MockTestFilesScreen`.
+- In `_buildStatsRow`, change the `Questions` key to "Mock Tests" (value: `${widget.test.totalQuestions}`).
+- Change the `Marks` key to "Marks/Q" (value: `${widget.test.marksPerQuestion}`).
+
+#### [MODIFY] [mock_test_files_screen.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/mock_test_files_screen.dart)
+- Change header info subtitle from `t.totalQuestions Qs | Marks: t.totalMarks` to `${t.totalQuestions} Tests | Marks/Q: ${t.marksPerQuestion}`.
+
+#### [MODIFY] [store_grid.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/store/widgets/store_grid.dart)
+- Change subtitle to `${test.totalQuestions} Tests • ${test.marksPerQuestion} Marks/Q`.
+
+#### [MODIFY] [purchased_tests_screen.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/purchased_tests_screen.dart)
+- Change subtitle to `${item.totalQuestions} Tests`.
+
+#### [MODIFY] [free_content_screen.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/free_content_screen.dart)
+- Change subtitle to `${test.totalQuestions} Tests`.
+
+#### [MODIFY] [downloads_screen.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/downloads_screen.dart)
+- Change subtitle to `${test.totalQuestions} Tests`.
+
+#### [MODIFY] [all_tests_screen.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/all_tests_screen.dart)
+- Update card/row questions count to tests count.
+
+#### [MODIFY] [mock_test_upload_screen.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/mock_test_upload_screen.dart)
+- Rename "Total Questions" text field to "Total Mock Tests".
+- Rename "Total Marks" text field to "Marks per Question".
+- Send `marks_per_question` (parsed double) in database insertion payload.
+
+#### [MODIFY] [mock_test_edit_screen.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/admin/mock_test_edit_screen.dart)
+- Rename "Total Questions" text field to "Total Mock Tests".
+- Rename "Total Marks" text field to "Marks per Question".
+- Send `marks_per_question` in database update payload.
+
+#### [MODIFY] [admin_mock_test_detail_screen.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/admin/resources/admin_mock_test_detail_screen.dart)
+- In the stats box row, rename "QUESTIONS" to "MOCK TESTS" and "TOTAL MARKS" to "MARKS / QUESTION" (displaying `marksPerQuestion`).
+
+#### [MODIFY] [admin_mock_test_list.dart](file:///f:/krushi_kalp/krushi_kalp/lib/presentation/screens/admin/resources/admin_mock_test_list.dart)
+- Change subtitle in list row from `${test.totalQuestions} Questions` to `${test.totalQuestions} Tests`.
+
+### 4. Risks & Mitigations
+- **Existing Records:** Migrating existing tests without default values would crash parsing. Mitigated by setting defaults in Postgres migration (`marks_per_question` defaults to `1.0` or calculated dynamically from legacy marks/questions ratio).
+- **Pass/Fail logic:** Pass percentage is 40% of total marks. We must ensure the total marks for nested quizzes is calculated accurately to determine `is_passed` successfully.
+
+### 5. Verification Plan
+- Run `dart analyze` to ensure compilation and lint checks are green.
+- Verify through manual testing: attempt quiz files, verify results marks/scores are calculated correctly on the result summary page and stored properly in database.
+
 
 
 
