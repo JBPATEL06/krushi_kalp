@@ -16,9 +16,15 @@ Clean Architecture:
 - **Data**: Services (Supabase/PostgREST) and Local Caching (Isar).
 
 ## Current Active Phase
-- **Phase 65**: Codebase Unused Code Cleanup (Pending Approval)
+- **Phase 65**: Codebase Unused Code Cleanup ✅ COMPLETE
 
 ## Recently Completed Fixes (on `feature/nested-quizzes-refinements` branch)
+
+- **Phase 65**: Codebase Unused Code Cleanup ✅
+  - Deleted 22 orphaned files: legacy models (Order, Notification, Transaction, User), dead screens (CheckoutScreen, MyLibraryScreen, NotificationsScreen, NetworkPdfViewerScreen, TestAttemptScreen, AdminProfileScreen), unused widgets (AnimatedScaleButton, AppCard, CustomTextField, GlassContainer, ShimmerLoading, ViewOptionsBottomSheet, ResourceDetailDialog), deprecated services (TranslationService, SecureFileService, DbErrorHelper), and dead utils (AnalyticsNavigatorObserver).
+  - Removed `TranslationLoadingWidget` dead class from `exam_screen.dart`.
+  - `dart analyze` confirmed 0 new errors post-cleanup.
+  - Net reduction: **2,924 lines deleted**.
 
 - **Phase 64**: Downloads, Upload Notifications, Rating Section & PDF Results Refinements ✅
   - Aligned result upload parameters (`correct_answers`, `incorrect_answers`, `skipped_answers`, `time_taken_seconds`, `mock_test_file_id`) to database schema.

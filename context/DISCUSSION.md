@@ -2,6 +2,56 @@
 
 [... previous logs ...]
 
+## [Phase 65: Codebase Unused Code Cleanup]
+
+### Goal
+Remove all unused, orphaned, and dead-code files from the codebase to reduce compile surface, improve maintainability, and eliminate confusion from stale legacy code.
+
+### Branch
+`feature/nested-quizzes-refinements`
+
+### Status
+Completed ✅ — Committed `2c27f53`, pushed to remote.
+
+### Analysis Method
+- Wrote `scratch/unused_analyzer.dart` — a static import-graph traversal tool.
+- Fixed a suffix-stripping bug (`replaceAll` → safe `_stripSuffix` helper).
+- Added false-positive suppression for Riverpod `*Notifier` classes (used via codegen).
+- Ran `dart analyze` post-deletion → **0 new errors**.
+
+### Files Deleted (22)
+| File | Reason |
+|---|---|
+| `lib/core/utils/db_error_helper.dart` | Superseded by `ErrorService` |
+| `lib/data/services/secure_file_service.dart` | Superseded by `DownloadService` |
+| `lib/data/services/translation_service.dart` | Translation feature bypassed |
+| `lib/domain/models/notification.dart` | Legacy model, no usages |
+| `lib/domain/models/order.dart` | Legacy model, no usages |
+| `lib/domain/models/transaction.dart` | Legacy model, no usages |
+| `lib/domain/models/user.dart` | Superseded by native Supabase `User` |
+| `lib/presentation/screens/admin/admin_profile_screen.dart` | Unregistered screen |
+| `lib/presentation/screens/checkout_screen.dart` | Feature not implemented |
+| `lib/presentation/screens/my_library_screen.dart` | Feature not implemented |
+| `lib/presentation/screens/network_pdf_viewer_screen.dart` | Replaced by `pdf_viewer_screen.dart` |
+| `lib/presentation/screens/notifications_screen.dart` | Feature not implemented |
+| `lib/presentation/screens/store/widgets/store_current_affairs_list.dart` | Unused widget |
+| `lib/presentation/screens/test_attempt_screen.dart` | Replaced by `exam_screen.dart` |
+| `lib/presentation/widgets/common/animated_scale_button.dart` | No usages |
+| `lib/presentation/widgets/common/app_card.dart` | No usages |
+| `lib/presentation/widgets/common/custom_text_field.dart` | No usages |
+| `lib/presentation/widgets/common/glass_container.dart` | No usages |
+| `lib/presentation/widgets/common/shimmer_loading.dart` | No usages |
+| `lib/presentation/widgets/common/view_options_bottom_sheet.dart` | No usages |
+| `lib/presentation/widgets/resource_detail_dialog.dart` | No usages |
+| `lib/utils/analytics_navigator_observer.dart` | Never registered |
+
+### Code Edits
+- Removed `TranslationLoadingWidget` + `_TranslationLoadingWidgetState` from `exam_screen.dart` (lines 812–888 deleted).
+
+### Net Impact
+- **28 files changed**, **2,924 lines deleted**, **291 lines inserted** (updated analyzer script + scratch files).
+- `dart analyze`: 0 errors, 10 warnings (all pre-existing), 10 infos (all pre-existing).
+
 ## [Phase 62: Mock Test Nested Quizzes & Upload Refinements]
 
 ### Goal
